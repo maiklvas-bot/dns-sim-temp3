@@ -126,7 +126,6 @@ function TalkingAvatarPlayer({
     setProgress(0);
     setPhase("playing");
     setMediaStatus("starting");
-    setNonCriticalAudioSuppressed(true);
     playedMsRef.current = 0;
     startedAtRef.current = Date.now();
     const playbackId = playbackIdRef.current;
@@ -139,7 +138,6 @@ function TalkingAvatarPlayer({
       clearTimers();
       playedMsRef.current = expectedDurationMs;
       setMediaStatus("completed");
-      setNonCriticalAudioSuppressed(false);
       startedAtRef.current = null;
       setProgress(100);
       setMouthOpen(false);
