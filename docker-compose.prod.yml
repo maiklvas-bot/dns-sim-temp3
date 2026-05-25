@@ -1,0 +1,26 @@
+# DNS SimCenter — production override
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# Local secrets are expected in .env and/or .env.prod. Do not commit them.
+
+services:
+  app:
+    image: dns-simcenter:prod
+    container_name: dns-simcenter-prod
+    env_file:
+      - .env
+      - .env.prod
+    environment:
+      NODE_ENV: production
+      APP_ENV: production
+      PORT: ${PORT:-5000}
+      SQLITE_PATH: /app/data/data.db
+      SYNC_STAFF_FROM_ENV: "true"
+    restart: unless-stopped
+
+  nginx:
+    container_name: dns-simcenter-prod-nginx
+    profiles:
+      - with-nginx

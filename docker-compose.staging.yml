@@ -1,0 +1,26 @@
+# DNS SimCenter — staging override
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.staging.yml up -d --build
+#
+# Local secrets are expected in .env and/or .env.staging. Do not commit them.
+
+services:
+  app:
+    image: dns-simcenter:staging
+    container_name: dns-simcenter-staging
+    env_file:
+      - .env
+      - .env.staging
+    environment:
+      NODE_ENV: production
+      APP_ENV: staging
+      PORT: ${PORT:-5000}
+      SQLITE_PATH: /app/data/data.db
+      SYNC_STAFF_FROM_ENV: "true"
+    restart: unless-stopped
+
+  nginx:
+    container_name: dns-simcenter-staging-nginx
+    profiles:
+      - with-nginx
