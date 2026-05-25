@@ -15,10 +15,18 @@ export default function StaffLoginPage() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
+    const trimmedUsername = username.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedUsername || !trimmedPassword) {
+      setError("Введите логин и пароль");
+      return;
+    }
+
     setLoading(true);
     setError("");
     try {
-      const response = await apiRequest("POST", "/api/staff/login", { role, username, password });
+      const response = await apiRequest("POST", "/api/staff/login", { role, username: trimmedUsername, password: trimmedPassword });
       const principal = await response.json();
       navigate(principal.role === "admin" ? "/admin" : "/evaluator");
     } catch (err: any) {
@@ -57,7 +65,15 @@ export default function StaffLoginPage() {
           </button>
         </div>
 
-        <div className="space-y-4">
+        <div
+          className="space-y-4"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void handleSubmit();
+            }
+          }}
+        >
           <div>
             <Label className="text-xs text-[#8890a8] mb-1.5 block">Логин</Label>
             <Input value={username} onChange={(e) => setUsername(e.target.value)} className="bg-[#141c2b] border-[#2a3a4e] text-white" />
@@ -68,13 +84,13 @@ export default function StaffLoginPage() {
           </div>
         </div>
 
-        {error && <div className="mt-4 text-sm text-[#ff4444]">{error}</div>}
+        {error && <div className="mt-4 rounded-lg border border-[#ff4444]/40 bg-[#ff4444]/10 px-3 py-2 text-sm text-[#ff8f8f]">{error}</div>}
 
         <div className="flex gap-3 mt-6">
           <Button variant="outline" className="flex-1 border-[#2a3a4e] text-[#8890a8] bg-transparent" onClick={() => navigate("/")}>
             Назад
           </Button>
-          <Button className="flex-1 bg-[#FF6B00] hover:bg-[#e06000]" onClick={handleSubmit} disabled={loading}>
+          <Button className="flex-1 bg-[#FF6B00] hover:bg-[#e06000]" onClick={() => void handleSubmit()} disabled={loading}>
             {loading ? "Вход..." : "Войти"}
           </Button>
         </div>
