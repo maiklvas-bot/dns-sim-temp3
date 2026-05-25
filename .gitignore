@@ -25,6 +25,8 @@ storage/
 uploads/
 backups/
 vendor/
+release/*
+!release/.gitkeep
 
 # Logs
 *.log
