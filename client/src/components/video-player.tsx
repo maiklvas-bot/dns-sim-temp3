@@ -54,6 +54,7 @@ function TalkingAvatarPlayer({
   const startedAtRef = useRef<number | null>(null);
   const playbackIdRef = useRef(0);
   const autoStartedRef = useRef<string | null>(null);
+  const fallbackStartedRef = useRef(false);
   const hasVideoMedia = mediaMode === "video" && Boolean(vc.videoUrl);
 
   const narrationText = `${vc.title}. ${vc.sender}, ${vc.role}. ${vc.situation}`;
@@ -113,6 +114,7 @@ function TalkingAvatarPlayer({
       mediaVideoRef.current.onplaying = null;
     }
     stopCurrentAudio();
+    fallbackStartedRef.current = false;
     setMouthOpen(false);
   };
 
@@ -124,6 +126,7 @@ function TalkingAvatarPlayer({
     playedMsRef.current = 0;
     startedAtRef.current = Date.now();
     const playbackId = playbackIdRef.current;
+    fallbackStartedRef.current = false;
 
     const finalizePlayback = () => {
       if (playbackIdRef.current !== playbackId) {
@@ -162,6 +165,10 @@ function TalkingAvatarPlayer({
     };
 
     const startFallbackPlayback = () => {
+      if (fallbackStartedRef.current) {
+        return;
+      }
+      fallbackStartedRef.current = true;
       setMediaMode("fallback");
       if (vc.audioUrl) {
         startAudioPlayback();
@@ -191,11 +198,8 @@ function TalkingAvatarPlayer({
           if (playbackIdRef.current !== playbackId || video.paused || video.ended) {
             return;
           }
-          const resumeAt = video.currentTime;
-          video.load();
-          video.currentTime = resumeAt;
           video.play().catch(() => startFallbackPlayback());
-        }, 2500);
+        }, 1800);
       };
       video.onplaying = () => {
         if (videoRecoveryTimer.current) {
@@ -233,9 +237,6 @@ function TalkingAvatarPlayer({
 
           if (stuckTicks >= 16) {
             stuckTicks = 0;
-            const resumeAt = video.currentTime;
-            video.load();
-            video.currentTime = resumeAt;
             video.play().catch(() => startFallbackPlayback());
           }
         }, 250);
