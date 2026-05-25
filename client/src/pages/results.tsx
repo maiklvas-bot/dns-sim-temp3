@@ -194,6 +194,28 @@ export default function ResultsPage(props: any) {
     );
   }
 
+  if (persistedSessionId != null && persistedResultQuery.isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0d1117] px-4 text-white">
+        <div className="w-full max-w-md rounded-2xl border border-[#2a3a4e] bg-[#141c2b]/85 p-6 text-center">
+          <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-[#FFB300]" />
+          <h2 className="text-lg font-semibold">Не удалось загрузить результат</h2>
+          <p className="mt-2 text-sm text-[#94A3B8]">
+            Проверьте соединение и попробуйте снова. Если ошибка повторяется, обратитесь к администратору.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <Button variant="outline" onClick={() => navigate('/evaluator')}>
+              Вернуться к оценщику
+            </Button>
+            <Button onClick={() => persistedResultQuery.refetch()}>
+              Повторить
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleRestart = async () => {
     if (persistedSessionId != null) {
       navigate("/evaluator");

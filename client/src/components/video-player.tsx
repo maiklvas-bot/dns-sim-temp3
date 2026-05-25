@@ -44,6 +44,7 @@ function TalkingAvatarPlayer({
   const [progress, setProgress] = useState(0);
   const [mouthOpen, setMouthOpen] = useState(false);
   const [mediaMode, setMediaMode] = useState<"video" | "fallback">(vc.videoUrl ? "video" : "fallback");
+  const [mediaStatus, setMediaStatus] = useState("idle");
   const mediaAudioRef = useRef<HTMLAudioElement | null>(null);
   const mediaVideoRef = useRef<HTMLVideoElement | null>(null);
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -54,6 +55,7 @@ function TalkingAvatarPlayer({
   const startedAtRef = useRef<number | null>(null);
   const playbackIdRef = useRef(0);
   const autoStartedRef = useRef<string | null>(null);
+  const fallbackStartedRef = useRef(false);
   const hasVideoMedia = mediaMode === "video" && Boolean(vc.videoUrl);
 
   const narrationText = `${vc.title}. ${vc.sender}, ${vc.role}. ${vc.situation}`;
@@ -113,6 +115,7 @@ function TalkingAvatarPlayer({
       mediaVideoRef.current.onplaying = null;
     }
     stopCurrentAudio();
+    fallbackStartedRef.current = false;
     setMouthOpen(false);
   };
 
@@ -121,9 +124,11 @@ function TalkingAvatarPlayer({
     stopAll();
     setProgress(0);
     setPhase("playing");
+    setMediaStatus("starting");
     playedMsRef.current = 0;
     startedAtRef.current = Date.now();
     const playbackId = playbackIdRef.current;
+    fallbackStartedRef.current = false;
 
     const finalizePlayback = () => {
       if (playbackIdRef.current !== playbackId) {
@@ -131,6 +136,7 @@ function TalkingAvatarPlayer({
       }
       clearTimers();
       playedMsRef.current = expectedDurationMs;
+      setMediaStatus("completed");
       startedAtRef.current = null;
       setProgress(100);
       setMouthOpen(false);
@@ -162,7 +168,12 @@ function TalkingAvatarPlayer({
     };
 
     const startFallbackPlayback = () => {
+      if (fallbackStartedRef.current) {
+        return;
+      }
+      fallbackStartedRef.current = true;
       setMediaMode("fallback");
+      setMediaStatus(vc.audioUrl ? "fallback-audio" : "fallback-animated");
       if (vc.audioUrl) {
         startAudioPlayback();
         return;
@@ -176,6 +187,7 @@ function TalkingAvatarPlayer({
       video.load();
       video.onended = finalizePlayback;
       video.onerror = () => {
+        setMediaStatus("video-error");
         setMediaMode("fallback");
         video.onended = null;
         video.onerror = null;
@@ -184,6 +196,7 @@ function TalkingAvatarPlayer({
         startFallbackPlayback();
       };
       video.onwaiting = () => {
+        setMediaStatus("video-buffering");
         if (videoRecoveryTimer.current) {
           clearTimeout(videoRecoveryTimer.current);
         }
@@ -191,19 +204,18 @@ function TalkingAvatarPlayer({
           if (playbackIdRef.current !== playbackId || video.paused || video.ended) {
             return;
           }
-          const resumeAt = video.currentTime;
-          video.load();
-          video.currentTime = resumeAt;
           video.play().catch(() => startFallbackPlayback());
-        }, 2500);
+        }, 1800);
       };
       video.onplaying = () => {
+        setMediaStatus("video-playing");
         if (videoRecoveryTimer.current) {
           clearTimeout(videoRecoveryTimer.current);
           videoRecoveryTimer.current = null;
         }
       };
       video.play().then(() => {
+        setMediaStatus("video-playing");
         let lastTime = video.currentTime;
         let stuckTicks = 0;
         progressTimer.current = setInterval(() => {
@@ -233,13 +245,11 @@ function TalkingAvatarPlayer({
 
           if (stuckTicks >= 16) {
             stuckTicks = 0;
-            const resumeAt = video.currentTime;
-            video.load();
-            video.currentTime = resumeAt;
             video.play().catch(() => startFallbackPlayback());
           }
         }, 250);
       }).catch(() => {
+        setMediaStatus("video-autoplay-blocked");
         setMediaMode("fallback");
         video.onended = null;
         video.onerror = null;
@@ -310,7 +320,7 @@ function TalkingAvatarPlayer({
     }
   };
 
-  const restart = () => { stopAll(); setProgress(0); setPhase("idle"); };
+  const restart = () => { stopAll(); setProgress(0); setPhase("idle"); setMediaStatus("idle"); };
 
   useEffect(() => {
     if (!playbackEnabled || autoPlayKey !== vc.id || phase !== "idle" || autoStartedRef.current === autoPlayKey) {
@@ -457,6 +467,10 @@ function TalkingAvatarPlayer({
               {isPlaying && <span className="text-[#FF6B00] animate-pulse">Воспроизведение...</span>}
               {isPaused && <span className="text-[#ffc107]">Пауза</span>}
               {isDone && <span className="text-[#00d4aa]">✓ Сообщение прослушано</span>}
+            </div>
+
+            <div className="rounded-full border border-[#2a3a4e] bg-[#0d1117]/70 px-3 py-1 text-[10px] uppercase tracking-[0.12em] text-[#9fb4cf]">
+              media: {mediaStatus}
             </div>
           </div>
         )}
