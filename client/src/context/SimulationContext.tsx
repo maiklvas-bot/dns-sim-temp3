@@ -165,6 +165,8 @@ const loadedMediaUrls = new Set<string>();
 const preloadedMediaElements: Array<HTMLImageElement | HTMLAudioElement | HTMLVideoElement> = [];
 const IMMEDIATE_PRELOAD_CASE_LIMIT = 2;
 const IMMEDIATE_PRELOAD_CHANNEL_LIMIT = 3;
+const MAX_PAUSE_COUNT = 5;
+const MAX_PAUSE_TOTAL_SECONDS = 30 * 60;
 
 export interface SimulationState {
   // Session config
@@ -1782,6 +1784,18 @@ function reducer(state: SimulationState, action: Action): SimulationState {
         return state;
       }
 
+      const totalPauseSeconds = state.pauses.reduce((sum, pause) => sum + Math.max(0, pause.durationSeconds || 0), 0);
+      if (!state.isPaused && (state.pauses.length >= MAX_PAUSE_COUNT || totalPauseSeconds >= MAX_PAUSE_TOTAL_SECONDS)) {
+        return {
+          ...state,
+          isRunning: false,
+          isPaused: false,
+          isCompleted: true,
+          pauseStartedAt: null,
+          lastOptionText: "Симуляция остановлена: превышены ограничения по паузам (макс. 5 пауз и 30 минут суммарно).",
+        };
+      }
+
       if (state.isPaused) {
         const resumedAtUnixMs = Date.now();
         const resumedPauses = state.pauses.map((pause) =>
@@ -1796,11 +1810,19 @@ function reducer(state: SimulationState, action: Action): SimulationState {
             : pause
         );
 
+        const resumedTotalPauseSeconds = resumedPauses.reduce((sum, pause) => sum + Math.max(0, pause.durationSeconds || 0), 0);
+        const violatesPauseLimits = resumedPauses.length > MAX_PAUSE_COUNT || resumedTotalPauseSeconds > MAX_PAUSE_TOTAL_SECONDS;
+
         return {
           ...state,
+          isRunning: violatesPauseLimits ? false : state.isRunning,
           isPaused: false,
+          isCompleted: violatesPauseLimits ? true : state.isCompleted,
           pauseStartedAt: null,
           pauses: resumedPauses,
+          lastOptionText: violatesPauseLimits
+            ? "Симуляция завершена из-за нарушения правил пауз: более 5 пауз или более 30 минут суммарно."
+            : state.lastOptionText,
         };
       }
 
@@ -3226,12 +3248,14 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
     resultSyncInFlightRef.current = true;
     const resultPayload = buildSessionResultPayload(state);
+    const totalPauseSeconds = state.pauses.reduce((sum, pause) => sum + Math.max(0, pause.durationSeconds || 0), 0);
+    const violatesPauseLimits = state.pauses.length > MAX_PAUSE_COUNT || totalPauseSeconds > MAX_PAUSE_TOTAL_SECONDS;
 
     (async () => {
       try {
         await apiRequest("PUT", `/api/sessions/${state.sessionId}/result`, resultPayload);
         await apiRequest("PATCH", `/api/sessions/${state.sessionId}`, {
-          technicalStatus: "completed",
+          technicalStatus: violatesPauseLimits ? "interrupted" : "completed",
           completedAt: new Date().toISOString(),
         });
         completedSessionKeyRef.current = completionKey;

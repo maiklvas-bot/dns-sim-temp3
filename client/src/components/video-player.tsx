@@ -241,6 +241,7 @@ function TalkingAvatarPlayer({
 
   const pausePlay = () => {
     clearTimers();
+    stopCurrentAudio();
     if (mediaAudioRef.current) {
       mediaAudioRef.current.pause();
       setMouthOpen(false);
