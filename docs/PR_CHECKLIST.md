@@ -6,4 +6,5 @@
 - [ ] Protected files are untouched unless task explicitly approved them
 - [ ] Acceptance criteria are met
 - [ ] Required checks/tests were run and reported
+- [ ] Any skipped check has an explicit environment reason, for example `docker: command not found`
 - [ ] Handoff note is provided for the second contributor/agent

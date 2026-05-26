@@ -10,6 +10,14 @@ npm run build
 docker compose build app
 ```
 
+If Docker is not installed in the current local environment, write it in the PR as a skipped environment check:
+
+```text
+docker compose build app - not run: docker command not found
+```
+
+The curator or CI must still run the Docker build before merge/release.
+
 Smoke API checks after Docker start:
 
 ```bash
