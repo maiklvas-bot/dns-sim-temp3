@@ -139,9 +139,7 @@ function TalkingAvatarPlayer({
       clearTimers();
       playedMsRef.current = expectedDurationMs;
       setMediaStatus("completed");
-codex/analyze-project-structure-and-propose-work-breakdown-o748ek
       setNonCriticalAudioSuppressed(false);
-main
       startedAtRef.current = null;
       setProgress(100);
       setMouthOpen(false);
