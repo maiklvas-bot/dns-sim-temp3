@@ -36,6 +36,7 @@ function TalkingAvatarPlayer({
   const [mouthOpen, setMouthOpen] = useState(false);
   const [mediaMode, setMediaMode] = useState<"video" | "fallback">(vc.videoUrl ? "video" : "fallback");
   const [mediaStatus, setMediaStatus] = useState("idle");
+
   const mediaAudioRef = useRef<HTMLAudioElement | null>(null);
   const mediaVideoRef = useRef<HTMLVideoElement | null>(null);
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -47,6 +48,7 @@ function TalkingAvatarPlayer({
   const playbackIdRef = useRef(0);
   const autoStartedRef = useRef<string | null>(null);
   const fallbackStartedRef = useRef(false);
+
   const hasVideoMedia = mediaMode === "video" && Boolean(vc.videoUrl);
   const narrationText = `${vc.title}. ${vc.sender}, ${vc.role}. ${vc.situation}`;
   const expectedDurationMs = estimateNarrationDurationMs(narrationText, vc.duration);
@@ -70,12 +72,14 @@ function TalkingAvatarPlayer({
         setProgress((Math.min(dur, v.currentTime * 1000) / dur) * 100);
         return;
       }
+
       if (mediaAudioRef.current) {
         const a = mediaAudioRef.current;
         const dur = Number.isFinite(a.duration) && a.duration > 0 ? a.duration * 1000 : expectedDurationMs;
         setProgress((Math.min(dur, a.currentTime * 1000) / dur) * 100);
         return;
       }
+
       const inFlight = startedAtRef.current ? Date.now() - startedAtRef.current : 0;
       setProgress((Math.min(expectedDurationMs, playedMsRef.current + inFlight) / expectedDurationMs) * 100);
     }, 200);
@@ -86,11 +90,13 @@ function TalkingAvatarPlayer({
     playbackIdRef.current += 1;
     playedMsRef.current = 0;
     startedAtRef.current = null;
+
     if (mediaAudioRef.current) {
       mediaAudioRef.current.pause();
       mediaAudioRef.current.currentTime = 0;
       mediaAudioRef.current = null;
     }
+
     if (mediaVideoRef.current) {
       mediaVideoRef.current.pause();
       mediaVideoRef.current.currentTime = 0;
@@ -99,6 +105,7 @@ function TalkingAvatarPlayer({
       mediaVideoRef.current.onwaiting = null;
       mediaVideoRef.current.onplaying = null;
     }
+
     setNonCriticalAudioSuppressed(false);
     stopCurrentAudio();
     fallbackStartedRef.current = false;
@@ -112,6 +119,7 @@ function TalkingAvatarPlayer({
     setPhase("playing");
     setMediaStatus("starting");
     setNonCriticalAudioSuppressed(true);
+
     playedMsRef.current = 0;
     startedAtRef.current = Date.now();
     const playbackId = playbackIdRef.current;
@@ -147,16 +155,6 @@ function TalkingAvatarPlayer({
     };
 
     const startFallbackPlayback = () => {
-      if (fallbackStartedRef.current) {
-        return;
-      }
-      fallbackStartedRef.current = true;
-      setMediaMode("fallback");
-      setMediaStatus(vc.audioUrl ? "fallback-audio" : "fallback-animated");
-      if (vc.audioUrl) {
-        startAudioPlayback();
-        return;
-      }
       if (fallbackStartedRef.current) return;
       fallbackStartedRef.current = true;
       setMediaMode("fallback");
@@ -170,6 +168,7 @@ function TalkingAvatarPlayer({
       video.currentTime = 0;
       video.load();
       video.onended = finalizePlayback;
+
       video.onerror = () => {
         setMediaStatus("video-error");
         setMediaMode("fallback");
@@ -179,21 +178,16 @@ function TalkingAvatarPlayer({
         video.currentTime = 0;
         startFallbackPlayback();
       };
+
       video.onwaiting = () => {
         setMediaStatus("video-buffering");
-        if (videoRecoveryTimer.current) {
-          clearTimeout(videoRecoveryTimer.current);
-        }
-        videoRecoveryTimer.current = setTimeout(() => {
-          if (playbackIdRef.current !== playbackId || video.paused || video.ended) {
-            return;
-          }
         if (videoRecoveryTimer.current) clearTimeout(videoRecoveryTimer.current);
         videoRecoveryTimer.current = setTimeout(() => {
           if (playbackIdRef.current !== playbackId || video.paused || video.ended) return;
           video.play().catch(() => startFallbackPlayback());
         }, 1800);
       };
+
       video.onplaying = () => {
         setMediaStatus("video-playing");
         if (videoRecoveryTimer.current) {
@@ -201,12 +195,17 @@ function TalkingAvatarPlayer({
           videoRecoveryTimer.current = null;
         }
       };
+
       video.play().then(() => {
         setMediaStatus("video-playing");
         let lastTime = video.currentTime;
         let stuckTicks = 0;
+
         progressTimer.current = setInterval(() => {
-          const dur = Number.isFinite(video.duration) && video.duration > 0 ? video.duration * 1000 : expectedDurationMs;
+          const dur = Number.isFinite(video.duration) && video.duration > 0
+            ? video.duration * 1000
+            : expectedDurationMs;
+
           setProgress((Math.min(dur, video.currentTime * 1000) / dur) * 100);
 
           if (Number.isFinite(video.duration) && video.duration > 0 && video.duration - video.currentTime <= 0.35) {
@@ -240,6 +239,7 @@ function TalkingAvatarPlayer({
         video.currentTime = 0;
         startFallbackPlayback();
       });
+
       return;
     }
 
@@ -248,22 +248,26 @@ function TalkingAvatarPlayer({
 
   const pausePlay = () => {
     clearTimers();
+
     if (mediaAudioRef.current) {
       mediaAudioRef.current.pause();
       setMouthOpen(false);
       setPhase("paused");
       return;
     }
+
     if (mediaVideoRef.current && !mediaVideoRef.current.ended && mediaVideoRef.current.currentTime > 0) {
       mediaVideoRef.current.pause();
       setMouthOpen(false);
       setPhase("paused");
       return;
     }
+
     if (startedAtRef.current) {
       playedMsRef.current += Date.now() - startedAtRef.current;
       startedAtRef.current = null;
     }
+
     setMouthOpen(false);
     setPhase("paused");
   };
@@ -276,12 +280,14 @@ function TalkingAvatarPlayer({
       syncProgressLoop();
       return;
     }
+
     if (mediaVideoRef.current && !mediaVideoRef.current.ended && mediaVideoRef.current.currentTime > 0) {
       mediaVideoRef.current.play().catch(() => undefined);
       setPhase("playing");
       syncProgressLoop();
       return;
     }
+
     if (startedAtRef.current === null && playedMsRef.current > 0) {
       startedAtRef.current = Date.now();
       setPhase("playing");
@@ -298,7 +304,6 @@ function TalkingAvatarPlayer({
     }
   };
 
-  const restart = () => { stopAll(); setProgress(0); setPhase("idle"); setMediaStatus("idle"); };
   const restart = () => {
     stopAll();
     setProgress(0);
@@ -326,11 +331,15 @@ function TalkingAvatarPlayer({
   const isPaused = phase === "paused";
   const isIdle = phase === "idle";
   const showSituation = !isAnswered && (hasVideoMedia || !isIdle || isDone || isPaused);
+
   const barHeights = [3, 6, 9, 12, 9, 6, 3, 6, 9, 6, 3];
 
   return (
     <div className="flex flex-col h-full min-h-0">
-      <div className="relative min-h-[340px] flex-1 overflow-hidden rounded-xl" style={{ background: "linear-gradient(135deg, #0d1117 0%, #1a1a2e 50%, #0d1117 100%)" }}>
+      <div
+        className="relative min-h-[340px] flex-1 overflow-hidden rounded-xl"
+        style={{ background: "linear-gradient(135deg, #0d1117 0%, #1a1a2e 50%, #0d1117 100%)" }}
+      >
         {vc.imageUrl && !hasVideoMedia && (
           <>
             <img src={vc.imageUrl} alt={vc.title} loading="eager" decoding="async" className="absolute inset-0 h-full w-full object-cover opacity-30" />
@@ -340,7 +349,14 @@ function TalkingAvatarPlayer({
 
         {hasVideoMedia && (
           <>
-            <video ref={mediaVideoRef} src={vc.videoUrl || undefined} poster={vc.imageUrl || undefined} playsInline preload="auto" className="absolute inset-0 h-full w-full bg-black object-contain" />
+            <video
+              ref={mediaVideoRef}
+              src={vc.videoUrl || undefined}
+              poster={vc.imageUrl || undefined}
+              playsInline
+              preload="auto"
+              className="absolute inset-0 h-full w-full bg-black object-contain"
+            />
             <div className="absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-black/50 to-transparent pointer-events-none" />
             <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0d1117]/85 via-[#0d1117]/25 to-transparent pointer-events-none" />
           </>
@@ -376,9 +392,7 @@ function TalkingAvatarPlayer({
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
             <div className="relative">
-              {isPlaying && (
-                <div className="absolute inset-0 rounded-full border-2 border-[#FF6B00]/30 animate-ping scale-125" />
-              )}
+              {isPlaying && <div className="absolute inset-0 rounded-full border-2 border-[#FF6B00]/30 animate-ping scale-125" />}
               <div
                 className={`relative w-28 h-28 rounded-full flex flex-col items-center justify-center shadow-2xl transition-all duration-300 ${
                   isPlaying ? "border-2 border-[#FF6B00]/60" : isDone ? "border-2 border-[#00d4aa]/60" : "border-2 border-[#2a3a4e]"
