@@ -128,6 +128,7 @@ let loopingSrc: string | null = null;
 const audioQueue: Array<{ src: string; volume: number }> = [];
 let isPlaying = false;
 let audioUnlocked = false;
+let nonCriticalAudioSuppressed = false;
 
 function normalizeAudioSrc(src: string) {
   try {
@@ -187,7 +188,7 @@ function playNext() {
 
 // Play audio helper — queues instead of overlapping
 export function playAudioFile(src: string, volume = 0.6): void {
-  if (loopingAudio) {
+  if (nonCriticalAudioSuppressed || loopingAudio) {
     return;
   }
   audioQueue.push({ src, volume });
@@ -238,7 +239,7 @@ export function stopLoopingAudio(): void {
 }
 
 export function playTwoToneNotification(src: string, volume = 0.55, gapMs = 180): void {
-  if (loopingAudio) {
+  if (nonCriticalAudioSuppressed || loopingAudio) {
     return;
   }
 
@@ -275,6 +276,9 @@ export function isCurrentAudioSource(src: string | null | undefined): boolean {
 
 // Play a file immediately (for replay button — skip queue)
 export function playAudioImmediate(src: string, volume = 0.7): HTMLAudioElement | null {
+  if (nonCriticalAudioSuppressed) {
+    return null;
+  }
   try {
     stopCurrentAudio();
     const audio = new Audio(src);
@@ -295,3 +299,10 @@ export function speakNarration(text: string): void {
 }
 
 export { audioNotification };
+
+export function setNonCriticalAudioSuppressed(value: boolean): void {
+  nonCriticalAudioSuppressed = value;
+  if (value) {
+    stopCurrentAudio();
+  }
+}

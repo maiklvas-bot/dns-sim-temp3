@@ -87,7 +87,7 @@ export default function MetricsPanel() {
             <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#FF6B00]">Метрики магазина</div>
             <div className="mt-1 text-[12px] text-[#a8bbd6]">Живой срез смены по клиентам, людям и операционке</div>
           </div>
-          <div className="rounded-2xl border border-[#2d4563] bg-[#101826] px-3 py-2 text-right">
+          <div className="flex min-w-[102px] flex-col items-center justify-center rounded-2xl border border-[#2d4563] bg-[#101826] px-3 py-2 text-center">
             <div className="text-[11px] uppercase tracking-[0.14em] text-[#8ea4c2]">Пульс смены</div>
             <div className="text-lg font-bold text-white tabular-nums">{storePulse}%</div>
           </div>

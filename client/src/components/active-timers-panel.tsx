@@ -35,7 +35,7 @@ export default function ActiveTimersPanel() {
 
   if (activeTimers.length === 0) {
     return (
-      <div className="rounded-xl border border-[#2a3a4e] bg-[linear-gradient(180deg,rgba(30,42,58,0.9),rgba(14,21,33,0.94))] p-3">
+      <div className="mt-3 rounded-xl border border-[#2a3a4e] bg-[linear-gradient(180deg,rgba(30,42,58,0.9),rgba(14,21,33,0.94))] p-3">
         <div className="flex items-start gap-2">
           <Clock3 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#4a9eff]" />
           <div className="min-w-0">
@@ -54,7 +54,7 @@ export default function ActiveTimersPanel() {
   }
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-[#2a3a4e] bg-[linear-gradient(180deg,rgba(30,42,58,0.9),rgba(14,21,33,0.94))] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
+    <div className="mt-3 flex h-full flex-col rounded-2xl border border-[#2a3a4e] bg-[linear-gradient(180deg,rgba(30,42,58,0.9),rgba(14,21,33,0.94))] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-semibold uppercase tracking-wider text-[#8ec5ff]">Активные таймеры</div>
