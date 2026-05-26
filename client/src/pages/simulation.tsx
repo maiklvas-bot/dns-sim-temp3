@@ -59,6 +59,9 @@ export default function SimulationPage() {
   const isLowTime = state.timeRemaining < 120;
   const pendingSignals = state.activeSignals.filter(s => !s.isExpired).length;
   const totalPauseSeconds = state.pauses.reduce((sum, pause) => sum + pause.durationSeconds, 0);
+  const maxPauseCount = 5;
+  const maxPauseSeconds = 30 * 60;
+  const pauseLimitReached = state.pauses.length >= maxPauseCount || totalPauseSeconds >= maxPauseSeconds;
   const channelCounts = getChannelNotificationCounts(state);
   const waitingForStudent = isReadOnly && !livePresence.studentConnected;
   const waitingForAssessorSetup = mode === "student" && (liveSessionConfig?.selectedCaseIds.length ?? 0) === 0 && Boolean(liveSessionConfig);
@@ -271,6 +274,7 @@ export default function SimulationPage() {
               <span className="hidden sm:inline">{isReadOnly ? "Только просмотр" : "Завершить"}</span>
             </button>
           </div>
+        {pauseLimitReached && !state.isPaused ? (<div className="mx-3 mt-2 rounded-xl border border-[#ff4444]/40 bg-[#ff4444]/10 px-3 py-2 text-xs text-[#ffd7d7]">Достигнут лимит пауз. Новая пауза недоступна: это нарушение безопасности проведения симуляции.</div>) : null}
         </header>
 
         {/* ─── Mobile tab switcher ─── */}
@@ -457,8 +461,12 @@ export default function SimulationPage() {
                   <span className="font-mono text-white">{state.simDateTime}</span>
                 </div>
                 <div className="mt-2 flex items-center justify-between text-xs text-[#8890a8]">
-                  <span>Накоплено пауз</span>
-                  <span className="font-mono text-white">{Math.floor(totalPauseSeconds / 60)} мин {totalPauseSeconds % 60} сек</span>
+                  <span>Общее количество пауз</span>
+                  <span className="font-mono text-white">{state.pauses.length}/{maxPauseCount}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-xs text-[#8890a8]">
+                  <span>Общее время пауз</span>
+                  <span className="font-mono text-white">{Math.floor(totalPauseSeconds / 60)} мин {totalPauseSeconds % 60} сек / 30 мин</span>
                 </div>
               </div>
               <button

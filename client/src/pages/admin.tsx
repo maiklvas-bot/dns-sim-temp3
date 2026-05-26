@@ -1021,7 +1021,7 @@ export default function AdminPage() {
   );
   const selectedResultSummary = resultDetailQuery.data?.session || null;
   const completedResults = useMemo(
-    () => ((resultsQuery.data || []) as any[]).filter((item) => item.technicalStatus === "completed"),
+    () => ((resultsQuery.data || []) as any[]).filter((item) => item.technicalStatus === "completed" || item.technicalStatus === "interrupted"),
     [resultsQuery.data],
   );
   const completedResultIds = useMemo(
@@ -2008,15 +2008,6 @@ export default function AdminPage() {
                   <FileSpreadsheet className="mr-2 h-4 w-4" />
                   {excelLoading ? "Экспорт..." : "Excel"}
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="border-[#2a3a4e] bg-transparent text-[#8890a8]"
-                  onClick={() => setComparisonOpen(true)}
-                  disabled={!canOpenComparison}
-                >
-                  Сравнение (до 5)
-                </Button>
               </div>
               <div className="mb-4 grid gap-3 md:grid-cols-2">
                 <div>
@@ -2056,6 +2047,9 @@ export default function AdminPage() {
                         </div>
                       <div className="text-right">
                         <div className="text-sm text-white">Баллы: {item.totalScore}</div>
+                        <div className={`inline-flex rounded-md border px-2 py-0.5 text-[10px] ${item.technicalStatus === "completed" ? "border-[#00d4aa66] text-[#7fffd4]" : "border-[#ff6b6b66] text-[#ffb3b3]"}`}>
+                          {item.technicalStatus === "completed" ? "Прошел" : "Не прошел"}
+                        </div>
                         <div className="text-xs text-[#8890a8]">Средний: {item.averageScore}</div>
                       </div>
                     </div>
@@ -2693,7 +2687,7 @@ export default function AdminPage() {
         <Dialog open={comparisonOpen} onOpenChange={setComparisonOpen}>
           <DialogContent className="max-h-[92vh] w-[95vw] max-w-[1880px] overflow-y-auto border-[#2a3a4e] bg-[#101826] text-white">
             <DialogHeader>
-              <DialogTitle>Сравнение завершённых симуляций</DialogTitle>
+              <DialogTitle>Сравнение результатов симуляций</DialogTitle>
               <DialogDescription className="text-[#8aa2c4]">
                 Выберите до {MAX_COMPARISON_ITEMS} участников со статусом «Завершено», чтобы сравнить итоговые компетенции и графики.
               </DialogDescription>
