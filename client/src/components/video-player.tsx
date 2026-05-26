@@ -36,6 +36,7 @@ function TalkingAvatarPlayer({
   const [mouthOpen, setMouthOpen] = useState(false);
   const [mediaMode, setMediaMode] = useState<"video" | "fallback">(vc.videoUrl ? "video" : "fallback");
   const [mediaStatus, setMediaStatus] = useState("idle");
+
   const mediaAudioRef = useRef<HTMLAudioElement | null>(null);
   const mediaVideoRef = useRef<HTMLVideoElement | null>(null);
   const progressTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -47,6 +48,7 @@ function TalkingAvatarPlayer({
   const playbackIdRef = useRef(0);
   const autoStartedRef = useRef<string | null>(null);
   const fallbackStartedRef = useRef(false);
+
   const hasVideoMedia = mediaMode === "video" && Boolean(vc.videoUrl);
   const narrationText = `${vc.title}. ${vc.sender}, ${vc.role}. ${vc.situation}`;
   const expectedDurationMs = estimateNarrationDurationMs(narrationText, vc.duration);
@@ -112,6 +114,7 @@ function TalkingAvatarPlayer({
     setPhase("playing");
     setMediaStatus("starting");
     setNonCriticalAudioSuppressed(true);
+
     playedMsRef.current = 0;
     startedAtRef.current = Date.now();
     const playbackId = playbackIdRef.current;
@@ -147,16 +150,6 @@ function TalkingAvatarPlayer({
     };
 
     const startFallbackPlayback = () => {
-      if (fallbackStartedRef.current) {
-        return;
-      }
-      fallbackStartedRef.current = true;
-      setMediaMode("fallback");
-      setMediaStatus(vc.audioUrl ? "fallback-audio" : "fallback-animated");
-      if (vc.audioUrl) {
-        startAudioPlayback();
-        return;
-      }
       if (fallbackStartedRef.current) return;
       fallbackStartedRef.current = true;
       setMediaMode("fallback");
@@ -181,13 +174,6 @@ function TalkingAvatarPlayer({
       };
       video.onwaiting = () => {
         setMediaStatus("video-buffering");
-        if (videoRecoveryTimer.current) {
-          clearTimeout(videoRecoveryTimer.current);
-        }
-        videoRecoveryTimer.current = setTimeout(() => {
-          if (playbackIdRef.current !== playbackId || video.paused || video.ended) {
-            return;
-          }
         if (videoRecoveryTimer.current) clearTimeout(videoRecoveryTimer.current);
         videoRecoveryTimer.current = setTimeout(() => {
           if (playbackIdRef.current !== playbackId || video.paused || video.ended) return;
@@ -297,8 +283,7 @@ function TalkingAvatarPlayer({
       syncProgressLoop();
     }
   };
-  
-    const restart = () => { stopAll(); setProgress(0); setPhase("idle"); setMediaStatus("idle"); };
+
   const restart = () => {
     stopAll();
     setProgress(0);
@@ -306,7 +291,7 @@ function TalkingAvatarPlayer({
     setMediaStatus("idle");
   };
 
-    useEffect(() => {
+  useEffect(() => {
     if (!playbackEnabled || autoPlayKey !== vc.id || phase !== "idle" || autoStartedRef.current === autoPlayKey) return;
     autoStartedRef.current = autoPlayKey;
     startPlay();
@@ -437,7 +422,6 @@ function TalkingAvatarPlayer({
             </div>
           </div>
         )}
-        {/* (UI body unchanged from your current version) */}
 
         <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-[#1a1a2e]">
           <div className="h-full bg-[#FF6B00] transition-all duration-200" style={{ width: `${progress}%` }} />
