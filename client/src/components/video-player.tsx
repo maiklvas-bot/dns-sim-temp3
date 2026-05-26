@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { VIDEO_CASES, type VideoCase } from "../data/video-cases";
-import { stopCurrentAudio } from "../data/audio-map";
+import { setNonCriticalAudioSuppressed, stopCurrentAudio } from "../data/audio-map";
 import { Play, Pause, RefreshCw, CheckCircle, Video, Volume2 } from "lucide-react";
 import { useSimulation } from "../context/SimulationContext";
 import DeadlineChip from "./deadline-chip";
@@ -114,6 +114,7 @@ function TalkingAvatarPlayer({
       mediaVideoRef.current.onwaiting = null;
       mediaVideoRef.current.onplaying = null;
     }
+    setNonCriticalAudioSuppressed(false);
     stopCurrentAudio();
     fallbackStartedRef.current = false;
     setMouthOpen(false);
