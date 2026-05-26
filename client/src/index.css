@@ -290,6 +290,283 @@
     gap: 0.5rem;
   }
 
+  .dns-admin-header-surface {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .dns-admin-header-surface > :not(.dns-admin-header-art) {
+    position: relative;
+    z-index: 2;
+  }
+
+  .dns-admin-header-art {
+    display: none;
+    pointer-events: none;
+  }
+
+  .dns-admin-tab-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    min-width: 8.25rem;
+    overflow: hidden;
+  }
+
+  .dns-admin-tab-art {
+    display: grid;
+    width: 2.15rem;
+    height: 2.15rem;
+    flex: 0 0 auto;
+    place-items: center;
+    overflow: visible;
+  }
+
+  .dns-admin-tab-art img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.38));
+    transform-origin: center;
+  }
+
+  .dns-admin-tab-art .dns-admin-visual-primary--content {
+    transform: translateY(0.35rem) rotate(-4deg) scale(1.65);
+  }
+
+  .dns-admin-tab-art .dns-admin-visual-primary--assistant {
+    transform: translateY(0.3rem) rotate(5deg) scale(1.62);
+  }
+
+  .dns-admin-tab-art .dns-admin-visual-primary--balance {
+    transform: translateY(0.15rem) rotate(-3deg) scale(1.2);
+  }
+
+  .dns-admin-tab-art .dns-admin-visual-primary--workstation {
+    transform: rotate(-8deg) scale(1.3);
+  }
+
+  .dns-admin-tab-art .dns-admin-visual-primary--supervisor {
+    transform: translateY(0.35rem) rotate(4deg) scale(1.66);
+  }
+
+  .dns-admin-visual-panel {
+    position: relative;
+    display: grid;
+    min-height: clamp(8.5rem, 12vw, 12rem);
+    grid-template-columns: minmax(0, 1fr) minmax(13rem, 28%);
+    gap: 1rem;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    border: 1px solid rgba(58, 74, 94, 0.78);
+    border-radius: 1rem;
+    background:
+      linear-gradient(135deg, rgba(16, 24, 38, 0.94), rgba(31, 44, 64, 0.84)),
+      linear-gradient(90deg, rgba(255, 107, 0, 0.08), rgba(74, 158, 255, 0.08));
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  }
+
+  .dns-admin-visual-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(255, 255, 255, 0.055), transparent 28%),
+      linear-gradient(135deg, var(--dns-admin-visual-tint), transparent 58%);
+  }
+
+  .dns-admin-visual-panel--orange {
+    --dns-admin-visual-tint: rgba(255, 107, 0, 0.18);
+    border-color: rgba(255, 107, 0, 0.32);
+  }
+
+  .dns-admin-visual-panel--teal {
+    --dns-admin-visual-tint: rgba(0, 212, 170, 0.17);
+    border-color: rgba(0, 212, 170, 0.32);
+  }
+
+  .dns-admin-visual-panel--blue {
+    --dns-admin-visual-tint: rgba(74, 158, 255, 0.18);
+    border-color: rgba(74, 158, 255, 0.32);
+  }
+
+  .dns-admin-visual-panel--purple {
+    --dns-admin-visual-tint: rgba(167, 139, 250, 0.18);
+    border-color: rgba(167, 139, 250, 0.32);
+  }
+
+  .dns-admin-visual-panel--amber {
+    --dns-admin-visual-tint: rgba(255, 179, 0, 0.16);
+    border-color: rgba(255, 179, 0, 0.3);
+  }
+
+  .dns-admin-visual-copy {
+    position: relative;
+    z-index: 2;
+    min-width: 0;
+    padding: clamp(1rem, 1.4vw, 1.45rem);
+  }
+
+  .dns-admin-visual-kicker {
+    color: #8ec5ff;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .dns-admin-visual-title {
+    margin-top: 0.25rem;
+    color: #fff;
+    font-size: clamp(1.15rem, 1vw + 0.95rem, 1.65rem);
+    line-height: 1.12;
+  }
+
+  .dns-admin-visual-subtitle {
+    max-width: 52rem;
+    margin-top: 0.4rem;
+    color: #b7c7df;
+    font-size: clamp(0.9rem, 0.2vw + 0.84rem, 1.05rem);
+    line-height: 1.45;
+  }
+
+  .dns-admin-visual-stage {
+    position: relative;
+    z-index: 2;
+    min-height: clamp(8.5rem, 12vw, 12rem);
+    overflow: hidden;
+  }
+
+  .dns-admin-visual-image {
+    position: absolute;
+    object-fit: contain;
+    filter: drop-shadow(0 18px 28px rgba(0, 0, 0, 0.36));
+    user-select: none;
+  }
+
+  .dns-admin-visual-primary--content {
+    right: clamp(0.5rem, 2vw, 2.2rem);
+    bottom: -5.2rem;
+    height: clamp(13rem, 19vw, 19rem);
+    transform: rotate(-3deg);
+  }
+
+  .dns-admin-visual-primary--assistant {
+    right: clamp(0.7rem, 2vw, 2.4rem);
+    bottom: -4.8rem;
+    height: clamp(12.5rem, 18vw, 18rem);
+    transform: rotate(4deg);
+  }
+
+  .dns-admin-visual-primary--balance {
+    right: clamp(1rem, 2.2vw, 2.7rem);
+    bottom: -4.2rem;
+    height: clamp(12rem, 17vw, 17.5rem);
+    transform: rotate(-3deg);
+  }
+
+  .dns-admin-visual-primary--workstation {
+    right: -0.5rem;
+    bottom: -1.7rem;
+    width: clamp(16rem, 27vw, 28rem);
+    transform: rotate(-2deg);
+  }
+
+  .dns-admin-visual-primary--supervisor {
+    right: clamp(0.4rem, 1.8vw, 2rem);
+    bottom: -5.25rem;
+    height: clamp(13rem, 19vw, 19rem);
+    transform: rotate(3deg);
+  }
+
+  .dns-admin-visual-secondary--monitoring {
+    left: -1.2rem;
+    bottom: -1.6rem;
+    width: clamp(10rem, 17vw, 17rem);
+    opacity: 0.82;
+    transform: rotate(2deg);
+  }
+
+  .dns-admin-visual-secondary--greeting {
+    left: 0.1rem;
+    bottom: -3.1rem;
+    height: clamp(9rem, 13vw, 13rem);
+    opacity: 0.88;
+    transform: rotate(-6deg);
+  }
+
+  .dns-admin-visual-secondary--control {
+    left: -0.4rem;
+    bottom: 0.6rem;
+    width: clamp(9.5rem, 16vw, 17rem);
+    opacity: 0.9;
+    transform: rotate(-7deg);
+  }
+
+  .dns-admin-visual-secondary--success {
+    left: 0.4rem;
+    bottom: -4.2rem;
+    height: clamp(10rem, 15vw, 15rem);
+    opacity: 0.9;
+    transform: rotate(-5deg);
+  }
+
+  @media (min-width: 1180px) {
+    .dns-admin-header-art {
+      position: absolute;
+      top: 0;
+      right: clamp(14rem, 22vw, 25rem);
+      bottom: 0;
+      display: block;
+      width: clamp(12rem, 18vw, 21rem);
+      opacity: 0.9;
+    }
+
+    .dns-admin-header-art-device {
+      position: absolute;
+      right: 0.8rem;
+      bottom: -1.45rem;
+      width: clamp(12rem, 17vw, 19rem);
+      transform: rotate(-7deg);
+      filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.34));
+    }
+
+    .dns-admin-header-art-mascot {
+      position: absolute;
+      right: -0.7rem;
+      bottom: -3.15rem;
+      height: clamp(8.8rem, 12vw, 13rem);
+      transform: rotate(6deg);
+      filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.36));
+    }
+  }
+
+  @media (max-width: 767px) {
+    .dns-admin-tab-menu {
+      justify-content: flex-start;
+      flex-wrap: nowrap;
+    }
+
+    .dns-admin-tab-button {
+      min-width: 7.75rem;
+    }
+
+    .dns-admin-visual-panel {
+      grid-template-columns: minmax(0, 1fr);
+      min-height: 14rem;
+    }
+
+    .dns-admin-visual-copy {
+      padding-bottom: 0.25rem;
+    }
+
+    .dns-admin-visual-stage {
+      min-height: 6.75rem;
+    }
+  }
+
   .dns-product-shell .rounded-xl,
   .dns-product-shell .rounded-2xl {
     box-shadow: 0 12px 30px rgba(0, 0, 0, 0.20), inset 0 1px 0 rgba(255, 255, 255, 0.035);

@@ -49,6 +49,96 @@ type SystemSoundSettingKey = "callSoundAssetId" | "emailSoundAssetId" | "messeng
 type ScheduleSourceType = "main_case" | "email" | "messenger" | "video";
 const MAX_COMPARISON_ITEMS = 5;
 
+const ADMIN_BRAND_ASSETS = {
+  success: "/brand-admin/admin-mascot-success.png",
+  assistant: "/brand-admin/admin-mascot-assistant.png",
+  workstation: "/brand-admin/admin-device-workstation.png",
+  control: "/brand-admin/admin-device-control.png",
+  content: "/brand-admin/admin-mascot-content.png",
+  supervisor: "/brand-admin/admin-mascot-supervisor.png",
+  monitoring: "/brand-admin/admin-mascot-monitoring.png",
+  greeting: "/brand-admin/admin-mascot-greeting.png",
+  balance: "/brand-admin/admin-mascot-balance.png",
+} as const;
+
+type AdminVisualTone = "orange" | "teal" | "blue" | "purple" | "amber";
+
+interface AdminVisualIdentity {
+  label: string;
+  title: string;
+  subtitle: string;
+  primarySrc: string;
+  primaryAlt: string;
+  primaryClassName: string;
+  secondarySrc: string;
+  secondaryAlt: string;
+  secondaryClassName: string;
+  tone: AdminVisualTone;
+}
+
+const ADMIN_VISUALS: Record<TabKey, AdminVisualIdentity> = {
+  cases: {
+    label: "Кейсы",
+    title: "Сценарный контент",
+    subtitle: "Образ редактора держит фокус на сборке кейсов, развилок и компетенций.",
+    primarySrc: ADMIN_BRAND_ASSETS.content,
+    primaryAlt: "Фирменный персонаж-администратор для раздела кейсов",
+    primaryClassName: "dns-admin-visual-primary--content",
+    secondarySrc: ADMIN_BRAND_ASSETS.monitoring,
+    secondaryAlt: "Фирменный персонаж наблюдает за качеством сценариев",
+    secondaryClassName: "dns-admin-visual-secondary--monitoring",
+    tone: "orange",
+  },
+  channels: {
+    label: "Каналы",
+    title: "Коммуникационные каналы",
+    subtitle: "Помощник и приветственный персонаж подчеркивают живой поток сигналов.",
+    primarySrc: ADMIN_BRAND_ASSETS.assistant,
+    primaryAlt: "Фирменный помощник для коммуникационных каналов",
+    primaryClassName: "dns-admin-visual-primary--assistant",
+    secondarySrc: ADMIN_BRAND_ASSETS.greeting,
+    secondaryAlt: "Фирменный персонаж приветствует участника",
+    secondaryClassName: "dns-admin-visual-secondary--greeting",
+    tone: "teal",
+  },
+  schedule: {
+    label: "Расписание",
+    title: "Ритм симуляции",
+    subtitle: "Спокойный образ балансирует таймлайн, а устройство управления отвечает за точность.",
+    primarySrc: ADMIN_BRAND_ASSETS.balance,
+    primaryAlt: "Фирменный персонаж для баланса расписания",
+    primaryClassName: "dns-admin-visual-primary--balance",
+    secondarySrc: ADMIN_BRAND_ASSETS.control,
+    secondaryAlt: "Фирменная компьютерная мышь для управления таймлайном",
+    secondaryClassName: "dns-admin-visual-secondary--control",
+    tone: "blue",
+  },
+  results: {
+    label: "Результаты",
+    title: "Аналитическая панель",
+    subtitle: "Рабочая станция показывает, что отчеты и выгрузки остаются в центре внимания.",
+    primarySrc: ADMIN_BRAND_ASSETS.workstation,
+    primaryAlt: "Фирменная рабочая станция для аналитики результатов",
+    primaryClassName: "dns-admin-visual-primary--workstation",
+    secondarySrc: ADMIN_BRAND_ASSETS.success,
+    secondaryAlt: "Фирменный персонаж подтверждает успешный результат",
+    secondaryClassName: "dns-admin-visual-secondary--success",
+    tone: "purple",
+  },
+  settings: {
+    label: "Настройки",
+    title: "Системные параметры",
+    subtitle: "Сдержанный супервайзер и управляющее устройство визуально отделяют критичные настройки.",
+    primarySrc: ADMIN_BRAND_ASSETS.supervisor,
+    primaryAlt: "Фирменный супервайзер для системных настроек",
+    primaryClassName: "dns-admin-visual-primary--supervisor",
+    secondarySrc: ADMIN_BRAND_ASSETS.control,
+    secondaryAlt: "Фирменная компьютерная мышь для точной настройки",
+    secondaryClassName: "dns-admin-visual-secondary--control",
+    tone: "amber",
+  },
+};
+
 interface ScheduleRow {
   rowId: string;
   sourceType: ScheduleSourceType;
@@ -471,6 +561,30 @@ function ChannelInfluencePanel({
         </div>
       )}
     </div>
+  );
+}
+
+function AdminVisualPanel({ visual }: { visual: AdminVisualIdentity }) {
+  return (
+    <section className={`dns-admin-visual-panel dns-admin-visual-panel--${visual.tone}`} aria-label={visual.title}>
+      <div className="dns-admin-visual-copy">
+        <div className="dns-admin-visual-kicker">Фирменный контекст</div>
+        <h2 className="dns-admin-visual-title">{visual.title}</h2>
+        <p className="dns-admin-visual-subtitle">{visual.subtitle}</p>
+      </div>
+      <div className="dns-admin-visual-stage">
+        <img
+          src={visual.secondarySrc}
+          alt={visual.secondaryAlt}
+          className={`dns-admin-visual-image dns-admin-visual-secondary ${visual.secondaryClassName}`}
+        />
+        <img
+          src={visual.primarySrc}
+          alt={visual.primaryAlt}
+          className={`dns-admin-visual-image dns-admin-visual-primary ${visual.primaryClassName}`}
+        />
+      </div>
+    </section>
   );
 }
 
@@ -1612,6 +1726,7 @@ export default function AdminPage() {
   };
 
   const contentLoaded = !!contentQuery.data;
+  const activeAdminVisual = ADMIN_VISUALS[tab];
 
   if (staffQuery.isLoading || contentQuery.isLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-[#0d1117] text-white">Загрузка админки...</div>;
@@ -1642,6 +1757,18 @@ export default function AdminPage() {
               <p className="dns-brand-subtitle">Контент, каналы, тайминги, результаты и параметры хода симуляции.</p>
             </div>
           </div>
+          <div className="dns-admin-header-art" aria-hidden="true">
+            <img
+              src={ADMIN_BRAND_ASSETS.workstation}
+              alt=""
+              className="dns-admin-header-art-device"
+            />
+            <img
+              src={ADMIN_BRAND_ASSETS.success}
+              alt=""
+              className="dns-admin-header-art-mascot"
+            />
+          </div>
           <div className="dns-header-actions dns-admin-header-actions">
             <div className="inline-flex items-center rounded-full border border-[#FF6B00]/35 bg-[#FF6B00]/12 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
               Product UI v4.1
@@ -1655,19 +1782,28 @@ export default function AdminPage() {
           </div>
         </header>
 
-        <div className="mb-4 flex flex-wrap items-center justify-center gap-2 overflow-x-auto pb-1">
-          {(["cases", "channels", "schedule", "results", "settings"] as TabKey[]).map((item) => (
-            <button
-              key={item}
-              onClick={() => setTab(item)}
-              className={`dns-tab-button whitespace-nowrap px-4 py-2 text-sm ${tab === item ? "dns-tab-button-active" : ""}`}
-            >
-              {item === "cases" ? "Кейсы" : item === "channels" ? "Каналы" : item === "schedule" ? "Расписание" : item === "results" ? "Результаты" : "Настройки"}
-            </button>
-          ))}
+        <div className="dns-admin-tab-menu mb-4 flex flex-wrap items-center justify-center gap-2 overflow-x-auto pb-1">
+          {(["cases", "channels", "schedule", "results", "settings"] as TabKey[]).map((item) => {
+            const itemVisual = ADMIN_VISUALS[item];
+
+            return (
+              <button
+                key={item}
+                onClick={() => setTab(item)}
+                className={`dns-tab-button dns-admin-tab-button whitespace-nowrap px-3 py-2 text-sm ${tab === item ? "dns-tab-button-active" : ""}`}
+              >
+                <span className="dns-admin-tab-art" aria-hidden="true">
+                  <img src={itemVisual.primarySrc} alt="" className={itemVisual.primaryClassName} />
+                </span>
+                <span>{itemVisual.label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {error && <div className="mb-4 rounded-lg border border-[#ff4444]/30 bg-[#ff4444]/10 px-4 py-3 text-sm text-[#ff9999]">{error}</div>}
+
+        <AdminVisualPanel visual={activeAdminVisual} />
 
         {tab === "cases" && (
           <div className="dns-mobile-stack dns-admin-main-grid grid gap-5 2xl:gap-6 items-stretch">
