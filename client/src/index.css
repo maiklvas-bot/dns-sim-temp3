@@ -4,6 +4,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@font-face {
+  font-family: "DNS RotondaC";
+  src: url("/fonts/DNS RotondaC.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DNS RotondaC";
+  src: url("/fonts/DNS RotondaC-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "DNS RotondaC";
+  src: url("/fonts/DNS RotondaC-Black.ttf") format("truetype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* DNS Store Dark Theme — Dark charcoal/navy with orange accents */
 :root {
   --button-outline: rgba(255,255,255, .10);
@@ -61,7 +85,7 @@
   --chart-4: 215 80% 55%;             /* Blue */
   --chart-5: 0 72% 55%;               /* Red */
 
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-sans: 'DNS RotondaC', 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', Menlo, monospace;
   --radius: .5rem;
 
@@ -137,10 +161,15 @@
     background-color: #1a1a2e;
     color: #e0e0e0;
   }
-  h1, h2, h3, h4 {
-    font-family: 'Inter', system-ui, sans-serif;
-    font-weight: 700;
+  h1, h2 {
+    font-family: 'DNS RotondaC', 'Inter', system-ui, sans-serif;
+    font-weight: 900;
     letter-spacing: -0.01em;
+  }
+  h3, h4, h5, h6 {
+    font-family: 'DNS RotondaC', 'Inter', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.005em;
   }
 }
 
@@ -503,6 +532,34 @@
     inset: 0;
     background: linear-gradient(180deg, rgba(26, 26, 46, 0.92) 0%, rgba(22, 33, 62, 0.95) 100%);
     z-index: 0;
+  }
+
+  .dns-font-regular {
+    font-family: 'DNS RotondaC', 'Inter', system-ui, sans-serif;
+    font-weight: 400;
+  }
+
+  .dns-font-bold {
+    font-family: 'DNS RotondaC', 'Inter', system-ui, sans-serif;
+    font-weight: 700;
+  }
+
+  .dns-font-black {
+    font-family: 'DNS RotondaC', 'Inter', system-ui, sans-serif;
+    font-weight: 900;
+  }
+
+  .font-medium,
+  .font-semibold {
+    font-family: 'DNS RotondaC', 'Inter', system-ui, sans-serif;
+    font-weight: 700;
+  }
+
+  .font-bold,
+  .font-extrabold,
+  .font-black {
+    font-family: 'DNS RotondaC', 'Inter', system-ui, sans-serif;
+    font-weight: 900;
   }
 
   /* Tabular numbers for metrics */

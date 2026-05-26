@@ -1603,7 +1603,7 @@ export default function AdminPage() {
     >
       <div className="absolute inset-0 bg-gradient-to-b from-[#0d1421ef] via-[#16213ef5] to-[#0d1421f7]" />
       <div className="dns-page-frame max-w-[1560px]">
-        <header className="dns-brand-header">
+        <header className="dns-brand-header dns-admin-header-surface">
           <div className="dns-brand-title">
             <div className="dns-brand-mark">D</div>
             <div>
@@ -1612,7 +1612,7 @@ export default function AdminPage() {
               <p className="dns-brand-subtitle">Контент, каналы, тайминги, результаты и параметры хода симуляции.</p>
             </div>
           </div>
-          <div className="dns-header-actions">
+          <div className="dns-header-actions dns-admin-header-actions">
             <div className="inline-flex items-center rounded-full border border-[#FF6B00]/35 bg-[#FF6B00]/12 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
               Product UI v4.1
             </div>
@@ -1625,7 +1625,7 @@ export default function AdminPage() {
           </div>
         </header>
 
-        <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+        <div className="mb-4 flex flex-wrap items-center justify-center gap-2 overflow-x-auto pb-1">
           {(["cases", "channels", "schedule", "results", "settings"] as TabKey[]).map((item) => (
             <button
               key={item}
@@ -1640,13 +1640,13 @@ export default function AdminPage() {
         {error && <div className="mb-4 rounded-lg border border-[#ff4444]/30 bg-[#ff4444]/10 px-4 py-3 text-sm text-[#ff9999]">{error}</div>}
 
         {tab === "cases" && (
-          <div className="dns-mobile-stack dns-admin-main-grid grid gap-5 2xl:gap-6">
-            <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5">
+          <div className="dns-mobile-stack dns-admin-main-grid grid gap-5 2xl:gap-6 items-stretch">
+            <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full flex flex-col">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-sm font-semibold text-white">Основные кейсы</div>
                 <Button size="sm" onClick={openCaseWizard}>Новый</Button>
               </div>
-              <div className="space-y-2 max-h-[70vh] overflow-y-auto">
+              <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
                 {contentQuery.data.cases.map((item: SimCase) => (
                   <div key={item.id} className={`w-full rounded-lg border px-3 py-2 ${selectedCaseId === item.id ? "border-[#FF6B00] bg-[#FF6B00]/10" : "border-[#2a3a4e]"}`}>
                     <button onClick={() => setSelectedCaseId(item.id)} className="w-full text-left">
@@ -1673,8 +1673,8 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
-            <div className="grid gap-5 2xl:grid-cols-[minmax(760px,1fr),380px] 2xl:gap-6">
-              <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5">
+            <div className="grid gap-5 2xl:grid-cols-[minmax(780px,1fr),420px] 2xl:gap-6 items-start">
+              <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full">
                 {caseDraft && (
                   <EntityEditor
                     title="Редактор кейса"
@@ -1741,12 +1741,12 @@ export default function AdminPage() {
             </div>
             {channelTab === "email" && (
               <div className="grid gap-5 xl:grid-cols-[300px,minmax(680px,1fr)] 2xl:grid-cols-[320px,minmax(760px,1fr),380px] 2xl:gap-6">
-                <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5">
+                <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full">
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-sm font-semibold text-white">Письма</div>
                     <Button size="sm" onClick={() => openSignalWizard("email")}>Новое</Button>
                   </div>
-                  <div className="space-y-2 max-h-[70vh] overflow-y-auto">
+                  <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
                     {contentQuery.data.emailCases.map((item: EmailCase) => (
                       <button key={item.id} onClick={() => setSelectedEmailId(item.id)} className={`w-full rounded-lg border px-3 py-2 text-left ${selectedEmailId === item.id ? "border-[#4a9eff] bg-[#4a9eff]/10" : "border-[#2a3a4e]"}`}>
                         <div className="text-sm text-white">{item.subject || item.id}</div>
@@ -1755,7 +1755,7 @@ export default function AdminPage() {
                     ))}
                   </div>
                 </div>
-                <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5">
+                <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full">
                   {emailDraft && <EntityEditor title="Редактор письма" entity={emailDraft} assets={assets} competencies={competencies} caseSourceOptions={caseSourceOptions} emailSenderOptions={emailSenderOptions} emailDepartmentOptions={emailDepartmentOptions} messengerSenderOptions={messengerSenderOptions} messengerRoleOptions={messengerRoleOptions} videoSenderOptions={videoSenderOptions} videoRoleOptions={videoRoleOptions} onChange={setEmailDraft} onUploadAsset={handleUploadAsset} chats={[]} mode="email" onAddOption={() => addOption(setEmailDraft)} onTogglePreviewAudio={togglePreviewAudio} activePreviewKey={activePreviewKey} />}
                 </div>
                 <ChannelInfluencePanel entity={emailDraft} mode="email" data={channelDraftBarData} />
@@ -1808,12 +1808,12 @@ export default function AdminPage() {
                   </div>
                 </div>
                 <div className="grid gap-5 xl:grid-cols-[300px,minmax(680px,1fr)] 2xl:grid-cols-[320px,minmax(760px,1fr),380px] 2xl:gap-6">
-                  <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5">
+                  <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full">
                     <div className="flex items-center justify-between mb-3">
                       <div className="text-sm font-semibold text-white">Сообщения</div>
                       <Button size="sm" onClick={() => openSignalWizard("messenger")}>Новое</Button>
                     </div>
-                    <div className="space-y-2 max-h-[70vh] overflow-y-auto">
+                    <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
                       {contentQuery.data.messengerCases.map((item: MessengerCase) => (
                         <button key={item.id} onClick={() => setSelectedMessengerId(item.id)} className={`w-full rounded-lg border px-3 py-2 text-left ${selectedMessengerId === item.id ? "border-[#00d4aa] bg-[#00d4aa]/10" : "border-[#2a3a4e]"}`}>
                           <div className="text-sm text-white">{item.senderName || item.id}</div>
@@ -1822,7 +1822,7 @@ export default function AdminPage() {
                       ))}
                     </div>
                   </div>
-                  <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5">
+                  <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full">
                     {messengerDraft && <EntityEditor title="Редактор сообщения" entity={messengerDraft} assets={assets} competencies={competencies} caseSourceOptions={caseSourceOptions} emailSenderOptions={emailSenderOptions} emailDepartmentOptions={emailDepartmentOptions} messengerSenderOptions={messengerSenderOptions} messengerRoleOptions={messengerRoleOptions} videoSenderOptions={videoSenderOptions} videoRoleOptions={videoRoleOptions} onChange={setMessengerDraft} onUploadAsset={handleUploadAsset} chats={chats} mode="messenger" onAddOption={() => addOption(setMessengerDraft)} onTogglePreviewAudio={togglePreviewAudio} activePreviewKey={activePreviewKey} />}
                   </div>
                   <ChannelInfluencePanel entity={messengerDraft} mode="messenger" data={channelDraftBarData} />
@@ -1831,12 +1831,12 @@ export default function AdminPage() {
             )}
             {channelTab === "video" && (
               <div className="grid gap-5 xl:grid-cols-[300px,minmax(680px,1fr)] 2xl:grid-cols-[320px,minmax(760px,1fr),380px] 2xl:gap-6">
-                <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5">
+                <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full">
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-sm font-semibold text-white">Видео</div>
                     <Button size="sm" onClick={() => openSignalWizard("video")}>Новое</Button>
                   </div>
-                  <div className="space-y-2 max-h-[70vh] overflow-y-auto">
+                  <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
                     {contentQuery.data.videoCases.map((item: VideoCase) => (
                       <button key={item.id} onClick={() => setSelectedVideoId(item.id)} className={`w-full rounded-lg border px-3 py-2 text-left ${selectedVideoId === item.id ? "border-[#a78bfa] bg-[#a78bfa]/10" : "border-[#2a3a4e]"}`}>
                         <div className="text-sm text-white">{item.title || item.id}</div>
@@ -1845,7 +1845,7 @@ export default function AdminPage() {
                     ))}
                   </div>
                 </div>
-                <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5">
+                <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full">
                   {videoDraft && <EntityEditor title="Редактор видео-кейса" entity={videoDraft} assets={assets} competencies={competencies} caseSourceOptions={caseSourceOptions} emailSenderOptions={emailSenderOptions} emailDepartmentOptions={emailDepartmentOptions} messengerSenderOptions={messengerSenderOptions} messengerRoleOptions={messengerRoleOptions} videoSenderOptions={videoSenderOptions} videoRoleOptions={videoRoleOptions} onChange={setVideoDraft} onUploadAsset={handleUploadAsset} chats={[]} mode="video" onAddOption={() => addOption(setVideoDraft)} onTogglePreviewAudio={togglePreviewAudio} activePreviewKey={activePreviewKey} />}
                 </div>
                 <ChannelInfluencePanel entity={videoDraft} mode="video" data={channelDraftBarData} />
