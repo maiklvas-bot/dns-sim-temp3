@@ -2692,6 +2692,7 @@ export default function AdminPage() {
 
         <Dialog open={comparisonOpen} onOpenChange={setComparisonOpen}>
           <DialogContent className="max-h-[95vh] w-[95vw] overflow-y-auto border-[#2a3a4e] bg-[#101826] p-3 text-white sm:p-4 lg:max-h-[88vh] lg:max-w-[900px] xl:max-w-[1100px] 2xl:max-w-[min(1200px,60vw)] 3xl:max-w-[min(1440px,58vw)]">
+          <DialogContent className="max-h-[92vh] w-[95vw] max-w-[1880px] overflow-y-auto border-[#2a3a4e] bg-[#101826] text-white">
             <DialogHeader>
               <DialogTitle>Сравнение завершённых симуляций</DialogTitle>
               <DialogDescription className="text-[#8aa2c4]">
