@@ -111,6 +111,7 @@ function TalkingAvatarPlayer({
     setProgress(0);
     setPhase("playing");
     setMediaStatus("starting");
+    setMediaMode(vc.videoUrl ? "video" : "fallback");
     setNonCriticalAudioSuppressed(true);
     playedMsRef.current = 0;
     startedAtRef.current = Date.now();
@@ -157,11 +158,6 @@ function TalkingAvatarPlayer({
         startAudioPlayback();
         return;
       }
-      if (fallbackStartedRef.current) return;
-      fallbackStartedRef.current = true;
-      setMediaMode("fallback");
-      setMediaStatus(vc.audioUrl ? "fallback-audio" : "fallback-animated");
-      if (vc.audioUrl) return startAudioPlayback();
       startAnimatedFallback();
     };
 
@@ -188,9 +184,6 @@ function TalkingAvatarPlayer({
           if (playbackIdRef.current !== playbackId || video.paused || video.ended) {
             return;
           }
-        if (videoRecoveryTimer.current) clearTimeout(videoRecoveryTimer.current);
-        videoRecoveryTimer.current = setTimeout(() => {
-          if (playbackIdRef.current !== playbackId || video.paused || video.ended) return;
           video.play().catch(() => startFallbackPlayback());
         }, 1800);
       };
@@ -298,7 +291,6 @@ function TalkingAvatarPlayer({
     }
   };
 
-  const restart = () => { stopAll(); setProgress(0); setPhase("idle"); setMediaStatus("idle"); };
   const restart = () => {
     stopAll();
     setProgress(0);
