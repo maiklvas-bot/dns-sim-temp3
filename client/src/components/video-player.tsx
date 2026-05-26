@@ -503,7 +503,10 @@ export default function VideoMessages({
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const firstUnanswered = videos.find((v) => !answeredVideoIds.includes(v.id));
-  const actionPanelVideoId = state.actionPanelSource === "video" && state.actionPanelContentId ? state.actionPanelContentId : null;
+  const actionPanelVideoId =
+    state.actionPanelSource === "video" && state.actionPanelContentId
+      ? state.actionPanelContentId
+      : null;
   const activeId = actionPanelVideoId ?? selectedId ?? firstUnanswered?.id ?? videos[0]?.id ?? null;
   const activeVc = videos.find((v) => v.id === activeId);
   const activeDecision = activeVc
