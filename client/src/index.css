@@ -534,6 +534,34 @@
     z-index: 0;
   }
 
+  .dns-font-regular {
+    font-family: 'DNS RotondaC', 'Inter', system-ui, sans-serif;
+    font-weight: 400;
+  }
+
+  .dns-font-bold {
+    font-family: 'DNS RotondaC', 'Inter', system-ui, sans-serif;
+    font-weight: 700;
+  }
+
+  .dns-font-black {
+    font-family: 'DNS RotondaC', 'Inter', system-ui, sans-serif;
+    font-weight: 900;
+  }
+
+  .font-medium,
+  .font-semibold {
+    font-family: 'DNS RotondaC', 'Inter', system-ui, sans-serif;
+    font-weight: 700;
+  }
+
+  .font-bold,
+  .font-extrabold,
+  .font-black {
+    font-family: 'DNS RotondaC', 'Inter', system-ui, sans-serif;
+    font-weight: 900;
+  }
+
   /* Tabular numbers for metrics */
   .tabular-nums {
     font-variant-numeric: tabular-nums lining-nums;

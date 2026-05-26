@@ -338,7 +338,90 @@ function TalkingAvatarPlayer({
           </div>
         )}
 
-        {/* (UI body unchanged from your current version) */}
+        {hasVideoMedia ? (
+          <>
+            <div className="absolute inset-x-0 bottom-4 flex items-end justify-between gap-3 px-4">
+              <div className="max-w-[75%] rounded-2xl border border-white/10 bg-[#0d1117]/70 px-4 py-3 backdrop-blur-sm">
+                <div className="text-sm font-bold text-white">{vc.sender}</div>
+                <div className="mt-0.5 text-[13px] text-[#e1ebfa]">{vc.role}</div>
+              </div>
+              <div className="rounded-full border border-[#FF6B00]/30 bg-[#0d1117]/70 px-3 py-1 text-[11px] font-semibold text-[#FFB36B] backdrop-blur-sm">
+                Реальное видео
+              </div>
+            </div>
+            <div className="absolute inset-x-0 bottom-20 flex justify-center px-4">
+              <div className="rounded-full bg-[#0d1117]/72 px-4 py-1.5 text-xs text-white backdrop-blur-sm">
+                {isIdle && "Нажмите ▶ для воспроизведения видео"}
+                {isPlaying && "Видео воспроизводится"}
+                {isPaused && "Видео на паузе"}
+                {isDone && "✓ Видео просмотрено"}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+            <div className="relative">
+              {isPlaying && (
+                <div className="absolute inset-0 rounded-full border-2 border-[#FF6B00]/30 animate-ping scale-125" />
+              )}
+              <div
+                className={`relative w-28 h-28 rounded-full flex flex-col items-center justify-center shadow-2xl transition-all duration-300 ${
+                  isPlaying ? "border-2 border-[#FF6B00]/60" : isDone ? "border-2 border-[#00d4aa]/60" : "border-2 border-[#2a3a4e]"
+                }`}
+                style={{ background: "linear-gradient(145deg, #1e2a3a, #0d1117)" }}
+              >
+                <div className="flex gap-4 mb-1.5">
+                  <div className={`w-3 h-3 rounded-full transition-all ${isPlaying && mouthOpen ? "h-1 bg-[#c0c0d0]" : "bg-[#e0e0f0]"}`} />
+                  <div className={`w-3 h-3 rounded-full transition-all ${isPlaying && mouthOpen ? "h-1 bg-[#c0c0d0]" : "bg-[#e0e0f0]"}`} />
+                </div>
+                <div className="w-1 h-1 rounded-full bg-[#8890a8] mb-1" />
+                <div
+                  className="transition-all duration-100 rounded-full bg-[#e0e0f0]"
+                  style={{
+                    width: isPlaying ? (mouthOpen ? 18 : 10) : isDone ? 18 : 8,
+                    height: isPlaying ? (mouthOpen ? 10 : 3) : isDone ? 5 : 3,
+                  }}
+                />
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-[#FF6B00] flex items-center justify-center text-sm font-bold text-white shadow-lg">
+                  {vc.senderAvatar}
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <div className="text-sm font-bold text-white">{vc.sender}</div>
+              <div className="text-[13px] text-[#d4e0f3] mt-0.5">{vc.role}</div>
+            </div>
+
+            {isPlaying && (
+              <div className="flex items-end gap-1 h-8">
+                {barHeights.map((h, i) => (
+                  <div
+                    key={i}
+                    className="w-1.5 rounded-full bg-[#FF6B00] transition-all"
+                    style={{
+                      height: `${mouthOpen ? h * (1 + (i % 3) * 0.3) : h * 0.4}px`,
+                      opacity: 0.7 + (i % 3) * 0.1,
+                      transitionDuration: "180ms",
+                    }}
+                  />
+                ))}
+                <Volume2 className="w-4 h-4 text-[#FF6B00] ml-1 animate-pulse" />
+              </div>
+            )}
+
+            <div className="text-xs text-center px-4">
+              {isIdle && <span className="text-[#d4e0f3]">Нажмите ▶ для воспроизведения сообщения</span>}
+              {isPlaying && <span className="text-[#FF6B00] animate-pulse">Воспроизведение...</span>}
+              {isPaused && <span className="text-[#ffc107]">Пауза</span>}
+              {isDone && <span className="text-[#00d4aa]">✓ Сообщение прослушано</span>}
+            </div>
+
+            <div className="rounded-full border border-[#2a3a4e] bg-[#0d1117]/70 px-3 py-1 text-[10px] uppercase tracking-[0.12em] text-[#9fb4cf]">
+              media: {mediaStatus}
+            </div>
+          </div>
+        )}
 
         <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-[#1a1a2e]">
           <div className="h-full bg-[#FF6B00] transition-all duration-200" style={{ width: `${progress}%` }} />
