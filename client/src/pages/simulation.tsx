@@ -129,7 +129,7 @@ export default function SimulationPage() {
       {/* Content */}
       <div className="relative z-10 flex flex-col h-full">
         {/* HEADER */}
-        <header className="mx-3 mt-3 flex flex-col gap-3 rounded-2xl border border-[#FF6B00]/20 bg-[#101826]/88 px-3 py-3 shadow-2xl backdrop-blur-xl md:mx-4 md:flex-row md:items-center md:justify-between md:px-5">
+        <header className="mx-2 mt-2 flex flex-col gap-2 rounded-xl border border-[#FF6B00]/20 bg-[#101826]/88 px-3 py-2 shadow-2xl backdrop-blur-xl md:mx-3 md:flex-row md:items-center md:justify-between md:px-4">
           {/* Left header group */}
           <div className="flex items-center gap-2 md:gap-4 overflow-x-auto">
             {/* Timer */}
@@ -300,8 +300,8 @@ export default function SimulationPage() {
         </div>
 
         {/* MAIN LAYOUT: Mobile 1-col, Tablet 2-col, Desktop 3-col */}
-        <div className="flex-1 min-h-0 overflow-hidden p-3 md:p-4 xl:p-5">
-          <div className="grid h-full min-h-0 grid-cols-1 gap-3 md:gap-4 xl:gap-5 md:grid-cols-[220px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(640px,1fr)_300px] 2xl:grid-cols-[260px_minmax(780px,1fr)_340px]">
+        <div className="flex-1 min-h-0 overflow-hidden p-2 md:p-3 xl:p-4">
+          <div className="grid h-full min-h-0 grid-cols-1 gap-2.5 md:gap-3 xl:gap-4 md:grid-cols-[minmax(190px,0.85fr)_minmax(0,2fr)] xl:grid-cols-[minmax(200px,0.75fr)_minmax(0,2.2fr)_minmax(260px,0.95fr)] 2xl:grid-cols-[minmax(220px,0.75fr)_minmax(0,2.4fr)_minmax(280px,0.95fr)]">
             {/* ─── Left: Store Map ─── */}
             <div
               className={`min-h-0 min-w-0 overflow-hidden rounded-2xl border border-[#2a3a4e] bg-[#1e2a3acc] p-3 md:p-4 backdrop-blur-sm ${
@@ -317,11 +317,11 @@ export default function SimulationPage() {
                 mobileTab !== 'signals' ? 'hidden md:block' : ''
               }`}
             >
-              <div className="flex min-h-full flex-col gap-3 md:gap-4 xl:gap-5">
-                <div className="min-h-[58vh] rounded-2xl border border-[#2a3a4e] bg-[#1e2a3acc] p-3 md:p-4 backdrop-blur-sm">
+              <div className="flex h-full min-h-0 flex-col gap-2.5 md:gap-3 xl:gap-4">
+                <div className="min-h-0 flex-[3] rounded-2xl border border-[#2a3a4e] bg-[#1e2a3acc] p-3 md:p-4 backdrop-blur-sm">
                   <SignalFeed />
                 </div>
-                <div className="min-h-[34vh] rounded-2xl border border-[#2a3a4e] bg-[#1e2a3acc] p-3 md:p-4 backdrop-blur-sm">
+                <div className="min-h-0 flex-[2] rounded-2xl border border-[#2a3a4e] bg-[#1e2a3acc] p-3 md:p-4 backdrop-blur-sm">
                   <ResponseBar />
                 </div>
               </div>
