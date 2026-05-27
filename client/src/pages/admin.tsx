@@ -70,9 +70,6 @@ interface AdminVisualIdentity {
   primarySrc: string;
   primaryAlt: string;
   primaryClassName: string;
-  secondarySrc: string;
-  secondaryAlt: string;
-  secondaryClassName: string;
   tone: AdminVisualTone;
 }
 
@@ -84,9 +81,6 @@ const ADMIN_VISUALS: Record<TabKey, AdminVisualIdentity> = {
     primarySrc: ADMIN_BRAND_ASSETS.content,
     primaryAlt: "Фирменный персонаж-администратор для раздела кейсов",
     primaryClassName: "dns-admin-visual-primary--content",
-    secondarySrc: ADMIN_BRAND_ASSETS.monitoring,
-    secondaryAlt: "Фирменный персонаж наблюдает за качеством сценариев",
-    secondaryClassName: "dns-admin-visual-secondary--monitoring",
     tone: "orange",
   },
   channels: {
@@ -96,9 +90,6 @@ const ADMIN_VISUALS: Record<TabKey, AdminVisualIdentity> = {
     primarySrc: ADMIN_BRAND_ASSETS.assistant,
     primaryAlt: "Фирменный помощник для коммуникационных каналов",
     primaryClassName: "dns-admin-visual-primary--assistant",
-    secondarySrc: ADMIN_BRAND_ASSETS.greeting,
-    secondaryAlt: "Фирменный персонаж приветствует участника",
-    secondaryClassName: "dns-admin-visual-secondary--greeting",
     tone: "teal",
   },
   schedule: {
@@ -108,9 +99,6 @@ const ADMIN_VISUALS: Record<TabKey, AdminVisualIdentity> = {
     primarySrc: ADMIN_BRAND_ASSETS.balance,
     primaryAlt: "Фирменный персонаж для баланса расписания",
     primaryClassName: "dns-admin-visual-primary--balance",
-    secondarySrc: ADMIN_BRAND_ASSETS.control,
-    secondaryAlt: "Фирменная компьютерная мышь для управления таймлайном",
-    secondaryClassName: "dns-admin-visual-secondary--control",
     tone: "blue",
   },
   results: {
@@ -120,9 +108,6 @@ const ADMIN_VISUALS: Record<TabKey, AdminVisualIdentity> = {
     primarySrc: ADMIN_BRAND_ASSETS.workstation,
     primaryAlt: "Фирменная рабочая станция для аналитики результатов",
     primaryClassName: "dns-admin-visual-primary--workstation",
-    secondarySrc: ADMIN_BRAND_ASSETS.success,
-    secondaryAlt: "Фирменный персонаж подтверждает успешный результат",
-    secondaryClassName: "dns-admin-visual-secondary--success",
     tone: "purple",
   },
   settings: {
@@ -132,9 +117,6 @@ const ADMIN_VISUALS: Record<TabKey, AdminVisualIdentity> = {
     primarySrc: ADMIN_BRAND_ASSETS.supervisor,
     primaryAlt: "Фирменный супервайзер для системных настроек",
     primaryClassName: "dns-admin-visual-primary--supervisor",
-    secondarySrc: ADMIN_BRAND_ASSETS.control,
-    secondaryAlt: "Фирменная компьютерная мышь для точной настройки",
-    secondaryClassName: "dns-admin-visual-secondary--control",
     tone: "amber",
   },
 };
@@ -573,11 +555,6 @@ function AdminVisualPanel({ visual }: { visual: AdminVisualIdentity }) {
         <p className="dns-admin-visual-subtitle">{visual.subtitle}</p>
       </div>
       <div className="dns-admin-visual-stage">
-        <img
-          src={visual.secondarySrc}
-          alt={visual.secondaryAlt}
-          className={`dns-admin-visual-image dns-admin-visual-secondary ${visual.secondaryClassName}`}
-        />
         <img
           src={visual.primarySrc}
           alt={visual.primaryAlt}
@@ -1756,18 +1733,6 @@ export default function AdminPage() {
               <h1 className="dns-brand-heading">Администрирование симуляции</h1>
               <p className="dns-brand-subtitle">Контент, каналы, тайминги, результаты и параметры хода симуляции.</p>
             </div>
-          </div>
-          <div className="dns-admin-header-art" aria-hidden="true">
-            <img
-              src={ADMIN_BRAND_ASSETS.workstation}
-              alt=""
-              className="dns-admin-header-art-device"
-            />
-            <img
-              src={ADMIN_BRAND_ASSETS.success}
-              alt=""
-              className="dns-admin-header-art-mascot"
-            />
           </div>
           <div className="dns-header-actions dns-admin-header-actions">
             <div className="inline-flex items-center rounded-full border border-[#FF6B00]/35 bg-[#FF6B00]/12 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
