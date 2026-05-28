@@ -349,6 +349,10 @@
     transform: rotate(-5deg) scale(1.02);
   }
 
+  .dns-admin-tab-art .dns-admin-visual-primary--monitoring {
+    transform: translateY(0.08rem) rotate(-2deg) scale(1.06);
+  }
+
   .dns-admin-tab-art .dns-admin-visual-primary--supervisor {
     transform: translateY(0.1rem) rotate(3deg) scale(1.08);
   }
@@ -397,6 +401,11 @@
   .dns-admin-visual-panel--purple {
     --dns-admin-visual-tint: rgba(167, 139, 250, 0.18);
     border-color: rgba(167, 139, 250, 0.32);
+  }
+
+  .dns-admin-visual-panel--cyan {
+    --dns-admin-visual-tint: rgba(0, 188, 255, 0.16);
+    border-color: rgba(0, 188, 255, 0.3);
   }
 
   .dns-admin-visual-panel--amber {
@@ -471,8 +480,112 @@
     transform: rotate(-2deg);
   }
 
+  .dns-admin-visual-primary--monitoring {
+    transform: rotate(-2deg);
+  }
+
   .dns-admin-visual-primary--supervisor {
     transform: rotate(2deg);
+  }
+
+  .dns-comparison-product-row {
+    display: grid;
+    gap: 0.85rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+
+  .dns-comparison-person-card {
+    min-width: 14rem;
+    border: 1px solid #2a3a4e;
+    border-top: 3px solid #00d4aa;
+    border-radius: 0.75rem;
+    background: rgba(16, 24, 38, 0.78);
+    padding: 0.95rem;
+  }
+
+  .dns-comparison-avatar {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .dns-comparison-table-wrap {
+    overflow-x: auto;
+    border: 1px solid #243244;
+    border-radius: 0.75rem;
+    background: rgba(16, 24, 38, 0.58);
+  }
+
+  .dns-comparison-table {
+    width: 100%;
+    min-width: 720px;
+    border-collapse: separate;
+    border-spacing: 0;
+    color: #dbe7f8;
+    font-size: 0.78rem;
+  }
+
+  .dns-comparison-table th,
+  .dns-comparison-table td {
+    min-width: 12rem;
+    border-bottom: 1px solid rgba(42, 58, 78, 0.78);
+    padding: 0.7rem 0.85rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .dns-comparison-table th:first-child,
+  .dns-comparison-table td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    min-width: 12.5rem;
+    background: rgba(13, 21, 34, 0.98);
+    color: #8aa2c4;
+    font-weight: 700;
+  }
+
+  .dns-comparison-table th {
+    background: rgba(18, 31, 49, 0.98);
+    color: #f3f7ff;
+    font-weight: 700;
+  }
+
+  .dns-comparison-table tbody tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .dns-comparison-table--characteristics td {
+    color: #cbd8ef;
+  }
+
+  .dns-comparison-score-cell {
+    display: grid;
+    grid-template-columns: 2.4rem minmax(5rem, 1fr);
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .dns-comparison-score-track {
+    display: block;
+    height: 0.45rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #152032;
+  }
+
+  .dns-comparison-score-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
   }
 
   @media (max-width: 767px) {
@@ -497,6 +610,17 @@
     .dns-admin-visual-stage {
       min-height: 4.75rem;
       padding: 0 0.75rem 0.65rem;
+    }
+
+    .dns-comparison-table {
+      min-width: 640px;
+      font-size: 0.72rem;
+    }
+
+    .dns-comparison-table th,
+    .dns-comparison-table td {
+      min-width: 10rem;
+      padding: 0.6rem 0.7rem;
     }
   }
 
