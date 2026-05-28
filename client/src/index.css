@@ -314,6 +314,13 @@
     overflow: hidden;
   }
 
+  .dns-admin-tab-menu {
+    margin-top: 0.375rem;
+    margin-bottom: 1.125rem;
+    padding-top: 0.25rem;
+    padding-bottom: 0.375rem;
+  }
+
   .dns-admin-tab-art {
     display: grid;
     width: 1.65rem;
@@ -677,6 +684,14 @@
     box-shadow: 0 10px 24px rgba(255, 107, 0, 0.12);
   }
 
+  .dns-product-shell .dns-admin-tab-button:hover,
+  .dns-product-shell .dns-admin-tab-button:focus-visible {
+    transform: none;
+    border-color: rgba(142, 197, 255, 0.58);
+    color: #eef6ff;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+  }
+
   .dns-mobile-stack {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -965,4 +980,59 @@
   .tabular-nums {
     font-variant-numeric: tabular-nums lining-nums;
   }
+}
+
+/* Admin UI review: shared surface rhythm, kept outside Tailwind layers so it can normalize arbitrary utilities. */
+.dns-product-shell {
+  --dns-admin-border: rgba(76, 96, 125, 0.74);
+  --dns-admin-border-soft: rgba(65, 86, 116, 0.64);
+  --dns-admin-radius-panel: 0.5rem;
+  --dns-admin-text-muted: #b8c6dc;
+  --dns-admin-text-soft: #c5d2e6;
+  --dns-admin-text-dim: #a9bad4;
+}
+
+/* Task 1: neutral borders and panel radii use one visual system. */
+.dns-product-shell .border-\[\#2a3a4e\],
+.dns-product-shell .border-\[\#30445f\],
+.dns-product-shell .border-\[\#31455f\],
+.dns-product-shell .border-\[\#3b4b61\] {
+  border-color: var(--dns-admin-border);
+}
+
+.dns-product-shell .border-\[\#243244\],
+.dns-product-shell .border-\[\#223245\],
+.dns-product-shell .border-\[\#34506f\],
+.dns-product-shell .border-\[\#3f5876\] {
+  border-color: var(--dns-admin-border-soft);
+}
+
+.dns-product-shell .dns-brand-header,
+.dns-product-shell .dns-admin-visual-panel {
+  border-color: var(--dns-admin-border);
+  border-radius: 0.75rem;
+}
+
+.dns-product-shell .rounded-lg,
+.dns-product-shell .rounded-xl,
+.dns-product-shell .rounded-2xl {
+  border-radius: var(--dns-admin-radius-panel);
+}
+
+/* Task 2: secondary text stays calm, but gains contrast on the blue glass surfaces. */
+.dns-product-shell .text-\[\#8890a8\],
+.dns-product-shell .text-\[\#8aa2c4\],
+.dns-product-shell .text-\[\#9aabc6\] {
+  color: var(--dns-admin-text-muted);
+}
+
+.dns-product-shell .text-\[\#9fb0ca\],
+.dns-product-shell .text-\[\#aebbd2\],
+.dns-product-shell .text-\[\#b7c7df\],
+.dns-product-shell .text-\[\#c7d3e7\] {
+  color: var(--dns-admin-text-soft);
+}
+
+.dns-product-shell .text-\[\#70829d\] {
+  color: var(--dns-admin-text-dim);
 }
