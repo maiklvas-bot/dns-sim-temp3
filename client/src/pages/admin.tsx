@@ -30,7 +30,7 @@ import {
   resolveSimulationBriefingHtml,
 } from "@/lib/runtime-content";
 import { buildPdfPayloadFromReport, buildReportFromSessionDetails } from "@/lib/report-data";
-import { ChevronDown, FileSpreadsheet, Info, Pause, Play, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, FileSpreadsheet, Info, Pause, Play, Trash2, X } from "lucide-react";
 import {
   Legend,
   PolarAngleAxis,
@@ -1963,31 +1963,31 @@ export default function AdminPage() {
         <AdminVisualPanel visual={activeAdminVisual} />
 
         {tab === "cases" && (
-          <div className="dns-mobile-stack dns-admin-main-grid grid gap-5 2xl:gap-6 items-stretch">
-            <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full flex flex-col">
-              <div className="flex items-center justify-between mb-3">
+          <div className="dns-mobile-stack dns-admin-main-grid dns-admin-cases-layout grid gap-5 2xl:gap-6 items-start">
+            <div className="dns-admin-case-nav rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 flex flex-col">
+              <div className="dns-admin-case-nav-header flex items-center justify-between mb-3">
                 <div className="text-sm font-semibold text-white">Основные кейсы</div>
                 <Button size="sm" onClick={openCaseWizard}>Новый</Button>
               </div>
-              <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
+              <div className="dns-admin-case-list space-y-2 max-h-[70vh] overflow-y-auto pr-1">
                 {contentQuery.data.cases.map((item: SimCase) => (
-                  <div key={item.id} className={`w-full rounded-lg border px-3 py-2 ${selectedCaseId === item.id ? "border-[#FF6B00] bg-[#FF6B00]/10" : "border-[#2a3a4e]"}`}>
-                    <button onClick={() => setSelectedCaseId(item.id)} className="w-full text-left">
-                      <div className="text-sm text-white">{item.title || item.id}</div>
-                      <div className="text-xs text-[#8890a8]">{item.id}</div>
+                  <div key={item.id} className={`dns-admin-case-list-item w-full rounded-lg border px-3 py-2 ${selectedCaseId === item.id ? "dns-admin-case-list-item--active border-[#FF6B00] bg-[#FF6B00]/10" : "border-[#2a3a4e]"}`}>
+                    <button onClick={() => setSelectedCaseId(item.id)} className="dns-admin-case-list-main w-full text-left">
+                      <div className="dns-admin-case-list-title text-sm text-white">{item.title || item.id}</div>
+                      <div className="dns-admin-case-list-meta text-xs text-[#8890a8]">{item.id}</div>
                     </button>
-                    <div className="mt-2 flex gap-2">
-                      <Button size="sm" variant="outline" className="border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={() => reorderCase(item.id, -1)}>
-                        Выше
+                    <div className="dns-admin-case-order-actions mt-2 flex gap-2">
+                      <Button size="sm" variant="outline" className="dns-admin-case-order-button border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={() => reorderCase(item.id, -1)} aria-label="Поднять кейс выше" title="Поднять выше">
+                        <ArrowUp className="h-4 w-4" />
                       </Button>
-                      <Button size="sm" variant="outline" className="border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={() => reorderCase(item.id, 1)}>
-                        Ниже
+                      <Button size="sm" variant="outline" className="dns-admin-case-order-button border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={() => reorderCase(item.id, 1)} aria-label="Опустить кейс ниже" title="Опустить ниже">
+                        <ArrowDown className="h-4 w-4" />
                       </Button>
                     </div>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
+              <div className="dns-admin-case-note mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">Методическое пояснение</div>
                 <div className="mt-3 space-y-3 text-sm leading-relaxed text-[#cbd8ef]">
                   <p>Кейс в этой системе моделирует управленческую ситуацию в магазине: сигнал, контекст, цикл развития проблемы, варианты реакции и последствия для показателей и компетенций.</p>
@@ -1996,8 +1996,8 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
-            <div className="grid gap-5 2xl:grid-cols-[minmax(780px,1fr),420px] 2xl:gap-6 items-start">
-              <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full">
+            <div className="dns-admin-case-workspace grid gap-5 2xl:grid-cols-[minmax(780px,1fr),420px] 2xl:gap-6 items-start">
+              <div className="dns-admin-case-editor-panel min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5">
                 {caseDraft && (
                   <EntityEditor
                     title="Редактор кейса"
@@ -2021,7 +2021,7 @@ export default function AdminPage() {
                   />
                 )}
               </div>
-              <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4 2xl:sticky 2xl:top-4 2xl:h-fit 2xl:p-5">
+              <div className="dns-admin-case-impact-panel min-w-0 rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4 2xl:sticky 2xl:top-4 2xl:h-fit 2xl:p-5">
                 <div className="text-sm font-semibold text-white">Влияние выбранного кейса</div>
                 <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
                   Этот блок фиксирован рядом с редактором и показывает, как текущая настройка кейса влияет на ожидаемый профиль компетенций.
@@ -2069,7 +2069,7 @@ export default function AdminPage() {
                     <div className="text-sm font-semibold text-white">Письма</div>
                     <Button size="sm" onClick={() => openSignalWizard("email")}>Новое</Button>
                   </div>
-                  <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
+                  <div className="dns-admin-side-list space-y-2 max-h-[70vh] overflow-y-auto pr-1">
                     {contentQuery.data.emailCases.map((item: EmailCase) => (
                       <button key={item.id} onClick={() => setSelectedEmailId(item.id)} className={`w-full rounded-lg border px-3 py-2 text-left ${selectedEmailId === item.id ? "border-[#4a9eff] bg-[#4a9eff]/10" : "border-[#2a3a4e]"}`}>
                         <div className="text-sm text-white">{item.subject || item.id}</div>
@@ -2092,7 +2092,7 @@ export default function AdminPage() {
                     <Button size="sm" onClick={() => setChatDraft(createEmptyChat((contentQuery.data.messengerChats?.length || 0) + 1))}>Новый чат</Button>
                   </div>
                   <div className="dns-mobile-stack dns-admin-chat-grid grid gap-4">
-                    <div className="space-y-2 max-h-[240px] overflow-y-auto">
+                    <div className="dns-admin-side-list space-y-2 max-h-[240px] overflow-y-auto">
                       {contentQuery.data.messengerChats.map((item: ChatInfo) => (
                         <button key={item.id} onClick={() => setSelectedChatId(item.id)} className={`w-full rounded-lg border px-3 py-2 text-left ${selectedChatId === item.id ? "border-[#00d4aa] bg-[#00d4aa]/10" : "border-[#2a3a4e]"}`}>
                           <div className="text-sm text-white">{item.name || item.id}</div>
@@ -2136,7 +2136,7 @@ export default function AdminPage() {
                       <div className="text-sm font-semibold text-white">Сообщения</div>
                       <Button size="sm" onClick={() => openSignalWizard("messenger")}>Новое</Button>
                     </div>
-                    <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
+                    <div className="dns-admin-side-list space-y-2 max-h-[70vh] overflow-y-auto pr-1">
                       {contentQuery.data.messengerCases.map((item: MessengerCase) => (
                         <button key={item.id} onClick={() => setSelectedMessengerId(item.id)} className={`w-full rounded-lg border px-3 py-2 text-left ${selectedMessengerId === item.id ? "border-[#00d4aa] bg-[#00d4aa]/10" : "border-[#2a3a4e]"}`}>
                           <div className="text-sm text-white">{item.senderName || item.id}</div>
@@ -2159,7 +2159,7 @@ export default function AdminPage() {
                     <div className="text-sm font-semibold text-white">Видео</div>
                     <Button size="sm" onClick={() => openSignalWizard("video")}>Новое</Button>
                   </div>
-                  <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-1">
+                  <div className="dns-admin-side-list space-y-2 max-h-[70vh] overflow-y-auto pr-1">
                     {contentQuery.data.videoCases.map((item: VideoCase) => (
                       <button key={item.id} onClick={() => setSelectedVideoId(item.id)} className={`w-full rounded-lg border px-3 py-2 text-left ${selectedVideoId === item.id ? "border-[#a78bfa] bg-[#a78bfa]/10" : "border-[#2a3a4e]"}`}>
                         <div className="text-sm text-white">{item.title || item.id}</div>
@@ -2326,7 +2326,7 @@ export default function AdminPage() {
                   />
                 </div>
               </div>
-              <div className="space-y-2 max-h-[65vh] overflow-y-auto">
+              <div className="dns-admin-side-list space-y-2 max-h-[65vh] overflow-y-auto">
                 {(resultsQuery.data || []).map((item: any) => (
                   <button
                     key={item.id}
