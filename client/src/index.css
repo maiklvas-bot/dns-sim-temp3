@@ -1036,3 +1036,159 @@
 .dns-product-shell .text-\[\#70829d\] {
   color: var(--dns-admin-text-dim);
 }
+
+/* Task 3: the Cases tab uses a denser navigation/editor geometry instead of nested card stacks. */
+.dns-product-shell .dns-admin-cases-layout {
+  align-items: start;
+}
+
+.dns-product-shell .dns-admin-case-nav {
+  align-self: start;
+  gap: 0;
+  max-height: none;
+}
+
+.dns-product-shell .dns-admin-case-nav-header {
+  margin-bottom: 0.875rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid var(--dns-admin-border-soft);
+}
+
+.dns-product-shell .dns-admin-case-list,
+.dns-product-shell .dns-admin-side-list {
+  display: flex;
+  flex-direction: column;
+  scrollbar-color: rgba(142, 197, 255, 0.52) rgba(12, 21, 34, 0.42);
+}
+
+.dns-product-shell .dns-admin-case-list {
+  gap: 0.55rem;
+  max-height: clamp(19rem, 48vh, 34rem);
+  padding-right: 0.35rem;
+}
+
+.dns-product-shell .dns-admin-case-list::-webkit-scrollbar,
+.dns-product-shell .dns-admin-side-list::-webkit-scrollbar {
+  width: 0.45rem;
+}
+
+.dns-product-shell .dns-admin-case-list::-webkit-scrollbar-track,
+.dns-product-shell .dns-admin-side-list::-webkit-scrollbar-track {
+  background: rgba(12, 21, 34, 0.42);
+  border-color: rgba(76, 96, 125, 0.28);
+}
+
+.dns-product-shell .dns-admin-case-list::-webkit-scrollbar-thumb,
+.dns-product-shell .dns-admin-side-list::-webkit-scrollbar-thumb {
+  background: rgba(142, 197, 255, 0.52);
+  border: 2px solid rgba(12, 21, 34, 0.72);
+}
+
+.dns-product-shell .dns-admin-case-list::-webkit-scrollbar-thumb:hover,
+.dns-product-shell .dns-admin-side-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(142, 197, 255, 0.72);
+}
+
+.dns-product-shell .dns-admin-case-list > * + * {
+  margin-top: 0 !important;
+}
+
+.dns-product-shell .dns-admin-case-list-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 4.25rem;
+  padding: 0.72rem 0.72rem 0.72rem 0.85rem;
+  background: rgba(15, 25, 40, 0.68);
+  box-shadow: none;
+}
+
+.dns-product-shell .dns-admin-case-list-item:hover {
+  border-color: rgba(142, 197, 255, 0.46);
+  background: rgba(22, 35, 54, 0.78);
+}
+
+.dns-product-shell .dns-admin-case-list-item--active {
+  border-color: rgba(255, 107, 0, 0.58) !important;
+  background: linear-gradient(90deg, rgba(255, 107, 0, 0.16), rgba(20, 31, 48, 0.78)) !important;
+  box-shadow: inset 3px 0 0 rgba(255, 107, 0, 0.92), 0 10px 22px rgba(0, 0, 0, 0.14);
+}
+
+.dns-product-shell .dns-admin-case-list-main {
+  min-width: 0;
+}
+
+.dns-product-shell .dns-admin-case-list-title {
+  display: -webkit-box;
+  overflow: hidden;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.dns-product-shell .dns-admin-case-list-meta {
+  margin-top: 0.25rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+}
+
+.dns-product-shell .dns-admin-case-order-actions {
+  margin-top: 0 !important;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.dns-product-shell .dns-admin-case-order-button {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+
+.dns-product-shell .dns-admin-case-note {
+  max-height: 10rem;
+  overflow-y: auto;
+  margin-top: 0.9rem;
+  padding: 0.85rem;
+  background: rgba(12, 21, 34, 0.58);
+}
+
+.dns-product-shell .dns-admin-case-note p {
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.dns-product-shell .dns-admin-case-workspace,
+.dns-product-shell .dns-admin-case-editor-panel,
+.dns-product-shell .dns-admin-case-impact-panel {
+  align-self: start;
+}
+
+@media (min-width: 1024px) {
+  .dns-product-shell .dns-admin-cases-layout {
+    grid-template-columns: minmax(20rem, 22rem) minmax(0, 1fr);
+  }
+
+  .dns-product-shell .dns-admin-case-nav {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 1.5rem);
+    overflow: hidden;
+  }
+}
+
+@media (min-width: 1536px) {
+  .dns-product-shell .dns-admin-case-workspace {
+    grid-template-columns: minmax(0, 1.618fr) minmax(22rem, 0.618fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .dns-product-shell .dns-admin-case-list-item {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dns-product-shell .dns-admin-case-order-actions {
+    flex-direction: row;
+  }
+}
