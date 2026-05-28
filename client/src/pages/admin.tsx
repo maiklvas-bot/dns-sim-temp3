@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { ChatInfo, CompetencyDefinition, EmailCase, MessengerCase, SimCase, SimulationRuntimeSettings, VideoCase } from "@shared/simulation-content";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
@@ -30,7 +30,7 @@ import {
   resolveSimulationBriefingHtml,
 } from "@/lib/runtime-content";
 import { buildPdfPayloadFromReport, buildReportFromSessionDetails } from "@/lib/report-data";
-import { ChevronDown, FileSpreadsheet, Info, Pause, Play, Trash2 } from "lucide-react";
+import { ChevronDown, FileSpreadsheet, Info, Pause, Play, Trash2, X } from "lucide-react";
 import {
   Legend,
   PolarAngleAxis,
@@ -43,7 +43,7 @@ import {
 } from "recharts";
 import storeBg from "@assets/store_bg.png";
 
-type TabKey = "cases" | "channels" | "schedule" | "results" | "settings";
+type TabKey = "cases" | "channels" | "schedule" | "results" | "comparison" | "settings";
 type ChannelTab = "email" | "messenger" | "video";
 type SystemSoundSettingKey = "callSoundAssetId" | "emailSoundAssetId" | "messengerSoundAssetId" | "videoSoundAssetId";
 type ScheduleSourceType = "main_case" | "email" | "messenger" | "video";
@@ -61,7 +61,7 @@ const ADMIN_BRAND_ASSETS = {
   balance: "/brand-admin/admin-mascot-balance.png",
 } as const;
 
-type AdminVisualTone = "orange" | "teal" | "blue" | "purple" | "amber";
+type AdminVisualTone = "orange" | "teal" | "blue" | "purple" | "cyan" | "amber";
 
 interface AdminVisualIdentity {
   label: string;
@@ -71,6 +71,26 @@ interface AdminVisualIdentity {
   primaryAlt: string;
   primaryClassName: string;
   tone: AdminVisualTone;
+}
+
+type ComparisonReport = ReturnType<typeof buildReportFromSessionDetails>;
+
+interface ComparisonResultRow {
+  id: number;
+  participantName: string;
+  evaluatorName: string;
+  difficulty: string;
+  technicalStatus: string;
+  startedAt: string;
+  completedAt: string | null;
+  totalScore: number;
+  averageScore: number;
+  answersCount: number;
+  competencyAverages: Record<string, number>;
+  report: ComparisonReport | null;
+  detail: any | null;
+  isLoading: boolean;
+  isError: boolean;
 }
 
 const ADMIN_VISUALS: Record<TabKey, AdminVisualIdentity> = {
@@ -109,6 +129,15 @@ const ADMIN_VISUALS: Record<TabKey, AdminVisualIdentity> = {
     primaryAlt: "Фирменная рабочая станция для аналитики результатов",
     primaryClassName: "dns-admin-visual-primary--workstation",
     tone: "purple",
+  },
+  comparison: {
+    label: "Сравнение",
+    title: "Сравнение прохождений",
+    subtitle: "Мониторинговый образ помогает сопоставлять завершенные симуляции без смешивания с одиночными отчетами.",
+    primarySrc: ADMIN_BRAND_ASSETS.monitoring,
+    primaryAlt: "Фирменный персонаж для сравнения результатов симуляций",
+    primaryClassName: "dns-admin-visual-primary--monitoring",
+    tone: "cyan",
   },
   settings: {
     label: "Настройки",
@@ -686,6 +715,92 @@ function formatTechnicalStatus(value: string) {
   }
 }
 
+function formatDifficultyLabel(value: string) {
+  switch (value) {
+    case "easy":
+      return "Легкая";
+    case "hard":
+      return "Сложная";
+    case "medium":
+      return "Средняя";
+    default:
+      return value || "—";
+  }
+}
+
+function formatScoreValue(value: number | string | null | undefined) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue.toFixed(1) : "—";
+}
+
+function formatDateTimeLabel(value: string | null | undefined) {
+  if (!value) {
+    return "—";
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString("ru-RU", { day: "2-digit", month: "2-digit", year: "2-digit", hour: "2-digit", minute: "2-digit" });
+}
+
+function formatDurationBetween(startValue: string | null | undefined, endValue: string | null | undefined) {
+  if (!startValue || !endValue) {
+    return "—";
+  }
+
+  const start = new Date(startValue).getTime();
+  const end = new Date(endValue).getTime();
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) {
+    return "—";
+  }
+
+  const totalMinutes = Math.round((end - start) / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours <= 0) {
+    return `${minutes} мин`;
+  }
+
+  return `${hours} ч ${minutes} мин`;
+}
+
+function getScoreColor(value: number) {
+  if (value >= 4.2) return "#00d4aa";
+  if (value >= 3.5) return "#74c0ff";
+  if (value >= 2.5) return "#ffc107";
+  if (value > 0) return "#ff8a3d";
+  return "#3a4a5e";
+}
+
+function formatCompetencyHighlights(
+  scores: Record<string, number>,
+  competencies: CompetencyDefinition[],
+  mode: "strong" | "growth",
+) {
+  const rows = competencies
+    .map((competency) => ({
+      name: competency.name,
+      value: Number(scores[competency.id] || 0),
+    }))
+    .filter((item) => item.value > 0)
+    .sort((left, right) => mode === "strong" ? right.value - left.value : left.value - right.value)
+    .slice(0, 2);
+
+  return rows.length > 0 ? rows.map((item) => item.name).join(", ") : "—";
+}
+
+function getParticipantInitials(value: string) {
+  const parts = value.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) {
+    return "У";
+  }
+
+  return parts.slice(0, 2).map((part) => part[0]?.toUpperCase()).join("");
+}
+
 function buildSuggestionOptions(values: Array<string | null | undefined>) {
   return values
     .map((value) => String(value || "").trim())
@@ -929,8 +1044,7 @@ export default function AdminPage() {
   const [caseWizardDraft, setCaseWizardDraft] = useState<SimCase>(() => createEmptyCase(1));
   const [signalWizardDraft, setSignalWizardDraft] = useState<EmailCase | MessengerCase | VideoCase>(() => createEmptyEmail(1));
   const [scheduleDraft, setScheduleDraft] = useState<ScheduleRow[]>([]);
-  const [comparisonOpen, setComparisonOpen] = useState(false);
-  const [comparisonSelection, setComparisonSelection] = useState<string[]>([]);
+  const [comparisonSelection, setComparisonSelection] = useState<number[]>([]);
 
   const staffQuery = useQuery({
     queryKey: ["/api/staff/me"],
@@ -964,6 +1078,16 @@ export default function AdminPage() {
       return response.json();
     },
     enabled: !!staffQuery.data && selectedResultId != null,
+  });
+  const comparisonDetailQueries = useQueries({
+    queries: comparisonSelection.map((id) => ({
+      queryKey: ["/api/staff/results/detail", id],
+      queryFn: async () => {
+        const response = await apiRequest("GET", `/api/staff/results/${id}`);
+        return response.json();
+      },
+      enabled: !!staffQuery.data && tab === "comparison",
+    })),
   });
 
   useEffect(() => {
@@ -1116,24 +1240,61 @@ export default function AdminPage() {
     [resultsQuery.data],
   );
   const completedResultIds = useMemo(
-    () => new Set(completedResults.map((item) => item.id)),
+    () => new Set(completedResults.map((item) => Number(item.id))),
     [completedResults],
   );
-  const canOpenComparison = completedResults.length > 0;
-  const comparisonRows = useMemo(
-    () => completedResults.filter((item) => comparisonSelection.includes(item.id)).slice(0, MAX_COMPARISON_ITEMS),
-    [completedResults, comparisonSelection],
-  );
-  const comparisonRadarData = useMemo(
-    () => competencies.map((competency: CompetencyDefinition) => {
-      const row: Record<string, string | number> = { competency: competency.name };
-      comparisonRows.forEach((result) => {
-        row[result.id] = Math.round(Number(result?.competencyAverages?.[competency.id] || 0) * 10) / 10;
-      });
-      return row;
-    }),
-    [competencies, comparisonRows],
-  );
+  useEffect(() => {
+    if (tab !== "comparison") {
+      return;
+    }
+
+    setComparisonSelection((current) => {
+      const cleaned = current.filter((id) => completedResultIds.has(id)).slice(0, MAX_COMPARISON_ITEMS);
+      if (cleaned.length > 0 || completedResults.length === 0) {
+        return cleaned;
+      }
+
+      return completedResults.slice(0, Math.min(3, MAX_COMPARISON_ITEMS)).map((item) => Number(item.id));
+    });
+  }, [completedResultIds, completedResults, tab]);
+  const comparisonRows: ComparisonResultRow[] = comparisonSelection
+    .map((id, index) => {
+      const listItem = completedResults.find((item) => Number(item.id) === id);
+      const detailQuery = comparisonDetailQueries[index];
+      const detail = detailQuery?.data || null;
+      const report = detail ? buildReportFromSessionDetails(detail, settingsDraft as SimulationRuntimeSettings) : null;
+      const session = detail?.session || {};
+      const competencyAverages = (
+        report?.compScoresMap ||
+        detail?.result?.competencyAverages ||
+        listItem?.competencyAverages ||
+        {}
+      ) as Record<string, number>;
+
+      if (!listItem && !detail) {
+        return null;
+      }
+
+      return {
+        id,
+        participantName: report?.participantName || session.participantName || listItem?.participantName || `Участник #${id}`,
+        evaluatorName: report?.assessorName || session.evaluatorName || listItem?.evaluatorName || "",
+        difficulty: report?.difficulty || session.difficulty || listItem?.difficulty || "medium",
+        technicalStatus: report?.technicalStatus || session.technicalStatus || listItem?.technicalStatus || "completed",
+        startedAt: report?.startedAt || session.startedAt || listItem?.startedAt || "",
+        completedAt: report?.completedAt || session.completedAt || listItem?.completedAt || null,
+        totalScore: Number(report?.totalScore ?? detail?.result?.totalScore ?? listItem?.totalScore ?? 0),
+        averageScore: Number(report?.avgScore ?? detail?.result?.averageScore ?? listItem?.averageScore ?? 0),
+        answersCount: Number(report?.totalDecisions ?? detail?.answers?.length ?? 0),
+        competencyAverages,
+        report,
+        detail,
+        isLoading: Boolean(detailQuery?.isLoading),
+        isError: Boolean(detailQuery?.isError),
+      };
+    })
+    .filter((item): item is ComparisonResultRow => Boolean(item))
+    .slice(0, MAX_COMPARISON_ITEMS);
   const selectedResultReport = useMemo(
     () => (resultDetailQuery.data ? buildReportFromSessionDetails(resultDetailQuery.data, settingsDraft as SimulationRuntimeSettings) : null),
     [resultDetailQuery.data, settingsDraft],
@@ -1704,6 +1865,37 @@ export default function AdminPage() {
 
   const contentLoaded = !!contentQuery.data;
   const activeAdminVisual = ADMIN_VISUALS[tab];
+  const comparisonMetricRows = [
+    {
+      label: "Общая оценка",
+      render: (row: ComparisonResultRow) => row.isLoading ? "..." : formatScoreValue(row.report?.overallAvg || row.averageScore),
+    },
+    {
+      label: "Итоговые баллы",
+      render: (row: ComparisonResultRow) => row.isLoading ? "..." : String(Math.round(row.totalScore || 0)),
+    },
+    {
+      label: "Ответов",
+      render: (row: ComparisonResultRow) => row.isLoading ? "..." : String(row.answersCount || 0),
+    },
+    {
+      label: "Сильные компетенции",
+      render: (row: ComparisonResultRow) => row.isLoading ? "..." : formatCompetencyHighlights(row.competencyAverages, competencies, "strong"),
+    },
+    {
+      label: "Зоны роста",
+      render: (row: ComparisonResultRow) => row.isLoading ? "..." : formatCompetencyHighlights(row.competencyAverages, competencies, "growth"),
+    },
+  ];
+  const comparisonCharacteristicRows = [
+    { label: "Код результата", render: (row: ComparisonResultRow) => `#${row.id}` },
+    { label: "Статус", render: (row: ComparisonResultRow) => formatTechnicalStatus(row.technicalStatus) },
+    { label: "Сложность", render: (row: ComparisonResultRow) => formatDifficultyLabel(row.difficulty) },
+    { label: "Оценщик", render: (row: ComparisonResultRow) => row.evaluatorName || "—" },
+    { label: "Старт", render: (row: ComparisonResultRow) => formatDateTimeLabel(row.startedAt) },
+    { label: "Завершение", render: (row: ComparisonResultRow) => formatDateTimeLabel(row.completedAt) },
+    { label: "Длительность", render: (row: ComparisonResultRow) => formatDurationBetween(row.startedAt, row.completedAt) },
+  ];
 
   if (staffQuery.isLoading || contentQuery.isLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-[#0d1117] text-white">Загрузка админки...</div>;
@@ -1748,7 +1940,7 @@ export default function AdminPage() {
         </header>
 
         <div className="dns-admin-tab-menu mb-4 flex flex-wrap items-center justify-center gap-2 overflow-x-auto pb-1">
-          {(["cases", "channels", "schedule", "results", "settings"] as TabKey[]).map((item) => {
+          {(["cases", "channels", "schedule", "results", "comparison", "settings"] as TabKey[]).map((item) => {
             const itemVisual = ADMIN_VISUALS[item];
 
             return (
@@ -2286,6 +2478,247 @@ export default function AdminPage() {
           </div>
         )}
 
+        {tab === "comparison" && (
+          <div className="dns-comparison-view space-y-4">
+            <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-white">Сотрудники для сравнения</div>
+                  <div className="mt-1 text-xs text-[#8aa2c4]">Выбрано: {comparisonSelection.length}/{MAX_COMPARISON_ITEMS}</div>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="border-[#2a3a4e] bg-transparent text-[#8890a8]"
+                  onClick={() => setComparisonSelection([])}
+                  disabled={comparisonSelection.length === 0}
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Очистить
+                </Button>
+              </div>
+
+              <div className="mt-3 grid max-h-[22rem] gap-2 overflow-y-auto pr-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+                {completedResults.length === 0 && (
+                  <div className="rounded-lg border border-dashed border-[#2a3a4e] bg-[#101826]/65 px-3 py-4 text-xs text-[#8aa2c4] sm:col-span-2 lg:col-span-3 2xl:col-span-5">
+                    Нет завершенных симуляций для сравнения.
+                  </div>
+                )}
+                {completedResults.map((item) => {
+                  const resultId = Number(item.id);
+                  const checked = comparisonSelection.includes(resultId);
+                  const atLimit = !checked && comparisonSelection.length >= MAX_COMPARISON_ITEMS;
+
+                  return (
+                    <label
+                      key={resultId}
+                      className={`flex min-h-[5.75rem] cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${
+                        checked
+                          ? "border-[#00d4aa] bg-[#00d4aa]/10"
+                          : atLimit
+                            ? "border-[#2a3a4e] bg-[#101826]/45 opacity-60"
+                            : "border-[#2a3a4e] bg-[#101826]/65 hover:border-[#3f5876]"
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={atLimit}
+                        onChange={(event) => {
+                          const nextChecked = event.target.checked;
+                          setComparisonSelection((current) => {
+                            if (nextChecked) {
+                              if (current.length >= MAX_COMPARISON_ITEMS || current.includes(resultId)) {
+                                return current;
+                              }
+                              return [...current, resultId];
+                            }
+
+                            return current.filter((id) => id !== resultId);
+                          });
+                        }}
+                        className="mt-1 h-4 w-4 rounded border-[#3b4b61] bg-[#141c2b]"
+                      />
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-white">{item.participantName}</span>
+                        <span className="mt-1 block text-[11px] text-[#8aa2c4]">{formatDateTimeLabel(item.startedAt)}</span>
+                        <span className="mt-1 block text-[11px] text-[#cbd8ef]">
+                          {formatTechnicalStatus(item.technicalStatus)} · {formatScoreValue(item.averageScore)}
+                        </span>
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+
+            {completedResults.length > 0 && comparisonRows.length === 0 && (
+              <div className="rounded-xl border border-dashed border-[#2a3a4e] bg-[#101826]/70 px-4 py-8 text-center text-sm text-[#8aa2c4]">
+                Отметьте сотрудников выше, чтобы собрать сравнительную таблицу.
+              </div>
+            )}
+
+            {comparisonRows.length > 0 && (
+              <>
+                <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <div className="text-sm font-semibold text-white">Карточки прохождений</div>
+                    <div className="text-[10px] uppercase tracking-[0.14em] text-[#6f829e]">Шкала 0-5</div>
+                  </div>
+                  <div
+                    className="dns-comparison-product-row"
+                    style={{ gridTemplateColumns: `repeat(${comparisonRows.length}, minmax(14rem, 1fr))` }}
+                  >
+                    {comparisonRows.map((row, index) => {
+                      const overallScore = Number(row.report?.overallAvg || row.averageScore || 0);
+                      const accentColor = ["#00d4aa", "#4a9eff", "#ff9f43", "#ff5e7a", "#a78bfa"][index % 5];
+
+                      return (
+                        <div key={row.id} className="dns-comparison-person-card" style={{ borderTopColor: accentColor }}>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex min-w-0 items-center gap-3">
+                              <div className="dns-comparison-avatar" style={{ backgroundColor: `${accentColor}24`, color: accentColor }}>
+                                {getParticipantInitials(row.participantName)}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="truncate text-sm font-semibold text-white">{row.participantName}</div>
+                                <div className="mt-1 text-[11px] text-[#8aa2c4]">#{row.id} · {formatDifficultyLabel(row.difficulty)}</div>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              className="h-8 w-8 shrink-0 border-[#2a3a4e] bg-transparent p-0 text-[#8890a8]"
+                              onClick={() => setComparisonSelection((current) => current.filter((id) => id !== row.id))}
+                              aria-label="Убрать из сравнения"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="mt-4 flex items-end justify-between gap-3">
+                            <div>
+                              <div className="text-[10px] uppercase tracking-[0.14em] text-[#6f829e]">Общая оценка</div>
+                              <div className="mt-1 text-3xl font-bold tabular-nums text-white">
+                                {row.isLoading ? "..." : formatScoreValue(overallScore)}
+                              </div>
+                            </div>
+                            <div className="rounded-full border border-[#2a3a4e] bg-[#101826]/75 px-2 py-1 text-[10px] text-[#cbd8ef]">
+                              {row.isLoading ? "Загрузка" : formatTechnicalStatus(row.technicalStatus)}
+                            </div>
+                          </div>
+                          <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#121b2a]">
+                            <div
+                              className="h-full rounded-full"
+                              style={{
+                                width: `${Math.max(0, Math.min(overallScore, 5)) * 20}%`,
+                                backgroundColor: getScoreColor(overallScore),
+                              }}
+                            />
+                          </div>
+                          {row.isError && (
+                            <div className="mt-3 rounded-lg border border-[#ff4444]/30 bg-[#ff4444]/10 px-3 py-2 text-[11px] text-[#ff9999]">
+                              Детали результата не загрузились.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4">
+                  <div className="mb-3 text-sm font-semibold text-white">Оценка компетенций</div>
+                  <div className="dns-comparison-table-wrap">
+                    <table className="dns-comparison-table">
+                      <thead>
+                        <tr>
+                          <th>Показатель</th>
+                          {comparisonRows.map((row) => (
+                            <th key={row.id}>{row.participantName}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {comparisonMetricRows.map((metric) => (
+                          <tr key={metric.label}>
+                            <td>{metric.label}</td>
+                            {comparisonRows.map((row) => (
+                              <td key={row.id}>{metric.render(row)}</td>
+                            ))}
+                          </tr>
+                        ))}
+                        {competencies.map((competency: CompetencyDefinition) => {
+                          const values = comparisonRows.map((row) => Number(row.competencyAverages[competency.id] || 0));
+                          const bestValue = Math.max(...values);
+
+                          return (
+                            <tr key={competency.id}>
+                              <td>{competency.name}</td>
+                              {comparisonRows.map((row) => {
+                                const value = Number(row.competencyAverages[competency.id] || 0);
+                                const isBest = value > 0 && value === bestValue;
+
+                                return (
+                                  <td key={row.id}>
+                                    {row.isLoading && value === 0 ? (
+                                      "..."
+                                    ) : (
+                                      <div className="dns-comparison-score-cell">
+                                        <span className={`tabular-nums ${isBest ? "text-[#7fffd4]" : "text-white"}`}>{formatScoreValue(value)}</span>
+                                        <span className="dns-comparison-score-track">
+                                          <span
+                                            className="dns-comparison-score-fill"
+                                            style={{
+                                              width: `${Math.max(0, Math.min(value, 5)) * 20}%`,
+                                              backgroundColor: getScoreColor(value),
+                                            }}
+                                          />
+                                        </span>
+                                      </div>
+                                    )}
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4">
+                  <div className="mb-3 text-sm font-semibold text-white">Характеристики прохождения</div>
+                  <div className="dns-comparison-table-wrap">
+                    <table className="dns-comparison-table dns-comparison-table--characteristics">
+                      <thead>
+                        <tr>
+                          <th>Параметр</th>
+                          {comparisonRows.map((row) => (
+                            <th key={row.id}>{row.participantName}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {comparisonCharacteristicRows.map((metric) => (
+                          <tr key={metric.label}>
+                            <td>{metric.label}</td>
+                            {comparisonRows.map((row) => (
+                              <td key={row.id}>{metric.render(row)}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {tab === "settings" && (
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr),420px]">
             <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4">
@@ -2785,119 +3218,7 @@ export default function AdminPage() {
           onConfirm={confirmSignalWizard}
         />
 
-        <Dialog open={comparisonOpen} onOpenChange={setComparisonOpen}>
-          <DialogContent className="max-h-[92vh] w-[95vw] max-w-[1880px] overflow-y-auto border-[#2a3a4e] bg-[#101826] text-white">
-            <DialogHeader>
-              <DialogTitle>Сравнение результатов симуляций</DialogTitle>
-              <DialogDescription className="text-[#8aa2c4]">
-                Выберите до {MAX_COMPARISON_ITEMS} участников со статусом «Завершено», чтобы сравнить итоговые компетенции и графики.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 xl:grid-cols-[350px,minmax(0,1fr)]">
-              <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/60 p-3">
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <div className="text-sm font-semibold text-white">Выборка</div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="h-7 border-[#2a3a4e] bg-transparent px-2 text-[11px] text-[#8890a8]"
-                    onClick={() => setComparisonSelection([])}
-                    disabled={comparisonSelection.length === 0}
-                  >
-                    Очистить
-                  </Button>
-                </div>
-                <div className="mb-3 text-xs text-[#8aa2c4]">Выбрано: {comparisonSelection.length}/{MAX_COMPARISON_ITEMS}</div>
-                <div className="max-h-[62vh] space-y-2 overflow-y-auto">
-                  {completedResults.length === 0 && (
-                    <div className="rounded-lg border border-dashed border-[#2a3a4e] bg-[#101826]/65 px-3 py-4 text-xs text-[#8aa2c4]">
-                      Нет завершённых симуляций для сравнения.
-                    </div>
-                  )}
-                  {completedResults.map((item) => {
-                    const checked = comparisonSelection.includes(item.id);
-                    const atLimit = !checked && comparisonSelection.length >= MAX_COMPARISON_ITEMS;
-                    return (
-                      <label key={item.id} className={`flex cursor-pointer items-start gap-2 rounded-lg border p-2 ${checked ? "border-[#00d4aa] bg-[#00d4aa]/10" : "border-[#2a3a4e] bg-[#101826]/65"}`}>
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          disabled={atLimit}
-                          onChange={(e) => {
-                            const nextChecked = e.target.checked;
-                            setComparisonSelection((current) => {
-                              if (nextChecked) {
-                                if (current.length >= MAX_COMPARISON_ITEMS) return current;
-                                return [...current, item.id];
-                              }
-                              return current.filter((id) => id !== item.id);
-                            });
-                          }}
-                        />
-                        <div>
-                          <div className="text-sm text-white">{item.participantName}</div>
-                          <div className="text-[11px] text-[#8aa2c4]">{item.startedAt}</div>
-                          <div className="text-[11px] text-[#8aa2c4]">Итог: {item.totalScore} • Ср: {item.averageScore}</div>
-                        </div>
-                      </label>
-                    );
-                  })}
-                </div>
-              </div>
-              <div className="space-y-4">
-                <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/60 p-3">
-                  <div className="mb-2 text-sm font-semibold text-white">Итоговые графики компетенций</div>
-                  {comparisonRows.length === 0 && (
-                    <div className="mb-3 rounded-lg border border-dashed border-[#2a3a4e] bg-[#101826]/65 px-3 py-2 text-xs text-[#8aa2c4]">
-                      Выберите хотя бы одного участника слева, чтобы построить график и таблицу.
-                    </div>
-                  )}
-                  <div className="h-[360px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <RadarChart data={comparisonRadarData} outerRadius="70%">
-                        <PolarGrid stroke="#273449" />
-                        <PolarAngleAxis dataKey="competency" tick={{ fill: "#a7b7cf", fontSize: 10 }} />
-                        <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fill: "#5e7492", fontSize: 10 }} />
-                        <RechartsTooltip contentStyle={{ background: "#101826", border: "1px solid #2a3a4e", borderRadius: 12 }} />
-                        <Legend wrapperStyle={{ fontSize: 12 }} />
-                        {comparisonRows.map((row, index) => (
-                          <Radar key={row.id} name={row.participantName} dataKey={row.id} stroke={["#00d4aa", "#4a9eff", "#ff9f43", "#ff5e7a", "#a78bfa"][index % 5]} fill={["#00d4aa", "#4a9eff", "#ff9f43", "#ff5e7a", "#a78bfa"][index % 5]} fillOpacity={0.08} strokeWidth={2} />
-                        ))}
-                      </RadarChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/60 p-3">
-                  <div className="mb-2 text-sm font-semibold text-white">Сводная таблица компетенций</div>
-                  <div className="max-h-[32vh] overflow-auto">
-                    <table className="min-w-full text-xs">
-                      <thead>
-                        <tr className="border-b border-[#2a3a4e] text-left text-[#8aa2c4]">
-                          <th className="px-2 py-2">Компетенция</th>
-                          {comparisonRows.map((row) => (<th key={row.id} className="px-2 py-2">{row.participantName}</th>))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {comparisonRadarData.map((row: Record<string, string | number>) => (
-                          <tr key={String(row.competency)} className="border-b border-[#233044] text-[#dbe2f0]">
-                            <td className="px-2 py-2">{String(row.competency)}</td>
-                            {comparisonRows.map((result) => (<td key={result.id} className="px-2 py-2">{Number(row[result.id] || 0).toFixed(1)}</td>))}
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" className="border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={() => setComparisonOpen(false)}>Закрыть</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {tab !== "results" && tab !== "schedule" && (
+        {tab !== "results" && tab !== "schedule" && tab !== "comparison" && (
           <div className="flex gap-3 mt-6">
             <Button className="bg-[#FF6B00] hover:bg-[#e06000]" onClick={saveCurrent} disabled={saving || uploading}>
               {saving ? "Сохранение..." : "Сохранить"}
