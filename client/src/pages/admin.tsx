@@ -1981,10 +1981,20 @@ export default function AdminPage() {
                 {contentQuery.data.cases.map((item: SimCase, index: number) => (
                   <div key={item.id} className={`dns-admin-case-list-item w-full rounded-lg border px-3 py-2 ${selectedCaseId === item.id ? "dns-admin-case-list-item--active border-[#FF6B00] bg-[#FF6B00]/10" : "border-[#2a3a4e]"}`}>
                     <div className="dns-admin-case-order-index" aria-hidden="true">{index + 1}</div>
+                {contentQuery.data.cases.map((item: SimCase) => (
+                  <div key={item.id} className={`dns-admin-case-list-item w-full rounded-lg border px-3 py-2 ${selectedCaseId === item.id ? "dns-admin-case-list-item--active border-[#FF6B00] bg-[#FF6B00]/10" : "border-[#2a3a4e]"}`}>
                     <button onClick={() => setSelectedCaseId(item.id)} className="dns-admin-case-list-main w-full text-left">
                       <div className="dns-admin-case-list-title text-sm text-white">{item.title || item.id}</div>
                       <div className="dns-admin-case-list-meta text-xs text-[#8890a8]">{item.id}</div>
                     </button>
+                    <div className="dns-admin-case-order-actions mt-2 flex gap-2">
+                      <Button size="sm" variant="outline" className="dns-admin-case-order-button border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={() => reorderCase(item.id, -1)} aria-label="Поднять кейс выше" title="Поднять выше">
+                        <ArrowUp className="h-4 w-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="dns-admin-case-order-button border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={() => reorderCase(item.id, 1)} aria-label="Опустить кейс ниже" title="Опустить ниже">
+                        <ArrowDown className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
