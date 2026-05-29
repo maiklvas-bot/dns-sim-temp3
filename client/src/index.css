@@ -1054,6 +1054,20 @@
   border-bottom: 1px solid var(--dns-admin-border-soft);
 }
 
+
+.dns-product-shell .dns-admin-case-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dns-product-shell .dns-admin-case-nav-action {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+
+
 .dns-product-shell .dns-admin-case-list,
 .dns-product-shell .dns-admin-side-list {
   display: flex;
@@ -1095,6 +1109,12 @@
 
 .dns-product-shell .dns-admin-case-list-item {
   display: grid;
+
+  grid-template-columns: 1.9rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.72rem;
+  min-height: 4rem;
+  padding: 0.62rem 0.78rem;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.75rem;
@@ -1111,6 +1131,41 @@
 
 .dns-product-shell .dns-admin-case-list-item--active {
   border-color: rgba(255, 107, 0, 0.58) !important;
+
+  background: rgba(255, 107, 0, 0.1) !important;
+  box-shadow: inset 3px 0 0 rgba(255, 107, 0, 0.9);
+}
+
+.dns-product-shell .dns-admin-case-order-index {
+  display: inline-flex;
+  width: 1.75rem;
+  height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  align-self: center;
+  border: 1px solid rgba(76, 96, 125, 0.56);
+  border-radius: 999px;
+  color: var(--dns-admin-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dns-product-shell .dns-admin-case-list-item--active .dns-admin-case-order-index {
+  border-color: rgba(255, 107, 0, 0.55);
+  color: #ffb27a;
+  background: rgba(255, 107, 0, 0.1);
+}
+
+.dns-product-shell .dns-admin-case-list-main {
+  display: flex;
+  min-height: 2.35rem;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  align-self: center;
   background: linear-gradient(90deg, rgba(255, 107, 0, 0.16), rgba(20, 31, 48, 0.78)) !important;
   box-shadow: inset 3px 0 0 rgba(255, 107, 0, 0.92), 0 10px 22px rgba(0, 0, 0, 0.14);
 }
@@ -1122,12 +1177,20 @@
 .dns-product-shell .dns-admin-case-list-title {
   display: -webkit-box;
   overflow: hidden;
+  line-height: 1.22;
   line-height: 1.25;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
 
 .dns-product-shell .dns-admin-case-list-meta {
+
+  margin-top: 0.22rem;
+  font-size: 0.68rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
   margin-top: 0.25rem;
   font-size: 0.68rem;
   letter-spacing: 0.02em;
@@ -1185,6 +1248,8 @@
 
 @media (max-width: 767px) {
   .dns-product-shell .dns-admin-case-list-item {
+    grid-template-columns: auto minmax(0, 1fr);
+=======
     grid-template-columns: minmax(0, 1fr);
   }
 
