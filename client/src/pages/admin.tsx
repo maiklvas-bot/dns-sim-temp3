@@ -1967,23 +1967,24 @@ export default function AdminPage() {
             <div className="dns-admin-case-nav rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 flex flex-col">
               <div className="dns-admin-case-nav-header flex items-center justify-between mb-3">
                 <div className="text-sm font-semibold text-white">Основные кейсы</div>
-                <Button size="sm" onClick={openCaseWizard}>Новый</Button>
+                <div className="dns-admin-case-nav-actions">
+                  <Button size="sm" variant="outline" className="dns-admin-case-nav-action border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={() => selectedCaseId && reorderCase(selectedCaseId, -1)} disabled={!selectedCaseId} aria-label="Поднять выбранный кейс выше" title="Поднять выбранный кейс выше">
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" variant="outline" className="dns-admin-case-nav-action border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={() => selectedCaseId && reorderCase(selectedCaseId, 1)} disabled={!selectedCaseId} aria-label="Опустить выбранный кейс ниже" title="Опустить выбранный кейс ниже">
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" onClick={openCaseWizard}>Новый</Button>
+                </div>
               </div>
               <div className="dns-admin-case-list space-y-2 max-h-[70vh] overflow-y-auto pr-1">
-                {contentQuery.data.cases.map((item: SimCase) => (
+                {contentQuery.data.cases.map((item: SimCase, index: number) => (
                   <div key={item.id} className={`dns-admin-case-list-item w-full rounded-lg border px-3 py-2 ${selectedCaseId === item.id ? "dns-admin-case-list-item--active border-[#FF6B00] bg-[#FF6B00]/10" : "border-[#2a3a4e]"}`}>
+                    <div className="dns-admin-case-order-index" aria-hidden="true">{index + 1}</div>
                     <button onClick={() => setSelectedCaseId(item.id)} className="dns-admin-case-list-main w-full text-left">
                       <div className="dns-admin-case-list-title text-sm text-white">{item.title || item.id}</div>
                       <div className="dns-admin-case-list-meta text-xs text-[#8890a8]">{item.id}</div>
                     </button>
-                    <div className="dns-admin-case-order-actions mt-2 flex gap-2">
-                      <Button size="sm" variant="outline" className="dns-admin-case-order-button border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={() => reorderCase(item.id, -1)} aria-label="Поднять кейс выше" title="Поднять выше">
-                        <ArrowUp className="h-4 w-4" />
-                      </Button>
-                      <Button size="sm" variant="outline" className="dns-admin-case-order-button border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={() => reorderCase(item.id, 1)} aria-label="Опустить кейс ниже" title="Опустить ниже">
-                        <ArrowDown className="h-4 w-4" />
-                      </Button>
-                    </div>
                   </div>
                 ))}
               </div>
