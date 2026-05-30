@@ -19,7 +19,10 @@ import {
   ArrowLeft, Play, Shield, Zap, Flame,
   GraduationCap, Award, Mail, MessageSquare, Video, Phone, BarChart3, Eye, Users,
   ArrowRight, Trash2, FileText, ChevronDown, ChevronUp, HelpCircle,
-  UserCheck, Timer, CheckCircle2, Rocket, Info,
+  UserCheck, Timer, CheckCircle2, Rocket, Info, BookOpen, Workflow,
+  MousePointerClick, ListChecks, Settings2, Target, GitBranch,
+  ArrowUpRight, ArrowDownRight, SlidersHorizontal, ClipboardCheck, Map,
+  Activity, Gauge,
 } from "lucide-react";
 import { primeAudioPlayback } from "@/data/audio-map";
 import {
@@ -113,16 +116,6 @@ const SIMULATION_ROLE_CARDS = [
   },
 ] as const;
 
-// ═══════════════════════════════════════════════════════════
-// Методические подсказки (сворачиваемый блок)
-// ═══════════════════════════════════════════════════════════
-const ASSESSOR_WIKI_POINTS = [
-  "Кейс — это управленческая ситуация с сигналом, вариантами реакции и влиянием на метрики магазина.",
-  "Выбор сложности автоматически настраивает каналы связи, время и набор кейсов.",
-  "Каждое решение участника влияет на операционные показатели магазина и итоговый профиль компетенций.",
-  "Режим \"Наблюдать\" позволяет следить за симуляцией без влияния на решения участника.",
-] as const;
-
 const TIME_PROFILE_RATIO = {
   easy: 1.1,
   medium: 1,
@@ -197,6 +190,389 @@ function WizardSteps({ currentStep }: { currentStep: number }) {
 // ═══════════════════════════════════════════════════════════
 // Main component
 // ═══════════════════════════════════════════════════════════
+type AssessorWikiFocus =
+  | "entry"
+  | "wizard"
+  | "participant"
+  | "difficulty"
+  | "mode"
+  | "advanced"
+  | "cases"
+  | "channels"
+  | "metrics"
+  | "sessions";
+
+const ASSESSOR_WIKI_BLOCKS: Array<{
+  id: string;
+  focus: AssessorWikiFocus;
+  title: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  summary: string;
+  controls: string[];
+  dynamics: Array<{ type: "up" | "down" | "neutral"; text: string }>;
+}> = [
+  {
+    id: "entry",
+    focus: "entry",
+    title: "Вход в WIKI оценщика",
+    label: "Большая кнопка вверху кабинета",
+    icon: BookOpen,
+    summary: "Отдельная точка входа в инструкцию. Оценщик может открыть методику до запуска, не ломая текущий мастер настройки.",
+    controls: [
+      "Открыть WIKI - перейти к подробной карте настройки.",
+      "Вернуться к настройке - снова показать обычный мастер оценщика.",
+    ],
+    dynamics: [
+      { type: "neutral", text: "На оценку не влияет. Это навигационный и обучающий элемент." },
+      { type: "up", text: "Снижает риск неверной настройки, потому что объясняет зависимость до запуска." },
+    ],
+  },
+  {
+    id: "wizard",
+    focus: "wizard",
+    title: "Мастер настройки",
+    label: "3 шага: участник, сложность, запуск",
+    icon: ListChecks,
+    summary: "Главный сценарий оценщика. Он ведет от ввода людей к выбору нагрузки и финальному запуску live-сессии.",
+    controls: [
+      "Шаг 1 фиксирует, кого оцениваем и кто проводит оценку.",
+      "Шаг 2 задает базовую сложность, режим и стартовый контекст магазина.",
+      "Шаг 3 проверяет итоговую конфигурацию и открывает расширенные настройки.",
+    ],
+    dynamics: [
+      { type: "up", text: "Последовательное прохождение снижает шанс забыть обязательные поля и получить неполный отчет." },
+      { type: "down", text: "Если менять только расширенные параметры, можно сузить доказательную базу по компетенциям." },
+    ],
+  },
+  {
+    id: "participant",
+    focus: "participant",
+    title: "Участник и тип симуляции",
+    label: "ФИО, роль и сценарная роль",
+    icon: UserCheck,
+    summary: "Блок отвечает за идентификацию оценки и будущий профиль прохождения. Сейчас активна базовая симуляция участника.",
+    controls: [
+      "ФИО оценщика попадает в сессию и итоговый отчет.",
+      "ФИО участника связывает live-сессию, результат и PDF/экспорт.",
+      "Тип симуляции определяет сценарную роль. Недоступные роли показаны как будущие режимы.",
+    ],
+    dynamics: [
+      { type: "neutral", text: "ФИО не меняют баллы компетенций, но влияют на корректность отчета и поиск результата." },
+      { type: "up", text: "Когда будут активны новые роли, выбор роли изменит набор ситуаций и проверяемые управленческие контексты." },
+    ],
+  },
+  {
+    id: "difficulty",
+    focus: "difficulty",
+    title: "Сложность",
+    label: "Количество ситуаций, каналы и время",
+    icon: Shield,
+    summary: "Сложность задает стартовый профиль испытания: сколько кейсов будет, какие каналы включены и сколько времени заложено.",
+    controls: [
+      "Легкий уровень - меньше ситуаций и только базовые сигналы.",
+      "Средний уровень - рабочая нагрузка с несколькими каналами.",
+      "Сложный уровень - максимум ситуаций, каналов и управленческого давления.",
+    ],
+    dynamics: [
+      { type: "up", text: "Повышение сложности увеличивает число решений и ширину проверки компетенций." },
+      { type: "down", text: "Понижение сложности уменьшает нагрузку, но может снизить видимость компетенций, которые проявляются только в сложных кейсах." },
+    ],
+  },
+  {
+    id: "mode",
+    focus: "mode",
+    title: "Режим прохождения",
+    label: "Зачет, тренировка и скорость",
+    icon: Gauge,
+    summary: "Блок определяет, будет ли результат официальным. Скорость доступна только в тренировочном режиме.",
+    controls: [
+      "В зачет - решения сохраняются как официальный результат.",
+      "Тренировка - сценарий используется для обучения и знакомства с интерфейсом.",
+      "Скорость x1-x10 сжимает темп сигналов в тренировке.",
+    ],
+    dynamics: [
+      { type: "up", text: "Зачетный режим повышает ценность результата: данные сохраняются и используются в отчете." },
+      { type: "down", text: "Ускорение тренировки повышает стресс темпа, но не должно напрямую умножать баллы компетенций." },
+    ],
+  },
+  {
+    id: "advanced",
+    focus: "advanced",
+    title: "Расширенные настройки",
+    label: "Ручной контроль сценария",
+    icon: Settings2,
+    summary: "Свернутый блок для опытного оценщика. Он меняет доказательную базу оценки: кейсы, каналы, события и стартовые метрики.",
+    controls: [
+      "Открыть блок - показать ручной выбор ситуаций, каналов и метрик.",
+      "Закрыть блок - оставить автоматический профиль по выбранной сложности.",
+    ],
+    dynamics: [
+      { type: "up", text: "Расширенные настройки полезны для целевой проверки конкретной зоны компетенций." },
+      { type: "down", text: "Чрезмерное сужение сценария может сделать итоговый профиль менее репрезентативным." },
+    ],
+  },
+  {
+    id: "cases",
+    focus: "cases",
+    title: "Выбор ситуаций",
+    label: "Автоподбор, ручной выбор, повтор кейсов",
+    icon: Target,
+    summary: "Ситуации являются основной доказательной базой. В каждом кейсе есть варианты решений, метрики и оценки компетенций.",
+    controls: [
+      "Автоподбор выбирает число ситуаций по сложности.",
+      "Ручной выбор оставляет только отмеченные кейсы.",
+      "Повтор по циклу разрешает повторять ситуации, если сценарий идет дольше набора кейсов.",
+    ],
+    dynamics: [
+      { type: "up", text: "Добавление кейсов увеличивает количество наблюдений и устойчивость оценки." },
+      { type: "down", text: "Исключение кейса убирает его вклад. Например, если убрать кейсы на делегирование, влияние на компетенцию делегирования снизится или исчезнет." },
+    ],
+  },
+  {
+    id: "channels",
+    focus: "channels",
+    title: "Каналы и события",
+    label: "Звонки, почта, мессенджер, видео",
+    icon: SlidersHorizontal,
+    summary: "Каналы управляют тем, откуда приходят сигналы. События внутри каналов добавляют отдельные управленческие развилки.",
+    controls: [
+      "Включить канал - добавить тип сигналов в симуляцию.",
+      "Отключить канал - убрать этот поток сигналов.",
+      "Выбор событий - оставить конкретные письма, сообщения или видеообращения.",
+    ],
+    dynamics: [
+      { type: "up", text: "Больше каналов повышают многозадачность и проверяют переключение внимания." },
+      { type: "down", text: "Отключение почты или мессенджера снижает число письменных управленческих развилок и их вклад в компетенции." },
+    ],
+  },
+  {
+    id: "metrics",
+    focus: "metrics",
+    title: "Стартовые метрики магазина",
+    label: "Начальное состояние подразделения",
+    icon: Activity,
+    summary: "Метрики задают фон смены: нагрузку, настроение команды, NPS, склад, скорость выдачи и выручку.",
+    controls: [
+      "Готовые состояния задают быстрый профиль нагрузки от спокойного до критического.",
+      "Ручные поля позволяют тонко настроить начальные значения.",
+      "Эти показатели затем меняются решениями участника.",
+    ],
+    dynamics: [
+      { type: "up", text: "Более высокий стартовый стресс делает последствия решений заметнее в динамике магазина." },
+      { type: "down", text: "Если задать слишком спокойный старт, часть управленческих ошибок будет визуально менее заметна по метрикам." },
+    ],
+  },
+  {
+    id: "sessions",
+    focus: "sessions",
+    title: "Текущие симуляции",
+    label: "Наблюдение, прогресс, результаты",
+    icon: ClipboardCheck,
+    summary: "Оценщик видит активные и завершенные live-сессии, может открыть наблюдение или перейти к результатам.",
+    controls: [
+      "Наблюдать - открыть текущую симуляцию без вмешательства в решения участника.",
+      "Результаты - перейти к отчету завершенной сессии.",
+      "Удалить - убрать live-сессию из текущего списка.",
+    ],
+    dynamics: [
+      { type: "neutral", text: "Наблюдение не меняет баллы: оно только показывает ход прохождения." },
+      { type: "down", text: "Удаление незавершенной live-сессии может прервать доступ к ее текущему состоянию." },
+    ],
+  },
+];
+
+const WIKI_PROCESS_STEPS = [
+  { lane: "Оценщик", title: "Вводит участников", note: "ФИО связывают сессию и отчет." },
+  { lane: "Оценщик", title: "Выбирает сложность", note: "Зависимость: кейсы, каналы, время." },
+  { lane: "Оценщик", title: "Настраивает сценарий", note: "Зависимость: покрытие компетенций." },
+  { lane: "Система", title: "Создает live-сессию", note: "Код получает участник." },
+  { lane: "Участник", title: "Проходит симуляцию", note: "Решения меняют метрики и оценки." },
+  { lane: "Система", title: "Считает результат", note: "Компетенции, средний балл, динамика." },
+  { lane: "Оценщик", title: "Разбирает отчет", note: "Решения, сильные зоны, ИПР." },
+] as const;
+
+function WikiScreenshot({ focus, label }: { focus: AssessorWikiFocus; label: string }) {
+  return (
+    <div className={`dns-assessor-wiki-shot dns-assessor-wiki-shot--${focus}`} aria-label={`Скриншот: ${label}`}>
+      <div className="dns-assessor-wiki-shot-top">
+        <span>Панель оценщика</span>
+        <span>live-сессия</span>
+      </div>
+      <div className="dns-assessor-wiki-shot-entry">WIKI оценщика</div>
+      <div className="dns-assessor-wiki-shot-steps">
+        <span>1</span>
+        <span>2</span>
+        <span>3</span>
+      </div>
+      <div className="dns-assessor-wiki-shot-grid">
+        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--participant" />
+        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--difficulty" />
+        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--mode" />
+        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--advanced" />
+        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--cases" />
+        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--channels" />
+        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--metrics" />
+        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--sessions" />
+      </div>
+      <div className="dns-assessor-wiki-shot-highlight">
+        <span>{label}</span>
+      </div>
+      <div className="dns-assessor-wiki-shot-arrow" />
+    </div>
+  );
+}
+
+function AssessorWiki({
+  onBack,
+  processOpen,
+  onToggleProcess,
+}: {
+  onBack: () => void;
+  processOpen: boolean;
+  onToggleProcess: () => void;
+}) {
+  return (
+    <div className="dns-assessor-wiki space-y-5">
+      <section className="dns-assessor-wiki-hero">
+        <div>
+          <div className="dns-assessor-wiki-kicker">WIKI оценщика</div>
+          <h2>Как настроить и провести симуляцию</h2>
+          <p>
+            Эта страница объясняет каждый блок меню оценщика: что он меняет, как влияет на сценарий,
+            где возникает зависимость и какой результат увидит заказчик в отчете.
+          </p>
+        </div>
+        <button type="button" onClick={onBack} className="dns-assessor-wiki-back">
+          <ArrowLeft className="h-4 w-4" />
+          Вернуться к настройке
+        </button>
+      </section>
+
+      <section className="dns-assessor-wiki-summary">
+        <div>
+          <MousePointerClick className="h-5 w-5" />
+          <span>1. Оценщик задает рамки</span>
+        </div>
+        <div>
+          <GitBranch className="h-5 w-5" />
+          <span>2. Система строит сценарий</span>
+        </div>
+        <div>
+          <Activity className="h-5 w-5" />
+          <span>3. Участник принимает решения</span>
+        </div>
+        <div>
+          <ClipboardCheck className="h-5 w-5" />
+          <span>4. Отчет показывает доказательства</span>
+        </div>
+      </section>
+
+      <section className="dns-assessor-wiki-note">
+        <Info className="h-5 w-5" />
+        <div>
+          <h3>Главный принцип оценки</h3>
+          <p>
+            Итог не должен быть "ощущением оценщика". Он строится из решений участника:
+            выбранные кейсы и каналы дают ситуации, решения меняют метрики магазина и формируют
+            вклад в компетенции, а отчет собирает это в понятную картину.
+          </p>
+        </div>
+      </section>
+
+      <section className="dns-assessor-wiki-grid">
+        {ASSESSOR_WIKI_BLOCKS.map((block) => {
+          const Icon = block.icon;
+          return (
+            <article key={block.id} className="dns-assessor-wiki-card">
+              <div className="dns-assessor-wiki-card-head">
+                <div className="dns-assessor-wiki-icon">
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3>{block.title}</h3>
+                  <p>{block.label}</p>
+                </div>
+              </div>
+              <WikiScreenshot focus={block.focus} label={block.label} />
+              <p className="dns-assessor-wiki-card-summary">{block.summary}</p>
+              <div className="dns-assessor-wiki-columns">
+                <div>
+                  <h4>Как менять</h4>
+                  <ul>
+                    {block.controls.map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+                <div>
+                  <h4>Динамика</h4>
+                  <ul>
+                    {block.dynamics.map((item) => (
+                      <li key={item.text} className={`dns-assessor-wiki-dynamic dns-assessor-wiki-dynamic--${item.type}`}>
+                        {item.type === "up" && <ArrowUpRight className="h-3.5 w-3.5" />}
+                        {item.type === "down" && <ArrowDownRight className="h-3.5 w-3.5" />}
+                        {item.type === "neutral" && <Info className="h-3.5 w-3.5" />}
+                        <span>{item.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </section>
+
+      <section className="dns-assessor-wiki-process">
+        <button type="button" onClick={onToggleProcess} className="dns-assessor-wiki-process-toggle">
+          <div>
+            <div className="dns-assessor-wiki-kicker">Процесс оценки</div>
+            <h3>BPMN-схема настройки и прохождения симуляции</h3>
+            <p>Большой блок для сотрудника без погружения в механику: от настройки до отчета.</p>
+          </div>
+          {processOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+        </button>
+        {processOpen && (
+          <div className="dns-assessor-bpmn">
+            <div className="dns-assessor-bpmn-lanes">
+              <span>Оценщик</span>
+              <span>Система</span>
+              <span>Участник</span>
+            </div>
+            <div className="dns-assessor-bpmn-flow">
+              {WIKI_PROCESS_STEPS.map((step, index) => (
+                <div key={`${step.lane}-${step.title}`} className="dns-assessor-bpmn-node">
+                  <div className="dns-assessor-bpmn-lane">{step.lane}</div>
+                  <div className="dns-assessor-bpmn-title">{step.title}</div>
+                  <div className="dns-assessor-bpmn-note">{step.note}</div>
+                  {index < WIKI_PROCESS_STEPS.length - 1 && <ArrowRight className="dns-assessor-bpmn-arrow h-4 w-4" />}
+                </div>
+              ))}
+            </div>
+            <div className="dns-assessor-bpmn-dependencies">
+              <div>
+                <Target className="h-4 w-4" />
+                Сложность и ручной выбор определяют, какие компетенции реально проверяются.
+              </div>
+              <div>
+                <SlidersHorizontal className="h-4 w-4" />
+                Каналы и события определяют поток сигналов и управленческую нагрузку.
+              </div>
+              <div>
+                <BarChart3 className="h-4 w-4" />
+                Стартовые метрики задают исходный контекст, а решения участника двигают показатели вверх или вниз.
+              </div>
+              <div>
+                <Map className="h-4 w-4" />
+                Итоговый отчет связывает решения, метрики и компетенции в доказательный результат.
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
 export default function AssessorPage() {
   const [, navigate] = useLocation();
   const { dispatch } = useSimulation();
@@ -240,6 +616,7 @@ export default function AssessorPage() {
 
   // ── Wiki toggle ──
   const [showWiki, setShowWiki] = useState(false);
+  const [wikiProcessOpen, setWikiProcessOpen] = useState(false);
 
   const liveSessionsQuery = useQuery({
     queryKey: ["/api/staff/live-sessions"],
@@ -494,10 +871,40 @@ export default function AssessorPage() {
           </div>
         </header>
 
-        {/* ── Wizard Steps Indicator ── */}
-        <WizardSteps currentStep={wizardStep} />
+        {showWiki ? (
+          <AssessorWiki
+            onBack={() => setShowWiki(false)}
+            processOpen={wikiProcessOpen}
+            onToggleProcess={() => setWikiProcessOpen(prev => !prev)}
+          />
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => setShowWiki(true)}
+              className="dns-assessor-wiki-entry"
+            >
+              <div className="dns-assessor-wiki-entry-icon">
+                <BookOpen className="h-6 w-6" />
+              </div>
+              <div className="min-w-0 flex-1 text-left">
+                <div className="dns-assessor-wiki-entry-kicker">Методика настройки</div>
+                <div className="dns-assessor-wiki-entry-title">Открыть WIKI оценщика</div>
+                <p>
+                  Что делает каждый блок меню, какие рычаги меняют сценарий и где настройки влияют на компетенции,
+                  метрики магазина и итоговый отчет.
+                </p>
+              </div>
+              <div className="dns-assessor-wiki-entry-action">
+                <Workflow className="h-4 w-4" />
+                Перейти
+              </div>
+            </button>
 
-        <div className="space-y-5">
+            {/* ── Wizard Steps Indicator ── */}
+            <WizardSteps currentStep={wizardStep} />
+
+            <div className="space-y-5">
 
           {/* ═══════════════════════════════════════════
               ШАГ 1: КТО УЧАСТНИК?
@@ -1305,38 +1712,9 @@ export default function AssessorPage() {
             </div>
           </div>
 
-          {/* ═══════════════════════════════════════════
-              МЕТОДИЧЕСКИЙ БЛОК (сворачиваемый)
-              ═══════════════════════════════════════════ */}
-          <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3a]/60 backdrop-blur-sm p-5">
-            <button
-              onClick={() => setShowWiki(prev => !prev)}
-              className="flex items-center justify-between w-full text-left"
-            >
-              <div className="flex items-center gap-2">
-                <HelpCircle className="h-4 w-4 text-[#ffc107]" />
-                <h3 className="text-sm font-semibold text-[#ffc107] uppercase tracking-wider">Памятка оценщику</h3>
-                <span className="text-[10px] text-[#6f7990] normal-case tracking-normal">({ASSESSOR_WIKI_POINTS.length} подсказки)</span>
-              </div>
-              {showWiki ? (
-                <ChevronUp className="h-4 w-4 text-[#6f7990]" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-[#6f7990]" />
-              )}
-            </button>
-            {showWiki && (
-              <div className="mt-4 space-y-3">
-                {ASSESSOR_WIKI_POINTS.map((point, idx) => (
-                  <div key={idx} className="flex items-start gap-3 rounded-lg border border-[#2a3a4e] bg-[#141c2b]/40 px-4 py-3">
-                    <span className="text-xs font-semibold text-[#FF6B00] mt-0.5">{idx + 1}.</span>
-                    <p className="text-sm leading-relaxed text-[#cdd8eb]">{point}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
         </div>
+          </>
+        )}
       </div>
     </div>
   );
