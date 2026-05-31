@@ -522,6 +522,7 @@
     font-size: 0.75rem;
     font-weight: 800;
     letter-spacing: 0.04em;
+    line-height: 1;
   }
 
   .dns-comparison-table-wrap {
@@ -546,7 +547,8 @@
     border-bottom: 1px solid rgba(42, 58, 78, 0.78);
     padding: 0.7rem 0.85rem;
     text-align: left;
-    vertical-align: top;
+    vertical-align: middle;
+    line-height: 1.35;
   }
 
   .dns-comparison-table th:first-child,
@@ -576,9 +578,19 @@
 
   .dns-comparison-score-cell {
     display: grid;
-    grid-template-columns: 2.4rem minmax(5rem, 1fr);
+    grid-template-columns: 2.65rem minmax(5rem, 1fr);
     align-items: center;
     gap: 0.65rem;
+  }
+
+  .dns-comparison-score-cell > span:first-child {
+    display: inline-flex;
+    min-width: 2.35rem;
+    align-items: center;
+    justify-content: flex-start;
+    font-size: 0.82rem;
+    font-weight: 850;
+    line-height: 1;
   }
 
   .dns-comparison-score-track {
@@ -598,10 +610,12 @@
   .dns-comparison-metric-value {
     display: inline-flex;
     min-width: 2.8rem;
+    align-items: baseline;
     justify-content: flex-start;
     font-weight: 900;
     font-variant-numeric: tabular-nums;
-    text-shadow: 0 0 14px currentColor;
+    line-height: 1;
+    text-shadow: none;
   }
 
   .dns-comparison-insights {
@@ -1162,6 +1176,36 @@
   --dns-admin-text-muted: #b8c6dc;
   --dns-admin-text-soft: #c5d2e6;
   --dns-admin-text-dim: #a9bad4;
+  font-feature-settings: "kern" 1, "liga" 1, "tnum" 1;
+}
+
+/* Typography polish: metrics and numbered controls use stable tabular figures. */
+.dns-product-shell .tabular-nums,
+.dns-product-shell .dns-brand-mark,
+.dns-product-shell .dns-comparison-avatar,
+.dns-product-shell .dns-comparison-score-cell,
+.dns-product-shell .dns-comparison-metric-value,
+.dns-product-shell .dns-comparison-insight-card-head strong,
+.dns-product-shell .dns-admin-case-order-index,
+.dns-product-shell .dns-assessor-v2-rail-num,
+.dns-product-shell .dns-assessor-v2-participant-num,
+.dns-product-shell .dns-assessor-v2-launch-row > span,
+.dns-product-shell .dns-assessor-v2-launch-result-row strong,
+.dns-product-shell .dns-assessor-v2-summary-strip strong,
+.dns-product-shell .dns-assessor-v2-passport-grid strong,
+.dns-product-shell .dns-assessor-v2-side-field strong,
+.dns-product-shell .dns-assessor-v2-review-num,
+.dns-product-shell .dns-assessor-v2-session-row p {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.dns-product-shell .dns-comparison-avatar,
+.dns-product-shell .dns-admin-case-order-index,
+.dns-product-shell .dns-assessor-v2-rail-num,
+.dns-product-shell .dns-assessor-v2-participant-num,
+.dns-product-shell .dns-assessor-v2-launch-row > span,
+.dns-product-shell .dns-assessor-v2-review-num {
+  line-height: 1;
 }
 
 /* Task 1: neutral borders and panel radii use one visual system. */
@@ -1334,6 +1378,9 @@
 .dns-product-shell .dns-admin-case-list-title {
   display: -webkit-box;
   overflow: hidden;
+  color: #f7fbff;
+  font-size: 0.82rem;
+  font-weight: 800;
   line-height: 1.22;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -1344,6 +1391,7 @@
   font-size: 0.68rem;
   line-height: 1;
   letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .dns-product-shell .dns-admin-case-note {
@@ -2082,7 +2130,8 @@
 
 .dns-product-shell .dns-assessor-v2-rail-item {
   display: grid;
-  min-height: 4.1rem;
+  grid-template-rows: auto minmax(1.55rem, auto) auto;
+  min-height: 4.35rem;
   align-content: center;
   justify-items: center;
   gap: 0.28rem;
@@ -2090,6 +2139,7 @@
   border-radius: 0.72rem;
   background: rgba(15, 25, 38, 0.56);
   color: #7e8da5;
+  padding: 0.52rem 0.35rem;
   text-align: center;
   transition: border-color 160ms ease, background 160ms ease, color 160ms ease;
 }
@@ -2125,15 +2175,22 @@
   border-radius: 999px;
   font-size: 0.68rem;
   font-weight: 850;
+  line-height: 1;
 }
 
 .dns-product-shell .dns-assessor-v2-rail-title {
+  display: flex;
+  min-height: 1.55rem;
+  align-items: center;
+  justify-content: center;
   font-size: 0.72rem;
   font-weight: 800;
-  line-height: 1.12;
+  line-height: 1.16;
+  text-wrap: balance;
 }
 
 .dns-product-shell .dns-assessor-v2-rail-state {
+  min-height: 0.62rem;
   color: currentColor;
   font-size: 0.56rem;
   font-weight: 800;
@@ -2318,6 +2375,7 @@
   font-size: 0.96rem;
   font-weight: 850;
   line-height: 1.2;
+  text-wrap: balance;
 }
 
 .dns-product-shell .dns-assessor-v2-choice-card em {
@@ -2341,6 +2399,9 @@
 }
 
 .dns-product-shell .dns-assessor-v2-chip-row b {
+  display: inline-flex;
+  min-height: 1.45rem;
+  align-items: center;
   border: 1px solid rgba(39, 58, 81, 0.72);
   border-radius: 999px;
   background: rgba(8, 15, 24, 0.58);
@@ -2348,6 +2409,8 @@
   padding: 0.28rem 0.5rem;
   font-size: 0.68rem;
   font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .dns-product-shell .dns-assessor-v2-note {
@@ -2452,15 +2515,16 @@
   color: #d0e9ff;
   font-size: 0.72rem;
   font-weight: 900;
+  line-height: 1;
 }
 
 .dns-product-shell .dns-assessor-v2-participant-card strong {
   display: block;
   overflow: hidden;
   color: #fff;
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   font-weight: 850;
-  line-height: 1.2;
+  line-height: 1.18;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2469,7 +2533,7 @@
   margin-top: 0.18rem;
   color: #9fb0c8;
   font-size: 0.68rem;
-  line-height: 1.25;
+  line-height: 1.32;
 }
 
 .dns-product-shell .dns-assessor-v2-participant-remove {
@@ -2581,6 +2645,7 @@
   color: #f5c04e;
   font-size: 0.72rem;
   font-weight: 900;
+  line-height: 1;
 }
 
 .dns-product-shell .dns-assessor-v2-launch-row--ready > span {
@@ -2593,15 +2658,20 @@
   color: #fff;
   font-size: 0.82rem;
   font-weight: 850;
+  line-height: 1.18;
 }
 
 .dns-product-shell .dns-assessor-v2-launch-row p {
   margin-top: 0.15rem;
   color: #9fb0c8;
   font-size: 0.72rem;
+  line-height: 1.32;
 }
 
 .dns-product-shell .dns-assessor-v2-launch-row em {
+  display: inline-flex;
+  min-height: 1.55rem;
+  align-items: center;
   border: 1px solid rgba(39, 58, 81, 0.72);
   border-radius: 999px;
   color: #c7d6eb;
@@ -2621,6 +2691,10 @@
 }
 
 .dns-product-shell .dns-assessor-v2-launch-result-row strong {
+  display: inline-flex;
+  min-height: 1.7rem;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(53, 211, 138, 0.35);
   border-radius: 0.5rem;
   background: rgba(53, 211, 138, 0.1);
@@ -2664,6 +2738,10 @@
 .dns-product-shell .dns-assessor-v2-summary-strip > div,
 .dns-product-shell .dns-assessor-v2-passport-grid > div,
 .dns-product-shell .dns-assessor-v2-side-field {
+  display: grid;
+  align-content: center;
+  gap: 0.24rem;
+  min-height: 4.15rem;
   border: 1px solid rgba(29, 45, 65, 0.86);
   border-radius: 0.65rem;
   background: rgba(8, 15, 24, 0.66);
@@ -2678,6 +2756,7 @@
   font-size: 0.64rem;
   font-weight: 800;
   letter-spacing: 0.08em;
+  line-height: 1.05;
   text-transform: uppercase;
 }
 
@@ -2685,11 +2764,11 @@
 .dns-product-shell .dns-assessor-v2-passport-grid strong,
 .dns-product-shell .dns-assessor-v2-side-field strong {
   display: block;
-  margin-top: 0.25rem;
+  margin-top: 0;
   color: #fff;
-  font-size: 0.92rem;
+  font-size: clamp(0.9rem, 0.16vw + 0.86rem, 1rem);
   font-weight: 850;
-  line-height: 1.18;
+  line-height: 1.12;
 }
 
 .dns-product-shell .dns-assessor-v2-toggle-line {
@@ -2851,6 +2930,7 @@
   color: #fff;
   font-size: 0.92rem;
   font-weight: 850;
+  line-height: 1.18;
 }
 
 .dns-product-shell .dns-assessor-v2-review-row p,
@@ -2858,6 +2938,7 @@
   margin-top: 0.18rem;
   color: #adbbcf;
   font-size: 0.78rem;
+  line-height: 1.34;
 }
 
 .dns-product-shell .dns-assessor-v2-review-num {
@@ -2870,6 +2951,7 @@
   color: #111018;
   font-size: 0.74rem;
   font-weight: 900;
+  line-height: 1;
 }
 
 .dns-product-shell .dns-assessor-v2-review-num--done {
@@ -2946,12 +3028,16 @@
   color: #adbbcf;
   padding: 0.65rem 0.75rem;
   font-size: 0.8rem;
+  line-height: 1.25;
 }
 
 .dns-product-shell .dns-assessor-v2-impact-list strong {
   color: #fff;
   font-size: 0.8rem;
   font-weight: 850;
+  line-height: 1;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .dns-product-shell .dns-assessor-v2-side-field {
@@ -3053,13 +3139,17 @@
   }
 
   .dns-product-shell .dns-assessor-v2-rail-item {
-    min-height: 3.55rem;
-    min-width: 3.55rem;
-    padding: 0.45rem 0.2rem;
+    grid-template-rows: auto auto;
+    min-height: 3.75rem;
+    min-width: 3.75rem;
+    gap: 0.22rem;
+    padding: 0.42rem 0.22rem;
   }
 
   .dns-product-shell .dns-assessor-v2-rail-title {
+    min-height: 1.05rem;
     font-size: 0.62rem;
+    line-height: 1.1;
   }
 
   .dns-product-shell .dns-assessor-v2-rail-state {
