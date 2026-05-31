@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { useSimulation, type RealisticMetrics } from "../context/SimulationContext";
+import type { RealisticMetrics } from "../context/SimulationContext";
 import { CASES_DATA } from "../data/cases";
 import { EMAIL_CASES } from "../data/email-cases";
 import { MESSENGER_CASES } from "../data/messenger-cases";
@@ -116,6 +116,76 @@ const SIMULATION_ROLE_CARDS = [
   },
 ] as const;
 
+type AssessorSimulationRoleId = (typeof SIMULATION_ROLE_CARDS)[number]["id"];
+
+interface AssessorParticipantConfig {
+  id: string;
+  name: string;
+  simulationRole: AssessorSimulationRoleId;
+  difficulty: AssessorDifficulty;
+  setupMode: AssessorSetupMode;
+  scenarioConfirmed: boolean;
+  compositionConfirmed: boolean;
+  channelReviewDone: boolean;
+  showAdvanced: boolean;
+  manualSelection: boolean;
+  repeatCases: boolean;
+  selectedCases: string[];
+  channels: AssessorChannels;
+  selectedChannelItemIds: AssessorChannelItemIds;
+  initialMetrics: RealisticMetrics;
+  isTestMode: boolean;
+  speedMultiplier: number;
+}
+
+interface AssessorLaunchResult {
+  participantName: string;
+  liveSessionId: string;
+  accessCode: string;
+}
+
+function createAssessorParticipantId() {
+  return `participant-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function cloneMetrics(metrics: RealisticMetrics): RealisticMetrics {
+  return { ...metrics };
+}
+
+function cloneChannelItemIds(ids: AssessorChannelItemIds): AssessorChannelItemIds {
+  return {
+    email: [...ids.email],
+    messenger: [...ids.messenger],
+    video: [...ids.video],
+  };
+}
+
+function createDefaultParticipantSetup(id = createAssessorParticipantId(), name = ""): AssessorParticipantConfig {
+  return {
+    id,
+    name,
+    simulationRole: "participant",
+    difficulty: "medium",
+    setupMode: "recommended",
+    scenarioConfirmed: false,
+    compositionConfirmed: false,
+    channelReviewDone: false,
+    showAdvanced: false,
+    manualSelection: false,
+    repeatCases: false,
+    selectedCases: CASES_DATA.map((item) => item.id),
+    channels: { ...DIFFICULTY_INFO.medium.channels },
+    selectedChannelItemIds: {
+      email: EMAIL_CASES.map((item) => item.id),
+      messenger: MESSENGER_CASES.map((item) => item.id),
+      video: VIDEO_CASES.map((item) => item.id),
+    },
+    initialMetrics: cloneMetrics(DEFAULT_METRICS),
+    isTestMode: false,
+    speedMultiplier: 1,
+  };
+}
+
 const TIME_PROFILE_RATIO = {
   easy: 1.1,
   medium: 1,
@@ -201,6 +271,12 @@ type AssessorWikiFocus =
   | "channels"
   | "metrics"
   | "sessions";
+
+type AssessorPanel = "participant" | "scenario" | "composition" | "review" | "sessions";
+type AssessorSetupMode = "recommended" | "expert";
+type AssessorDifficulty = "easy" | "medium" | "hard";
+type AssessorChannels = { audio: boolean; email: boolean; messenger: boolean; video: boolean };
+type AssessorChannelItemIds = { email: string[]; messenger: string[]; video: string[] };
 
 const ASSESSOR_WIKI_BLOCKS: Array<{
   id: string;
@@ -575,7 +651,6 @@ function AssessorWiki({
 
 export default function AssessorPage() {
   const [, navigate] = useLocation();
-  const { dispatch } = useSimulation();
   const settings = getSimulationSettingsSnapshot<SimulationRuntimeSettings>();
   const easyCount = Number(settings?.easyAutoCaseCount ?? 6);
   const mediumCount = Number(settings?.mediumAutoCaseCount ?? 10);
@@ -590,8 +665,12 @@ export default function AssessorPage() {
   // ── Basic fields ──
   const [assessorName, setAssessorName] = useState("");
   const [participantName, setParticipantName] = useState("");
-  const [simulationRole, setSimulationRole] = useState<(typeof SIMULATION_ROLE_CARDS)[number]["id"]>("participant");
-  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
+  const [participantSetups, setParticipantSetups] = useState<AssessorParticipantConfig[]>(() => [
+    createDefaultParticipantSetup("participant-1"),
+  ]);
+  const [activeParticipantId, setActiveParticipantId] = useState("participant-1");
+  const [simulationRole, setSimulationRole] = useState<AssessorSimulationRoleId>("participant");
+  const [difficulty, setDifficulty] = useState<AssessorDifficulty>("medium");
 
   // ── Advanced settings (hidden behind toggle) ──
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -600,8 +679,8 @@ export default function AssessorPage() {
   const [selectedCases, setSelectedCases] = useState<string[]>(CASES_DATA.map(c => c.id));
   const [isTestMode, setIsTestMode] = useState(false);
   const [speedMultiplier, setSpeedMultiplier] = useState(1);
-  const [channels, setChannels] = useState({ audio: true, email: true, messenger: true, video: false });
-  const [selectedChannelItemIds, setSelectedChannelItemIds] = useState({
+  const [channels, setChannels] = useState<AssessorChannels>({ audio: true, email: true, messenger: true, video: false });
+  const [selectedChannelItemIds, setSelectedChannelItemIds] = useState<AssessorChannelItemIds>({
     email: EMAIL_CASES.map((item) => item.id),
     messenger: MESSENGER_CASES.map((item) => item.id),
     video: VIDEO_CASES.map((item) => item.id),
@@ -613,10 +692,16 @@ export default function AssessorPage() {
   const [startError, setStartError] = useState<string | null>(null);
   const [observeLoadingId, setObserveLoadingId] = useState<string | null>(null);
   const [removeLoadingId, setRemoveLoadingId] = useState<string | null>(null);
+  const [launchResults, setLaunchResults] = useState<AssessorLaunchResult[]>([]);
 
   // ── Wiki toggle ──
   const [showWiki, setShowWiki] = useState(false);
   const [wikiProcessOpen, setWikiProcessOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState<AssessorPanel>("participant");
+  const [setupMode, setSetupMode] = useState<AssessorSetupMode>("recommended");
+  const [scenarioConfirmed, setScenarioConfirmed] = useState(false);
+  const [compositionConfirmed, setCompositionConfirmed] = useState(false);
+  const [channelReviewDone, setChannelReviewDone] = useState(false);
 
   const liveSessionsQuery = useQuery({
     queryKey: ["/api/staff/live-sessions"],
@@ -627,7 +712,6 @@ export default function AssessorPage() {
   // Auto-set channels based on difficulty
   useEffect(() => {
     setLiveSimulationRole("assessor-setup");
-    setChannels(DIFFICULTY_INFO[difficulty].channels);
   }, [difficulty]);
 
   useEffect(() => {
@@ -643,7 +727,103 @@ export default function AssessorPage() {
     [liveSessionsQuery.data],
   );
 
+  const captureCurrentParticipantSetup = (): AssessorParticipantConfig => ({
+    id: activeParticipantId,
+    name: participantName,
+    simulationRole,
+    difficulty,
+    setupMode,
+    scenarioConfirmed,
+    compositionConfirmed,
+    channelReviewDone,
+    showAdvanced,
+    manualSelection,
+    repeatCases,
+    selectedCases: [...selectedCases],
+    channels: { ...channels },
+    selectedChannelItemIds: cloneChannelItemIds(selectedChannelItemIds),
+    initialMetrics: cloneMetrics(initialMetrics),
+    isTestMode,
+    speedMultiplier,
+  });
+
+  const applyParticipantSetup = (setup: AssessorParticipantConfig) => {
+    setParticipantName(setup.name);
+    setSimulationRole(setup.simulationRole);
+    setDifficulty(setup.difficulty);
+    setSetupMode(setup.setupMode);
+    setScenarioConfirmed(setup.scenarioConfirmed);
+    setCompositionConfirmed(setup.compositionConfirmed);
+    setChannelReviewDone(setup.channelReviewDone);
+    setShowAdvanced(setup.showAdvanced);
+    setManualSelection(setup.manualSelection);
+    setRepeatCases(setup.repeatCases);
+    setSelectedCases([...setup.selectedCases]);
+    setChannels({ ...setup.channels });
+    setSelectedChannelItemIds(cloneChannelItemIds(setup.selectedChannelItemIds));
+    setInitialMetrics(cloneMetrics(setup.initialMetrics));
+    setIsTestMode(setup.isTestMode);
+    setSpeedMultiplier(setup.speedMultiplier);
+    setStartError(null);
+  };
+
+  const saveActiveParticipantSetup = () => {
+    const nextSetup = captureCurrentParticipantSetup();
+    setParticipantSetups((current) => current.map((item) => (
+      item.id === activeParticipantId ? nextSetup : item
+    )));
+    return nextSetup;
+  };
+
+  const switchParticipantSetup = (id: string) => {
+    if (id === activeParticipantId) return;
+    const nextSetup = participantSetups.find((item) => item.id === id);
+    if (!nextSetup) return;
+    saveActiveParticipantSetup();
+    setActiveParticipantId(id);
+    applyParticipantSetup(nextSetup);
+    setActivePanel("participant");
+  };
+
+  const addParticipantSetup = () => {
+    saveActiveParticipantSetup();
+    const nextSetup = createDefaultParticipantSetup();
+    setParticipantSetups((current) => [...current, nextSetup]);
+    setActiveParticipantId(nextSetup.id);
+    applyParticipantSetup(nextSetup);
+    setActivePanel("participant");
+  };
+
+  const removeParticipantSetup = (id: string) => {
+    if (participantSetups.length <= 1) {
+      const resetSetup = createDefaultParticipantSetup(id);
+      setParticipantSetups([resetSetup]);
+      setActiveParticipantId(resetSetup.id);
+      applyParticipantSetup(resetSetup);
+      return;
+    }
+
+    const savedCurrent = captureCurrentParticipantSetup();
+    const withSavedCurrent = participantSetups.map((item) => (
+      item.id === activeParticipantId ? savedCurrent : item
+    ));
+    const nextSetups = withSavedCurrent.filter((item) => item.id !== id);
+    setParticipantSetups(nextSetups);
+
+    if (id === activeParticipantId) {
+      const nextActive = nextSetups[0];
+      setActiveParticipantId(nextActive.id);
+      applyParticipantSetup(nextActive);
+    }
+  };
+
+  const markCompositionDirty = () => {
+    setCompositionConfirmed(false);
+    setChannelReviewDone(false);
+  };
+
   const toggleCase = (id: string) => {
+    markCompositionDirty();
     setSelectedCases(prev =>
       prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
     );
@@ -661,66 +841,92 @@ export default function AssessorPage() {
   };
 
   const setAllChannelItems = (channelType: "email" | "messenger" | "video", ids: string[]) => {
+    markCompositionDirty();
     setSelectedChannelItemIds((current) => ({ ...current, [channelType]: ids }));
   };
 
   // ── Quick start: запускает симуляцию в 1 клик с предустановленными настройками ──
-  const quickStart = async (diff: "easy" | "medium" | "hard") => {
+  const quickStart = async (diff: AssessorDifficulty) => {
     if (!participantName.trim()) {
       setStartError("Введите ФИО участника");
       setWizardStep(1);
+      setActivePanel("participant");
       return;
     }
     setDifficulty(diff);
     setIsTestMode(false);
     setSpeedMultiplier(1);
-    // Автоматически применяем настройки сложности
-    setChannels(DIFFICULTY_INFO[diff].channels);
-    await handleStartInternal(diff, false, 1, DIFFICULTY_INFO[diff].channels, initialMetrics);
+    setChannels({ ...DIFFICULTY_INFO[diff].channels });
+    await handleStartInternal(diff, false, 1, { ...DIFFICULTY_INFO[diff].channels }, initialMetrics);
+  };
+
+  const buildLiveConfigPayload = (setup: AssessorParticipantConfig) => {
+    const casesToUse = getCasesForSetup(setup);
+    const baseTimeLimit =
+      setup.difficulty === "hard"
+        ? hardSimulationMinutes
+        : Math.max(casesToUse.length * defaultTimePerCaseMinutes, minSimulationMinutes);
+    const resolvedTimeLimit = Boolean(settings?.timeInfluenceEnabled)
+      ? Math.max(5, Math.round(baseTimeLimit * TIME_PROFILE_RATIO[setup.difficulty]))
+      : baseTimeLimit;
+    const roleCard = SIMULATION_ROLE_CARDS.find((item) => item.id === setup.simulationRole);
+
+    return {
+      assessorName,
+      participantName: setup.name.trim(),
+      participantRole: roleCard?.participantRole || "Участник",
+      difficulty: setup.difficulty,
+      selectedCaseIds: casesToUse,
+      manualSelection: setup.manualSelection,
+      repeatCases: setup.repeatCases,
+      timeLimit: resolvedTimeLimit,
+      isTestMode: setup.isTestMode,
+      speedMultiplier: setup.isTestMode ? setup.speedMultiplier : 1,
+      enabledChannels: setup.channels,
+      selectedChannelItemIds: setup.selectedChannelItemIds,
+      initialMetrics: setup.initialMetrics,
+    };
+  };
+
+  const createLiveSessionForSetup = async (setup: AssessorParticipantConfig) => {
+    const config = await createRemoteLiveSimulation(buildLiveConfigPayload(setup));
+    return {
+      participantName: config.participantName,
+      liveSessionId: config.liveSessionId,
+      accessCode: config.accessCode,
+    };
   };
 
   // ── Основная логика запуска ──
   const handleStartInternal = async (
-    diff: "easy" | "medium" | "hard",
+    diff: AssessorDifficulty,
     testMode: boolean,
     speed: number,
     channelOverride = channels,
     metricsOverride = initialMetrics,
   ) => {
-    setStartError(null);
-    setIsStarting(true);
-    const casesToUse = manualSelection ? selectedCases : getAutoCases(diff);
-    const baseTimeLimit =
-      diff === "hard"
-        ? hardSimulationMinutes
-        : Math.max(casesToUse.length * defaultTimePerCaseMinutes, minSimulationMinutes);
-    const resolvedTimeLimit = Boolean(settings?.timeInfluenceEnabled)
-      ? Math.max(5, Math.round(baseTimeLimit * TIME_PROFILE_RATIO[diff]))
-      : baseTimeLimit;
-    const roleCard = SIMULATION_ROLE_CARDS.find((item) => item.id === simulationRole);
-    const liveConfigPayload = {
-      assessorName,
-      participantName,
-      participantRole: roleCard?.participantRole || "Участник",
+    const currentSetup = {
+      ...captureCurrentParticipantSetup(),
       difficulty: diff,
-      selectedCaseIds: casesToUse,
-      manualSelection,
-      repeatCases,
-      timeLimit: resolvedTimeLimit,
+      scenarioConfirmed: true,
+      compositionConfirmed: true,
+      channelReviewDone: true,
       isTestMode: testMode,
-      speedMultiplier: testMode ? speed : 1,
-      enabledChannels: channelOverride,
-      selectedChannelItemIds,
-      initialMetrics: metricsOverride,
+      speedMultiplier: speed,
+      channels: { ...channelOverride },
+      initialMetrics: cloneMetrics(metricsOverride),
     };
 
+    setStartError(null);
+    setIsStarting(true);
     try {
       await primeAudioPlayback();
       resetLiveSimulation();
-      await createRemoteLiveSimulation(liveConfigPayload);
-      setLiveSimulationRole("assessor-monitor");
-      dispatch({ type: "RESET" });
-      navigate("/simulation");
+      const result = await createLiveSessionForSetup(currentSetup);
+      setLaunchResults([result]);
+      setLiveSimulationRole("assessor-setup");
+      await liveSessionsQuery.refetch();
+      setActivePanel("sessions");
     } catch (error) {
       console.error("Failed to create live session", error);
       setStartError("Не удалось запустить симуляцию. Проверьте соединение и попробуйте ещё раз.");
@@ -729,11 +935,42 @@ export default function AssessorPage() {
     }
   };
 
-  const handleStart = () => handleStartInternal(difficulty, isTestMode, speedMultiplier);
+  const handleStart = async () => {
+    const savedActive = saveActiveParticipantSetup();
+    const launchSetups = participantSetups
+      .map((item) => (item.id === activeParticipantId ? savedActive : item))
+      .filter(isSetupReadyToLaunch);
+
+    if (launchSetups.length === 0) {
+      setStartError("Подготовьте хотя бы одного участника: ФИО, сценарий, состав и подтверждение каналов.");
+      return;
+    }
+
+    setStartError(null);
+    setIsStarting(true);
+    try {
+      await primeAudioPlayback();
+      resetLiveSimulation();
+      const results: AssessorLaunchResult[] = [];
+      for (const setup of launchSetups) {
+        results.push(await createLiveSessionForSetup(setup));
+      }
+      setLaunchResults(results);
+      setLiveSimulationRole("assessor-setup");
+      await liveSessionsQuery.refetch();
+      setActivePanel("sessions");
+    } catch (error) {
+      console.error("Failed to create live sessions", error);
+      setStartError("Не удалось запустить очередь симуляций. Проверьте соединение и попробуйте ещё раз.");
+    } finally {
+      setIsStarting(false);
+    }
+  };
 
   const applyMetricPreset = (presetId: string) => {
     const preset = STORE_STATE_PRESETS.find((item) => item.id === presetId);
     if (!preset) return;
+    markCompositionDirty();
     setInitialMetrics(preset.metrics);
   };
 
@@ -773,10 +1010,33 @@ export default function AssessorPage() {
     return CASES_DATA.slice(0, mediumCount).map(c => c.id);
   };
 
+  const getCasesForSetup = (setup: AssessorParticipantConfig) => (
+    setup.manualSelection ? setup.selectedCases : getAutoCases(setup.difficulty)
+  );
+
+  const visibleParticipantSetups = participantSetups.map((item) => (
+    item.id === activeParticipantId ? captureCurrentParticipantSetup() : item
+  ));
+  const activeParticipantIndex = Math.max(
+    0,
+    visibleParticipantSetups.findIndex((item) => item.id === activeParticipantId),
+  );
+  const activeParticipantLabel = participantName.trim() || `Участник ${activeParticipantIndex + 1}`;
+  const isSetupReadyToLaunch = (setup: AssessorParticipantConfig) => (
+    assessorName.trim().length > 0 &&
+    setup.name.trim().length > 0 &&
+    setup.scenarioConfirmed &&
+    setup.compositionConfirmed &&
+    setup.channelReviewDone &&
+    getCasesForSetup(setup).length > 0
+  );
+  const readyParticipantSetups = visibleParticipantSetups.filter(isSetupReadyToLaunch);
+
   const activeCaseCount = manualSelection ? selectedCases.length : getAutoCases(difficulty).length;
   const selectedSimulationCard = SIMULATION_ROLE_CARDS.find((item) => item.id === simulationRole) || SIMULATION_ROLE_CARDS[0];
   const isParticipantSimulation = simulationRole === "participant";
   const updateMetric = <K extends keyof RealisticMetrics>(key: K, value: number) => {
+    markCompositionDirty();
     setInitialMetrics((current) => ({ ...current, [key]: Number.isFinite(value) ? value : 0 }));
   };
 
@@ -835,9 +1095,743 @@ export default function AssessorPage() {
     sum + (group.enabled ? selectedChannelItemIds[group.key].length : 0)
   ), 0);
 
-  // ═══════════════════════════════════════════════════════════
-  // RENDER
-  // ═══════════════════════════════════════════════════════════
+  const participantReady = assessorName.trim().length > 0 && participantName.trim().length > 0;
+  const enabledChannelLabels = channelInfo
+    .filter((item) => channels[item.key])
+    .map((item) => item.label);
+  const estimatedBaseTime =
+    difficulty === "hard"
+      ? hardSimulationMinutes
+      : Math.max(activeCaseCount * defaultTimePerCaseMinutes, minSimulationMinutes);
+  const estimatedTimeLimit = Boolean(settings?.timeInfluenceEnabled)
+    ? Math.max(5, Math.round(estimatedBaseTime * TIME_PROFILE_RATIO[difficulty]))
+    : estimatedBaseTime;
+  const scenarioName =
+    manualSelection
+      ? "Ручная сборка"
+      : difficulty === "easy"
+        ? "Первый проход"
+        : difficulty === "hard"
+          ? "Сложная смена"
+          : "Стандартная оценка";
+  const reviewItems = [
+    {
+      title: "Участник и оценщик указаны",
+      detail: participantReady ? `${participantName || "Участник"} · ${assessorName || "Оценщик"}` : "Заполните ФИО оценщика и участника.",
+      done: participantReady,
+    },
+    {
+      title: "Сценарий выбран",
+      detail: scenarioConfirmed ? `${scenarioName}, ${estimatedTimeLimit} минут.` : "Выберите один из сценариев оценки.",
+      done: scenarioConfirmed,
+    },
+    {
+      title: "Состав сценария проверен",
+      detail: compositionConfirmed ? `${activeCaseCount} ситуаций, ${enabledChannelLabels.length} каналов.` : "Проверьте кейсы, каналы и стартовые метрики.",
+      done: compositionConfirmed,
+    },
+    {
+      title: "Каналы подтверждены",
+      detail: channelReviewDone ? "События каналов проверены." : "Подтвердите почту, чат и видео перед запуском.",
+      done: channelReviewDone,
+    },
+  ];
+  const setupProgress = reviewItems.filter((item) => item.done).length;
+
+  const applyScenario = (nextDifficulty: AssessorDifficulty, manual = false) => {
+    setDifficulty(nextDifficulty);
+    setManualSelection(manual);
+    setChannels({ ...DIFFICULTY_INFO[nextDifficulty].channels });
+    setScenarioConfirmed(true);
+    setCompositionConfirmed(false);
+    setChannelReviewDone(false);
+    setStartError(null);
+    if (manual) {
+      setSetupMode("expert");
+    }
+  };
+
+  const openPanel = (panel: AssessorPanel) => {
+    if (panel === "sessions") {
+      setActivePanel(panel);
+      return;
+    }
+    if (panel === "scenario" && !participantReady) return;
+    if (panel === "composition" && !scenarioConfirmed) return;
+    if (panel === "review" && !compositionConfirmed) return;
+    setActivePanel(panel);
+  };
+
+  const continueFromParticipant = () => {
+    if (!participantReady) {
+      setStartError("Заполните ФИО оценщика и участника");
+      return;
+    }
+    setStartError(null);
+    setWizardStep(2);
+    setActivePanel("scenario");
+  };
+
+  const continueFromScenario = () => {
+    if (!participantReady) {
+      setActivePanel("participant");
+      setStartError("Заполните ФИО оценщика и участника");
+      return;
+    }
+    if (!scenarioConfirmed) {
+      setStartError("Выберите сценарий оценки");
+      return;
+    }
+    setStartError(null);
+    setWizardStep(3);
+    setActivePanel("composition");
+  };
+
+  const continueFromComposition = () => {
+    if (activeCaseCount === 0) {
+      setStartError("Выберите хотя бы одну ситуацию");
+      return;
+    }
+    setCompositionConfirmed(true);
+    setStartError(null);
+    setActivePanel("review");
+  };
+
+  const confirmChannels = () => {
+    setChannelReviewDone(true);
+    setStartError(null);
+  };
+
+  const railItems: Array<{ id: AssessorPanel; title: string; state: string; done: boolean; locked: boolean }> = [
+    { id: "participant", title: "Участник", state: participantReady ? "готово" : "нужно", done: participantReady, locked: false },
+    { id: "scenario", title: "Сценарий", state: scenarioConfirmed ? "готово" : participantReady ? "активно" : "после ФИО", done: scenarioConfirmed, locked: !participantReady },
+    { id: "composition", title: "Состав", state: compositionConfirmed ? "готово" : scenarioConfirmed ? "можно" : "после выбора", done: compositionConfirmed, locked: !scenarioConfirmed },
+    { id: "review", title: "Проверка", state: channelReviewDone ? "готово" : compositionConfirmed ? "нужно" : "закрыто", done: channelReviewDone, locked: !compositionConfirmed },
+    { id: "sessions", title: "Сессии", state: "всегда", done: false, locked: false },
+  ];
+
+  const renderRail = () => (
+    <nav className="dns-assessor-v2-rail" aria-label="Разделы меню оценщика">
+      {railItems.map((item, index) => {
+        const active = activePanel === item.id;
+        const className = [
+          "dns-assessor-v2-rail-item",
+          active ? "dns-assessor-v2-rail-item--active" : "",
+          item.done && !active ? "dns-assessor-v2-rail-item--done" : "",
+          item.locked ? "dns-assessor-v2-rail-item--locked" : "",
+        ].filter(Boolean).join(" ");
+
+        return (
+          <button
+            key={item.id}
+            type="button"
+            className={className}
+            onClick={() => openPanel(item.id)}
+            disabled={item.locked}
+            aria-current={active ? "step" : undefined}
+          >
+            <span className="dns-assessor-v2-rail-num">{index + 1}</span>
+            <span className="dns-assessor-v2-rail-title">{item.title}</span>
+            <span className="dns-assessor-v2-rail-state">{item.state}</span>
+          </button>
+        );
+      })}
+    </nav>
+  );
+
+  const renderParticipantPanel = () => (
+    <section className="dns-assessor-v2-panel dns-assessor-v2-main-panel">
+      <div className="dns-assessor-v2-panel-head">
+        <div>
+          <div className="dns-assessor-v2-kicker">Шаг 1</div>
+          <h2>Кто проходит оценку</h2>
+          <p>Сначала фиксируем оценщика, участника и роль симуляции. Следующие шаги откроются после заполнения этих данных.</p>
+        </div>
+        <span className={`dns-assessor-v2-pill ${participantReady ? "dns-assessor-v2-pill--ok" : "dns-assessor-v2-pill--warn"}`}>
+          {participantReady ? "Готово" : "Нужно заполнить"}
+        </span>
+      </div>
+
+      <div className="dns-assessor-v2-field-grid">
+        <div>
+          <Label className="dns-assessor-v2-label">ФИО оценщика</Label>
+          <Input
+            value={assessorName}
+            onChange={(event) => setAssessorName(event.target.value)}
+            placeholder="Иванов И.И."
+            className="dns-assessor-v2-input"
+            data-testid="input-assessor-name"
+          />
+        </div>
+        <div>
+          <Label className="dns-assessor-v2-label">ФИО участника</Label>
+          <Input
+            value={participantName}
+            onChange={(event) => setParticipantName(event.target.value)}
+            placeholder="Петров П.П."
+            className="dns-assessor-v2-input"
+            data-testid="input-participant-name"
+          />
+        </div>
+      </div>
+
+      <div className="dns-assessor-v2-section-title">Очередь участников</div>
+      <div className="dns-assessor-v2-participant-queue">
+        <div className="dns-assessor-v2-queue-head">
+          <div>
+            <strong>{visibleParticipantSetups.length} участников</strong>
+            <p>{readyParticipantSetups.length} готовы к запуску. Настройки сохраняются отдельно для каждого участника.</p>
+          </div>
+          <button type="button" className="dns-assessor-v2-light-button" onClick={addParticipantSetup}>
+            <Users className="h-4 w-4" />
+            Добавить
+          </button>
+        </div>
+        <div className="dns-assessor-v2-participant-list">
+          {visibleParticipantSetups.map((item, index) => {
+            const active = item.id === activeParticipantId;
+            const ready = isSetupReadyToLaunch(item);
+            const casesCount = getCasesForSetup(item).length;
+            return (
+              <div
+                key={item.id}
+                className={`dns-assessor-v2-participant-card ${active ? "dns-assessor-v2-participant-card--active" : ""} ${ready ? "dns-assessor-v2-participant-card--ready" : ""}`}
+                onClick={() => switchParticipantSetup(item.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    switchParticipantSetup(item.id);
+                  }
+                }}
+              >
+                <span className="dns-assessor-v2-participant-num">{index + 1}</span>
+                <div>
+                  <strong>{item.name.trim() || `Участник ${index + 1}`}</strong>
+                  <p>{ready ? "готов к запуску" : item.name.trim() ? "нужно завершить настройку" : "укажите ФИО"} · {casesCount} кейсов · {DIFFICULTY_INFO[item.difficulty].label}</p>
+                </div>
+                {visibleParticipantSetups.length > 1 && (
+                  <button
+                    type="button"
+                    className="dns-assessor-v2-participant-remove"
+                    aria-label="Удалить участника"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      removeParticipantSetup(item.id);
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="dns-assessor-v2-section-title">Тип симуляции</div>
+      <div className="dns-assessor-v2-card-grid dns-assessor-v2-card-grid--roles">
+        {SIMULATION_ROLE_CARDS.map((item) => {
+          const active = simulationRole === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              className={`dns-assessor-v2-choice-card ${active ? "dns-assessor-v2-choice-card--active" : ""} ${!item.available ? "dns-assessor-v2-choice-card--disabled" : ""}`}
+              onClick={() => item.available && setSimulationRole(item.id)}
+              disabled={!item.available}
+            >
+              <span>{item.title}</span>
+              <p>{item.description}</p>
+              {!item.available && <em>В разработке</em>}
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="dns-assessor-v2-note">
+        После заполнения участника активируется раздел сценария. Так оценщик не видит все настройки сразу и не теряется в структуре.
+      </div>
+    </section>
+  );
+
+  const renderScenarioPanel = () => (
+    <section className="dns-assessor-v2-panel dns-assessor-v2-main-panel">
+      <div className="dns-assessor-v2-mode-switch" role="group" aria-label="Режим настройки">
+        <button
+          type="button"
+          className={setupMode === "recommended" ? "dns-assessor-v2-mode dns-assessor-v2-mode--active" : "dns-assessor-v2-mode"}
+          onClick={() => setSetupMode("recommended")}
+        >
+          Рекомендованный режим
+        </button>
+        <button
+          type="button"
+          className={setupMode === "expert" ? "dns-assessor-v2-mode dns-assessor-v2-mode--active" : "dns-assessor-v2-mode"}
+          onClick={() => setSetupMode("expert")}
+        >
+          Экспертный режим
+        </button>
+      </div>
+
+      <div className="dns-assessor-v2-panel-head">
+        <div>
+          <div className="dns-assessor-v2-kicker">Шаг 2</div>
+          <h2>Выберите сценарий оценки</h2>
+          <p>Оценщик выбирает понятный смысл оценки. Система сама собирает сложность, каналы, кейсы и стартовые метрики.</p>
+        </div>
+        <span className={`dns-assessor-v2-pill ${scenarioConfirmed ? "dns-assessor-v2-pill--ok" : "dns-assessor-v2-pill--warn"}`}>
+          {scenarioConfirmed ? "Сценарий выбран" : "Выберите"}
+        </span>
+      </div>
+
+      <div className="dns-assessor-v2-card-grid dns-assessor-v2-card-grid--scenarios">
+        <button
+          type="button"
+          className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "medium" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
+          onClick={() => applyScenario("medium")}
+        >
+          <span>Стандартная оценка заместителя</span>
+          <p>Баланс нагрузки, типовые каналы, умеренное время.</p>
+          <div className="dns-assessor-v2-chip-row"><b>40 мин</b><b>{mediumCount} кейсов</b><b>3 канала</b></div>
+        </button>
+        <button
+          type="button"
+          className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "easy" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
+          onClick={() => applyScenario("easy")}
+        >
+          <span>Первый проход</span>
+          <p>Мягкий сценарий для знакомства с форматом.</p>
+          <div className="dns-assessor-v2-chip-row"><b>20 мин</b><b>{easyCount} кейсов</b></div>
+        </button>
+        <button
+          type="button"
+          className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "hard" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
+          onClick={() => applyScenario("hard")}
+        >
+          <span>Сложная смена</span>
+          <p>Проверка при высокой параллельной нагрузке.</p>
+          <div className="dns-assessor-v2-chip-row"><b>{hardSimulationMinutes} мин</b><b>{hardCount} кейсов</b><b>все каналы</b></div>
+        </button>
+        <button
+          type="button"
+          className={`dns-assessor-v2-choice-card dns-assessor-v2-choice-card--manual ${scenarioConfirmed && manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
+          onClick={() => applyScenario("medium", true)}
+        >
+          <span>Ручная сборка</span>
+          <p>Для методиста: полный контроль кейсов, каналов и метрик.</p>
+          <div className="dns-assessor-v2-chip-row"><b>экспертно</b><b>гибко</b></div>
+        </button>
+      </div>
+
+      <div className="dns-assessor-v2-note">
+        Раздел “Состав” откроется после выбора сценария. Это сохраняет понятность первого варианта и боковую навигацию второго.
+      </div>
+    </section>
+  );
+
+  const renderCompositionPanel = () => (
+    <section className="dns-assessor-v2-panel dns-assessor-v2-main-panel">
+      <div className="dns-assessor-v2-panel-head">
+        <div>
+          <div className="dns-assessor-v2-kicker">Шаг 3</div>
+          <h2>Состав сценария</h2>
+          <p>Проверьте кейсы, каналы и стартовое состояние магазина. В рекомендованном режиме достаточно подтвердить состав.</p>
+        </div>
+        <span className={`dns-assessor-v2-pill ${compositionConfirmed ? "dns-assessor-v2-pill--ok" : ""}`}>
+          {activeCaseCount} ситуаций
+        </span>
+      </div>
+
+      <div className="dns-assessor-v2-summary-strip">
+        <div><span>Сценарий</span><strong>{scenarioName}</strong></div>
+        <div><span>Сложность</span><strong>{DIFFICULTY_INFO[difficulty].label}</strong></div>
+        <div><span>Время</span><strong>{estimatedTimeLimit} мин</strong></div>
+        <div><span>Каналы</span><strong>{enabledChannelLabels.length}</strong></div>
+      </div>
+
+      <div className="dns-assessor-v2-customizer">
+        <div className="dns-assessor-v2-customizer-head">
+          <div>
+            <span>Настройка под участника</span>
+            <strong>{activeParticipantLabel}</strong>
+            <p>Эти параметры сохраняются только для выбранного участника из очереди.</p>
+          </div>
+          <div className="dns-assessor-v2-customizer-mode">
+            <span>Ручной выбор кейсов</span>
+            <Switch
+              checked={manualSelection}
+              onCheckedChange={(value) => {
+                setManualSelection(value);
+                setCompositionConfirmed(false);
+                setChannelReviewDone(false);
+                if (value) {
+                  setShowAdvanced(true);
+                  setSetupMode("expert");
+                }
+              }}
+              data-testid="toggle-manual"
+            />
+          </div>
+        </div>
+        <div className="dns-assessor-v2-customizer-actions">
+          <button type="button" className={difficulty === "easy" ? "dns-assessor-v2-customizer-button dns-assessor-v2-customizer-button--active" : "dns-assessor-v2-customizer-button"} onClick={() => applyScenario("easy", manualSelection)}>
+            Снизить нагрузку
+            <span>меньше кейсов и сигналов</span>
+          </button>
+          <button type="button" className={difficulty === "medium" ? "dns-assessor-v2-customizer-button dns-assessor-v2-customizer-button--active" : "dns-assessor-v2-customizer-button"} onClick={() => applyScenario("medium", manualSelection)}>
+            Сбалансировать
+            <span>типовая оценка</span>
+          </button>
+          <button type="button" className={difficulty === "hard" ? "dns-assessor-v2-customizer-button dns-assessor-v2-customizer-button--active" : "dns-assessor-v2-customizer-button"} onClick={() => applyScenario("hard", manualSelection)}>
+            Усилить проверку
+            <span>больше нагрузки и каналов</span>
+          </button>
+        </div>
+        {manualSelection && (
+          <div className="dns-assessor-v2-manual-case-block">
+            <div className="dns-assessor-v2-case-tools">
+              <strong>Кейсы участника</strong>
+              <span>{selectedCases.length} выбрано</span>
+              <button type="button" onClick={() => { markCompositionDirty(); setSelectedCases(CASES_DATA.map((item) => item.id)); }}>Все</button>
+              <button type="button" onClick={() => { markCompositionDirty(); setSelectedCases([]); }}>Снять</button>
+            </div>
+            <div className="dns-assessor-v2-scroll-list">
+              {CASES_DATA.map((item) => {
+                const checked = selectedCases.includes(item.id);
+                return (
+                  <label key={item.id} className={`dns-assessor-v2-check-row ${checked ? "dns-assessor-v2-check-row--active" : ""}`}>
+                    <Checkbox checked={checked} onCheckedChange={() => toggleCase(item.id)} />
+                    <span>{item.title || item.id}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="dns-assessor-v2-toggle-line">
+        <div>
+          <strong>Расширенные настройки</strong>
+          <p>Откройте, если нужно вручную выбрать кейсы, события каналов или стартовые метрики.</p>
+        </div>
+        <Switch checked={showAdvanced || setupMode === "expert"} onCheckedChange={(value) => { setShowAdvanced(value); if (value) setSetupMode("expert"); }} />
+      </div>
+
+      {!(showAdvanced || setupMode === "expert") ? (
+        <div className="dns-assessor-v2-card-grid dns-assessor-v2-card-grid--compact">
+          <div className="dns-assessor-v2-info-card">
+            <h3>Кейсы</h3>
+            <p>Автоподбор по сценарию: {activeCaseCount} ситуаций.</p>
+          </div>
+          <div className="dns-assessor-v2-info-card">
+            <h3>Каналы</h3>
+            <p>{enabledChannelLabels.join(", ") || "Каналы выключены"}</p>
+          </div>
+          <div className="dns-assessor-v2-info-card">
+            <h3>События</h3>
+            <p>Выбрано событий из каналов: {selectedChannelSignalCount}.</p>
+          </div>
+          <div className="dns-assessor-v2-info-card">
+            <h3>Метрики</h3>
+            <p>Стартовое состояние магазина можно уточнить в экспертном режиме.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="dns-assessor-v2-expert-stack">
+          <div className="dns-assessor-v2-section-title">Каналы коммуникации</div>
+          <div className="dns-assessor-v2-card-grid dns-assessor-v2-card-grid--compact">
+            {channelInfo.map(({ key, label, icon: Icon, color }) => {
+              const checked = channels[key];
+              return (
+                <button
+                  key={key}
+                  type="button"
+                  className={`dns-assessor-v2-channel-card ${checked ? "dns-assessor-v2-channel-card--active" : ""}`}
+                  onClick={() => { markCompositionDirty(); setChannels((current) => ({ ...current, [key]: !current[key] })); }}
+                  style={{ "--channel-color": color } as any}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="dns-assessor-v2-section-title">События из каналов</div>
+          <div className="dns-assessor-v2-channel-groups">
+            {channelSignalGroups.map((group) => (
+              <div key={group.key} className={`dns-assessor-v2-channel-group ${!group.enabled ? "dns-assessor-v2-channel-group--disabled" : ""}`}>
+                <div className="dns-assessor-v2-channel-group-head">
+                  <strong>{group.title}</strong>
+                  <span>{selectedChannelItemIds[group.key].length} из {group.items.length}</span>
+                </div>
+                <div className="dns-assessor-v2-channel-actions">
+                  <button type="button" onClick={() => setAllChannelItems(group.key, group.items.map((item) => item.id))} disabled={!group.enabled}>Все</button>
+                  <button type="button" onClick={() => setAllChannelItems(group.key, [])} disabled={!group.enabled}>Нет</button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="dns-assessor-v2-section-title">Стартовые метрики магазина</div>
+          <div className="dns-assessor-v2-card-grid dns-assessor-v2-card-grid--compact">
+            {STORE_STATE_PRESETS.map((preset) => {
+              const active = Object.entries(preset.metrics).every(([key, value]) => initialMetrics[key as keyof RealisticMetrics] === value);
+              return (
+                <button key={preset.id} type="button" className={`dns-assessor-v2-info-card ${active ? "dns-assessor-v2-info-card--active" : ""}`} onClick={() => applyMetricPreset(preset.id)}>
+                  <h3>{preset.title}</h3>
+                  <p>{preset.summary}</p>
+                </button>
+              );
+            })}
+          </div>
+          <div className="dns-assessor-v2-metric-grid">
+            {Object.keys(STORE_METRIC_LABELS).map((key) => (
+              <div key={key}>
+                <Label className="dns-assessor-v2-label">{STORE_METRIC_LABELS[key as keyof typeof STORE_METRIC_LABELS]}</Label>
+                <Input value={initialMetrics[key as keyof RealisticMetrics]} onChange={(event) => updateMetric(key as keyof RealisticMetrics, Number(event.target.value))} className="dns-assessor-v2-input" />
+              </div>
+            ))}
+          </div>
+
+          <div className="dns-assessor-v2-toggle-line">
+            <div>
+              <strong>Тренировочный режим</strong>
+              <p>Для тестового прохождения можно ускорить время симуляции.</p>
+            </div>
+            <Switch checked={isTestMode} onCheckedChange={setIsTestMode} />
+          </div>
+          {isTestMode && (
+            <div className="dns-assessor-v2-slider-row">
+              <span>Скорость: x{speedMultiplier}</span>
+              <Slider value={[speedMultiplier]} min={0.5} max={3} step={0.5} onValueChange={([value]) => setSpeedMultiplier(value)} />
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+
+  const renderReviewPanel = () => (
+    <section className="dns-assessor-v2-panel dns-assessor-v2-main-panel">
+      <div className="dns-assessor-v2-panel-head">
+        <div>
+          <div className="dns-assessor-v2-kicker">Шаг 4</div>
+          <h2>Проверка перед запуском</h2>
+          <p>Финальный экран объясняет, почему запуск доступен или закрыт. Если что-то не готово, интерфейс показывает причину.</p>
+        </div>
+        <span className={`dns-assessor-v2-pill ${channelReviewDone ? "dns-assessor-v2-pill--ok" : "dns-assessor-v2-pill--warn"}`}>
+          Готовность {setupProgress}/4
+        </span>
+      </div>
+
+      <div className="dns-assessor-v2-review-list">
+        {reviewItems.map((item, index) => (
+          <div key={item.title} className="dns-assessor-v2-review-row">
+            <span className={`dns-assessor-v2-review-num ${item.done ? "dns-assessor-v2-review-num--done" : ""}`}>{index + 1}</span>
+            <div>
+              <strong>{item.title}</strong>
+              <p>{item.detail}</p>
+            </div>
+            <span className={`dns-assessor-v2-pill ${item.done ? "dns-assessor-v2-pill--ok" : "dns-assessor-v2-pill--warn"}`}>
+              {item.done ? "готово" : "нужно"}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div className="dns-assessor-v2-launch-list">
+        <div className="dns-assessor-v2-section-title">Очередь запуска</div>
+        {visibleParticipantSetups.map((item, index) => {
+          const ready = isSetupReadyToLaunch(item);
+          return (
+            <div key={item.id} className={`dns-assessor-v2-launch-row ${ready ? "dns-assessor-v2-launch-row--ready" : ""}`}>
+              <span>{index + 1}</span>
+              <div>
+                <strong>{item.name.trim() || `Участник ${index + 1}`}</strong>
+                <p>{getCasesForSetup(item).length} кейсов · {DIFFICULTY_INFO[item.difficulty].label} · {item.manualSelection ? "ручная настройка" : "автосценарий"}</p>
+              </div>
+              <em>{ready ? "готов" : "не готов"}</em>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="dns-assessor-v2-note">
+        Запуск появляется только после подтверждения состава. Это делает подготовку понятной и снижает риск случайно стартовать непроверенный сценарий.
+      </div>
+    </section>
+  );
+
+  const renderSessionsPanel = () => (
+    <section className="dns-assessor-v2-panel dns-assessor-v2-main-panel">
+      <div className="dns-assessor-v2-panel-head">
+        <div>
+          <div className="dns-assessor-v2-kicker">Рабочий центр</div>
+          <h2>Текущие симуляции</h2>
+          <p>Сессии вынесены в отдельный раздел, а не спрятаны внизу страницы настройки.</p>
+        </div>
+        <span className="dns-assessor-v2-pill dns-assessor-v2-pill--ok">
+          {monitorSessions.filter((item) => item.status === "running").length} активные
+        </span>
+      </div>
+
+      <div className="dns-assessor-v2-summary-strip">
+        <div><span>Всего</span><strong>{monitorSessions.length}</strong></div>
+        <div><span>Идут</span><strong className="text-[#35d38a]">{monitorSessions.filter((item) => item.status === "running").length}</strong></div>
+        <div><span>Ожидают</span><strong className="text-[#f5c04e]">{monitorSessions.filter((item) => item.status === "waiting").length}</strong></div>
+        <div><span>Завершены</span><strong className="text-[#5eb1ff]">{monitorSessions.filter((item) => item.status === "completed").length}</strong></div>
+      </div>
+
+      {launchResults.length > 0 && (
+        <div className="dns-assessor-v2-launch-result">
+          <div className="dns-assessor-v2-section-title">Последний запуск</div>
+          {launchResults.map((item) => (
+            <div key={item.liveSessionId} className="dns-assessor-v2-launch-result-row">
+              <span>{item.participantName}</span>
+              <strong>{item.accessCode}</strong>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="dns-assessor-v2-session-list">
+        {monitorSessions.length === 0 && (
+          <div className="dns-assessor-v2-empty">
+            <Info className="h-4 w-4" />
+            Пока нет симуляций. После запуска участники появятся здесь автоматически.
+          </div>
+        )}
+        {monitorSessions.map((session) => {
+          const statusInfo = getStatusLabel(session.status);
+          return (
+            <div key={session.liveSessionId} className="dns-assessor-v2-session-row">
+              <div className="min-w-0">
+                <strong>{session.participantName}</strong>
+                <p>Код: {session.accessCode} · Оценщик: {session.assessorName || "—"}</p>
+              </div>
+              <div className="dns-assessor-v2-progress">
+                <span style={{ width: Math.round(session.progressPercent) + "%" }} />
+              </div>
+              <span className={statusInfo.color}>{statusInfo.label}</span>
+              <div className="dns-assessor-v2-session-actions">
+                {session.status === "completed" && session.runtimeSessionId ? (
+                  <Button type="button" size="sm" className="bg-[#35d38a] text-[#061018] hover:bg-[#2bc479]" onClick={() => navigate(`/results/${session.runtimeSessionId}`)}>
+                    <FileText className="mr-2 h-4 w-4" />
+                    Результаты
+                  </Button>
+                ) : (
+                  <Button type="button" size="sm" className="bg-[#5eb1ff] text-white hover:bg-[#4a9fe8]" onClick={() => observeLiveSession(session.liveSessionId)} disabled={observeLoadingId === session.liveSessionId}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    {observeLoadingId === session.liveSessionId ? "Открытие..." : "Наблюдать"}
+                  </Button>
+                )}
+                <Button type="button" size="sm" variant="outline" className="border-[#ff6472]/35 bg-transparent text-[#ffc2c8] hover:bg-[#ff6472]/10" onClick={() => removeLiveSession(session.liveSessionId)} disabled={removeLoadingId === session.liveSessionId}>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  {removeLoadingId === session.liveSessionId ? "Удаление..." : "Удалить"}
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+
+  const renderMainPanel = () => {
+    switch (activePanel) {
+      case "participant": return renderParticipantPanel();
+      case "scenario": return renderScenarioPanel();
+      case "composition": return renderCompositionPanel();
+      case "review": return renderReviewPanel();
+      case "sessions": return renderSessionsPanel();
+      default: return renderParticipantPanel();
+    }
+  };
+
+  const renderPrimaryAction = () => {
+    if (activePanel === "participant") {
+      return <Button type="button" className="dns-assessor-v2-primary" onClick={continueFromParticipant} disabled={!participantReady}>Продолжить к сценарию</Button>;
+    }
+    if (activePanel === "scenario") {
+      return <Button type="button" className="dns-assessor-v2-primary" onClick={continueFromScenario} disabled={!scenarioConfirmed}>Продолжить к составу</Button>;
+    }
+    if (activePanel === "composition") {
+      return <Button type="button" className="dns-assessor-v2-primary" onClick={continueFromComposition} disabled={activeCaseCount === 0}>Перейти к проверке</Button>;
+    }
+    if (activePanel === "review") {
+      if (!channelReviewDone) {
+        return <Button type="button" className="dns-assessor-v2-primary" onClick={confirmChannels}>Подтвердить каналы</Button>;
+      }
+      return (
+        <Button type="button" className="dns-assessor-v2-primary" onClick={handleStart} disabled={readyParticipantSetups.length === 0 || isStarting} data-testid="button-start">
+          <Play className="mr-2 h-4 w-4" />
+          {isStarting ? "Запускаем..." : `Запустить участников: ${readyParticipantSetups.length}`}
+        </Button>
+      );
+    }
+    return <Button type="button" className="dns-assessor-v2-primary" onClick={() => setActivePanel("participant")}>Новая оценка</Button>;
+  };
+
+  const renderSidePanel = () => (
+    <aside className="dns-assessor-v2-side">
+      {activePanel === "sessions" ? (
+        <>
+          <section className="dns-assessor-v2-panel dns-assessor-v2-side-card">
+            <h3>Новая настройка</h3>
+            <p>Можно добавить следующего участника, уже запущенные сессии останутся в списке.</p>
+            <div className="dns-assessor-v2-side-field">
+              <span>Испытуемый</span>
+              <strong>{participantName.trim() || "Новый сотрудник"}</strong>
+            </div>
+            <div className="dns-assessor-v2-side-field">
+              <span>Сценарий</span>
+              <strong>{scenarioName}</strong>
+            </div>
+            {renderPrimaryAction()}
+          </section>
+          <section className="dns-assessor-v2-panel dns-assessor-v2-side-card">
+            <h3>Длительность</h3>
+            <div className="dns-assessor-v2-passport-grid">
+              <div><strong>{estimatedTimeLimit}</strong><span>минут</span></div>
+              <div><strong>{activeCaseCount}</strong><span>кейсов</span></div>
+            </div>
+          </section>
+        </>
+      ) : (
+        <>
+          <section className="dns-assessor-v2-panel dns-assessor-v2-side-card">
+            <h3>{visibleParticipantSetups.length > 1 && activePanel === "review" ? "Паспорт активного участника" : "Паспорт оценки"}</h3>
+            <p>
+              {visibleParticipantSetups.length > 1 && activePanel === "review"
+                ? `${activeParticipantLabel}: параметры показаны отдельно от общей очереди запуска.`
+                : "Итог настройки виден всегда."}
+            </p>
+            <div className="dns-assessor-v2-passport-grid">
+              <div><strong>{estimatedTimeLimit}</strong><span>минут</span></div>
+              <div><strong>{activeCaseCount}</strong><span>ситуаций</span></div>
+              <div><strong>{enabledChannelLabels.length}</strong><span>канала</span></div>
+              <div><strong>5</strong><span>компетенций</span></div>
+            </div>
+          </section>
+          <section className="dns-assessor-v2-panel dns-assessor-v2-side-card">
+            <h3>Влияние на оценку</h3>
+            <div className="dns-assessor-v2-impact-list">
+              <div><span>Коммуникация</span><strong className="dns-assessor-v2-blue">{enabledChannelLabels.length >= 3 ? "выше вес" : "базово"}</strong></div>
+              <div><span>Планирование</span><strong className="dns-assessor-v2-ok">баланс</strong></div>
+              <div><span>Риск перегруза</span><strong className="dns-assessor-v2-warn">{difficulty === "hard" ? "высокий" : "умеренный"}</strong></div>
+            </div>
+          </section>
+          {startError && <div className="dns-assessor-v2-error">{startError}</div>}
+          {renderPrimaryAction()}
+        </>
+      )}
+    </aside>
+  );
+
   return (
     <div
       className="dns-product-shell relative overflow-auto"
@@ -850,20 +1844,24 @@ export default function AssessorPage() {
     >
       <div className="absolute inset-0 bg-gradient-to-b from-[#0d1421ee] via-[#16213ef2] to-[#0d1421f7]" />
 
-      <div className="dns-page-frame max-w-4xl">
-        <header className="dns-brand-header">
+      <div className="dns-page-frame dns-assessor-v2-frame">
+        <header className="dns-brand-header dns-assessor-v2-header">
           <div className="dns-brand-title">
             <div className="dns-brand-mark">D</div>
             <div>
               <div className="dns-brand-kicker">DNS SimCenter</div>
-              <h1 className="dns-brand-heading">Панель оценщика</h1>
-              <p className="dns-brand-subtitle">Запуск, наблюдение и управление live-сессиями в едином HR-сценарии.</p>
+              <h1 className="dns-brand-heading">Меню оценщика</h1>
+              <p className="dns-brand-subtitle">Пошаговая подготовка, проверка запуска и контроль live-сессий в одном рабочем центре.</p>
             </div>
           </div>
-          <div className="dns-header-actions">
+          <div className="dns-header-actions dns-assessor-v2-header-actions">
+            <button type="button" onClick={() => setShowWiki(true)} className="dns-assessor-v2-header-button">
+              <BookOpen className="h-4 w-4" />
+              WIKI
+            </button>
             <button
               onClick={() => navigate("/")}
-              className="inline-flex items-center gap-2 rounded-xl border border-[#2a3a4e] bg-[#101826]/70 px-3 py-2 text-sm text-[#9fb0ca] hover:border-[#FF6B00]/50 hover:text-white"
+              className="dns-assessor-v2-header-button"
               data-testid="back-button"
             >
               <ArrowLeft className="w-4 h-4" /> К ролям
@@ -878,842 +1876,13 @@ export default function AssessorPage() {
             onToggleProcess={() => setWikiProcessOpen(prev => !prev)}
           />
         ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => setShowWiki(true)}
-              className="dns-assessor-wiki-entry"
-            >
-              <div className="dns-assessor-wiki-entry-icon">
-                <BookOpen className="h-6 w-6" />
-              </div>
-              <div className="min-w-0 flex-1 text-left">
-                <div className="dns-assessor-wiki-entry-kicker">Методика настройки</div>
-                <div className="dns-assessor-wiki-entry-title">Открыть WIKI оценщика</div>
-                <p>
-                  Что делает каждый блок меню, какие рычаги меняют сценарий и где настройки влияют на компетенции,
-                  метрики магазина и итоговый отчет.
-                </p>
-              </div>
-              <div className="dns-assessor-wiki-entry-action">
-                <Workflow className="h-4 w-4" />
-                Перейти
-              </div>
-            </button>
-
-            {/* ── Wizard Steps Indicator ── */}
-            <WizardSteps currentStep={wizardStep} />
-
-            <div className="space-y-5">
-
-          {/* ═══════════════════════════════════════════
-              ШАГ 1: КТО УЧАСТНИК?
-              ═══════════════════════════════════════════ */}
-          {wizardStep === 1 && (
-            <>
-              <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] backdrop-blur-sm p-5">
-                <div className="flex items-center gap-2 mb-5">
-                  <UserCheck className="w-5 h-5 text-[#FF6B00]" />
-                  <h3 className="text-base font-semibold text-white">Кто участник?</h3>
-                </div>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div>
-                    <Label className="text-xs text-[#8890a8] mb-1.5 block">
-                      ФИО оценщика <span className="text-[#ff4444]">*</span>
-                    </Label>
-                    <Input
-                      value={assessorName}
-                      onChange={e => setAssessorName(e.target.value)}
-                      placeholder="Иванов И.И."
-                      className="bg-[#141c2b] border-[#2a3a4e] text-white placeholder:text-[#4a5068]"
-                      data-testid="input-assessor-name"
-                    />
-                    <p className="text-[10px] text-[#6f7990] mt-1">Тот, кто оценивает прохождение</p>
-                  </div>
-                  <div>
-                    <Label className="text-xs text-[#8890a8] mb-1.5 block">
-                      ФИО участника <span className="text-[#ff4444]">*</span>
-                    </Label>
-                    <Input
-                      value={participantName}
-                      onChange={e => setParticipantName(e.target.value)}
-                      placeholder="Петров П.П."
-                      className="bg-[#141c2b] border-[#2a3a4e] text-white placeholder:text-[#4a5068]"
-                      data-testid="input-participant-name"
-                    />
-                    <p className="text-[10px] text-[#6f7990] mt-1">Кандидат или сотрудник, проходящий симуляцию</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Тип симуляции — компактный */}
-              <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] backdrop-blur-sm p-5">
-                <h3 className="text-sm font-semibold text-[#FF6B00] mb-4 uppercase tracking-wider">Тип симуляции</h3>
-                <div className="grid gap-3 md:grid-cols-3">
-                  {SIMULATION_ROLE_CARDS.map((item) => {
-                    const isActive = simulationRole === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => item.available && setSimulationRole(item.id)}
-                        disabled={!item.available}
-                        className={`relative min-h-[100px] overflow-hidden rounded-xl border p-4 text-left transition-all ${
-                          isActive
-                            ? "border-[#4a9eff] bg-[#4a9eff]/10"
-                            : item.available
-                            ? "border-[#2a3a4e] bg-[#141c2b]/45 hover:border-[#3a4a5e]"
-                            : "border-[#2a3a4e] bg-[#141c2b]/20 opacity-50 cursor-not-allowed"
-                        }`}
-                      >
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold leading-5 text-white">{item.title}</div>
-                          <div className="mt-2 text-xs leading-relaxed text-[#a5b2c8]">{item.description}</div>
-                          {!item.available && (
-                            <span className="absolute bottom-3 right-3 rounded-full border border-[#ffc107]/35 bg-[#ffc107]/12 px-2 py-1 text-[8px] font-semibold uppercase leading-none tracking-[0.04em] text-[#ffd56e]">
-                              В разработке
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Quick Start — быстрый запуск если ФИО уже введены */}
-              {participantName.trim() && assessorName.trim() && (
-                <div className="rounded-xl border border-[#FF6B00]/20 bg-[#FF6B00]/5 p-5">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Rocket className="w-4 h-4 text-[#FF6B00]" />
-                    <h3 className="text-sm font-semibold text-[#FF6B00]">Быстрый запуск</h3>
-                    <Tooltip text="Выберите уровень сложности для мгновенного запуска симуляции с настройками по умолчанию.">
-                      <HelpCircle className="w-3.5 h-3.5 text-[#6f7990] cursor-help" />
-                    </Tooltip>
-                  </div>
-                  <div className="grid grid-cols-3 gap-3">
-                    {(["easy", "medium", "hard"] as const).map(d => {
-                      const info = DIFFICULTY_INFO[d];
-                      const Icon = info.icon;
-                      return (
-                        <button
-                          key={d}
-                          onClick={() => quickStart(d)}
-                          disabled={isStarting}
-                          className="flex flex-col items-center gap-2 p-4 rounded-xl border border-[#2a3a4e] bg-[#141c2b]/45 hover:border-[color:var(--c)] hover:bg-[color:var(--c)]/8 transition-all text-center"
-                          style={{ "--c": info.color } as any}
-                        >
-                          <Icon className="w-6 h-6" style={{ color: info.color }} />
-                          <div className="text-sm font-semibold text-white">{info.label}</div>
-                          <div className="text-[10px] text-[#8890a8] leading-tight">{info.duration}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Next step button */}
-              <Button
-                onClick={() => {
-                  if (!assessorName.trim() || !participantName.trim()) {
-                    setStartError("Заполните ФИО оценщика и участника");
-                    return;
-                  }
-                  setStartError(null);
-                  setWizardStep(2);
-                }}
-                className="w-full h-12 bg-[#FF6B00] hover:bg-[#e06000] text-white font-semibold text-sm tracking-wider"
-              >
-                Далее: выбрать сложность
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Button>
-              {startError && (
-                <div className="rounded-xl border border-[#d98f8f]/35 bg-[#d98f8f]/10 px-4 py-3 text-sm text-[#ffdede]">
-                  {startError}
-                </div>
-              )}
-            </>
-          )}
-
-          {/* ═══════════════════════════════════════════
-              ШАГ 2: ВЫБОР СЛОЖНОСТИ
-              ═══════════════════════════════════════════ */}
-          {wizardStep === 2 && (
-            <>
-              <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] backdrop-blur-sm p-5">
-                <div className="flex items-center gap-2 mb-2">
-                  <Shield className="w-5 h-5 text-[#FF6B00]" />
-                  <h3 className="text-base font-semibold text-white">Выберите уровень сложности</h3>
-                </div>
-                <p className="text-xs text-[#8890a8] mb-5 ml-7">Сложность влияет на количество ситуаций, каналы связи и время прохождения</p>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-                  {(["easy", "medium", "hard"] as const).map(d => {
-                    const info = DIFFICULTY_INFO[d];
-                    const Icon = info.icon;
-                    const isActive = difficulty === d;
-                    return (
-                      <button
-                        key={d}
-                        onClick={() => setDifficulty(d)}
-                        className={`relative p-5 rounded-xl border text-left transition-all ${
-                          isActive
-                            ? "border-[color:var(--c)] bg-[color:var(--c)]/10"
-                            : "border-[#2a3a4e] bg-[#141c2b]/50 hover:border-[#3a4a5e]"
-                        }`}
-                        style={{ "--c": info.color } as any}
-                        data-testid={`difficulty-${d}`}
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <Icon className="w-6 h-6" style={{ color: info.color }} />
-                          {isActive && (
-                            <CheckCircle2 className="w-5 h-5" style={{ color: info.color }} />
-                          )}
-                        </div>
-                        <div className="text-base font-semibold text-white mb-1">{info.label}</div>
-                        <p className="text-xs text-[#8890a8] leading-relaxed mb-3">{info.description}</p>
-                        <div className="flex items-center gap-1.5 text-[10px] text-[#6f7990]">
-                          <Timer className="w-3 h-3" />
-                          {info.duration}
-                        </div>
-
-                        {/* HR Tooltip inline */}
-                        <div className="mt-3 p-2 rounded-lg bg-[#0f1923]/60 border border-[#2a3a4e]/50">
-                          <div className="flex items-start gap-1.5">
-                            <Info className="w-3 h-3 text-[#6f7990] mt-0.5 flex-shrink-0" />
-                            <p className="text-[10px] text-[#a5b2c8] leading-relaxed">{HR_TOOLTIPS[d]}</p>
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Резюме выбора */}
-                <div className="rounded-lg border border-[#2a3a4e]/50 bg-[#141c2b]/40 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: DIFFICULTY_INFO[difficulty].color }} />
-                      <div>
-                        <div className="text-sm text-white">
-                          <span className="font-semibold">{DIFFICULTY_INFO[difficulty].label}</span>
-                          {" — "}{activeCaseCount} ситуаций, {DIFFICULTY_INFO[difficulty].duration}
-                        </div>
-                        <div className="text-[10px] text-[#6f7990] mt-0.5">
-                          Каналы: {Object.entries(DIFFICULTY_INFO[difficulty].channels)
-                            .filter(([, v]) => v)
-                            .map(([k]) => ({ audio: "звонки", email: "почта", messenger: "чат", video: "видео" }[k]))
-                            .join(", ")}
-                        </div>
-                      </div>
-                    </div>
-                    <Tooltip text="Количество ситуаций и каналы связи подбираются автоматически по уровню сложности">
-                      <HelpCircle className="w-4 h-4 text-[#6f7990] cursor-help" />
-                    </Tooltip>
-                  </div>
-                </div>
-              </div>
-
-              {/* Mode: Test vs Real — компактный */}
-              <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] backdrop-blur-sm p-5">
-                <h3 className="text-sm font-semibold text-[#FF6B00] mb-4 uppercase tracking-wider">Режим прохождения</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setIsTestMode(false)}
-                    className={`p-4 rounded-lg border text-left transition-all ${
-                      !isTestMode
-                        ? "border-[#00C853] bg-[#00C853]/10"
-                        : "border-[#2a3a4e] bg-[#141c2b]/50 hover:border-[#3a4a5e]"
-                    }`}
-                    data-testid="mode-credit"
-                  >
-                    <Award className="w-5 h-5 mb-2 text-[#00C853]" />
-                    <div className="text-sm font-semibold text-white">В зачёт</div>
-                    <p className="text-xs text-[#8890a8] mt-1">Официальная оценка. Все решения сохраняются в отчёт.</p>
-                  </button>
-                  <button
-                    onClick={() => setIsTestMode(true)}
-                    className={`p-4 rounded-lg border text-left transition-all ${
-                      isTestMode
-                        ? "border-[#FFB300] bg-[#FFB300]/10"
-                        : "border-[#2a3a4e] bg-[#141c2b]/50 hover:border-[#3a4a5e]"
-                    }`}
-                    data-testid="mode-test"
-                  >
-                    <GraduationCap className="w-5 h-5 mb-2 text-[#FFB300]" />
-                    <div className="text-sm font-semibold text-white">Тренировка</div>
-                    <p className="text-xs text-[#8890a8] mt-1">Результаты не сохраняются. Для знакомства с интерфейсом.</p>
-                  </button>
-                </div>
-
-                {isTestMode && (
-                  <div className="mt-4 p-4 rounded-lg border border-[#FFB300]/30 bg-[#FFB300]/5">
-                    <div className="flex items-center justify-between mb-3">
-                      <Label className="text-xs text-[#FFB300] font-semibold">
-                        Скорость симуляции: {speedMultiplier}x
-                      </Label>
-                      <span className="text-[10px] text-[#8890a8]">
-                        {speedMultiplier === 1 ? "Нормальный темп" : speedMultiplier <= 3 ? "Ускоренный" : speedMultiplier <= 6 ? "Быстрый" : "Экстремальный"}
-                      </span>
-                    </div>
-                    <Slider
-                      value={[speedMultiplier]}
-                      onValueChange={([v]) => setSpeedMultiplier(v)}
-                      min={1}
-                      max={10}
-                      step={1}
-                      className="w-full"
-                      data-testid="slider-speed"
-                    />
-                    <div className="flex justify-between text-[10px] text-[#555570] mt-1">
-                      <span>x1</span>
-                      <span>x5</span>
-                      <span>x10</span>
-                    </div>
-                    <p className="mt-3 text-[11px] leading-relaxed text-[#c9a94d]">
-                      В тренировочном режиме ускоряются сигналы и время. Симуляция завершится автоматически при прохождении всех кейсов.
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] backdrop-blur-sm p-5">
-                <div className="mb-4 flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-[#4a9eff]" />
-                  <div>
-                    <h3 className="text-sm font-semibold text-[#4a9eff] uppercase tracking-wider">Показатели подразделения</h3>
-                    <p className="mt-1 text-xs text-[#8890a8]">
-                      Выберите один из 5 уровней стартовой нагрузки. Эти значения попадут в симуляцию участника.
-                    </p>
-                  </div>
-                </div>
-                <div className="grid gap-3 md:grid-cols-5">
-                  {STORE_STATE_PRESETS.map((preset) => {
-                    const isActive = Object.entries(preset.metrics).every(([key, value]) => initialMetrics[key as keyof RealisticMetrics] === value);
-                    return (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => applyMetricPreset(preset.id)}
-                        className={`rounded-xl border p-3 text-left transition-all ${
-                          isActive
-                            ? "border-[#4a9eff] bg-[#4a9eff]/12 shadow-[0_14px_30px_rgba(74,158,255,0.12)]"
-                            : "border-[#2a3a4e] bg-[#141c2b]/45 hover:border-[#3a4a5e]"
-                        }`}
-                      >
-                        <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8ec5ff]">{preset.title.replace("Уровень ", "Ур. ")}</div>
-                        <div className="mt-2 text-[11px] leading-relaxed text-[#aebbd2]">{preset.summary}</div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Навигация между шагами */}
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => setWizardStep(1)}
-                  className="flex-1 h-12 border-[#2a3a4e] text-[#8890a8] hover:text-white hover:bg-[#2a3a4e]/30"
-                >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Назад
-                </Button>
-                <Button
-                  onClick={() => setWizardStep(3)}
-                  className="flex-[2] h-12 bg-[#FF6B00] hover:bg-[#e06000] text-white font-semibold text-sm tracking-wider"
-                >
-                  Далее: запуск
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            </>
-          )}
-
-          {/* ═══════════════════════════════════════════
-              ШАГ 3: ПОДТВЕРЖДЕНИЕ И ЗАПУСК
-              ═══════════════════════════════════════════ */}
-          {wizardStep === 3 && (
-            <>
-              {/* Резюме настроек перед запуском */}
-              <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] backdrop-blur-sm p-5">
-                <div className="flex items-center gap-2 mb-5">
-                  <Rocket className="w-5 h-5 text-[#FF6B00]" />
-                  <h3 className="text-base font-semibold text-white">Проверьте настройки</h3>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between py-2 border-b border-[#2a3a4e]/50">
-                    <div className="flex items-center gap-2 text-sm text-[#8890a8]">
-                      <UserCheck className="w-4 h-4" />
-                      Оценщик
-                    </div>
-                    <div className="text-sm font-medium text-white">{assessorName || "—"}</div>
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-[#2a3a4e]/50">
-                    <div className="flex items-center gap-2 text-sm text-[#8890a8]">
-                      <Users className="w-4 h-4" />
-                      Участник
-                    </div>
-                    <div className="text-sm font-medium text-white">{participantName || "—"}</div>
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-[#2a3a4e]/50">
-                    <div className="flex items-center gap-2 text-sm text-[#8890a8]">
-                      {(() => { const I = DIFFICULTY_INFO[difficulty].icon; return <I className="w-4 h-4" style={{ color: DIFFICULTY_INFO[difficulty].color }} />; })()}
-                      Уровень сложности
-                    </div>
-                    <div className="text-sm font-medium text-white" style={{ color: DIFFICULTY_INFO[difficulty].color }}>
-                      {DIFFICULTY_INFO[difficulty].label}
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-[#2a3a4e]/50">
-                    <div className="flex items-center gap-2 text-sm text-[#8890a8]">
-                      <BarChart3 className="w-4 h-4" />
-                      Количество ситуаций
-                    </div>
-                    <div className="text-sm font-medium text-white">{activeCaseCount}</div>
-                  </div>
-                  <div className="flex items-center justify-between py-2 border-b border-[#2a3a4e]/50">
-                    <div className="flex items-center gap-2 text-sm text-[#8890a8]">
-                      <Timer className="w-4 h-4" />
-                      Примерное время
-                    </div>
-                    <div className="text-sm font-medium text-white">{DIFFICULTY_INFO[difficulty].duration}</div>
-                  </div>
-                  <div className="flex items-center justify-between py-2">
-                    <div className="flex items-center gap-2 text-sm text-[#8890a8]">
-                      {isTestMode ? <GraduationCap className="w-4 h-4" /> : <Award className="w-4 h-4" />}
-                      Режим
-                    </div>
-                    <div className={`text-sm font-medium ${isTestMode ? "text-[#FFB300]" : "text-[#00C853]"}`}>
-                      {isTestMode ? "Тренировка" : "В зачёт"}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Toggle: Расширенные настройки ── */}
-              <div className="rounded-xl border border-[#2a3a4e]/50 bg-[#1e2a3a]/60 p-4">
-                <button
-                  onClick={() => setShowAdvanced(prev => !prev)}
-                  className="flex items-center justify-between w-full text-left"
-                >
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="w-4 h-4 text-[#4a9eff]" />
-                    <span className="text-sm font-medium text-[#8890a8]">Расширенные настройки</span>
-                    <Tooltip text="Для опытных оценщиков: ручной выбор кейсов, каналов связи и стартовых метрик">
-                      <HelpCircle className="w-3.5 h-3.5 text-[#6f7990] cursor-help" />
-                    </Tooltip>
-                  </div>
-                  {showAdvanced ? (
-                    <ChevronUp className="w-4 h-4 text-[#6f7990]" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-[#6f7990]" />
-                  )}
-                </button>
-              </div>
-
-              {/* ═══════ РАСШИРЕННЫЕ НАСТРОЙКИ (скрыты по умолчанию) ═══════ */}
-              {showAdvanced && (
-                <>
-                  {/* Case Selection */}
-                  <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] backdrop-blur-sm p-5">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-semibold text-[#FF6B00] uppercase tracking-wider">Выбор ситуаций</h3>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-[#8890a8]">Ручной выбор</span>
-                        <Switch
-                          checked={manualSelection}
-                          onCheckedChange={setManualSelection}
-                          data-testid="toggle-manual"
-                        />
-                      </div>
-                    </div>
-
-                    {!manualSelection ? (
-                      <div className="bg-[#141c2b]/60 rounded-lg p-4 border border-[#2a3a4e]/50">
-                        <p className="text-sm text-[#a0a0b8]">
-                          Автоподбор по сложности <span className="text-[#FF6B00] font-medium">{DIFFICULTY_INFO[difficulty].label}</span>.
-                          Будет выбрано <span className="text-white font-medium">{activeCaseCount} ситуаций</span> из {CASES_DATA.length}.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scroll pr-2">
-                        {CASES_DATA.map(c => (
-                          <label
-                            key={c.id}
-                            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                              selectedCases.includes(c.id)
-                                ? "border-[#FF6B00]/40 bg-[#FF6B00]/5"
-                                : "border-[#2a3a4e]/50 bg-[#141c2b]/30 hover:border-[#3a4a5e]"
-                            }`}
-                          >
-                            <Checkbox
-                              checked={selectedCases.includes(c.id)}
-                              onCheckedChange={() => toggleCase(c.id)}
-                              className="mt-0.5 border-[#3a4a5e] data-[state=checked]:bg-[#FF6B00] data-[state=checked]:border-[#FF6B00]"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm text-white font-medium">{c.id}: {c.title}</div>
-                              <p className="text-xs text-[#8890a8] mt-0.5 line-clamp-2">{c.description}</p>
-                            </div>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="mt-4 rounded-lg border border-[#2a3a4e]/50 bg-[#141c2b]/40 p-4">
-                      <label className="flex cursor-pointer items-start gap-3">
-                        <Checkbox
-                          checked={repeatCases}
-                          onCheckedChange={(checked) => setRepeatCases(Boolean(checked))}
-                          className="mt-0.5 border-[#3a4a5e] data-[state=checked]:bg-[#FF6B00] data-[state=checked]:border-[#FF6B00]"
-                        />
-                        <div>
-                          <div className="text-sm font-medium text-white">Повторять ситуации по циклу</div>
-                          <p className="mt-1 text-xs leading-relaxed text-[#8890a8]">
-                            Если включено, одна ситуация может повторяться. Если выключено — каждая показывается один раз.
-                          </p>
-                        </div>
-                      </label>
-                    </div>
-                  </div>
-
-                  {/* Communication Channels — в расширенном режиме */}
-                  <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] backdrop-blur-sm p-5">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-sm font-semibold text-[#FF6B00] uppercase tracking-wider">Каналы коммуникации</h3>
-                      <Tooltip text="Выбираются автоматически по сложности. Изменяйте только если знаете, что делаете.">
-                        <HelpCircle className="w-3.5 h-3.5 text-[#6f7990] cursor-help" />
-                      </Tooltip>
-                    </div>
-                    <p className="text-xs text-[#8890a8] mb-4">Автоподбор по сложности. Можно изменить вручную.</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      {channelInfo.map(({ key, label, icon: Icon, color }) => {
-                        const isOn = channels[key];
-                        return (
-                          <div
-                            key={key}
-                            onClick={() => setChannels(prev => ({ ...prev, [key]: !prev[key] }))}
-                            className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                              isOn
-                                ? "border-[color:var(--c)] bg-[color:var(--c)]/8"
-                                : "border-[#2a3a4e] bg-[#141c2b]/30 opacity-50"
-                            }`}
-                            style={{ "--c": color } as any}
-                          >
-                            <Icon className="w-4 h-4 flex-shrink-0" style={{ color }} />
-                            <span className="text-sm text-white">{label}</span>
-                            <div className={`ml-auto w-3 h-3 rounded-full flex-shrink-0 ${isOn ? "bg-[color:var(--c)]" : "bg-[#2a3a4e]"}`} style={{ "--c": color } as any} />
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <div className="mt-5 rounded-xl border border-[#2a3a4e]/70 bg-[#101826]/55 p-4">
-                      <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-semibold uppercase tracking-[0.16em] text-[#8ec5ff]">События из каналов</div>
-                          <p className="mt-1 text-xs leading-relaxed text-[#8890a8]">
-                            Выберите конкретные письма, сообщения и видео, которые будут приходить участнику в ходе симуляции.
-                          </p>
-                        </div>
-                        <div className="rounded-full border border-[#2a3a4e] bg-[#141c2b]/80 px-3 py-1 text-xs text-[#dbe2f0]">
-                          Выбрано: {selectedChannelSignalCount}
-                        </div>
-                      </div>
-                      <div className="grid gap-3 lg:grid-cols-3">
-                        {channelSignalGroups.map((group) => {
-                          const selectedIds = selectedChannelItemIds[group.key];
-                          return (
-                            <div
-                              key={group.key}
-                              className={`rounded-xl border p-3 ${group.enabled ? "border-[#2a3a4e] bg-[#141c2b]/48" : "border-[#2a3a4e]/50 bg-[#141c2b]/25 opacity-55"}`}
-                            >
-                              <div className="mb-3 flex items-center justify-between gap-2">
-                                <div>
-                                  <div className="text-sm font-semibold text-white">{group.title}</div>
-                                  <div className="text-[11px] text-[#8fa4c2]">{selectedIds.length} из {group.items.length}</div>
-                                </div>
-                                <div className="flex gap-1">
-                                  <button
-                                    type="button"
-                                    className="rounded-md border border-[#2a3a4e] px-2 py-1 text-[10px] text-[#b8c7df]"
-                                    onClick={() => setAllChannelItems(group.key, group.items.map((item) => item.id))}
-                                    disabled={!group.enabled}
-                                  >
-                                    Все
-                                  </button>
-                                  <button
-                                    type="button"
-                                    className="rounded-md border border-[#2a3a4e] px-2 py-1 text-[10px] text-[#b8c7df]"
-                                    onClick={() => setAllChannelItems(group.key, [])}
-                                    disabled={!group.enabled}
-                                  >
-                                    Нет
-                                  </button>
-                                </div>
-                              </div>
-                              <div className="max-h-56 space-y-2 overflow-y-auto pr-1 custom-scroll">
-                                {group.items.map((item) => {
-                                  const checked = selectedIds.includes(item.id);
-                                  return (
-                                    <label
-                                      key={item.id}
-                                      className={`flex cursor-pointer items-start gap-2 rounded-lg border px-2.5 py-2 transition ${
-                                        checked
-                                          ? "border-[color:var(--signal-color)] bg-[color:var(--signal-color)]/10"
-                                          : "border-[#2a3a4e]/60 bg-[#101826]/45"
-                                      }`}
-                                      style={{ "--signal-color": group.color } as any}
-                                    >
-                                      <Checkbox
-                                        checked={checked}
-                                        disabled={!group.enabled}
-                                        onCheckedChange={() => toggleChannelItem(group.key, item.id)}
-                                        className="mt-0.5 border-[#3a4a5e]"
-                                      />
-                                      <div className="min-w-0">
-                                        <div className="truncate text-xs font-semibold text-white">{item.title}</div>
-                                        <div className="truncate text-[10px] text-[#8fa4c2]">{item.id} • {item.subtitle}</div>
-                                      </div>
-                                    </label>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Start Metrics — в расширенном режиме */}
-                  <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] backdrop-blur-sm p-5">
-                    <div className="mb-4 flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4 text-[#4a9eff]" />
-                      <div>
-                        <h3 className="text-sm font-semibold text-[#4a9eff] uppercase tracking-wider">Стартовые метрики магазина</h3>
-                        <p className="mt-1 text-xs text-[#8890a8]">
-                          Выберите готовый пресет или задайте значения вручную. По умолчанию — спокойная смена.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="mb-4">
-                      <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">Готовые состояния</div>
-                      <div className="grid gap-3 md:grid-cols-2">
-                        {STORE_STATE_PRESETS.map((preset) => {
-                          const isActive = Object.entries(preset.metrics).every(([key, value]) => initialMetrics[key as keyof RealisticMetrics] === value);
-                          return (
-                            <button
-                              key={preset.id}
-                              type="button"
-                              onClick={() => applyMetricPreset(preset.id)}
-                              className={`rounded-xl border p-3 text-left transition-all ${
-                                isActive
-                                  ? "border-[#4a9eff] bg-[#4a9eff]/10"
-                                  : "border-[#2a3a4e] bg-[#141c2b]/40 hover:border-[#3a4a5e]"
-                              }`}
-                            >
-                              <div className="text-sm font-semibold text-white">{preset.title}</div>
-                              <div className="mt-1 text-xs leading-relaxed text-[#8890a8]">{preset.summary}</div>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                      {Object.keys(STORE_METRIC_LABELS).map((key) => (
-                        <div key={key}>
-                          <Label className="text-xs text-[#8890a8] mb-1.5 block">{STORE_METRIC_LABELS[key as keyof typeof STORE_METRIC_LABELS]}</Label>
-                          <Input
-                            value={initialMetrics[key as keyof RealisticMetrics]}
-                            onChange={(e) => updateMetric(key as keyof RealisticMetrics, Number(e.target.value))}
-                            className="bg-[#141c2b] border-[#2a3a4e] text-white"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Launch button */}
-              <Button
-                onClick={handleStart}
-                disabled={activeCaseCount === 0 || isStarting}
-                className={`w-full h-14 text-white font-semibold text-base tracking-wider ${
-                  isTestMode
-                    ? "bg-[#FFB300] hover:bg-[#e6a000]"
-                    : "bg-[#FF6B00] hover:bg-[#e06000]"
-                }`}
-                data-testid="button-start"
-              >
-                <Play className="w-5 h-5 mr-2" />
-                {isStarting
-                  ? "Запускаем симуляцию..."
-                  : isTestMode
-                  ? "Запустить тренировку"
-                  : "Запустить симуляцию"}
-                {!isStarting && ` (${activeCaseCount} ситуаций, ${DIFFICULTY_INFO[difficulty].duration.replace("~", "")})`}
-              </Button>
-              {startError && (
-                <div className="rounded-xl border border-[#d98f8f]/35 bg-[#d98f8f]/10 px-4 py-3 text-sm text-[#ffdede]">
-                  {startError}
-                </div>
-              )}
-
-              {/* Навигация назад */}
-              <Button
-                variant="outline"
-                onClick={() => setWizardStep(2)}
-                className="w-full h-12 border-[#2a3a4e] text-[#8890a8] hover:text-white hover:bg-[#2a3a4e]/30"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Вернуться к выбору сложности
-              </Button>
-            </>
-          )}
-
-          {/* ═══════════════════════════════════════════
-              ТЕКУЩИЕ СИМУЛЯЦИИ (всегда видимы)
-              ═══════════════════════════════════════════ */}
-          <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] backdrop-blur-sm p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <Users className="h-4 w-4 text-[#8ec5ff]" />
-              <div>
-                <h3 className="text-sm font-semibold text-[#8ec5ff] uppercase tracking-wider">Текущие симуляции</h3>
-                <p className="mt-1 text-xs text-[#8890a8]">
-                  Следите за участниками, наблюдайте за прогрессом и открывайте результаты
-                </p>
-              </div>
-            </div>
-
-            {/* Stats summary */}
-            <div className="mb-4 grid grid-cols-4 gap-3">
-              <div className="rounded-lg border border-[#2a3a4e] bg-[#141c2b]/40 p-3 text-center">
-                <div className="text-xl font-bold text-white">{monitorSessions.length}</div>
-                <div className="text-[10px] uppercase tracking-[0.16em] text-[#6f7990] mt-0.5">Всего</div>
-              </div>
-              <div className="rounded-lg border border-[#2a3a4e] bg-[#141c2b]/40 p-3 text-center">
-                <div className="text-xl font-bold text-[#00C853]">
-                  {monitorSessions.filter((item) => item.status === "running").length}
-                </div>
-                <div className="text-[10px] uppercase tracking-[0.16em] text-[#6f7990] mt-0.5">Идут</div>
-              </div>
-              <div className="rounded-lg border border-[#2a3a4e] bg-[#141c2b]/40 p-3 text-center">
-                <div className="text-xl font-bold text-[#FFB300]">
-                  {monitorSessions.filter((item) => item.status === "waiting").length}
-                </div>
-                <div className="text-[10px] uppercase tracking-[0.16em] text-[#6f7990] mt-0.5">Ожидают</div>
-              </div>
-              <div className="rounded-lg border border-[#2a3a4e] bg-[#141c2b]/40 p-3 text-center">
-                <div className="text-xl font-bold text-[#4a9eff]">
-                  {monitorSessions.filter((item) => item.status === "completed").length}
-                </div>
-                <div className="text-[10px] uppercase tracking-[0.16em] text-[#6f7990] mt-0.5">Завершены</div>
-              </div>
-            </div>
-
-            {/* Sessions list — упрощённая таблица */}
-            <div className="space-y-3">
-              {monitorSessions.length === 0 && (
-                <div className="rounded-xl border border-dashed border-[#31455f] bg-[#101826]/60 px-4 py-5 text-sm text-[#8aa2c4]">
-                  <div className="flex items-center gap-2 justify-center">
-                    <Info className="w-4 h-4" />
-                    Пока нет симуляций. После запуска участники появятся здесь автоматически.
-                  </div>
-                </div>
-              )}
-              {monitorSessions.map((session) => {
-                const statusInfo = getStatusLabel(session.status);
-                return (
-                  <div key={session.liveSessionId} className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/45 p-4">
-                    {/* Верхняя строка: имя, статус, действия */}
-                    <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="text-sm font-semibold text-white">{session.participantName}</div>
-                          {session.participantRole && (
-                            <span className="rounded-full border border-[#2a3a4e] bg-[#101826]/70 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-[#8ec5ff]">
-                              {session.participantRole}
-                            </span>
-                          )}
-                          <span className={`text-xs font-medium ${statusInfo.color}`}>
-                            {statusInfo.label}
-                          </span>
-                        </div>
-                        <div className="mt-1 text-xs text-[#8890a8]">
-                          Код: <span className="text-[#a5b2c8]">{session.accessCode}</span>
-                          {" • "}
-                          Средний балл: <span className="text-white font-medium">{session.currentAverageScore ? `${session.currentAverageScore}/5` : "—"}</span>
-                          {" • "}
-                          Оценщик: {session.assessorName || "—"}
-                        </div>
-                      </div>
-
-                      {/* Прогресс бар */}
-                      <div className="w-full md:w-32">
-                        <div className="flex items-center justify-between text-[10px] text-[#6f7990] mb-1">
-                          <span>Прогресс</span>
-                          <span className="text-[#a5b2c8]">{Math.round(session.progressPercent)}%</span>
-                        </div>
-                        <div className="h-2 rounded-full bg-[#2a3a4e]">
-                          <div
-                            className="h-2 rounded-full transition-all duration-500"
-                            style={{
-                              width: `${session.progressPercent}%`,
-                              backgroundColor: session.status === "completed" ? "#4a9eff" : "#00C853",
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Действия */}
-                      <div className="flex items-center gap-2">
-                        {session.status === "completed" && session.runtimeSessionId ? (
-                          <Button
-                            type="button"
-                            size="sm"
-                            className="bg-[#00C853] text-[#0d1117] hover:bg-[#00b34a]"
-                            onClick={() => navigate(`/results/${session.runtimeSessionId}`)}
-                          >
-                            <FileText className="mr-2 h-4 w-4" />
-                            Результаты
-                          </Button>
-                        ) : (
-                          <Button
-                            type="button"
-                            size="sm"
-                            className="bg-[#4a9eff] text-white hover:bg-[#3d8be0]"
-                            onClick={() => observeLiveSession(session.liveSessionId)}
-                            disabled={observeLoadingId === session.liveSessionId}
-                          >
-                            <Eye className="mr-2 h-4 w-4" />
-                            {observeLoadingId === session.liveSessionId ? "Открытие..." : "Наблюдать"}
-                          </Button>
-                        )}
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          className="border-[#ff4444]/35 bg-transparent text-[#ffb0b0] hover:bg-[#ff4444]/10"
-                          onClick={() => removeLiveSession(session.liveSessionId)}
-                          disabled={removeLoadingId === session.liveSessionId}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          {removeLoadingId === session.liveSessionId ? "Удаление..." : "Удалить"}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          <div className="dns-assessor-v2-shell">
+            {renderRail()}
+            <main className="dns-assessor-v2-main">
+              {renderMainPanel()}
+            </main>
+            {renderSidePanel()}
           </div>
-
-        </div>
-          </>
         )}
       </div>
     </div>
