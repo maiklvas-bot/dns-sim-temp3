@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { ChatInfo, CompetencyDefinition, EmailCase, MessengerCase, SimCase, SimulationRuntimeSettings, VideoCase } from "@shared/simulation-content";
@@ -91,6 +92,31 @@ interface ComparisonResultRow {
   detail: any | null;
   isLoading: boolean;
   isError: boolean;
+}
+
+interface ComparisonCompetencyInsight {
+  id: string;
+  name: string;
+  value: number;
+  groupAverage: number;
+  isGroupBest: boolean;
+}
+
+interface ComparisonParticipantInsight {
+  rowId: number;
+  participantName: string;
+  overallScore: number;
+  summary: string;
+  strongCompetencies: ComparisonCompetencyInsight[];
+  weakCompetencies: ComparisonCompetencyInsight[];
+  leaderNotes: string[];
+  risks: string[];
+  questions: string[];
+}
+
+interface ComparisonMetricDefinition {
+  label: string;
+  render: (row: ComparisonResultRow) => ReactNode;
 }
 
 const ADMIN_VISUALS: Record<TabKey, AdminVisualIdentity> = {
@@ -775,6 +801,25 @@ function getScoreColor(value: number) {
   return "#3a4a5e";
 }
 
+function getComparisonMetricColor(value: number, minValue: number, maxValue: number) {
+  if (!Number.isFinite(value) || !Number.isFinite(minValue) || !Number.isFinite(maxValue) || maxValue <= minValue) {
+    return "#dbe7f8";
+  }
+
+  const ratio = Math.max(0, Math.min((value - minValue) / (maxValue - minValue), 1));
+  const hue = Math.round(4 + ratio * 146);
+  const lightness = Math.round(62 - ratio * 10);
+  return `hsl(${hue} 86% ${lightness}%)`;
+}
+
+function renderComparisonMetricValue(value: ReactNode, color: string) {
+  return (
+    <span className="dns-comparison-metric-value" style={{ color }}>
+      {value}
+    </span>
+  );
+}
+
 function formatCompetencyHighlights(
   scores: Record<string, number>,
   competencies: CompetencyDefinition[],
@@ -790,6 +835,176 @@ function formatCompetencyHighlights(
     .slice(0, 2);
 
   return rows.length > 0 ? rows.map((item) => item.name).join(", ") : "—";
+}
+
+function getComparisonOverallScore(row: ComparisonResultRow) {
+  return Number(row.report?.overallAvg ?? row.averageScore ?? 0);
+}
+
+function buildComparisonCompetencyInsights(
+  row: ComparisonResultRow,
+  rows: ComparisonResultRow[],
+  competencies: CompetencyDefinition[],
+) {
+  return competencies
+    .map((competency) => {
+      const values = rows.map((item) => Number(item.competencyAverages[competency.id] || 0)).filter((value) => value > 0);
+      const value = Number(row.competencyAverages[competency.id] || 0);
+      const bestValue = values.length > 0 ? Math.max(...values) : 0;
+      const groupAverage = values.length > 0
+        ? values.reduce((sum, item) => sum + item, 0) / values.length
+        : 0;
+
+      return {
+        id: competency.id,
+        name: competency.name,
+        value,
+        groupAverage,
+        isGroupBest: rows.length > 1 && value > 0 && value === bestValue,
+      };
+    })
+    .filter((item) => item.value > 0);
+}
+
+function formatComparisonInsightItem(item: ComparisonCompetencyInsight) {
+  const groupHint = item.isGroupBest ? " · лучший результат в группе" : "";
+  return `${item.name}: ${formatScoreValue(item.value)}${groupHint}`;
+}
+
+function getComparisonSummary(row: ComparisonResultRow, overallScore: number, strong: ComparisonCompetencyInsight[]) {
+  const strongest = strong[0]?.name;
+
+  if (row.isLoading) {
+    return "Детали результата еще загружаются, итоговый вывод появится после получения данных.";
+  }
+
+  if (overallScore >= 4.2) {
+    return strongest
+      ? `Сильный управленческий профиль, можно опираться на ${strongest.toLowerCase()} в сложных сменах.`
+      : "Сильный управленческий профиль без выраженного провала по ключевым компетенциям.";
+  }
+
+  if (overallScore >= 3.5) {
+    return strongest
+      ? `Рабочий стабильный профиль: сильнее всего проявлена зона «${strongest}», но есть точки для развития.`
+      : "Рабочий стабильный профиль, но требуется уточнить зоны развития по деталям компетенций.";
+  }
+
+  if (overallScore >= 2.7) {
+    return "Профиль неоднородный: участник справляется с частью ситуаций, но нуждается в сопровождении руководителя.";
+  }
+
+  return "Профиль рискованный для самостоятельной управленческой роли: нужен план развития и контроль первых смен.";
+}
+
+function buildComparisonRisks(row: ComparisonResultRow, overallScore: number, weak: ComparisonCompetencyInsight[]) {
+  const risks: string[] = [];
+  const weakest = weak[0];
+  const strongestValue = Number(
+    Object.values(row.competencyAverages || {}).reduce((max, value) => Math.max(max, Number(value || 0)), 0),
+  );
+  const weakestValue = weakest?.value || 0;
+
+  if (row.technicalStatus === "interrupted") {
+    risks.push("Результат прерван: выводы по компетенциям могут быть неполными и требуют проверки причин остановки.");
+  }
+
+  if (overallScore < 3) {
+    risks.push("Низкая общая оценка: в реальной смене возможны ошибки при самостоятельном принятии решений.");
+  } else if (overallScore < 3.6) {
+    risks.push("Средний общий уровень: без регулярной обратной связи качество решений может быть нестабильным.");
+  }
+
+  if (weakest && weakest.value < 3.2) {
+    risks.push(`Слабая зона «${weakest.name}»: возможны сбои в задачах, где эта компетенция критична.`);
+  }
+
+  if (weak.length > 1 && weak[1].value < 3.4) {
+    risks.push(`Вторая зона внимания «${weak[1].name}»: риск усиливается при параллельной нагрузке.`);
+  }
+
+  if (strongestValue - weakestValue >= 1.4 && weakest) {
+    risks.push("Профиль неровный: сильные стороны могут маскировать провалы в отдельных управленческих сценариях.");
+  }
+
+  if (risks.length === 0) {
+    risks.push("Критичных рисков по сравнению не видно, но стоит закрепить сильные практики в реальных сменах.");
+  }
+
+  return risks.slice(0, 4);
+}
+
+function buildComparisonQuestions(risks: string[], weak: ComparisonCompetencyInsight[], strong: ComparisonCompetencyInsight[]) {
+  const questions: string[] = [];
+  const weakest = weak[0];
+  const strongest = strong[0];
+
+  if (weakest) {
+    questions.push(`В каких рабочих ситуациях руководитель уже видел риск по зоне «${weakest.name}» и как он проявлялся?`);
+  }
+
+  if (risks.some((risk) => risk.includes("самостоятельн"))) {
+    questions.push("Какие решения участнику пока нельзя оставлять без контроля и какой уровень допуска безопасен?");
+  }
+
+  if (risks.some((risk) => risk.includes("неровн"))) {
+    questions.push("Какие задачи лучше давать участнику только в паре с наставником, чтобы сильные стороны не скрывали слабые зоны?");
+  }
+
+  if (strongest) {
+    questions.push(`Где можно использовать сильную сторону «${strongest.name}» уже сейчас, чтобы она дала пользу команде?`);
+  }
+
+  questions.push("Какой один измеримый результат руководитель ожидает увидеть через 2-4 недели после обратной связи?");
+
+  return questions.filter((item, index, array) => array.indexOf(item) === index).slice(0, 4);
+}
+
+function buildComparisonInsights(rows: ComparisonResultRow[], competencies: CompetencyDefinition[]): ComparisonParticipantInsight[] {
+  return rows.map((row) => {
+    const points = buildComparisonCompetencyInsights(row, rows, competencies);
+    const strongCompetencies = [...points].sort((left, right) => right.value - left.value).slice(0, 3);
+    const weakCompetencies = [...points].sort((left, right) => left.value - right.value).slice(0, 3);
+    const leaderNotes = strongCompetencies
+      .filter((item) => item.isGroupBest)
+      .slice(0, 2)
+      .map((item) => `Лидирует по «${item.name}» среди выбранных сотрудников.`);
+    const overallScore = getComparisonOverallScore(row);
+    const risks = buildComparisonRisks(row, overallScore, weakCompetencies);
+
+    return {
+      rowId: row.id,
+      participantName: row.participantName,
+      overallScore,
+      summary: getComparisonSummary(row, overallScore, strongCompetencies),
+      strongCompetencies,
+      weakCompetencies,
+      leaderNotes,
+      risks,
+      questions: buildComparisonQuestions(risks, weakCompetencies, strongCompetencies),
+    };
+  });
+}
+
+function formatParticipantNameForSentence(value: string) {
+  return value.trim().replace(/[.!?]+$/, "");
+}
+
+function buildComparisonGroupConclusion(insights: ComparisonParticipantInsight[]) {
+  if (insights.length === 0) {
+    return "";
+  }
+
+  if (insights.length === 1) {
+    const insight = insights[0];
+    return `${formatParticipantNameForSentence(insight.participantName)}: фокус обсуждения — закрепить сильные стороны и разобрать риски с руководителем.`;
+  }
+
+  const sorted = [...insights].sort((left, right) => right.overallScore - left.overallScore);
+  const leader = sorted[0];
+  const riskOwner = sorted[sorted.length - 1];
+
+  return `Лучший общий профиль сейчас у ${formatParticipantNameForSentence(leader.participantName)}. Больше всего управленческого внимания требует ${formatParticipantNameForSentence(riskOwner.participantName)}: вопросы руководителю ниже помогут перевести риски в план развития.`;
 }
 
 function getParticipantInitials(value: string) {
@@ -1865,18 +2080,39 @@ export default function AdminPage() {
 
   const contentLoaded = !!contentQuery.data;
   const activeAdminVisual = ADMIN_VISUALS[tab];
-  const comparisonMetricRows = [
+  const comparisonOverallScores = comparisonRows.map((row) => getComparisonOverallScore(row));
+  const comparisonTotalScores = comparisonRows.map((row) => Number(row.totalScore || 0));
+  const comparisonAnswerCounts = comparisonRows.map((row) => Number(row.answersCount || 0));
+  const minComparisonOverallScore = Math.min(...comparisonOverallScores);
+  const maxComparisonOverallScore = Math.max(...comparisonOverallScores);
+  const minComparisonTotalScore = Math.min(...comparisonTotalScores);
+  const maxComparisonTotalScore = Math.max(...comparisonTotalScores);
+  const minComparisonAnswersCount = Math.min(...comparisonAnswerCounts);
+  const maxComparisonAnswersCount = Math.max(...comparisonAnswerCounts);
+  const comparisonMetricRows: ComparisonMetricDefinition[] = [
     {
       label: "Общая оценка",
-      render: (row: ComparisonResultRow) => row.isLoading ? "..." : formatScoreValue(row.report?.overallAvg || row.averageScore),
+      render: (row: ComparisonResultRow) => {
+        if (row.isLoading) return "...";
+        const value = getComparisonOverallScore(row);
+        return renderComparisonMetricValue(formatScoreValue(value), getComparisonMetricColor(value, minComparisonOverallScore, maxComparisonOverallScore));
+      },
     },
     {
       label: "Итоговые баллы",
-      render: (row: ComparisonResultRow) => row.isLoading ? "..." : String(Math.round(row.totalScore || 0)),
+      render: (row: ComparisonResultRow) => {
+        if (row.isLoading) return "...";
+        const value = Number(row.totalScore || 0);
+        return renderComparisonMetricValue(String(Math.round(value)), getComparisonMetricColor(value, minComparisonTotalScore, maxComparisonTotalScore));
+      },
     },
     {
       label: "Ответов",
-      render: (row: ComparisonResultRow) => row.isLoading ? "..." : String(row.answersCount || 0),
+      render: (row: ComparisonResultRow) => {
+        if (row.isLoading) return "...";
+        const value = Number(row.answersCount || 0);
+        return renderComparisonMetricValue(String(value), getComparisonMetricColor(value, minComparisonAnswersCount, maxComparisonAnswersCount));
+      },
     },
     {
       label: "Сильные компетенции",
@@ -1896,6 +2132,8 @@ export default function AdminPage() {
     { label: "Завершение", render: (row: ComparisonResultRow) => formatDateTimeLabel(row.completedAt) },
     { label: "Длительность", render: (row: ComparisonResultRow) => formatDurationBetween(row.startedAt, row.completedAt) },
   ];
+  const comparisonInsights = buildComparisonInsights(comparisonRows, competencies);
+  const comparisonGroupConclusion = buildComparisonGroupConclusion(comparisonInsights);
 
   if (staffQuery.isLoading || contentQuery.isLoading) {
     return <div className="min-h-screen flex items-center justify-center bg-[#0d1117] text-white">Загрузка админки...</div>;
@@ -2713,6 +2951,82 @@ export default function AdminPage() {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+
+                <div className="dns-comparison-insights rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4">
+                  <div className="dns-comparison-insights-head">
+                    <div>
+                      <div className="text-sm font-semibold text-white">Выводы по сравнению</div>
+                      <p>
+                        Сводка переводит баллы компетенций в управленческие выводы: сильные стороны, слабые зоны, риски и вопросы для руководителя.
+                      </p>
+                    </div>
+                    <span>{comparisonRows.length} профиля</span>
+                  </div>
+                  {comparisonGroupConclusion && (
+                    <div className="dns-comparison-group-conclusion">
+                      {comparisonGroupConclusion}
+                    </div>
+                  )}
+                  <div className="dns-comparison-insight-grid">
+                    {comparisonInsights.map((insight) => (
+                      <article key={insight.rowId} className="dns-comparison-insight-card">
+                        <div className="dns-comparison-insight-card-head">
+                          <div>
+                            <span>Сотрудник</span>
+                            <h3>{insight.participantName}</h3>
+                          </div>
+                          <strong>{formatScoreValue(insight.overallScore)}</strong>
+                        </div>
+                        <p className="dns-comparison-insight-summary">{insight.summary}</p>
+
+                        <div className="dns-comparison-insight-columns">
+                          <div>
+                            <span>Сильные стороны</span>
+                            <ul>
+                              {insight.strongCompetencies.length > 0 ? insight.strongCompetencies.map((item) => (
+                                <li key={item.id}>{formatComparisonInsightItem(item)}</li>
+                              )) : <li>Недостаточно данных по компетенциям.</li>}
+                            </ul>
+                          </div>
+                          <div>
+                            <span>Слабые зоны</span>
+                            <ul>
+                              {insight.weakCompetencies.length > 0 ? insight.weakCompetencies.map((item) => (
+                                <li key={item.id}>{formatComparisonInsightItem(item)}</li>
+                              )) : <li>Недостаточно данных по компетенциям.</li>}
+                            </ul>
+                          </div>
+                        </div>
+
+                        {insight.leaderNotes.length > 0 && (
+                          <div className="dns-comparison-leader-notes">
+                            {insight.leaderNotes.map((item) => (
+                              <span key={item}>{item}</span>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="dns-comparison-risk-block">
+                          <span>Риски</span>
+                          <ul>
+                            {insight.risks.map((item) => (
+                              <li key={item}>{item}</li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        <div className="dns-comparison-question-block">
+                          <span>Вопросы руководителю</span>
+                          <ol>
+                            {insight.questions.map((item) => (
+                              <li key={item}>{item}</li>
+                            ))}
+                          </ol>
+                        </div>
+                      </article>
+                    ))}
                   </div>
                 </div>
               </>
