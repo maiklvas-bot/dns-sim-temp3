@@ -595,6 +595,168 @@
     border-radius: inherit;
   }
 
+  .dns-comparison-metric-value {
+    display: inline-flex;
+    min-width: 2.8rem;
+    justify-content: flex-start;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    text-shadow: 0 0 14px currentColor;
+  }
+
+  .dns-comparison-insights {
+    display: grid;
+    gap: 0.95rem;
+  }
+
+  .dns-comparison-insights-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .dns-comparison-insights-head p {
+    margin-top: 0.35rem;
+    max-width: 48rem;
+    color: #8aa2c4;
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .dns-comparison-insights-head span {
+    flex: 0 0 auto;
+    border: 1px solid rgba(0, 212, 170, 0.36);
+    border-radius: 999px;
+    background: rgba(0, 212, 170, 0.1);
+    color: #7fffd4;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .dns-comparison-group-conclusion {
+    border: 1px solid rgba(74, 158, 255, 0.3);
+    border-radius: 0.75rem;
+    background: rgba(74, 158, 255, 0.09);
+    color: #d7e8ff;
+    padding: 0.85rem;
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+
+  .dns-comparison-insight-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    gap: 0.85rem;
+  }
+
+  .dns-comparison-insight-card {
+    display: grid;
+    gap: 0.85rem;
+    min-width: 0;
+    border: 1px solid rgba(42, 58, 78, 0.9);
+    border-radius: 0.75rem;
+    background: rgba(16, 24, 38, 0.76);
+    padding: 0.95rem;
+  }
+
+  .dns-comparison-insight-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .dns-comparison-insight-card-head span,
+  .dns-comparison-insight-columns span,
+  .dns-comparison-risk-block span,
+  .dns-comparison-question-block span {
+    display: block;
+    color: #7f94b3;
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .dns-comparison-insight-card-head h3 {
+    margin-top: 0.2rem;
+    color: #fff;
+    font-size: 0.98rem;
+    font-weight: 850;
+    line-height: 1.2;
+  }
+
+  .dns-comparison-insight-card-head strong {
+    border: 1px solid rgba(0, 212, 170, 0.34);
+    border-radius: 0.65rem;
+    background: rgba(0, 212, 170, 0.1);
+    color: #7fffd4;
+    padding: 0.42rem 0.55rem;
+    font-size: 1rem;
+    line-height: 1;
+  }
+
+  .dns-comparison-insight-summary {
+    color: #dbe7f8;
+    font-size: 0.82rem;
+    line-height: 1.45;
+  }
+
+  .dns-comparison-insight-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+
+  .dns-comparison-insight-columns > div,
+  .dns-comparison-risk-block,
+  .dns-comparison-question-block {
+    border: 1px solid rgba(36, 50, 68, 0.92);
+    border-radius: 0.68rem;
+    background: rgba(12, 19, 31, 0.64);
+    padding: 0.72rem;
+  }
+
+  .dns-comparison-insight-card ul,
+  .dns-comparison-insight-card ol {
+    display: grid;
+    gap: 0.4rem;
+    margin-top: 0.55rem;
+    padding-left: 1rem;
+    color: #cbd8ef;
+    font-size: 0.76rem;
+    line-height: 1.42;
+  }
+
+  .dns-comparison-leader-notes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+
+  .dns-comparison-leader-notes span {
+    border: 1px solid rgba(0, 212, 170, 0.32);
+    border-radius: 999px;
+    background: rgba(0, 212, 170, 0.1);
+    color: #9fffe1;
+    padding: 0.32rem 0.55rem;
+    font-size: 0.68rem;
+    font-weight: 750;
+  }
+
+  .dns-comparison-risk-block {
+    border-color: rgba(255, 159, 67, 0.34);
+    background: rgba(255, 159, 67, 0.08);
+  }
+
+  .dns-comparison-question-block {
+    border-color: rgba(116, 192, 255, 0.3);
+    background: rgba(74, 158, 255, 0.08);
+  }
+
   @media (max-width: 767px) {
     .dns-admin-tab-menu {
       justify-content: flex-start;
@@ -628,6 +790,16 @@
     .dns-comparison-table td {
       min-width: 10rem;
       padding: 0.6rem 0.7rem;
+    }
+
+    .dns-comparison-insights-head,
+    .dns-comparison-insight-card-head {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .dns-comparison-insight-columns {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 
