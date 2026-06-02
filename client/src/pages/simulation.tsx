@@ -11,6 +11,7 @@ import DecisionJournal from "@/components/decision-journal";
 import ActiveTimersPanel from "@/components/active-timers-panel";
 import { Timer, Calendar, User, FileText, StopCircle, FlaskConical, PauseCircle, PlayCircle, Map, BarChart3, Radio, CheckCircle2, CircleDot, ListChecks } from "lucide-react";
 import { setLiveSimulationRole } from "@/lib/live-session";
+import { ThemeToggle, useDnsTheme } from "@/components/theme-toggle";
 import storeBg from "@assets/store_bg.png";
 
 // Тип иконки из lucide-react
@@ -102,6 +103,7 @@ function SimulationProgressCompact({
 export default function SimulationPage() {
   const [, navigate] = useLocation();
   const { state, dispatch, isReadOnly, livePresence, liveSessionConfig, liveSocketConnected, liveStatus, mode } = useSimulation();
+  const { theme, themeClass, toggleTheme } = useDnsTheme();
 
   // ─── Mobile tab state ───
   const [mobileTab, setMobileTab] = useState<'map' | 'signals' | 'metrics'>('signals');
@@ -184,7 +186,7 @@ export default function SimulationPage() {
 
   return (
     <div
-      className="dns-product-shell h-screen flex flex-col overflow-hidden relative"
+      className={`dns-product-shell ${themeClass} h-screen flex flex-col overflow-hidden relative`}
       style={{
         backgroundImage: `url(${storeBg})`,
         backgroundSize: "cover",
@@ -192,7 +194,7 @@ export default function SimulationPage() {
       }}
     >
       {/* Dark overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0d1421f2] via-[#16213ef5] to-[#0d1421f7]" />
+      <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0d1421f2] via-[#16213ef5] to-[#0d1421f7]" />
 
       {/* Toast notifications */}
       <ToastNotifications />
@@ -261,6 +263,7 @@ export default function SimulationPage() {
 
           {/* Right header group */}
           <div className="flex items-center gap-1.5 md:gap-2">
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
             {/* Channel counts — desktop only */}
             <div className="hidden items-center gap-2 rounded-xl border border-[#2a3a4e] bg-[#141c2b]/70 px-3 py-2 lg:flex">
               {[

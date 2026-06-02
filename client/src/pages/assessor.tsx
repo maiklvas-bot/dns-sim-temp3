@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
+import { ThemeToggle, useDnsTheme } from "@/components/theme-toggle";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
 import { getSimulationSettingsSnapshot } from "@/lib/runtime-content";
 import type { SimulationRuntimeSettings } from "@shared/simulation-content";
@@ -669,6 +670,7 @@ function AssessorWiki({
 
 export default function AssessorPage() {
   const [, navigate] = useLocation();
+  const { theme, themeClass, toggleTheme } = useDnsTheme();
   const settings = getSimulationSettingsSnapshot<SimulationRuntimeSettings>();
   const easyCount = Number(settings?.easyAutoCaseCount ?? 6);
   const mediumCount = Number(settings?.mediumAutoCaseCount ?? 10);
@@ -1899,19 +1901,27 @@ export default function AssessorPage() {
         {monitorSessions.map((session) => {
           const statusInfo = getStatusLabel(session.status);
           return (
-            <div key={session.liveSessionId} className="dns-assessor-v2-session-row">
-              <div className="min-w-0">
-                <strong>{session.participantName}</strong>
-                <p className="flex flex-wrap items-center gap-2">
-                  <span>Код:</span>
-                  {renderCopyAccessCodeButton(session.accessCode)}
-                  <span>· Оценщик: {session.assessorName || "—"}</span>
-                </p>
+            <div key={session.liveSessionId} className="dns-assessor-v2-session-card">
+              <div className="dns-assessor-v2-session-person">
+                <span className="dns-assessor-v2-session-avatar">
+                  {(session.participantName || "У").trim().slice(0, 1).toUpperCase()}
+                </span>
+                <div className="min-w-0">
+                  <strong>{session.participantName}</strong>
+                  <p>Оценщик: {session.assessorName || "—"}</p>
+                </div>
               </div>
-              <div className="dns-assessor-v2-progress">
-                <span style={{ width: Math.round(session.progressPercent) + "%" }} />
+              <div className="dns-assessor-v2-session-code">
+                <span>Код студента</span>
+                {renderCopyAccessCodeButton(session.accessCode)}
               </div>
-              <span className={statusInfo.color}>{statusInfo.label}</span>
+              <div className="dns-assessor-v2-session-state">
+                <span className={statusInfo.color}>{statusInfo.label}</span>
+                <div className="dns-assessor-v2-progress">
+                  <span style={{ width: Math.round(session.progressPercent) + "%" }} />
+                </div>
+                <em>{Math.round(session.progressPercent)}%</em>
+              </div>
               <div className="dns-assessor-v2-session-actions">
                 {session.status === "completed" && session.runtimeSessionId ? (
                   <Button type="button" size="sm" className="bg-[#35d38a] text-[#061018] hover:bg-[#2bc479]" onClick={() => navigate(`/results/${session.runtimeSessionId}`)}>
@@ -2054,7 +2064,7 @@ export default function AssessorPage() {
 
   return (
     <div
-      className="dns-product-shell relative overflow-auto"
+      className={`dns-product-shell ${themeClass} relative overflow-auto`}
       style={{
         backgroundImage: `url(${storeBg})`,
         backgroundSize: "cover",
@@ -2062,7 +2072,7 @@ export default function AssessorPage() {
         backgroundAttachment: "fixed",
       }}
     >
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0d1421ee] via-[#16213ef2] to-[#0d1421f7]" />
+      <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0d1421ee] via-[#16213ef2] to-[#0d1421f7]" />
 
       <div className="dns-page-frame dns-assessor-v2-frame">
         <header className="dns-brand-header dns-assessor-v2-header">
@@ -2075,6 +2085,7 @@ export default function AssessorPage() {
             </div>
           </div>
           <div className="dns-header-actions dns-assessor-v2-header-actions">
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
             <button type="button" onClick={() => { setShowWiki(false); setActivePanel("sessions"); }} className="dns-assessor-v2-header-button">
               <FileText className="h-4 w-4" />
               Сессии / результаты

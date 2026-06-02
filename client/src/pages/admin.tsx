@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { ThemeToggle, useDnsTheme } from "@/components/theme-toggle";
 import {
   getSignalSoundOptions,
   resolveChannelSoundSource,
@@ -1226,6 +1227,7 @@ function autoAssignScheduleTimes(rows: ScheduleRow[]) {
 export default function AdminPage() {
   const [, navigate] = useLocation();
   const queryClient = useQueryClient();
+  const { theme, themeClass, toggleTheme } = useDnsTheme();
   const [tab, setTab] = useState<TabKey>("cases");
   const [channelTab, setChannelTab] = useState<ChannelTab>("email");
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
@@ -2145,7 +2147,7 @@ export default function AdminPage() {
 
   return (
     <div
-      className="dns-product-shell relative"
+      className={`dns-product-shell ${themeClass} relative`}
       style={{
         backgroundImage: `url(${storeBg})`,
         backgroundSize: "cover",
@@ -2153,7 +2155,7 @@ export default function AdminPage() {
         backgroundAttachment: "fixed",
       }}
     >
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0d1421ef] via-[#16213ef5] to-[#0d1421f7]" />
+      <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0d1421ef] via-[#16213ef5] to-[#0d1421f7]" />
       <div className="dns-page-frame max-w-[1560px]">
         <header className="dns-brand-header dns-admin-header-surface">
           <div className="dns-brand-title">
@@ -2165,6 +2167,7 @@ export default function AdminPage() {
             </div>
           </div>
           <div className="dns-header-actions dns-admin-header-actions">
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
             <div className="inline-flex items-center rounded-full border border-[#FF6B00]/35 bg-[#FF6B00]/12 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
               Product UI v4.1
             </div>
