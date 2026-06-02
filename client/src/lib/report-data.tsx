@@ -12,6 +12,16 @@ const TIME_PROFILE_EVALUATION_COEFFICIENT = {
 
 const EXPECTED_COMPETENCY_LEVEL = 4.0;
 
+function normalizeClientRating(value: unknown, fallback = 3.3) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return fallback;
+  }
+
+  const scaled = numeric > 10 ? numeric / 20 : numeric > 5 ? numeric / 2 : numeric;
+  return Math.round(Math.max(1, Math.min(5, scaled)) * 100) / 100;
+}
+
 function buildExpectedCompetencyScores() {
   return Object.fromEntries(COMPETENCIES.map((competency) => [competency.id, EXPECTED_COMPETENCY_LEVEL]));
 }
@@ -236,7 +246,7 @@ export function buildReportFromState(
       customersInStore: state.metrics.customersInStore,
       avgCheck: state.metrics.avgCheck,
       conversion: state.metrics.conversion,
-      nps: state.metrics.nps,
+      nps: normalizeClientRating(state.metrics.nps),
       pickupSpeed: state.metrics.pickupSpeed,
       warehouseLoad: state.metrics.warehouseLoad,
       teamMorale: state.metrics.teamMorale,
@@ -302,7 +312,10 @@ export function buildReportFromSessionDetails(
     impactfulDecisions: getImpactfulDecisions(decisions),
     patterns: analyzePatterns(decisions),
     verdict: getVerdict(competencyRows.overallAvg || averageScore),
-    finalMetrics: detail?.result?.finalMetrics || {},
+    finalMetrics: {
+      ...(detail?.result?.finalMetrics || {}),
+      nps: normalizeClientRating(detail?.result?.finalMetrics?.nps),
+    },
     retestDate: getRetestDateLabel(),
     sessionId: Number(session.id || 0),
     technicalStatus: session.technicalStatus || "completed",

@@ -495,6 +495,31 @@
     transform: rotate(2deg);
   }
 
+  .dns-admin-result-detail-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 1rem;
+  }
+
+  .dns-admin-action-block,
+  .dns-result-action-block {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.55rem;
+    border: 1px solid rgba(42, 58, 78, 0.9);
+    border-radius: 0.75rem;
+    background: rgba(16, 24, 38, 0.72);
+    padding: 0.65rem;
+  }
+
+  .dns-result-action-block {
+    justify-content: center;
+    max-width: 100%;
+  }
+
   .dns-comparison-product-row {
     display: grid;
     gap: 0.85rem;
@@ -663,12 +688,16 @@
   .dns-comparison-insight-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
+    grid-auto-rows: 1fr;
+    align-items: stretch;
     gap: 0.85rem;
   }
 
   .dns-comparison-insight-card {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 0.85rem;
+    height: 100%;
     min-width: 0;
     border: 1px solid rgba(42, 58, 78, 0.9);
     border-radius: 0.75rem;
@@ -714,6 +743,7 @@
   }
 
   .dns-comparison-insight-summary {
+    min-height: 4.35rem;
     color: #dbe7f8;
     font-size: 0.82rem;
     line-height: 1.45;
@@ -732,6 +762,19 @@
     border-radius: 0.68rem;
     background: rgba(12, 19, 31, 0.64);
     padding: 0.72rem;
+  }
+
+  .dns-comparison-insight-columns {
+    min-height: 9.25rem;
+  }
+
+  .dns-comparison-risk-block {
+    margin-top: auto;
+    min-height: 6.25rem;
+  }
+
+  .dns-comparison-question-block {
+    min-height: 7.25rem;
   }
 
   .dns-comparison-insight-card ul,
@@ -812,8 +855,18 @@
       align-items: stretch;
     }
 
+    .dns-admin-result-detail-head {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .dns-admin-action-block,
+    .dns-result-action-block {
+      justify-content: stretch;
+    }
+
     .dns-comparison-insight-columns {
       grid-template-columns: minmax(0, 1fr);
+      min-height: 0;
     }
   }
 
@@ -1711,12 +1764,16 @@
 
 .dns-product-shell .dns-assessor-wiki-shot {
   position: relative;
-  min-height: 13.75rem;
+  min-height: 17rem;
   margin-top: 0.9rem;
   overflow: hidden;
   border: 1px solid rgba(65, 86, 116, 0.7);
   border-radius: 0.7rem;
   background: rgba(12, 21, 34, 0.72);
+  --wiki-shot-gutter: 0.7rem;
+  --wiki-shot-gap: 0.45rem;
+  --wiki-shot-col: calc((100% - 2.75rem) / 4);
+  --wiki-shot-step: calc(var(--wiki-shot-col) + var(--wiki-shot-gap));
 }
 
 .dns-product-shell .dns-assessor-wiki-shot-top {
@@ -1773,20 +1830,64 @@
 
 .dns-product-shell .dns-assessor-wiki-shot-grid {
   position: absolute;
-  left: 0.7rem;
-  right: 0.7rem;
-  top: 7.55rem;
-  bottom: 0.7rem;
+  left: var(--wiki-shot-gutter);
+  right: var(--wiki-shot-gutter);
+  top: 7.45rem;
+  bottom: 3.75rem;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   grid-template-rows: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
+  gap: var(--wiki-shot-gap);
 }
 
 .dns-product-shell .dns-assessor-wiki-shot-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.18rem;
   border: 1px solid rgba(65, 86, 116, 0.58);
   border-radius: 0.5rem;
   background: rgba(20, 28, 43, 0.66);
+  padding: 0.45rem;
+  color: #b9c8dd;
+  transition: opacity 160ms ease, border-color 160ms ease, background 160ms ease, color 160ms ease;
+}
+
+.dns-product-shell .dns-assessor-wiki-shot-card strong {
+  overflow: hidden;
+  color: currentColor;
+  font-size: 0.64rem;
+  font-weight: 900;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dns-product-shell .dns-assessor-wiki-shot-card span {
+  overflow: hidden;
+  color: currentColor;
+  font-size: 0.52rem;
+  font-weight: 700;
+  line-height: 1.15;
+  opacity: 0.82;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dns-product-shell .dns-assessor-wiki-shot-card--focus,
+.dns-product-shell .dns-assessor-wiki-shot-card--overview {
+  border-color: rgba(255, 178, 122, 0.72);
+  background: rgba(255, 107, 0, 0.16);
+  color: #fff1e6;
+  box-shadow: 0 0 0.8rem rgba(255, 107, 0, 0.2);
+}
+
+.dns-product-shell .dns-assessor-wiki-shot-card--dim {
+  border-color: rgba(65, 86, 116, 0.4);
+  background: rgba(18, 27, 42, 0.48);
+  color: #8ea0ba;
+  opacity: 0.68;
 }
 
 .dns-product-shell .dns-assessor-wiki-shot-highlight {
@@ -1795,40 +1896,39 @@
   border-radius: 0.62rem;
   background: rgba(255, 107, 0, 0.08);
   box-shadow: 0 0 0 999px rgba(4, 9, 16, 0.1), 0 0 0.9rem rgba(255, 107, 0, 0.35);
+  pointer-events: none;
 }
 
-.dns-product-shell .dns-assessor-wiki-shot-highlight span {
+.dns-product-shell .dns-assessor-wiki-shot-highlight::after {
   position: absolute;
-  top: -1.85rem;
-  left: 0;
-  max-width: 14rem;
-  padding: 0.3rem 0.45rem;
-  border-radius: 0.45rem;
-  background: #ffb27a;
-  color: #1c1208;
-  font-size: 0.62rem;
-  font-weight: 850;
+  left: 50%;
+  bottom: -1rem;
+  color: #ff2d2d;
+  content: "▲";
+  font-size: 1.18rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 0 0.6rem rgba(255, 45, 45, 0.72);
+  transform: translateX(-50%);
+}
+
+.dns-product-shell .dns-assessor-wiki-shot-callout {
+  position: absolute;
+  left: var(--wiki-shot-gutter);
+  right: var(--wiki-shot-gutter);
+  bottom: 0.65rem;
+  min-height: 2.45rem;
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255, 45, 45, 0.72);
+  border-radius: 0.58rem;
+  background: rgba(127, 29, 29, 0.92);
+  color: #fff3f3;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.66rem;
+  font-weight: 900;
   line-height: 1.15;
-}
-
-.dns-product-shell .dns-assessor-wiki-shot-arrow {
-  position: absolute;
-  width: 2.5rem;
-  height: 2px;
-  background: #ffb27a;
-  transform-origin: left center;
-}
-
-.dns-product-shell .dns-assessor-wiki-shot-arrow::after {
-  position: absolute;
-  right: -1px;
-  top: -4px;
-  width: 0;
-  height: 0;
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-  border-left: 7px solid #ffb27a;
-  content: "";
+  box-shadow: 0 0 0.85rem rgba(255, 45, 45, 0.18);
 }
 
 .dns-product-shell .dns-assessor-wiki-shot--entry .dns-assessor-wiki-shot-highlight {
@@ -1846,68 +1946,55 @@
 }
 
 .dns-product-shell .dns-assessor-wiki-shot--participant .dns-assessor-wiki-shot-highlight {
-  top: 7.42rem;
-  left: 0.58rem;
-  width: calc(25% - 0.18rem);
-  height: 2.55rem;
+  top: 7.33rem;
+  left: var(--wiki-shot-gutter);
+  width: var(--wiki-shot-col);
+  height: 2.72rem;
 }
 
 .dns-product-shell .dns-assessor-wiki-shot--difficulty .dns-assessor-wiki-shot-highlight,
 .dns-product-shell .dns-assessor-wiki-shot--mode .dns-assessor-wiki-shot-highlight,
 .dns-product-shell .dns-assessor-wiki-shot--advanced .dns-assessor-wiki-shot-highlight {
-  top: 7.42rem;
-  width: calc(25% - 0.18rem);
-  height: 2.55rem;
+  top: 7.33rem;
+  width: var(--wiki-shot-col);
+  height: 2.72rem;
 }
 
 .dns-product-shell .dns-assessor-wiki-shot--difficulty .dns-assessor-wiki-shot-highlight {
-  left: calc(25% + 0.26rem);
+  left: calc(var(--wiki-shot-gutter) + var(--wiki-shot-step));
 }
 
 .dns-product-shell .dns-assessor-wiki-shot--mode .dns-assessor-wiki-shot-highlight {
-  left: calc(50% + 0.13rem);
+  left: calc(var(--wiki-shot-gutter) + var(--wiki-shot-step) + var(--wiki-shot-step));
 }
 
 .dns-product-shell .dns-assessor-wiki-shot--advanced .dns-assessor-wiki-shot-highlight {
-  left: calc(75%);
+  left: calc(var(--wiki-shot-gutter) + var(--wiki-shot-step) + var(--wiki-shot-step) + var(--wiki-shot-step));
 }
 
 .dns-product-shell .dns-assessor-wiki-shot--cases .dns-assessor-wiki-shot-highlight,
 .dns-product-shell .dns-assessor-wiki-shot--channels .dns-assessor-wiki-shot-highlight,
 .dns-product-shell .dns-assessor-wiki-shot--metrics .dns-assessor-wiki-shot-highlight,
 .dns-product-shell .dns-assessor-wiki-shot--sessions .dns-assessor-wiki-shot-highlight {
-  top: 10.35rem;
-  width: calc(25% - 0.18rem);
-  height: 2.65rem;
+  top: 10.48rem;
+  width: var(--wiki-shot-col);
+  height: 2.72rem;
 }
 
 .dns-product-shell .dns-assessor-wiki-shot--cases .dns-assessor-wiki-shot-highlight {
-  left: 0.58rem;
+  left: var(--wiki-shot-gutter);
 }
 
 .dns-product-shell .dns-assessor-wiki-shot--channels .dns-assessor-wiki-shot-highlight {
-  left: calc(25% + 0.26rem);
+  left: calc(var(--wiki-shot-gutter) + var(--wiki-shot-step));
 }
 
 .dns-product-shell .dns-assessor-wiki-shot--metrics .dns-assessor-wiki-shot-highlight {
-  left: calc(50% + 0.13rem);
+  left: calc(var(--wiki-shot-gutter) + var(--wiki-shot-step) + var(--wiki-shot-step));
 }
 
 .dns-product-shell .dns-assessor-wiki-shot--sessions .dns-assessor-wiki-shot-highlight {
-  left: calc(75%);
-}
-
-.dns-product-shell .dns-assessor-wiki-shot--entry .dns-assessor-wiki-shot-arrow,
-.dns-product-shell .dns-assessor-wiki-shot--wizard .dns-assessor-wiki-shot-arrow {
-  top: 4.1rem;
-  right: 1rem;
-  transform: rotate(180deg);
-}
-
-.dns-product-shell .dns-assessor-wiki-shot:not(.dns-assessor-wiki-shot--entry):not(.dns-assessor-wiki-shot--wizard) .dns-assessor-wiki-shot-arrow {
-  top: 8.4rem;
-  left: 1.3rem;
-  transform: rotate(28deg);
+  left: calc(var(--wiki-shot-gutter) + var(--wiki-shot-step) + var(--wiki-shot-step) + var(--wiki-shot-step));
 }
 
 .dns-product-shell .dns-assessor-wiki-process-toggle {
@@ -2051,11 +2138,10 @@
 
 @media (max-width: 640px) {
   .dns-product-shell .dns-assessor-wiki-shot {
-    min-height: 12.6rem;
+    min-height: 17rem;
   }
 
-  .dns-product-shell .dns-assessor-wiki-shot-highlight span {
-    max-width: 10rem;
+  .dns-product-shell .dns-assessor-wiki-shot-callout {
     font-size: 0.58rem;
   }
 
@@ -2150,9 +2236,10 @@
 }
 
 .dns-product-shell .dns-assessor-v2-rail-item--done {
-  border-color: rgba(53, 211, 138, 0.35);
-  background: rgba(53, 211, 138, 0.08);
-  color: #bff3d8;
+  border-color: rgba(53, 211, 138, 0.7);
+  background: linear-gradient(135deg, rgba(53, 211, 138, 0.18), rgba(53, 211, 138, 0.07));
+  color: #bfffe0;
+  box-shadow: inset 0 0 0 1px rgba(53, 211, 138, 0.18), 0 10px 22px rgba(53, 211, 138, 0.08);
 }
 
 .dns-product-shell .dns-assessor-v2-rail-item--active {
@@ -2176,6 +2263,11 @@
   font-size: 0.68rem;
   font-weight: 850;
   line-height: 1;
+}
+
+.dns-product-shell .dns-assessor-v2-rail-item--done .dns-assessor-v2-rail-num {
+  background: #35d38a;
+  color: #061018;
 }
 
 .dns-product-shell .dns-assessor-v2-rail-title {
@@ -2443,6 +2535,24 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.85rem;
+}
+
+.dns-product-shell .dns-assessor-v2-inline-actions,
+.dns-product-shell .dns-assessor-v2-side-actions,
+.dns-product-shell .dns-assessor-v2-session-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid rgba(39, 58, 81, 0.72);
+  border-radius: 0.72rem;
+  background: rgba(8, 15, 24, 0.48);
+  padding: 0.45rem;
+}
+
+.dns-product-shell .dns-assessor-v2-side-actions {
+  display: grid;
+  margin-top: 0.8rem;
 }
 
 .dns-product-shell .dns-assessor-v2-queue-head strong,
@@ -2726,6 +2836,38 @@
   border-color: rgba(255, 122, 26, 0.65);
   background: rgba(255, 122, 26, 0.13);
   color: #fff;
+}
+
+.dns-product-shell .dns-assessor-v2-mode-explainer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+  margin: -0.35rem 0 1rem;
+}
+
+.dns-product-shell .dns-assessor-v2-mode-note {
+  border: 1px solid rgba(39, 58, 81, 0.72);
+  border-radius: 0.68rem;
+  background: rgba(8, 15, 24, 0.58);
+  padding: 0.72rem;
+}
+
+.dns-product-shell .dns-assessor-v2-mode-note--active {
+  border-color: rgba(255, 122, 26, 0.48);
+  background: rgba(255, 122, 26, 0.1);
+}
+
+.dns-product-shell .dns-assessor-v2-mode-note strong {
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.dns-product-shell .dns-assessor-v2-mode-note p {
+  margin-top: 0.25rem;
+  color: #b7c8df;
+  font-size: 0.74rem;
+  line-height: 1.38;
 }
 
 .dns-product-shell .dns-assessor-v2-summary-strip {
@@ -3054,6 +3196,28 @@
   font-weight: 850;
 }
 
+.dns-product-shell .dns-assessor-v2-secondary {
+  display: inline-flex;
+  width: 100%;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid rgba(94, 177, 255, 0.32);
+  border-radius: 0.75rem;
+  background: rgba(94, 177, 255, 0.08);
+  color: #d0e9ff;
+  font-size: 0.84rem;
+  font-weight: 850;
+}
+
+.dns-product-shell .dns-assessor-v2-secondary:hover,
+.dns-product-shell .dns-assessor-v2-secondary:focus-visible {
+  border-color: rgba(94, 177, 255, 0.58);
+  background: rgba(94, 177, 255, 0.14);
+  color: #fff;
+}
+
 .dns-product-shell .dns-assessor-v2-primary:hover {
   background: #ed6d12;
 }
@@ -3165,6 +3329,7 @@
   .dns-product-shell .dns-assessor-v2-card-grid--roles,
   .dns-product-shell .dns-assessor-v2-card-grid--scenarios,
   .dns-product-shell .dns-assessor-v2-card-grid--compact,
+  .dns-product-shell .dns-assessor-v2-mode-explainer,
   .dns-product-shell .dns-assessor-v2-participant-list,
   .dns-product-shell .dns-assessor-v2-customizer-actions,
   .dns-product-shell .dns-assessor-v2-summary-strip,
@@ -3193,5 +3358,11 @@
 
   .dns-product-shell .dns-assessor-v2-session-actions {
     flex-direction: column;
+  }
+
+  .dns-product-shell .dns-assessor-v2-inline-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
   }
 }

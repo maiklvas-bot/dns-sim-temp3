@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { getChannelNotificationCounts, useSimulation } from "../context/SimulationContext";
+import { getChannelNotificationCounts, getSimulationProgressSummary, useSimulation } from "../context/SimulationContext";
 import StoreMap from "@/components/store-map";
 import SignalFeed from "@/components/signal-feed";
 import MetricsPanel from "@/components/metrics-panel";
@@ -9,7 +9,7 @@ import ToastNotifications from "@/components/toast-notification";
 import ConsequenceModal from "@/components/consequence-modal";
 import DecisionJournal from "@/components/decision-journal";
 import ActiveTimersPanel from "@/components/active-timers-panel";
-import { Timer, Calendar, User, FileText, StopCircle, FlaskConical, PauseCircle, PlayCircle, Map, BarChart3, Radio } from "lucide-react";
+import { Timer, Calendar, User, FileText, StopCircle, FlaskConical, PauseCircle, PlayCircle, Map, BarChart3, Radio, CheckCircle2, CircleDot, ListChecks } from "lucide-react";
 import { setLiveSimulationRole } from "@/lib/live-session";
 import storeBg from "@assets/store_bg.png";
 
@@ -20,6 +20,82 @@ function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+}
+
+function SimulationProgressRail({
+  summary,
+}: {
+  summary: ReturnType<typeof getSimulationProgressSummary>;
+}) {
+  const steps = [
+    { key: "done", label: "Пройдено", value: summary.completed, color: "#00d4aa" },
+    { key: "active", label: "В работе", value: summary.active, color: "#FFB300" },
+    { key: "left", label: "Осталось", value: Math.max(0, summary.futureMain + summary.futureChannels), color: "#4a9eff" },
+  ];
+
+  return (
+    <aside className="flex h-full min-h-0 flex-col rounded-2xl border border-[#2a3a4e] bg-[#101826cc] px-2.5 py-3 backdrop-blur-sm">
+      <div className="mb-3 flex items-center justify-center">
+        <div className="grid h-9 w-9 place-items-center rounded-xl border border-[#4a9eff]/35 bg-[#4a9eff]/10 text-[#8ec5ff]">
+          <ListChecks className="h-4 w-4" />
+        </div>
+      </div>
+      <div className="text-center">
+        <div className="text-[10px] font-semibold uppercase leading-4 tracking-[0.14em] text-[#8aa2c4]">Ход</div>
+        <div className="mt-1 text-xl font-bold tabular-nums text-white">{summary.completed}</div>
+        <div className="text-[10px] text-[#6f829e]">из {summary.total}</div>
+      </div>
+      <div className="my-3 h-px bg-[#26364c]" />
+      <div className="relative flex min-h-0 flex-1 justify-center">
+        <div className="absolute bottom-2 top-2 w-1 rounded-full bg-[#1d2a3d]" />
+        <div
+          className="absolute top-2 w-1 rounded-full bg-[#00d4aa]"
+          style={{ height: `${Math.min(100, Math.max(0, summary.percent))}%` }}
+        />
+        <div className="relative z-10 flex w-full flex-col justify-between py-1">
+          {steps.map((step) => (
+            <div key={step.key} className="flex flex-col items-center gap-1 rounded-xl bg-[#101826]/80 py-1">
+              {step.key === "done" ? (
+                <CheckCircle2 className="h-4 w-4" style={{ color: step.color }} />
+              ) : (
+                <CircleDot className="h-4 w-4" style={{ color: step.color }} />
+              )}
+              <div className="text-sm font-bold tabular-nums text-white">{step.value}</div>
+              <div className="max-w-[4.4rem] text-center text-[9px] font-semibold uppercase leading-3 tracking-[0.08em] text-[#8aa2c4]">
+                {step.label}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function SimulationProgressCompact({
+  summary,
+}: {
+  summary: ReturnType<typeof getSimulationProgressSummary>;
+}) {
+  return (
+    <div className="rounded-2xl border border-[#2a3a4e] bg-[#101826cc] px-3 py-2 backdrop-blur-sm">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8ec5ff]">
+          <ListChecks className="h-3.5 w-3.5" />
+          Ход симуляции
+        </div>
+        <div className="text-xs font-bold tabular-nums text-white">
+          {summary.completed} / {summary.total}
+        </div>
+      </div>
+      <div className="h-2 rounded-full border border-[#26364c] bg-[#101826] p-[2px]">
+        <div
+          className="h-full rounded-full bg-[#00d4aa]"
+          style={{ width: `${Math.min(100, Math.max(0, summary.percent))}%` }}
+        />
+      </div>
+    </div>
+  );
 }
 
 // Тип для мобильных табов
@@ -63,6 +139,7 @@ export default function SimulationPage() {
   const maxPauseSeconds = 30 * 60;
   const pauseLimitReached = state.pauses.length >= maxPauseCount || totalPauseSeconds >= maxPauseSeconds;
   const channelCounts = getChannelNotificationCounts(state);
+  const progressSummary = getSimulationProgressSummary(state);
   const waitingForStudent = isReadOnly && !livePresence.studentConnected;
   const waitingForAssessorSetup = mode === "student" && (liveSessionConfig?.selectedCaseIds.length ?? 0) === 0 && Boolean(liveSessionConfig);
   const hasFallbackLiveSync = Boolean(
@@ -299,9 +376,17 @@ export default function SimulationPage() {
           })}
         </div>
 
+        <div className="px-2 pt-2 md:px-3 lg:hidden">
+          <SimulationProgressCompact summary={progressSummary} />
+        </div>
+
         {/* MAIN LAYOUT: Mobile 1-col, Tablet 2-col, Desktop 3-col */}
         <div className="flex-1 min-h-0 overflow-hidden p-2 md:p-3 xl:p-4">
-          <div className="grid h-full min-h-0 grid-cols-1 gap-2.5 md:gap-3 xl:gap-4 md:grid-cols-[minmax(190px,0.85fr)_minmax(0,2fr)] xl:grid-cols-[minmax(200px,0.75fr)_minmax(0,2.2fr)_minmax(260px,0.95fr)] 2xl:grid-cols-[minmax(220px,0.75fr)_minmax(0,2.4fr)_minmax(280px,0.95fr)]">
+          <div className="grid h-full min-h-0 grid-cols-1 gap-2.5 md:gap-3 xl:gap-4 md:grid-cols-[minmax(190px,0.85fr)_minmax(0,2fr)] lg:grid-cols-[76px_minmax(180px,0.75fr)_minmax(0,2fr)_minmax(240px,0.9fr)] xl:grid-cols-[76px_minmax(200px,0.75fr)_minmax(0,2.2fr)_minmax(260px,0.95fr)] 2xl:grid-cols-[82px_minmax(220px,0.75fr)_minmax(0,2.4fr)_minmax(280px,0.95fr)]">
+            <div className="hidden min-h-0 lg:block">
+              <SimulationProgressRail summary={progressSummary} />
+            </div>
+
             {/* ─── Left: Store Map ─── */}
             <div
               className={`min-h-0 min-w-0 overflow-hidden rounded-2xl border border-[#2a3a4e] bg-[#1e2a3acc] p-3 md:p-4 backdrop-blur-sm ${

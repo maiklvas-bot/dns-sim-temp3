@@ -25,6 +25,12 @@ export default function SignalFeed() {
   const pendingSignals = [...activeSignals.filter((signal) => !signal.isExpired)].sort((left, right) => left.arrivedAt - right.arrivedAt);
   const currentSignal = activeSignals.find(s => s.id === currentSignalId && !s.isExpired);
   const channelCounts = getChannelNotificationCounts(state);
+  const visibleChannelCounts = {
+    calls: channelCounts.calls,
+    email: state.arrivedEmailIds.length,
+    messenger: state.arrivedMessengerIds.length,
+    video: state.arrivedVideoIds.length,
+  };
 
   useEffect(() => {
     if (state.actionPanelSource === "main_case") {
@@ -48,10 +54,10 @@ export default function SignalFeed() {
   }, [state.actionPanelSource]);
 
   const tabs = [
-    { key: "signals" as Tab, label: "Звонки", icon: Phone, count: channelCounts.calls, color: "#FF6B00", enabled: true },
-    { key: "email" as Tab, label: "Почта", icon: Mail, count: channelCounts.email, color: "#4a9eff", enabled: state.enabledChannels.email },
-    { key: "messenger" as Tab, label: "ТёркоГрамм", icon: MessageSquare, count: channelCounts.messenger, color: "#00d4aa", enabled: state.enabledChannels.messenger },
-    { key: "video" as Tab, label: "Видео", icon: Video, count: channelCounts.video, color: "#a78bfa", enabled: state.enabledChannels.video },
+    { key: "signals" as Tab, label: "Звонки", icon: Phone, count: visibleChannelCounts.calls, color: "#FF6B00", enabled: true },
+    { key: "email" as Tab, label: "Почта", icon: Mail, count: visibleChannelCounts.email, color: "#4a9eff", enabled: state.enabledChannels.email },
+    { key: "messenger" as Tab, label: "ТёркоГрамм", icon: MessageSquare, count: visibleChannelCounts.messenger, color: "#00d4aa", enabled: state.enabledChannels.messenger },
+    { key: "video" as Tab, label: "Видео", icon: Video, count: visibleChannelCounts.video, color: "#a78bfa", enabled: state.enabledChannels.video },
   ].filter(t => t.enabled);
 
   // Get case zones for image selection
@@ -73,7 +79,7 @@ export default function SignalFeed() {
   // Replay audio for current signal
   const handleReplayAudio = () => {
     if (currentSignal?.audioUrl) {
-      playAudioImmediate(currentSignal.audioUrl, 0.9);
+      playAudioImmediate(currentSignal.audioUrl, 1);
     }
   };
 
@@ -128,7 +134,7 @@ export default function SignalFeed() {
                       onClick={() => {
                         stopCurrentAudio();
                         if (state.enabledChannels.audio && signal.audioUrl) {
-                          playAudioImmediate(signal.audioUrl, 0.9);
+                          playAudioImmediate(signal.audioUrl, 1);
                         }
                         dispatch({ type: "SELECT_SIGNAL", payload: signal.id });
                       }}

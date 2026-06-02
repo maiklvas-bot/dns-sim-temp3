@@ -5,6 +5,9 @@ import { Play, Pause, RefreshCw, CheckCircle, Video, Volume2 } from "lucide-reac
 import { useSimulation } from "../context/SimulationContext";
 import DeadlineChip from "./deadline-chip";
 
+const VIDEO_MEDIA_VOLUME = 0.95;
+const VIDEO_FALLBACK_AUDIO_VOLUME = 0.95;
+
 function parseDurationMs(value: string): number | null {
   const match = value.match(/^(\d+):(\d{2})$/);
   if (!match) return null;
@@ -139,6 +142,8 @@ function TalkingAvatarPlayer({
     const startAudioPlayback = () => {
       if (!vc.audioUrl) return startAnimatedFallback();
       const audio = new Audio(vc.audioUrl);
+      audio.volume = VIDEO_FALLBACK_AUDIO_VOLUME;
+      audio.muted = false;
       mediaAudioRef.current = audio;
       audio.addEventListener("ended", finalizePlayback);
       audio.addEventListener("error", finalizePlayback);
@@ -164,6 +169,8 @@ function TalkingAvatarPlayer({
     if (vc.videoUrl && mediaVideoRef.current) {
       const video = mediaVideoRef.current;
       video.currentTime = 0;
+      video.volume = VIDEO_MEDIA_VOLUME;
+      video.muted = false;
       video.load();
       video.onended = finalizePlayback;
       video.onerror = () => {
@@ -264,6 +271,8 @@ function TalkingAvatarPlayer({
 
   const resumePlay = () => {
     if (mediaAudioRef.current) {
+      mediaAudioRef.current.volume = VIDEO_FALLBACK_AUDIO_VOLUME;
+      mediaAudioRef.current.muted = false;
       mediaAudioRef.current.play().catch(() => undefined);
       setPhase("playing");
       mouthTimer.current = setInterval(() => setMouthOpen((p) => !p), 180);
@@ -271,6 +280,8 @@ function TalkingAvatarPlayer({
       return;
     }
     if (mediaVideoRef.current && !mediaVideoRef.current.ended && mediaVideoRef.current.currentTime > 0) {
+      mediaVideoRef.current.volume = VIDEO_MEDIA_VOLUME;
+      mediaVideoRef.current.muted = false;
       mediaVideoRef.current.play().catch(() => undefined);
       setPhase("playing");
       syncProgressLoop();

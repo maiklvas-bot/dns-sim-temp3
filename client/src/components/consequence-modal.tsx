@@ -1,11 +1,13 @@
 import { useSimulation } from "../context/SimulationContext";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { Info, X } from "lucide-react";
 
 export default function ConsequenceModal() {
   const { state, dispatch } = useSimulation();
 
-  if (!state.showConsequence || state.lastConsequences.length === 0) return null;
+  if (!state.showConsequence) return null;
+
+  const hasConsequences = state.lastConsequences.length > 0;
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -23,38 +25,49 @@ export default function ConsequenceModal() {
           {state.lastOptionText}
         </p>
 
-        {/* Consequence items */}
         <div className="space-y-2.5 mb-5 max-h-[300px] overflow-y-auto custom-scroll pr-1">
-          {state.lastConsequences.map((c, i) => (
-            <div
-              key={i}
-              className={`flex items-start gap-3 p-3 rounded-lg border ${
-                c.direction === "up"
-                  ? "border-[#00d4aa]/20 bg-[#00d4aa]/5"
-                  : c.direction === "down"
-                  ? "border-[#ff4444]/20 bg-[#ff4444]/5"
-                  : "border-[#2a3a4e]/30 bg-[#1a1a2e]/30"
-              }`}
-            >
-              <span className="text-lg flex-shrink-0">{c.icon}</span>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs font-medium text-white">{c.metric}</span>
-                  <span
-                    className="text-sm font-bold tabular-nums"
-                    style={{
-                      color: c.direction === "up" ? "#00d4aa" : c.direction === "down" ? "#ff4444" : "#8890a8",
-                    }}
-                  >
-                    {c.displayValue}
-                  </span>
+          {hasConsequences ? (
+            state.lastConsequences.map((c, i) => (
+              <div
+                key={i}
+                className={`flex items-start gap-3 p-3 rounded-lg border ${
+                  c.direction === "up"
+                    ? "border-[#00d4aa]/20 bg-[#00d4aa]/5"
+                    : c.direction === "down"
+                    ? "border-[#ff4444]/20 bg-[#ff4444]/5"
+                    : "border-[#2a3a4e]/30 bg-[#1a1a2e]/30"
+                }`}
+              >
+                <span className="text-lg flex-shrink-0">{c.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-medium text-white">{c.metric}</span>
+                    <span
+                      className="text-sm font-bold tabular-nums"
+                      style={{
+                        color: c.direction === "up" ? "#00d4aa" : c.direction === "down" ? "#ff4444" : "#8890a8",
+                      }}
+                    >
+                      {c.displayValue}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#8890a8] mt-0.5 leading-relaxed">
+                    {c.explanation}
+                  </p>
                 </div>
-                <p className="text-xs text-[#8890a8] mt-0.5 leading-relaxed">
-                  {c.explanation}
+              </div>
+            ))
+          ) : (
+            <div className="flex items-start gap-3 rounded-lg border border-[#4a9eff]/25 bg-[#4a9eff]/8 p-3">
+              <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#8ec5ff]" />
+              <div className="min-w-0">
+                <div className="text-xs font-medium text-white">Решение принято</div>
+                <p className="mt-0.5 text-xs leading-relaxed text-[#b7c8df]">
+                  Это действие не изменило операционные метрики напрямую, но ответ зафиксирован в журнале и учтен в компетенциях.
                 </p>
               </div>
             </div>
-          ))}
+          )}
         </div>
 
         <Button

@@ -2,6 +2,7 @@ import {
   Boxes,
   Package,
   ShoppingCart,
+  Star,
   Truck,
   Users,
   Wallet,
@@ -49,6 +50,13 @@ function resolveMoraleHealth(morale: number): ZoneHealth {
   return "red";
 }
 
+function resolveClientRatingHealth(rating: number): ZoneHealth {
+  if (rating >= 4.2) return "green";
+  if (rating >= 3.4) return "yellow";
+  if (rating >= 2.6) return "orange";
+  return "red";
+}
+
 function resolveInventoryHealth(load: number): ZoneHealth {
   if (load <= 55) return "green";
   if (load <= 72) return "yellow";
@@ -62,6 +70,13 @@ function formatRevenue(value: number) {
   }
 
   return `${value}K₽`;
+}
+
+function formatClientRating(value: number) {
+  return value.toLocaleString("ru-RU", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
 
 function formatStatusLabel(label: string, health: ZoneHealth) {
@@ -90,6 +105,14 @@ export default function StoreMap() {
       health: state.zones.торговый_зал.health,
       Icon: ShoppingCart,
       fill: state.metrics.conversion,
+    },
+    {
+      key: "client-rating",
+      title: "Клиенты",
+      detail: `${formatClientRating(state.metrics.nps)} / 5 — клиентская оценка`,
+      health: resolveClientRatingHealth(state.metrics.nps),
+      Icon: Star,
+      fill: ((state.metrics.nps - 1) / 4) * 100,
     },
     {
       key: "warehouse",
@@ -134,42 +157,42 @@ export default function StoreMap() {
   ];
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="rounded-[22px] border border-[#2a3a4e] bg-[linear-gradient(180deg,rgba(20,29,43,0.94),rgba(9,14,23,0.96))] px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,0.34)]">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-[#2a3a4e] bg-[linear-gradient(180deg,rgba(20,29,43,0.94),rgba(9,14,23,0.96))] px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,0.34)]">
         <div className="text-center">
           <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-white">Карта магазина</div>
           <div className="mx-auto mt-2 h-[3px] w-12 rounded-full bg-[linear-gradient(90deg,rgba(74,158,255,0),rgba(74,158,255,0.9),rgba(74,158,255,0))]" />
         </div>
 
-        <div className="mt-3 grid grid-cols-1 gap-2.5">
+        <div className="custom-scroll mt-3 grid min-h-0 flex-1 grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-2 overflow-y-auto pr-1">
           {zoneCards.map(({ key, title, detail, health, Icon, fill }) => {
             const tone = HEALTH_STYLES[health];
             return (
               <div
                 key={key}
-                className="rounded-2xl border px-3 py-2.5"
+                className="min-h-[5.8rem] rounded-xl border px-2.5 py-2"
                 style={{
                   borderColor: `${tone.accent}88`,
                   background: tone.surface,
                   boxShadow: tone.glow,
                 }}
               >
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0 flex-1">
-                    <div className="text-[13px] font-semibold leading-none text-white">{title}</div>
-                    <div className="mt-1.5 text-[11px] leading-5 whitespace-normal" style={{ color: tone.text }}>
+                    <div className="text-[12px] font-semibold leading-none text-white">{title}</div>
+                    <div className="mt-1.5 text-[10.5px] leading-4 whitespace-normal" style={{ color: tone.text }}>
                       {detail}
                     </div>
                   </div>
                   <div
-                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-xl border"
+                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border"
                     style={{ borderColor: `${tone.accent}66`, backgroundColor: `${tone.accent}18`, color: tone.accent }}
                   >
                     <Icon className="h-3.5 w-3.5" />
                   </div>
                 </div>
 
-                <div className="mt-2.5 rounded-full border border-[#293546] bg-[#0e1521] p-[3px]">
+                <div className="mt-2 rounded-full border border-[#293546] bg-[#0e1521] p-[3px]">
                   <div
                     className="h-1.5 rounded-full"
                     style={{

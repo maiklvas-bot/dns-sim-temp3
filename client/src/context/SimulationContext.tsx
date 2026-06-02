@@ -56,7 +56,7 @@ export interface RealisticMetrics {
   customersInStore: number;     // 0-50
   avgCheck: number;             // 3000-15000₽
   conversion: number;           // 20-80%
-  nps: number;                  // 1-10
+  nps: number;                  // Client rating, 1-5
   pickupSpeed: number;          // 5-30 min
   warehouseLoad: number;        // 30-100%
   teamMorale: number;           // 1-10
@@ -256,7 +256,7 @@ type Action =
   | { type: "SET_SESSION_ID"; payload: number | null }
   | { type: "START_SIMULATION" }
   | { type: "TOGGLE_PAUSE" }
-  | { type: "TICK" }
+  | { type: "TICK"; payload?: { stepSeconds?: number } }
   | { type: "FIRE_SIGNAL" }
   | { type: "SELECT_SIGNAL"; payload: string }
   | { type: "SNOOZE_SIGNAL"; payload: string }
@@ -278,6 +278,16 @@ type Action =
 
 function clamp(val: number, min: number, max: number) {
   return Math.max(min, Math.min(max, val));
+}
+
+function normalizeClientRating(value: unknown, fallback = 3.3) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return fallback;
+  }
+
+  const scaled = numeric > 10 ? numeric / 20 : numeric > 5 ? numeric / 2 : numeric;
+  return Math.round(clamp(scaled, 1, 5) * 100) / 100;
 }
 
 function normalizeEffects(effects?: Partial<EffectPayload> | null): EffectPayload {
@@ -369,7 +379,7 @@ function inferMetricWeights(context: MetricApplicationContext): Record<MetricKey
     zones.has("начальство") ||
     matchesAny(textBlob, [/директор/, /регион/, /управля/, /офис/, /проверк/, /отчет/]);
   const customerCareRelated =
-    matchesAny(textBlob, [/жалоб/, /претенз/, /nps/, /сервис/, /клиент/]);
+    matchesAny(textBlob, [/жалоб/, /претенз/, /nps/, /клиентск.*оцен/, /сервис/, /клиент/]);
   const financeRelated =
     matchesAny(textBlob, [/выруч/, /план/, /чек/, /продаж/, /конверс/]);
 
@@ -403,9 +413,9 @@ function applyMetricEffects(
   const nextConversion = Math.round(
     metrics.conversion + effects.conversion * weights.conversion * diffMod - effects.queue * 0.15 * weights.conversion
   );
-  const nextNps = Math.round(
-    (metrics.nps + effects.delivery_status * 0.3 * weights.nps + effects.morale * 0.02 * weights.nps) * 10
-  ) / 10;
+  const nextClientRating = Math.round(
+    (metrics.nps + effects.delivery_status * 0.08 * weights.nps + effects.morale * 0.006 * weights.nps) * 100
+  ) / 100;
   const nextPickupSpeed = Math.round(
     metrics.pickupSpeed + effects.queue * -0.35 * weights.pickupSpeed + effects.delivery_status * -0.12 * weights.pickupSpeed
   );
@@ -424,7 +434,7 @@ function applyMetricEffects(
     customersInStore: clamp(nextCustomers, 2, 60),
     avgCheck: clamp(nextAvgCheck, 3000, 20000),
     conversion: clamp(nextConversion, 20, 85),
-    nps: clamp(nextNps, 1, 10),
+    nps: clamp(nextClientRating, 1, 5),
     pickupSpeed: clamp(nextPickupSpeed, 5, 45),
     warehouseLoad: clamp(nextWarehouseLoad, 15, 100),
     teamMorale: clamp(nextTeamMorale, 1, 10),
@@ -525,6 +535,10 @@ function getNextSignalIntervalSeconds(_speedMultiplier: number): number {
 
 function getMainSignalEndBufferSeconds(totalDurationSeconds: number) {
   return clamp(Math.round(totalDurationSeconds * 0.08), 120, 240);
+}
+
+function getFirstMainCaseDelaySeconds(totalDurationSeconds: number) {
+  return clamp(Math.round(totalDurationSeconds * 0.05), 90, 150);
 }
 
 function getEvenMainSignalIntervalSeconds(
@@ -912,6 +926,53 @@ export function getRuntimeDiagnosticsSnapshot(state: SimulationState): RuntimeDi
   };
 }
 
+interface SimulationProgressSummary {
+  completed: number;
+  total: number;
+  active: number;
+  remaining: number;
+  pendingMain: number;
+  pendingChannels: number;
+  futureMain: number;
+  futureChannels: number;
+  percent: number;
+}
+
+function getSimulationProgressSummary(state: SimulationState): SimulationProgressSummary {
+  const pendingMain = state.activeSignals.filter((signal) => !signal.isExpired).length;
+  const pendingEmail = state.arrivedEmailIds.filter((id) => !state.answeredEmailIds.includes(id)).length;
+  const pendingMessenger = state.arrivedMessengerIds.filter((id) => !state.answeredMessengerIds.includes(id)).length;
+  const pendingVideo = state.arrivedVideoIds.filter((id) => !state.answeredVideoIds.includes(id)).length;
+  const pendingChannels = pendingEmail + pendingMessenger + pendingVideo;
+  const futureMain = state.caseQueue.length;
+  const futureEmail = state.enabledChannels.email
+    ? getSelectedChannelItems(state, "email", EMAIL_CASES).filter((item) => !state.arrivedEmailIds.includes(item.id)).length
+    : 0;
+  const futureMessenger = state.enabledChannels.messenger
+    ? getSelectedChannelItems(state, "messenger", MESSENGER_CASES).filter((item) => !state.arrivedMessengerIds.includes(item.id)).length
+    : 0;
+  const futureVideo = state.enabledChannels.video
+    ? getSelectedChannelItems(state, "video", VIDEO_CASES).filter((item) => !state.arrivedVideoIds.includes(item.id)).length
+    : 0;
+  const futureChannels = futureEmail + futureMessenger + futureVideo;
+  const completed = state.decisions.length;
+  const active = pendingMain + pendingChannels;
+  const remaining = active + futureMain + futureChannels;
+  const total = Math.max(completed + remaining, completed, 1);
+
+  return {
+    completed,
+    total,
+    active,
+    remaining,
+    pendingMain,
+    pendingChannels,
+    futureMain,
+    futureChannels,
+    percent: Math.round((completed / total) * 100),
+  };
+}
+
 function getSimulationTickStep(speedMultiplier: number) {
   return Math.max(1, Math.round(speedMultiplier || 1));
 }
@@ -1073,7 +1134,7 @@ function buildMetricDeltaEntries(before: RealisticMetrics, after: RealisticMetri
     { key: "customersInStore", metric: "Покупатели в зале", unit: "count", betterWhen: "higher", before: before.customersInStore, after: after.customersInStore },
     { key: "avgCheck", metric: "Средний чек", unit: "rub", betterWhen: "higher", before: before.avgCheck, after: after.avgCheck },
     { key: "conversion", metric: "Конверсия", unit: "percent", betterWhen: "higher", before: before.conversion, after: after.conversion },
-    { key: "nps", metric: "NPS клиентов", unit: "score", betterWhen: "higher", before: before.nps, after: after.nps },
+    { key: "nps", metric: "Клиентская оценка", unit: "score", betterWhen: "higher", before: before.nps, after: after.nps },
     { key: "pickupSpeed", metric: "Скорость выдачи", unit: "minutes", betterWhen: "lower", before: before.pickupSpeed, after: after.pickupSpeed },
     { key: "warehouseLoad", metric: "Загрузка склада", unit: "percent", betterWhen: "lower", before: before.warehouseLoad, after: after.warehouseLoad },
     { key: "teamMorale", metric: "Настроение команды", unit: "score", betterWhen: "higher", before: before.teamMorale, after: after.teamMorale },
@@ -1084,7 +1145,7 @@ function buildMetricDeltaEntries(before: RealisticMetrics, after: RealisticMetri
     .map((row) => ({
       ...row,
       delta: row.unit === "score"
-        ? Math.round((row.after - row.before) * 10) / 10
+        ? Math.round((row.after - row.before) * 100) / 100
         : Math.round(row.after - row.before),
     }))
     .filter((row) => row.delta !== 0);
@@ -1097,7 +1158,8 @@ function computeZones(metrics: RealisticMetrics): ZoneStatus {
     metrics.warehouseLoad <= 55 ? "green" : metrics.warehouseLoad <= 72 ? "yellow" : metrics.warehouseLoad <= 86 ? "orange" : "red";
   const pickupHealth: ZoneHealth =
     metrics.pickupSpeed <= 10 ? "green" : metrics.pickupSpeed <= 18 ? "yellow" : metrics.pickupSpeed <= 28 ? "orange" : "red";
-  const bossHealthScore = (metrics.teamMorale * 0.55) + (metrics.nps * 0.45);
+  const clientRatingAsTenPoint = metrics.nps * 2;
+  const bossHealthScore = (metrics.teamMorale * 0.55) + (clientRatingAsTenPoint * 0.45);
   const bossHealth: ZoneHealth =
     bossHealthScore >= 7 ? "green" : bossHealthScore >= 5.8 ? "yellow" : bossHealthScore >= 4.5 ? "orange" : "red";
 
@@ -1113,7 +1175,7 @@ const defaultStartingMetrics: RealisticMetrics = {
   customersInStore: 18,
   avgCheck: 7200,
   conversion: 48,
-  nps: 6.6,
+  nps: 3.3,
   pickupSpeed: 16,
   warehouseLoad: 44,
   teamMorale: 6.8,
@@ -1125,7 +1187,7 @@ function sanitizeStartingMetrics(metrics?: Partial<RealisticMetrics> | null): Re
     customersInStore: clamp(Number(metrics?.customersInStore ?? defaultStartingMetrics.customersInStore), 2, 60),
     avgCheck: clamp(Number(metrics?.avgCheck ?? defaultStartingMetrics.avgCheck), 3000, 20000),
     conversion: clamp(Number(metrics?.conversion ?? defaultStartingMetrics.conversion), 20, 85),
-    nps: clamp(Math.round(Number(metrics?.nps ?? defaultStartingMetrics.nps) * 10) / 10, 1, 10),
+    nps: normalizeClientRating(metrics?.nps ?? defaultStartingMetrics.nps, defaultStartingMetrics.nps),
     pickupSpeed: clamp(Number(metrics?.pickupSpeed ?? defaultStartingMetrics.pickupSpeed), 5, 45),
     warehouseLoad: clamp(Number(metrics?.warehouseLoad ?? defaultStartingMetrics.warehouseLoad), 15, 100),
     teamMorale: clamp(Math.round(Number(metrics?.teamMorale ?? defaultStartingMetrics.teamMorale) * 10) / 10, 1, 10),
@@ -1172,19 +1234,18 @@ function getMainCaseArrivalSeconds(
   totalDurationSeconds: number,
   timeLimitMinutes: number,
 ) {
-  if (caseData?.timing?.arrivalMinute != null && Number.isFinite(caseData.timing.arrivalMinute)) {
-    return clamp(
-      simMinutesToRealSeconds(caseData.timing.arrivalMinute, timeLimitMinutes),
-      10,
-      Math.max(10, totalDurationSeconds - 10),
-    );
+  void caseData;
+  void timeLimitMinutes;
+
+  const firstCaseAt = getFirstMainCaseDelaySeconds(totalDurationSeconds);
+  if (totalCases <= 1) {
+    return firstCaseAt;
   }
 
-  const startPaddingSeconds = clamp(Math.round(totalDurationSeconds * 0.06), 45, 150);
-  const endPaddingSeconds = clamp(Math.round(totalDurationSeconds * 0.16), 90, 300);
-  const usableWindowSeconds = Math.max(120, totalDurationSeconds - startPaddingSeconds - endPaddingSeconds);
-  const slotSeconds = usableWindowSeconds / Math.max(1, totalCases + 1);
-  return Math.round(startPaddingSeconds + slotSeconds * (caseIndex + 1));
+  const endBufferSeconds = getMainSignalEndBufferSeconds(totalDurationSeconds);
+  const lastCaseAt = Math.max(firstCaseAt + 60, totalDurationSeconds - endBufferSeconds);
+  const intervalSeconds = (lastCaseAt - firstCaseAt) / Math.max(1, totalCases - 1);
+  return Math.round(firstCaseAt + intervalSeconds * caseIndex);
 }
 
 function getNextMainSignalAtFromQueue(
@@ -1236,6 +1297,16 @@ function hasFutureChannelSignals(state: SimulationState) {
     (state.enabledChannels.email && getSelectedChannelItems(state, "email", EMAIL_CASES).some((item) => !state.arrivedEmailIds.includes(item.id))) ||
     (state.enabledChannels.messenger && getSelectedChannelItems(state, "messenger", MESSENGER_CASES).some((item) => !state.arrivedMessengerIds.includes(item.id))) ||
     (state.enabledChannels.video && getSelectedChannelItems(state, "video", VIDEO_CASES).some((item) => !state.arrivedVideoIds.includes(item.id)))
+  );
+}
+
+function shouldReleaseDelayedFirstMainCase(state: SimulationState, elapsedSeconds: number) {
+  return (
+    state.caseQueue.length > 0 &&
+    state.decisions.every((decision) => decision.sourceType !== "main_case") &&
+    !hasPendingMainSignals(state) &&
+    state.nextSignalAt > elapsedSeconds + 5 &&
+    elapsedSeconds >= getFirstMainCaseDelaySeconds(state.timeLimit * 60)
   );
 }
 
@@ -1420,30 +1491,6 @@ function collectPendingTimers(state: SimulationState): TimerSnapshot[] {
         taskType: "Звонок",
         zoneLabel: formatZoneLabel(caseData?.zones_affected, signal.source || "Операционная зона"),
         arrivedAtElapsed: signal.arrivedAt,
-        resolvedAtElapsed: null,
-        resolvedSimTime: null,
-        referenceElapsed: state.elapsedSeconds,
-      });
-
-      if (timer) {
-        timers.push(timer);
-      }
-    });
-
-  state.arrivedEmailIds
-    .filter((id) => !state.answeredEmailIds.includes(id))
-    .forEach((emailId) => {
-      const emailCase = EMAIL_CASES.find((item) => item.id === emailId);
-      const meta = state.emailSignalMeta[emailId];
-      const timer = buildTimerSnapshot({
-        deadline: meta?.deadline,
-        sourceType: "email",
-        contentId: emailId,
-        title: emailCase?.subject || emailId,
-        responsibility: emailCase?.from || "Корпоративная почта",
-        taskType: "Почта",
-        zoneLabel: emailCase?.department || "Корпоративная почта",
-        arrivedAtElapsed: meta?.arrivedAt ?? state.elapsedSeconds,
         resolvedAtElapsed: null,
         resolvedSimTime: null,
         referenceElapsed: state.elapsedSeconds,
@@ -1654,27 +1701,27 @@ export function playChannelSound(
   switch (channel) {
     case "call":
       if (mode === "loop") {
-        playLoopingAudio(soundSrc, 0.6);
+        playLoopingAudio(soundSrc, 0.9);
       } else {
-        playAudioFile(soundSrc, 0.6);
+        playAudioFile(soundSrc, 0.9);
       }
       break;
     case "messenger":
       if (mode === "reminder") {
-        playTwoToneNotification(soundSrc, 0.55);
+        playTwoToneNotification(soundSrc, 0.85);
       } else {
-        playAudioFile(soundSrc, 0.55);
+        playAudioFile(soundSrc, 0.85);
       }
       break;
     case "video":
       if (mode === "loop") {
-        playLoopingAudio(soundSrc, 0.65);
+        playLoopingAudio(soundSrc, 0.95);
       } else {
-        playAudioFile(soundSrc, 0.65);
+        playAudioFile(soundSrc, 0.95);
       }
       break;
     case "email":
-      playAudioFile(soundSrc, 0.4);
+      playAudioFile(soundSrc, 0.75);
       break;
   }
 }
@@ -1873,7 +1920,7 @@ function reducer(state: SimulationState, action: Action): SimulationState {
           pauses: finalizedPauses,
         };
       }
-      const tickStep = getSimulationTickStep(state.speedMultiplier);
+      const tickStep = Math.max(1, Math.round(action.payload?.stepSeconds ?? getSimulationTickStep(state.speedMultiplier)));
       const newElapsed = state.elapsedSeconds + tickStep;
       const newRemaining = Math.max(0, state.timeRemaining - tickStep);
       const newSimTime = getSimTimeFromElapsed(newElapsed, state.timeLimit * 60);
@@ -1906,11 +1953,19 @@ function reducer(state: SimulationState, action: Action): SimulationState {
         };
       }
 
+      const normalizedMetrics =
+        state.metrics.nps < 1 || state.metrics.nps > 5
+          ? sanitizeStartingMetrics(state.metrics)
+          : state.metrics;
+
       return {
         ...state,
         timeRemaining: newRemaining,
         elapsedSeconds: newElapsed,
         simDateTime: newSimTime,
+        metrics: normalizedMetrics,
+        zones: normalizedMetrics === state.metrics ? state.zones : computeZones(normalizedMetrics),
+        nextSignalAt: shouldReleaseDelayedFirstMainCase(state, newElapsed) ? newElapsed : state.nextSignalAt,
       };
     }
 
@@ -2019,7 +2074,7 @@ function reducer(state: SimulationState, action: Action): SimulationState {
       stopLoopingAudio();
 
       if (state.enabledChannels.audio && selectedSignal?.audioUrl && !isCurrentAudioSource(selectedSignal.audioUrl)) {
-        playAudioImmediate(selectedSignal.audioUrl, 0.9);
+        playAudioImmediate(selectedSignal.audioUrl, 1);
       }
 
       return {
@@ -2234,19 +2289,10 @@ function reducer(state: SimulationState, action: Action): SimulationState {
       let newVideoIds: string[] = [];
 
       if (nextEvent.channelType === "email") {
-        const emailCase = EMAIL_CASES.find((item) => item.id === nextEvent.id);
         newEmailIds = [nextEvent.id];
         nextEmailMeta[nextEvent.id] = {
           arrivedAt: state.elapsedSeconds,
-          deadline: emailCase
-            ? buildDecisionDeadline(
-                emailCase.timing,
-                [emailCase.subject, emailCase.preview, emailCase.body],
-                state.simDateTime,
-                state.elapsedSeconds,
-                state.timeLimit
-              )
-            : null,
+          deadline: null,
         };
         playChannelSound("email");
       } else if (nextEvent.channelType === "messenger") {
@@ -2341,7 +2387,7 @@ function reducer(state: SimulationState, action: Action): SimulationState {
       if (state.enabledChannels.audio) {
         const emailCase = EMAIL_CASES.find((item) => item.id === action.payload);
         if (emailCase?.audioUrl && !isCurrentAudioSource(emailCase.audioUrl)) {
-          playAudioImmediate(emailCase.audioUrl, 0.85);
+          playAudioImmediate(emailCase.audioUrl, 0.95);
         }
       }
       return {
@@ -2372,20 +2418,8 @@ function reducer(state: SimulationState, action: Action): SimulationState {
         responsibility: emailCase?.department || emailCase?.from,
       });
       const consequences = generateConsequences(buildMetricDeltaEntries(beforeMetrics, newMetrics));
-      const timer = buildTimerSnapshot({
-        deadline: state.emailSignalMeta[emailId]?.deadline,
-        sourceType: "email",
-        contentId: emailId,
-        title: emailCase?.subject || emailId,
-        responsibility: emailCase?.from || "Корпоративная почта",
-        taskType: getTaskTypeLabel("email"),
-        zoneLabel: emailCase?.department || "Корпоративная почта",
-        arrivedAtElapsed: state.emailSignalMeta[emailId]?.arrivedAt ?? state.elapsedSeconds,
-        resolvedAtElapsed: state.elapsedSeconds,
-        resolvedSimTime: state.simDateTime,
-        referenceElapsed: state.elapsedSeconds,
-      });
-      const timerPenalty = getTimerPenalty(timer);
+      const timer = null;
+      const timerPenalty = 0;
       const resolvedScore = clamp(option.score - timerPenalty, 0, 5);
       const newTotals = applyCompetencyContribution(
         state.competencyTotals,
@@ -2437,7 +2471,7 @@ function reducer(state: SimulationState, action: Action): SimulationState {
       if (state.enabledChannels.audio) {
         const messengerCase = MESSENGER_CASES.find((item) => item.id === action.payload);
         if (messengerCase?.audioUrl && !isCurrentAudioSource(messengerCase.audioUrl)) {
-          playAudioImmediate(messengerCase.audioUrl, 0.85);
+          playAudioImmediate(messengerCase.audioUrl, 0.95);
         }
       }
       return {
@@ -2660,6 +2694,8 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
   const [liveStatus, setLiveStatus] = useState<LiveSimulationStatus | null>(null);
   const [liveSocketConnected, setLiveSocketConnected] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastTickAtRef = useRef<number | null>(null);
+  const tickAccumulatorRef = useRef(0);
   const liveSocketRef = useRef<ReturnType<typeof connectToLiveSimulationSession> | null>(null);
   const hydratedLiveSessionRef = useRef<string | null>(null);
   const sessionCreationInFlightRef = useRef(false);
@@ -3073,17 +3109,37 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     if (state.isRunning && !state.isCompleted && !state.isPaused) {
+      lastTickAtRef.current = performance.now();
+      tickAccumulatorRef.current = 0;
       timerRef.current = setInterval(() => {
-        dispatch({ type: "TICK" });
-      }, 1000);
+        const now = performance.now();
+        const lastTickAt = lastTickAtRef.current ?? now;
+        const realDeltaMs = Math.min(1000, Math.max(0, now - lastTickAt));
+        lastTickAtRef.current = now;
+
+        const speed = Math.max(1, Number(stateRef.current.speedMultiplier) || 1);
+        tickAccumulatorRef.current += (realDeltaMs / 1000) * speed;
+
+        const stepSeconds = Math.floor(tickAccumulatorRef.current);
+        if (stepSeconds <= 0) {
+          return;
+        }
+
+        tickAccumulatorRef.current -= stepSeconds;
+        dispatch({ type: "TICK", payload: { stepSeconds } });
+      }, 200);
     } else if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+      lastTickAtRef.current = null;
+      tickAccumulatorRef.current = 0;
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      lastTickAtRef.current = null;
+      tickAccumulatorRef.current = 0;
     };
-  }, [state.isRunning, state.isCompleted, state.isPaused]);
+  }, [dispatch, state.isRunning, state.isCompleted, state.isPaused]);
 
   useEffect(() => {
     if (!state.isRunning || state.isCompleted || state.sessionId || sessionCreationInFlightRef.current) {
@@ -3609,6 +3665,7 @@ export function useSimulation() {
 export {
   COMPETENCIES,
   getChannelNotificationCounts,
+  getSimulationProgressSummary,
   collectPendingTimers as getActiveTimerSnapshots,
   getSignalTypeEmoji,
   getSignalTypeLabel,

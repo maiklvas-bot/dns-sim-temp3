@@ -82,7 +82,7 @@ const DEFAULT_METRICS: RealisticMetrics = {
   customersInStore: 8,
   avgCheck: 3200,
   conversion: 22,
-  nps: 65,
+  nps: 3.25,
   pickupSpeed: 12,
   warehouseLoad: 35,
   teamMorale: 7,
@@ -95,7 +95,7 @@ const DEFAULT_METRICS: RealisticMetrics = {
 const SIMULATION_ROLE_CARDS = [
   {
     id: "participant",
-    title: "Обычная симуляция",
+    title: "Космонавт",
     description: "Стандартный режим для оценки компетенций",
     participantRole: "Участник",
     available: true,
@@ -358,18 +358,18 @@ const ASSESSOR_WIKI_BLOCKS: Array<{
   {
     id: "mode",
     focus: "mode",
-    title: "Режим прохождения",
-    label: "Зачет, тренировка и скорость",
+    title: "Рекомендованный и экспертный режим",
+    label: "Автосборка или ручная настройка",
     icon: Gauge,
-    summary: "Блок определяет, будет ли результат официальным. Скорость доступна только в тренировочном режиме.",
+    summary: "Рекомендованный режим собирает сценарий автоматически. Экспертный режим открывает ручные уровни влияния: кейсы, каналы, стартовые метрики и скорость тренировки.",
     controls: [
-      "В зачет - решения сохраняются как официальный результат.",
-      "Тренировка - сценарий используется для обучения и знакомства с интерфейсом.",
-      "Скорость x1-x10 сжимает темп сигналов в тренировке.",
+      "Рекомендованный - оценщик выбирает смысл оценки, система подбирает состав.",
+      "Экспертный - методист вручную меняет доказательную базу и нагрузку.",
+      "Тренировочная скорость доступна только внутри экспертных настроек.",
     ],
     dynamics: [
-      { type: "up", text: "Зачетный режим повышает ценность результата: данные сохраняются и используются в отчете." },
-      { type: "down", text: "Ускорение тренировки повышает стресс темпа, но не должно напрямую умножать баллы компетенций." },
+      { type: "up", text: "Рекомендованный режим снижает риск случайной ошибки: параметры связаны с выбранной сложностью." },
+      { type: "down", text: "Экспертный режим дает полный контроль, но требует проверить все поля: пустые кейсы, каналы или метрики блокируют запуск." },
     ],
   },
   {
@@ -428,7 +428,7 @@ const ASSESSOR_WIKI_BLOCKS: Array<{
     title: "Стартовые метрики магазина",
     label: "Начальное состояние подразделения",
     icon: Activity,
-    summary: "Метрики задают фон смены: нагрузку, настроение команды, NPS, склад, скорость выдачи и выручку.",
+    summary: "Метрики задают фон смены: нагрузку, настроение команды, клиентскую оценку, склад, скорость выдачи и выручку.",
     controls: [
       "Готовые состояния задают быстрый профиль нагрузки от спокойного до критического.",
       "Ручные поля позволяют тонко настроить начальные значения.",
@@ -449,6 +449,8 @@ const ASSESSOR_WIKI_BLOCKS: Array<{
     controls: [
       "Наблюдать - открыть текущую симуляцию без вмешательства в решения участника.",
       "Результаты - перейти к отчету завершенной сессии.",
+      "Следующий с копией - подготовить нового испытуемого с теми же настройками.",
+      "Пустая настройка - начать новую карточку без переноса параметров.",
       "Удалить - убрать live-сессию из текущего списка.",
     ],
     dynamics: [
@@ -469,6 +471,17 @@ const WIKI_PROCESS_STEPS = [
 ] as const;
 
 function WikiScreenshot({ focus, label }: { focus: AssessorWikiFocus; label: string }) {
+  const cards: Array<{ focus: AssessorWikiFocus; title: string; note: string }> = [
+    { focus: "participant", title: "Участник", note: "ФИО и роль" },
+    { focus: "difficulty", title: "Сценарий", note: "уровень нагрузки" },
+    { focus: "mode", title: "Режим", note: "авто / эксперт" },
+    { focus: "advanced", title: "Расширенно", note: "ручные параметры" },
+    { focus: "cases", title: "Кейсы", note: "состав оценки" },
+    { focus: "channels", title: "Каналы", note: "почта, чат, видео" },
+    { focus: "metrics", title: "Метрики", note: "старт магазина" },
+    { focus: "sessions", title: "Результаты", note: "сессии и отчеты" },
+  ];
+
   return (
     <div className={`dns-assessor-wiki-shot dns-assessor-wiki-shot--${focus}`} aria-label={`Скриншот: ${label}`}>
       <div className="dns-assessor-wiki-shot-top">
@@ -477,24 +490,29 @@ function WikiScreenshot({ focus, label }: { focus: AssessorWikiFocus; label: str
       </div>
       <div className="dns-assessor-wiki-shot-entry">WIKI оценщика</div>
       <div className="dns-assessor-wiki-shot-steps">
-        <span>1</span>
-        <span>2</span>
-        <span>3</span>
+        <span>1. Люди</span>
+        <span>2. Сценарий</span>
+        <span>3. Запуск</span>
       </div>
       <div className="dns-assessor-wiki-shot-grid">
-        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--participant" />
-        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--difficulty" />
-        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--mode" />
-        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--advanced" />
-        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--cases" />
-        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--channels" />
-        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--metrics" />
-        <div className="dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--sessions" />
+        {cards.map((card) => {
+          const active = focus === card.focus;
+          const overview = focus === "entry" || focus === "wizard";
+          return (
+            <div
+              key={card.focus}
+              className={`dns-assessor-wiki-shot-card dns-assessor-wiki-shot-card--${card.focus} ${
+                active ? "dns-assessor-wiki-shot-card--focus" : overview ? "dns-assessor-wiki-shot-card--overview" : "dns-assessor-wiki-shot-card--dim"
+              }`}
+            >
+              <strong>{card.title}</strong>
+              <span>{card.note}</span>
+            </div>
+          );
+        })}
       </div>
-      <div className="dns-assessor-wiki-shot-highlight">
-        <span>{label}</span>
-      </div>
-      <div className="dns-assessor-wiki-shot-arrow" />
+      <div className="dns-assessor-wiki-shot-highlight" aria-hidden="true" />
+      <div className="dns-assessor-wiki-shot-callout">{label}</div>
     </div>
   );
 }
@@ -785,9 +803,16 @@ export default function AssessorPage() {
     setActivePanel("participant");
   };
 
-  const addParticipantSetup = () => {
+  const addParticipantSetup = (mode: "blank" | "copy" = "blank") => {
     saveActiveParticipantSetup();
-    const nextSetup = createDefaultParticipantSetup();
+    const sourceSetup = captureCurrentParticipantSetup();
+    const nextSetup = mode === "copy"
+      ? {
+          ...sourceSetup,
+          id: createAssessorParticipantId(),
+          name: "",
+        }
+      : createDefaultParticipantSetup();
     setParticipantSetups((current) => [...current, nextSetup]);
     setActiveParticipantId(nextSetup.id);
     applyParticipantSetup(nextSetup);
@@ -830,6 +855,7 @@ export default function AssessorPage() {
   };
 
   const toggleChannelItem = (channelType: "email" | "messenger" | "video", id: string) => {
+    markCompositionDirty();
     setSelectedChannelItemIds((current) => {
       const currentIds = current[channelType] || [];
       const nextIds = currentIds.includes(id)
@@ -1014,6 +1040,51 @@ export default function AssessorPage() {
     setup.manualSelection ? setup.selectedCases : getAutoCases(setup.difficulty)
   );
 
+  const getSetupValidation = (setup: AssessorParticipantConfig) => {
+    const issues: string[] = [];
+    const nameReady = assessorName.trim().length > 0 && setup.name.trim().length > 0;
+    const roleReady = SIMULATION_ROLE_CARDS.some((item) => item.id === setup.simulationRole && item.available);
+    const scenarioReady = setup.scenarioConfirmed && Boolean(setup.difficulty);
+    const casesReady = getCasesForSetup(setup).length > 0;
+    const enabledChannelIssues = [
+      setup.channels.email && setup.selectedChannelItemIds.email.length === 0 ? "выберите письма или выключите почту" : "",
+      setup.channels.messenger && setup.selectedChannelItemIds.messenger.length === 0 ? "выберите сообщения или выключите ТёрКограмм" : "",
+      setup.channels.video && setup.selectedChannelItemIds.video.length === 0 ? "выберите видео или выключите видеоканал" : "",
+    ].filter(Boolean);
+    const metricsReady = (Object.keys(DEFAULT_METRICS) as Array<keyof RealisticMetrics>).every((key) => {
+      const value = Number(setup.initialMetrics[key]);
+      if (!Number.isFinite(value)) return false;
+      if (key === "nps") return value >= 1 && value <= 5;
+      return value >= 0;
+    });
+
+    if (!nameReady) issues.push("заполните ФИО оценщика и участника");
+    if (!roleReady) issues.push("выберите доступный тип симуляции");
+    if (!scenarioReady) issues.push("выберите сценарий оценки");
+    if (!casesReady) issues.push("выберите хотя бы одну ситуацию");
+    issues.push(...enabledChannelIssues);
+    if (!metricsReady) issues.push("проверьте стартовые метрики магазина");
+
+    const compositionReady = casesReady && enabledChannelIssues.length === 0 && metricsReady;
+    const readyToLaunch =
+      nameReady &&
+      roleReady &&
+      scenarioReady &&
+      compositionReady &&
+      setup.compositionConfirmed &&
+      setup.channelReviewDone;
+
+    return {
+      nameReady,
+      roleReady,
+      scenarioReady,
+      compositionReady,
+      channelReviewReady: compositionReady,
+      readyToLaunch,
+      issues,
+    };
+  };
+
   const visibleParticipantSetups = participantSetups.map((item) => (
     item.id === activeParticipantId ? captureCurrentParticipantSetup() : item
   ));
@@ -1022,14 +1093,7 @@ export default function AssessorPage() {
     visibleParticipantSetups.findIndex((item) => item.id === activeParticipantId),
   );
   const activeParticipantLabel = participantName.trim() || `Участник ${activeParticipantIndex + 1}`;
-  const isSetupReadyToLaunch = (setup: AssessorParticipantConfig) => (
-    assessorName.trim().length > 0 &&
-    setup.name.trim().length > 0 &&
-    setup.scenarioConfirmed &&
-    setup.compositionConfirmed &&
-    setup.channelReviewDone &&
-    getCasesForSetup(setup).length > 0
-  );
+  const isSetupReadyToLaunch = (setup: AssessorParticipantConfig) => getSetupValidation(setup).readyToLaunch;
   const readyParticipantSetups = visibleParticipantSetups.filter(isSetupReadyToLaunch);
 
   const activeCaseCount = manualSelection ? selectedCases.length : getAutoCases(difficulty).length;
@@ -1037,7 +1101,10 @@ export default function AssessorPage() {
   const isParticipantSimulation = simulationRole === "participant";
   const updateMetric = <K extends keyof RealisticMetrics>(key: K, value: number) => {
     markCompositionDirty();
-    setInitialMetrics((current) => ({ ...current, [key]: Number.isFinite(value) ? value : 0 }));
+    const normalizedValue = key === "nps"
+      ? Math.max(1, Math.min(5, Math.round((Number.isFinite(value) ? value : 3.3) * 100) / 100))
+      : Number.isFinite(value) ? value : 0;
+    setInitialMetrics((current) => ({ ...current, [key]: normalizedValue }));
   };
 
   // ── Status badge helper ──
@@ -1095,7 +1162,10 @@ export default function AssessorPage() {
     sum + (group.enabled ? selectedChannelItemIds[group.key].length : 0)
   ), 0);
 
-  const participantReady = assessorName.trim().length > 0 && participantName.trim().length > 0;
+  const activeSetupValidation = getSetupValidation(captureCurrentParticipantSetup());
+  const participantReady = activeSetupValidation.nameReady;
+  const compositionReady = activeSetupValidation.compositionReady;
+  const firstValidationIssue = activeSetupValidation.issues[0] || "Проверьте заполнение предыдущего шага.";
   const enabledChannelLabels = channelInfo
     .filter((item) => channels[item.key])
     .map((item) => item.label);
@@ -1123,20 +1193,47 @@ export default function AssessorPage() {
     {
       title: "Сценарий выбран",
       detail: scenarioConfirmed ? `${scenarioName}, ${estimatedTimeLimit} минут.` : "Выберите один из сценариев оценки.",
-      done: scenarioConfirmed,
+      done: activeSetupValidation.scenarioReady,
     },
     {
       title: "Состав сценария проверен",
-      detail: compositionConfirmed ? `${activeCaseCount} ситуаций, ${enabledChannelLabels.length} каналов.` : "Проверьте кейсы, каналы и стартовые метрики.",
-      done: compositionConfirmed,
+      detail: compositionReady ? `${activeCaseCount} ситуаций, ${enabledChannelLabels.length} каналов.` : `Проверьте состав: ${firstValidationIssue}.`,
+      done: compositionConfirmed && compositionReady,
     },
     {
       title: "Каналы подтверждены",
       detail: channelReviewDone ? "События каналов проверены." : "Подтвердите почту, чат и видео перед запуском.",
-      done: channelReviewDone,
+      done: channelReviewDone && compositionReady,
     },
   ];
   const setupProgress = reviewItems.filter((item) => item.done).length;
+  const completedSessionCount = monitorSessions.filter((item) => item.status === "completed").length;
+
+  useEffect(() => {
+    if (activePanel === "sessions") {
+      return;
+    }
+
+    if (!participantReady && activePanel !== "participant") {
+      setActivePanel("participant");
+      return;
+    }
+
+    if (!activeSetupValidation.scenarioReady && (activePanel === "composition" || activePanel === "review")) {
+      setActivePanel("scenario");
+      return;
+    }
+
+    if ((!compositionConfirmed || !compositionReady) && activePanel === "review") {
+      setActivePanel("composition");
+    }
+  }, [
+    activePanel,
+    activeSetupValidation.scenarioReady,
+    compositionConfirmed,
+    compositionReady,
+    participantReady,
+  ]);
 
   const applyScenario = (nextDifficulty: AssessorDifficulty, manual = false) => {
     setDifficulty(nextDifficulty);
@@ -1151,14 +1248,31 @@ export default function AssessorPage() {
     }
   };
 
+  const chooseSetupMode = (nextMode: AssessorSetupMode) => {
+    setSetupMode(nextMode);
+    setCompositionConfirmed(false);
+    setChannelReviewDone(false);
+    setStartError(null);
+
+    if (nextMode === "recommended") {
+      setManualSelection(false);
+      setShowAdvanced(false);
+      setChannels({ ...DIFFICULTY_INFO[difficulty].channels });
+      return;
+    }
+
+    setManualSelection(true);
+    setShowAdvanced(true);
+  };
+
   const openPanel = (panel: AssessorPanel) => {
     if (panel === "sessions") {
       setActivePanel(panel);
       return;
     }
     if (panel === "scenario" && !participantReady) return;
-    if (panel === "composition" && !scenarioConfirmed) return;
-    if (panel === "review" && !compositionConfirmed) return;
+    if (panel === "composition" && !activeSetupValidation.scenarioReady) return;
+    if (panel === "review" && (!compositionConfirmed || !compositionReady)) return;
     setActivePanel(panel);
   };
 
@@ -1178,7 +1292,7 @@ export default function AssessorPage() {
       setStartError("Заполните ФИО оценщика и участника");
       return;
     }
-    if (!scenarioConfirmed) {
+    if (!activeSetupValidation.scenarioReady) {
       setStartError("Выберите сценарий оценки");
       return;
     }
@@ -1188,8 +1302,8 @@ export default function AssessorPage() {
   };
 
   const continueFromComposition = () => {
-    if (activeCaseCount === 0) {
-      setStartError("Выберите хотя бы одну ситуацию");
+    if (!compositionReady) {
+      setStartError(`Проверьте состав: ${firstValidationIssue}`);
       return;
     }
     setCompositionConfirmed(true);
@@ -1198,16 +1312,21 @@ export default function AssessorPage() {
   };
 
   const confirmChannels = () => {
+    if (!compositionReady) {
+      setStartError(`Проверьте состав: ${firstValidationIssue}`);
+      setActivePanel("composition");
+      return;
+    }
     setChannelReviewDone(true);
     setStartError(null);
   };
 
   const railItems: Array<{ id: AssessorPanel; title: string; state: string; done: boolean; locked: boolean }> = [
     { id: "participant", title: "Участник", state: participantReady ? "готово" : "нужно", done: participantReady, locked: false },
-    { id: "scenario", title: "Сценарий", state: scenarioConfirmed ? "готово" : participantReady ? "активно" : "после ФИО", done: scenarioConfirmed, locked: !participantReady },
-    { id: "composition", title: "Состав", state: compositionConfirmed ? "готово" : scenarioConfirmed ? "можно" : "после выбора", done: compositionConfirmed, locked: !scenarioConfirmed },
-    { id: "review", title: "Проверка", state: channelReviewDone ? "готово" : compositionConfirmed ? "нужно" : "закрыто", done: channelReviewDone, locked: !compositionConfirmed },
-    { id: "sessions", title: "Сессии", state: "всегда", done: false, locked: false },
+    { id: "scenario", title: "Сценарий", state: activeSetupValidation.scenarioReady ? "готово" : participantReady ? "активно" : "после ФИО", done: activeSetupValidation.scenarioReady, locked: !participantReady },
+    { id: "composition", title: "Состав", state: compositionConfirmed && compositionReady ? "готово" : activeSetupValidation.scenarioReady ? "можно" : "после выбора", done: compositionConfirmed && compositionReady, locked: !activeSetupValidation.scenarioReady },
+    { id: "review", title: "Проверка", state: channelReviewDone && compositionReady ? "готово" : compositionConfirmed && compositionReady ? "нужно" : "закрыто", done: channelReviewDone && compositionReady, locked: !compositionConfirmed || !compositionReady },
+    { id: "sessions", title: "Сессии и результаты", state: completedSessionCount > 0 ? `${completedSessionCount} готово` : "мониторинг", done: completedSessionCount > 0, locked: false },
   ];
 
   const renderRail = () => (
@@ -1282,10 +1401,16 @@ export default function AssessorPage() {
             <strong>{visibleParticipantSetups.length} участников</strong>
             <p>{readyParticipantSetups.length} готовы к запуску. Настройки сохраняются отдельно для каждого участника.</p>
           </div>
-          <button type="button" className="dns-assessor-v2-light-button" onClick={addParticipantSetup}>
-            <Users className="h-4 w-4" />
-            Добавить
-          </button>
+          <div className="dns-assessor-v2-inline-actions">
+            <button type="button" className="dns-assessor-v2-light-button" onClick={() => addParticipantSetup("copy")}>
+              <ClipboardCheck className="h-4 w-4" />
+              Копировать настройки
+            </button>
+            <button type="button" className="dns-assessor-v2-light-button" onClick={() => addParticipantSetup("blank")}>
+              <Users className="h-4 w-4" />
+              Пустые поля
+            </button>
+          </div>
         </div>
         <div className="dns-assessor-v2-participant-list">
           {visibleParticipantSetups.map((item, index) => {
@@ -1362,17 +1487,27 @@ export default function AssessorPage() {
         <button
           type="button"
           className={setupMode === "recommended" ? "dns-assessor-v2-mode dns-assessor-v2-mode--active" : "dns-assessor-v2-mode"}
-          onClick={() => setSetupMode("recommended")}
+          onClick={() => chooseSetupMode("recommended")}
         >
           Рекомендованный режим
         </button>
         <button
           type="button"
           className={setupMode === "expert" ? "dns-assessor-v2-mode dns-assessor-v2-mode--active" : "dns-assessor-v2-mode"}
-          onClick={() => setSetupMode("expert")}
+          onClick={() => chooseSetupMode("expert")}
         >
           Экспертный режим
         </button>
+      </div>
+      <div className="dns-assessor-v2-mode-explainer">
+        <div className={setupMode === "recommended" ? "dns-assessor-v2-mode-note dns-assessor-v2-mode-note--active" : "dns-assessor-v2-mode-note"}>
+          <strong>Рекомендованный</strong>
+          <p>Оценщик выбирает сценарий, а система сама подбирает кейсы, каналы, время и стартовый профиль.</p>
+        </div>
+        <div className={setupMode === "expert" ? "dns-assessor-v2-mode-note dns-assessor-v2-mode-note--active" : "dns-assessor-v2-mode-note"}>
+          <strong>Экспертный</strong>
+          <p>Открывает ручной выбор кейсов, событий каналов, метрик и тренировочной скорости для методической настройки.</p>
+        </div>
       </div>
 
       <div className="dns-assessor-v2-panel-head">
@@ -1517,7 +1652,7 @@ export default function AssessorPage() {
           <strong>Расширенные настройки</strong>
           <p>Откройте, если нужно вручную выбрать кейсы, события каналов или стартовые метрики.</p>
         </div>
-        <Switch checked={showAdvanced || setupMode === "expert"} onCheckedChange={(value) => { setShowAdvanced(value); if (value) setSetupMode("expert"); }} />
+        <Switch checked={showAdvanced || setupMode === "expert"} onCheckedChange={(value) => chooseSetupMode(value ? "expert" : "recommended")} />
       </div>
 
       {!(showAdvanced || setupMode === "expert") ? (
@@ -1589,12 +1724,24 @@ export default function AssessorPage() {
             })}
           </div>
           <div className="dns-assessor-v2-metric-grid">
-            {Object.keys(STORE_METRIC_LABELS).map((key) => (
-              <div key={key}>
-                <Label className="dns-assessor-v2-label">{STORE_METRIC_LABELS[key as keyof typeof STORE_METRIC_LABELS]}</Label>
-                <Input value={initialMetrics[key as keyof RealisticMetrics]} onChange={(event) => updateMetric(key as keyof RealisticMetrics, Number(event.target.value))} className="dns-assessor-v2-input" />
-              </div>
-            ))}
+            {Object.keys(STORE_METRIC_LABELS).map((key) => {
+              const metricKey = key as keyof RealisticMetrics;
+              const isClientRating = metricKey === "nps";
+              return (
+                <div key={key}>
+                  <Label className="dns-assessor-v2-label">{STORE_METRIC_LABELS[metricKey]}</Label>
+                  <Input
+                    type="number"
+                    min={isClientRating ? 1 : 0}
+                    max={isClientRating ? 5 : undefined}
+                    step={isClientRating ? 0.01 : 1}
+                    value={initialMetrics[metricKey]}
+                    onChange={(event) => updateMetric(metricKey, Number(event.target.value))}
+                    className="dns-assessor-v2-input"
+                  />
+                </div>
+              );
+            })}
           </div>
 
           <div className="dns-assessor-v2-toggle-line">
@@ -1752,6 +1899,21 @@ export default function AssessorPage() {
     }
   };
 
+  const goBackPanel = () => {
+    if (activePanel === "scenario") setActivePanel("participant");
+    if (activePanel === "composition") setActivePanel("scenario");
+    if (activePanel === "review") setActivePanel("composition");
+  };
+
+  const renderBackAction = () => (
+    activePanel === "scenario" || activePanel === "composition" || activePanel === "review" ? (
+      <button type="button" className="dns-assessor-v2-secondary" onClick={goBackPanel}>
+        <ArrowLeft className="h-4 w-4" />
+        Назад
+      </button>
+    ) : null
+  );
+
   const renderPrimaryAction = () => {
     if (activePanel === "participant") {
       return <Button type="button" className="dns-assessor-v2-primary" onClick={continueFromParticipant} disabled={!participantReady}>Продолжить к сценарию</Button>;
@@ -1760,7 +1922,7 @@ export default function AssessorPage() {
       return <Button type="button" className="dns-assessor-v2-primary" onClick={continueFromScenario} disabled={!scenarioConfirmed}>Продолжить к составу</Button>;
     }
     if (activePanel === "composition") {
-      return <Button type="button" className="dns-assessor-v2-primary" onClick={continueFromComposition} disabled={activeCaseCount === 0}>Перейти к проверке</Button>;
+      return <Button type="button" className="dns-assessor-v2-primary" onClick={continueFromComposition} disabled={!compositionReady}>Перейти к проверке</Button>;
     }
     if (activePanel === "review") {
       if (!channelReviewDone) {
@@ -1773,7 +1935,7 @@ export default function AssessorPage() {
         </Button>
       );
     }
-    return <Button type="button" className="dns-assessor-v2-primary" onClick={() => setActivePanel("participant")}>Новая оценка</Button>;
+    return <Button type="button" className="dns-assessor-v2-primary" onClick={() => addParticipantSetup("blank")}>Следующий испытуемый</Button>;
   };
 
   const renderSidePanel = () => (
@@ -1782,7 +1944,7 @@ export default function AssessorPage() {
         <>
           <section className="dns-assessor-v2-panel dns-assessor-v2-side-card">
             <h3>Новая настройка</h3>
-            <p>Можно добавить следующего участника, уже запущенные сессии останутся в списке.</p>
+            <p>Пока текущий участник проходит симуляцию, можно подготовить следующего без остановки live-сессий.</p>
             <div className="dns-assessor-v2-side-field">
               <span>Испытуемый</span>
               <strong>{participantName.trim() || "Новый сотрудник"}</strong>
@@ -1791,7 +1953,16 @@ export default function AssessorPage() {
               <span>Сценарий</span>
               <strong>{scenarioName}</strong>
             </div>
-            {renderPrimaryAction()}
+            <div className="dns-assessor-v2-side-actions">
+              <Button type="button" className="dns-assessor-v2-primary" onClick={() => addParticipantSetup("copy")}>
+                <ClipboardCheck className="mr-2 h-4 w-4" />
+                Следующий с копией
+              </Button>
+              <button type="button" className="dns-assessor-v2-secondary" onClick={() => addParticipantSetup("blank")}>
+                <Users className="h-4 w-4" />
+                Пустая настройка
+              </button>
+            </div>
           </section>
           <section className="dns-assessor-v2-panel dns-assessor-v2-side-card">
             <h3>Длительность</h3>
@@ -1826,6 +1997,7 @@ export default function AssessorPage() {
             </div>
           </section>
           {startError && <div className="dns-assessor-v2-error">{startError}</div>}
+          {renderBackAction()}
           {renderPrimaryAction()}
         </>
       )}
@@ -1855,6 +2027,10 @@ export default function AssessorPage() {
             </div>
           </div>
           <div className="dns-header-actions dns-assessor-v2-header-actions">
+            <button type="button" onClick={() => { setShowWiki(false); setActivePanel("sessions"); }} className="dns-assessor-v2-header-button">
+              <FileText className="h-4 w-4" />
+              Сессии / результаты
+            </button>
             <button type="button" onClick={() => setShowWiki(true)} className="dns-assessor-v2-header-button">
               <BookOpen className="h-4 w-4" />
               WIKI

@@ -2260,7 +2260,7 @@ export default function AdminPage() {
                   />
                 )}
               </div>
-              <div className="dns-admin-case-impact-panel min-w-0 rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4 2xl:sticky 2xl:top-4 2xl:h-fit 2xl:p-5">
+              <div className="dns-admin-case-impact-panel min-w-0 rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4 2xl:sticky 2xl:top-4 2xl:max-h-[calc(100vh-2rem)] 2xl:overflow-y-auto 2xl:overflow-x-hidden 2xl:p-5 2xl:pr-4 custom-scroll">
                 <div className="text-sm font-semibold text-white">Влияние выбранного кейса</div>
                 <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
                   Этот блок фиксирован рядом с редактором и показывает, как текущая настройка кейса влияет на ожидаемый профиль компетенций.
@@ -2360,7 +2360,7 @@ export default function AdminPage() {
                       </div>
                     )}
                   </div>
-                  <div className="mt-4 flex gap-3">
+                  <div className="dns-admin-action-block mt-4 justify-start">
                     <Button size="sm" className="bg-[#00d4aa] hover:bg-[#00c39c] text-[#0d1117]" onClick={saveChatDraft}>
                       Сохранить чат
                     </Button>
@@ -2598,17 +2598,17 @@ export default function AdminPage() {
               )}
               {resultDetailQuery.data && (
                 <div className="space-y-4">
-                  <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
+                  <div className="dns-admin-result-detail-head">
+                    <div className="min-w-0">
                       <div className="text-lg font-semibold text-white">{resultDetailQuery.data.session.participantName}</div>
+                      <div className="mt-1 text-sm text-[#d3deee]">
+                        Оценщик: {resultDetailQuery.data.session.evaluatorName || "—"} • {formatTechnicalStatus(resultDetailQuery.data.session.technicalStatus)}
+                      </div>
                       <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
                         Итоговая карточка прохождения. Здесь можно скачать отчёт или удалить ошибочный/тестовый результат.
                       </div>
                     </div>
-                    <div className="flex flex-wrap items-center justify-end gap-2">
-                      <div className="w-full text-right text-sm text-[#8890a8]">
-                        Оценщик: {resultDetailQuery.data.session.evaluatorName || "—"} • {formatTechnicalStatus(resultDetailQuery.data.session.technicalStatus)}
-                      </div>
+                    <div className="dns-admin-action-block">
                       <Button size="sm" variant="outline" className="border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={exportSelectedResultPdf} disabled={pdfLoading || !selectedResultReport}>
                         {pdfLoading ? "PDF..." : "Скачать PDF"}
                       </Button>
@@ -3387,7 +3387,7 @@ export default function AdminPage() {
               </div>
             </div>
 
-            <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">
+            <div className="space-y-4 xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:self-start xl:overflow-y-auto xl:overflow-x-hidden xl:pr-2 custom-scroll">
               <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
@@ -3534,7 +3534,7 @@ export default function AdminPage() {
         />
 
         {tab !== "results" && tab !== "schedule" && tab !== "comparison" && (
-          <div className="flex gap-3 mt-6">
+          <div className="dns-admin-action-block mt-6 justify-start">
             <Button className="bg-[#FF6B00] hover:bg-[#e06000]" onClick={saveCurrent} disabled={saving || uploading}>
               {saving ? "Сохранение..." : "Сохранить"}
             </Button>

@@ -23,27 +23,27 @@ export default function ToastNotifications() {
 
     switch (toast.sourceType) {
       case "email":
-        playOpenedAudio(EMAIL_CASES.find((item) => item.id === toast.signalId)?.audioUrl, 0.85);
+        playOpenedAudio(EMAIL_CASES.find((item) => item.id === toast.signalId)?.audioUrl, 0.95);
         if (!openedAudioStarted) {
-          playOpenedAudio(getDefaultChannelSound("email"), 0.45);
+          playOpenedAudio(getDefaultChannelSound("email"), 0.75);
         }
         dispatch({ type: "OPEN_EMAIL", payload: toast.signalId });
         return;
       case "messenger":
-        playOpenedAudio(MESSENGER_CASES.find((item) => item.id === toast.signalId)?.audioUrl, 0.85);
+        playOpenedAudio(MESSENGER_CASES.find((item) => item.id === toast.signalId)?.audioUrl, 0.95);
         if (!openedAudioStarted) {
-          playOpenedAudio(getDefaultChannelSound("messenger"), 0.55);
+          playOpenedAudio(getDefaultChannelSound("messenger"), 0.85);
         }
         dispatch({ type: "OPEN_MESSENGER", payload: toast.signalId });
         return;
       case "video":
-        playOpenedAudio(getDefaultChannelSound("video"), 0.55);
+        playOpenedAudio(getDefaultChannelSound("video"), 0.95);
         dispatch({ type: "OPEN_VIDEO", payload: toast.signalId });
         return;
       default:
-        playOpenedAudio(state.activeSignals.find((item) => item.id === toast.signalId)?.audioUrl, 0.9);
+        playOpenedAudio(state.activeSignals.find((item) => item.id === toast.signalId)?.audioUrl, 1);
         if (!openedAudioStarted) {
-          playOpenedAudio(getDefaultChannelSound("call"), 0.6);
+          playOpenedAudio(getDefaultChannelSound("call"), 0.9);
         }
         dispatch({ type: "SELECT_SIGNAL", payload: toast.signalId });
     }
