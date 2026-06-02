@@ -100,6 +100,7 @@ export default function StoreMap() {
   const zoneCards = [
     {
       key: "hall",
+      area: "hall",
       title: "Торг. зал",
       detail: formatStatusLabel(state.zones.торговый_зал.label, state.zones.торговый_зал.health),
       health: state.zones.торговый_зал.health,
@@ -108,6 +109,7 @@ export default function StoreMap() {
     },
     {
       key: "client-rating",
+      area: "clients",
       title: "Клиенты",
       detail: `${formatClientRating(state.metrics.nps)} / 5 — клиентская оценка`,
       health: resolveClientRatingHealth(state.metrics.nps),
@@ -116,6 +118,7 @@ export default function StoreMap() {
     },
     {
       key: "warehouse",
+      area: "warehouse",
       title: "Склад",
       detail: formatStatusLabel(state.zones.склад.label, state.zones.склад.health),
       health: state.zones.склад.health,
@@ -124,6 +127,7 @@ export default function StoreMap() {
     },
     {
       key: "pickup",
+      area: "pickup",
       title: "Выдача",
       detail: formatStatusLabel(state.zones.выдача.label, state.zones.выдача.health),
       health: state.zones.выдача.health,
@@ -132,6 +136,7 @@ export default function StoreMap() {
     },
     {
       key: "team",
+      area: "team",
       title: "Команда",
       detail: `${state.metrics.teamMorale.toFixed(1)} / 10 — состояние смены`,
       health: resolveMoraleHealth(state.metrics.teamMorale),
@@ -140,6 +145,7 @@ export default function StoreMap() {
     },
     {
       key: "goods",
+      area: "goods",
       title: "Товар",
       detail: `${Math.max(0, 100 - state.metrics.warehouseLoad)}% резерв — запас по полке`,
       health: resolveInventoryHealth(state.metrics.warehouseLoad),
@@ -148,6 +154,7 @@ export default function StoreMap() {
     },
     {
       key: "finance",
+      area: "finance",
       title: "Финансы",
       detail: `${formatRevenue(state.metrics.dailyRevenue)} — выполнение дня`,
       health: resolveFinanceHealth(state.metrics.dailyRevenue),
@@ -171,21 +178,13 @@ export default function StoreMap() {
           </div>
         </div>
 
-        <div className="dns-store-map-floor" aria-hidden="true">
-          <span className="dns-store-map-floor-line dns-store-map-floor-line--top" />
-          <span className="dns-store-map-floor-line dns-store-map-floor-line--mid" />
-          <span className="dns-store-map-floor-dot dns-store-map-floor-dot--hall" />
-          <span className="dns-store-map-floor-dot dns-store-map-floor-dot--pickup" />
-          <span className="dns-store-map-floor-dot dns-store-map-floor-dot--warehouse" />
-        </div>
-
-        <div className="dns-store-map-grid custom-scroll">
-          {zoneCards.map(({ key, title, detail, health, Icon, fill }) => {
+        <div className="dns-store-map-plan custom-scroll">
+          {zoneCards.map(({ key, area, title, detail, health, Icon, fill }) => {
             const tone = HEALTH_STYLES[health];
             return (
               <div
                 key={key}
-                className="dns-store-map-card"
+                className={`dns-store-map-zone dns-store-map-zone--${area}`}
                 style={{
                   borderColor: `${tone.accent}88`,
                   background: tone.surface,
@@ -194,13 +193,13 @@ export default function StoreMap() {
                   ["--zone-text" as string]: tone.text,
                 }}
               >
-                <div className="dns-store-map-card-head">
-                  <div className="dns-store-map-card-icon">
+                <div className="dns-store-map-zone-top">
+                  <div className="dns-store-map-zone-icon">
                     <Icon className="h-3.5 w-3.5" />
                   </div>
                   <div className="min-w-0">
-                    <div className="dns-store-map-card-title">{title}</div>
-                    <div className="dns-store-map-card-detail">
+                    <div className="dns-store-map-zone-title">{title}</div>
+                    <div className="dns-store-map-zone-detail">
                       {detail}
                     </div>
                   </div>
@@ -218,6 +217,12 @@ export default function StoreMap() {
               </div>
             );
           })}
+        </div>
+
+        <div className="dns-store-map-legend">
+          <span><i className="dns-store-map-dot dns-store-map-dot--ok" /> штатно</span>
+          <span><i className="dns-store-map-dot dns-store-map-dot--warn" /> внимание</span>
+          <span><i className="dns-store-map-dot dns-store-map-dot--risk" /> риск</span>
         </div>
       </div>
     </div>
