@@ -22,7 +22,7 @@ import {
   UserCheck, Timer, CheckCircle2, Rocket, Info, BookOpen, Workflow,
   MousePointerClick, ListChecks, Settings2, Target, GitBranch,
   ArrowUpRight, ArrowDownRight, SlidersHorizontal, ClipboardCheck, Map,
-  Activity, Gauge,
+  Activity, Gauge, Copy,
 } from "lucide-react";
 import { primeAudioPlayback } from "@/data/audio-map";
 import {
@@ -710,6 +710,7 @@ export default function AssessorPage() {
   const [startError, setStartError] = useState<string | null>(null);
   const [observeLoadingId, setObserveLoadingId] = useState<string | null>(null);
   const [removeLoadingId, setRemoveLoadingId] = useState<string | null>(null);
+  const [copiedAccessCode, setCopiedAccessCode] = useState<string | null>(null);
   const [launchResults, setLaunchResults] = useState<AssessorLaunchResult[]>([]);
 
   // ── Wiki toggle ──
@@ -1208,6 +1209,49 @@ export default function AssessorPage() {
   ];
   const setupProgress = reviewItems.filter((item) => item.done).length;
   const completedSessionCount = monitorSessions.filter((item) => item.status === "completed").length;
+
+  const copyAccessCode = async (code: string) => {
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(code);
+      } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = code;
+        textarea.setAttribute("readonly", "true");
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+      }
+      setCopiedAccessCode(code);
+      window.setTimeout(() => {
+        setCopiedAccessCode((current) => (current === code ? null : current));
+      }, 1600);
+    } catch {
+      setCopiedAccessCode(null);
+    }
+  };
+
+  const renderCopyAccessCodeButton = (code: string) => {
+    const copied = copiedAccessCode === code;
+    return (
+      <button
+        type="button"
+        title={copied ? "Скопировано" : "Скопировать"}
+        aria-label={`Скопировать код ${code}`}
+        className="group relative inline-flex items-center gap-1.5 rounded-lg border border-[#4a9eff]/35 bg-[#101826]/90 px-2 py-1 font-mono text-sm font-black tracking-[0.16em] text-white transition-all hover:border-[#ff6b00] hover:bg-[#ff6b00]/12 focus:outline-none focus:ring-2 focus:ring-[#ff6b00]/50"
+        onClick={() => copyAccessCode(code)}
+      >
+        <span>{code}</span>
+        <Copy className="h-3.5 w-3.5 text-[#8ec5ff] transition-colors group-hover:text-[#ffd0a6]" />
+        <span className="pointer-events-none absolute bottom-[calc(100%+0.45rem)] left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-md border border-[#2a3a4e] bg-[#0d1421] px-2 py-1 text-[10px] font-semibold tracking-normal text-[#f2f7ff] opacity-0 shadow-xl transition-opacity group-hover:opacity-100 group-focus:opacity-100">
+          {copied ? "Скопировано" : "Скопировать"}
+        </span>
+      </button>
+    );
+  };
 
   useEffect(() => {
     if (activePanel === "sessions") {
@@ -1839,7 +1883,7 @@ export default function AssessorPage() {
           {launchResults.map((item) => (
             <div key={item.liveSessionId} className="dns-assessor-v2-launch-result-row">
               <span>{item.participantName}</span>
-              <strong>{item.accessCode}</strong>
+              {renderCopyAccessCodeButton(item.accessCode)}
             </div>
           ))}
         </div>
@@ -1858,7 +1902,11 @@ export default function AssessorPage() {
             <div key={session.liveSessionId} className="dns-assessor-v2-session-row">
               <div className="min-w-0">
                 <strong>{session.participantName}</strong>
-                <p>Код: {session.accessCode} · Оценщик: {session.assessorName || "—"}</p>
+                <p className="flex flex-wrap items-center gap-2">
+                  <span>Код:</span>
+                  {renderCopyAccessCodeButton(session.accessCode)}
+                  <span>· Оценщик: {session.assessorName || "—"}</span>
+                </p>
               </div>
               <div className="dns-assessor-v2-progress">
                 <span style={{ width: Math.round(session.progressPercent) + "%" }} />

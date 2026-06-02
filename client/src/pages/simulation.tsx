@@ -270,7 +270,7 @@ export default function SimulationPage() {
                 { key: "video", label: "Видео", count: channelCounts.video, color: "#a78bfa" },
               ].map((item) => (
                 <div key={item.key} className="flex items-center gap-2 rounded-lg px-2 py-1" style={{ backgroundColor: `${item.color}14` }}>
-                  <span className="text-[10px] text-[#8b93ab]">{item.label}</span>
+                  <span className="text-[11px] font-semibold text-[#d8e5f6]">{item.label}</span>
                   <span
                     className="inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold text-white"
                     style={{ backgroundColor: item.color }}

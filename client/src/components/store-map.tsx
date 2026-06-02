@@ -156,45 +156,59 @@ export default function StoreMap() {
     },
   ];
 
+  const activeRiskCount = zoneCards.filter((item) => item.health === "orange" || item.health === "red").length;
+
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-[#2a3a4e] bg-[linear-gradient(180deg,rgba(20,29,43,0.94),rgba(9,14,23,0.96))] px-3 py-3 shadow-[0_18px_50px_rgba(0,0,0,0.34)]">
-        <div className="text-center">
-          <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-white">Карта магазина</div>
-          <div className="mx-auto mt-2 h-[3px] w-12 rounded-full bg-[linear-gradient(90deg,rgba(74,158,255,0),rgba(74,158,255,0.9),rgba(74,158,255,0))]" />
+    <div className="dns-store-map flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="dns-store-map-shell">
+        <div className="dns-store-map-head">
+          <div>
+            <div className="dns-store-map-kicker">Операционная карта</div>
+            <div className="dns-store-map-title">Карта магазина</div>
+          </div>
+          <div className={`dns-store-map-pulse ${activeRiskCount > 0 ? "dns-store-map-pulse--warn" : ""}`}>
+            {activeRiskCount > 0 ? `${activeRiskCount} зоны` : "штатно"}
+          </div>
         </div>
 
-        <div className="custom-scroll mt-3 grid min-h-0 flex-1 grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-2 overflow-y-auto pr-1">
+        <div className="dns-store-map-floor" aria-hidden="true">
+          <span className="dns-store-map-floor-line dns-store-map-floor-line--top" />
+          <span className="dns-store-map-floor-line dns-store-map-floor-line--mid" />
+          <span className="dns-store-map-floor-dot dns-store-map-floor-dot--hall" />
+          <span className="dns-store-map-floor-dot dns-store-map-floor-dot--pickup" />
+          <span className="dns-store-map-floor-dot dns-store-map-floor-dot--warehouse" />
+        </div>
+
+        <div className="dns-store-map-grid custom-scroll">
           {zoneCards.map(({ key, title, detail, health, Icon, fill }) => {
             const tone = HEALTH_STYLES[health];
             return (
               <div
                 key={key}
-                className="min-h-[5.8rem] rounded-xl border px-2.5 py-2"
+                className="dns-store-map-card"
                 style={{
                   borderColor: `${tone.accent}88`,
                   background: tone.surface,
                   boxShadow: tone.glow,
+                  ["--zone-accent" as string]: tone.accent,
+                  ["--zone-text" as string]: tone.text,
                 }}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
-                    <div className="text-[12px] font-semibold leading-none text-white">{title}</div>
-                    <div className="mt-1.5 text-[10.5px] leading-4 whitespace-normal" style={{ color: tone.text }}>
+                <div className="dns-store-map-card-head">
+                  <div className="dns-store-map-card-icon">
+                    <Icon className="h-3.5 w-3.5" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="dns-store-map-card-title">{title}</div>
+                    <div className="dns-store-map-card-detail">
                       {detail}
                     </div>
                   </div>
-                  <div
-                    className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg border"
-                    style={{ borderColor: `${tone.accent}66`, backgroundColor: `${tone.accent}18`, color: tone.accent }}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                  </div>
                 </div>
 
-                <div className="mt-2 rounded-full border border-[#293546] bg-[#0e1521] p-[3px]">
+                <div className="dns-store-map-meter">
                   <div
-                    className="h-1.5 rounded-full"
+                    className="dns-store-map-meter-fill"
                     style={{
                       width: `${Math.max(8, Math.min(fill, 100))}%`,
                       background: `linear-gradient(90deg, ${tone.accent}, rgba(255,255,255,0.18))`,
