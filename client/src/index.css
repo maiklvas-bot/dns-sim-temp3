@@ -239,6 +239,329 @@
   }
 }
 
+.dns-store-map-plan {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  grid-template-areas:
+    "hall"
+    "clients"
+    "pickup"
+    "warehouse"
+    "team"
+    "goods"
+    "finance";
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.55rem;
+  margin-top: 0.7rem;
+  overflow-y: auto;
+  padding-right: 0.12rem;
+}
+
+.dns-store-map-zone {
+  position: relative;
+  display: flex;
+  min-height: 4.75rem;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  border: 1px solid;
+  border-radius: 0.9rem;
+  padding: 0.68rem;
+}
+
+.dns-store-map-zone::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--zone-accent) 12%, transparent) 1px, transparent 1px) 0 0 / 18px 18px,
+    radial-gradient(circle at 82% 15%, color-mix(in srgb, var(--zone-accent) 22%, transparent), transparent 38%);
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.dns-store-map-zone--hall { grid-area: hall; }
+.dns-store-map-zone--clients { grid-area: clients; }
+.dns-store-map-zone--warehouse { grid-area: warehouse; }
+.dns-store-map-zone--pickup { grid-area: pickup; }
+.dns-store-map-zone--team { grid-area: team; }
+.dns-store-map-zone--goods { grid-area: goods; }
+.dns-store-map-zone--finance { grid-area: finance; }
+
+.dns-store-map-zone-top {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.58rem;
+  align-items: flex-start;
+}
+
+.dns-store-map-zone-icon {
+  display: grid;
+  width: 1.85rem;
+  height: 1.85rem;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--zone-accent) 52%, transparent);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--zone-accent) 18%, rgba(8, 15, 24, 0.75));
+  color: var(--zone-accent);
+}
+
+.dns-store-map-zone-title {
+  overflow: hidden;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  line-height: 1.08;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dns-store-map-zone-detail {
+  display: -webkit-box;
+  margin-top: 0.26rem;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--zone-text);
+  font-size: 0.66rem;
+  font-weight: 750;
+  line-height: 1.3;
+}
+
+.dns-store-map-zone .dns-store-map-meter {
+  position: relative;
+  z-index: 1;
+}
+
+.dns-store-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.62rem;
+  color: #9fb4cf;
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dns-store-map-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.dns-store-map-tactical {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  gap: 0.55rem;
+  margin-top: 0.7rem;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+}
+
+.dns-store-map-tactical-card {
+  position: relative;
+  display: grid;
+  min-height: 5.25rem;
+  gap: 0.5rem;
+  overflow: hidden;
+  border: 1px solid;
+  border-radius: 0.75rem;
+  padding: 0.62rem;
+  text-align: left;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.dns-store-map-tactical-card:hover,
+.dns-store-map-tactical-card--selected {
+  transform: translateY(-1px);
+}
+
+.dns-store-map-tactical-card--selected {
+  outline: 1px solid color-mix(in srgb, var(--zone-accent) 72%, white 8%);
+  outline-offset: -2px;
+}
+
+.dns-store-map-card-grid {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--zone-accent) 10%, transparent) 1px, transparent 1px) 0 0 / 18px 18px,
+    radial-gradient(circle at 88% 16%, color-mix(in srgb, var(--zone-accent) 22%, transparent), transparent 38%);
+  opacity: 0.58;
+  pointer-events: none;
+}
+
+.dns-store-map-card-top,
+.dns-store-map-card-body,
+.dns-store-map-card-bottom {
+  position: relative;
+  z-index: 1;
+}
+
+.dns-store-map-card-top {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.52rem;
+  align-items: start;
+}
+
+.dns-store-map-card-icon {
+  display: grid;
+  width: 1.9rem;
+  height: 1.9rem;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--zone-accent) 58%, transparent);
+  border-radius: 0.55rem;
+  background: color-mix(in srgb, var(--zone-accent) 17%, rgba(8, 15, 24, 0.78));
+  color: var(--zone-accent);
+}
+
+.dns-store-map-card-title-wrap {
+  min-width: 0;
+}
+
+.dns-store-map-card-title {
+  display: block;
+  overflow: hidden;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 950;
+  line-height: 1.08;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dns-store-map-card-detail {
+  display: block;
+  overflow: hidden;
+  margin-top: 0.18rem;
+  color: var(--zone-text);
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dns-store-map-card-badge {
+  border: 1px solid color-mix(in srgb, var(--zone-accent) 54%, transparent);
+  border-radius: 0.42rem;
+  background: color-mix(in srgb, var(--zone-accent) 14%, transparent);
+  color: var(--zone-accent);
+  padding: 0.22rem 0.34rem;
+  font-size: 0.54rem;
+  font-weight: 950;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.dns-store-map-card-body {
+  display: grid;
+  grid-template-columns: minmax(3.5rem, auto) minmax(0, 1fr);
+  gap: 0.55rem;
+  align-items: end;
+}
+
+.dns-store-map-kpi {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.dns-store-map-kpi strong {
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.dns-store-map-kpi small {
+  color: #8fa4c2;
+  font-size: 0.54rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dns-store-map-sparkline {
+  display: block;
+  height: 1.65rem;
+  min-width: 0;
+}
+
+.dns-store-map-sparkline svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--zone-accent) 45%, transparent));
+}
+
+.dns-store-map-card-bottom {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.48rem;
+  align-items: center;
+}
+
+.dns-store-map-dot-row {
+  display: inline-flex;
+  gap: 0.18rem;
+}
+
+.dns-store-map-mini-dot {
+  width: 0.33rem;
+  height: 0.33rem;
+  border-radius: 999px;
+  background: rgba(130, 148, 173, 0.28);
+}
+
+.dns-store-map-mini-dot--active {
+  background: var(--zone-accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--zone-accent) 65%, transparent);
+}
+
+.dns-store-map-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 999px;
+}
+
+.dns-store-map-dot--ok { background: #54d28c; }
+.dns-store-map-dot--warn { background: #f0c46b; }
+.dns-store-map-dot--risk { background: #d79f9f; }
+
+@container (min-width: 290px) {
+  .dns-store-map-plan {
+    grid-template-areas:
+      "hall hall"
+      "clients pickup"
+      "warehouse team"
+      "goods finance";
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dns-store-map-zone--hall {
+    min-height: 5.6rem;
+  }
+}
+
+@container (min-width: 560px) {
+  .dns-store-map-plan {
+    grid-template-areas:
+      "hall hall clients"
+      "warehouse pickup team"
+      "goods finance finance";
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 @font-face {
   font-family: "DNS RotondaC";
   src: url("/fonts/DNS RotondaC-Bold.ttf") format("truetype");
@@ -355,7 +678,141 @@
   --destructive-border: hsl(var(--destructive));
 }
 
-/* No light mode — app is always dark */
+/* Theme switcher */
+.dns-theme-toggle {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  gap: 0.45rem;
+  border: 1px solid rgba(74, 158, 255, 0.34);
+  border-radius: 0.68rem;
+  background: rgba(16, 24, 38, 0.78);
+  color: #dce8fb;
+  padding: 0.42rem 0.68rem;
+  font-size: 0.76rem;
+  font-weight: 850;
+  transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.dns-theme-toggle:hover {
+  border-color: rgba(255, 107, 0, 0.58);
+  background: rgba(255, 107, 0, 0.12);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.dns-product-shell.dns-theme-light {
+  color-scheme: light;
+  --dns-admin-border: rgba(160, 174, 196, 0.9);
+  --dns-admin-border-soft: rgba(188, 199, 216, 0.82);
+  --dns-admin-text-muted: #526277;
+  --dns-admin-text-soft: #24354a;
+  --dns-admin-text-dim: #617086;
+  color: #142033;
+}
+
+.dns-product-shell.dns-theme-light .dns-theme-overlay {
+  background: linear-gradient(180deg, rgba(246, 249, 253, 0.92), rgba(236, 242, 249, 0.96), rgba(229, 236, 246, 0.98)) !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-theme-toggle {
+  border-color: rgba(255, 107, 0, 0.32);
+  background: rgba(255, 255, 255, 0.86);
+  color: #172235;
+  box-shadow: 0 10px 24px rgba(31, 45, 68, 0.08);
+}
+
+.dns-product-shell.dns-theme-light .dns-brand-header,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-panel,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-main,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-side,
+.dns-product-shell.dns-theme-light .dns-store-map-shell,
+.dns-product-shell.dns-theme-light [class*="bg-[#101826"],
+.dns-product-shell.dns-theme-light [class*="bg-[#141c2b"],
+.dns-product-shell.dns-theme-light [class*="bg-[#1e2a3a"],
+.dns-product-shell.dns-theme-light [class*="bg-[#0d1117"],
+.dns-product-shell.dns-theme-light [class*="bg-[#0f1724"] {
+  background: rgba(255, 255, 255, 0.82) !important;
+  color: #152236;
+  box-shadow: 0 18px 42px rgba(34, 54, 84, 0.1);
+}
+
+.dns-product-shell.dns-theme-light [class*="border-[#2a3a4e"],
+.dns-product-shell.dns-theme-light [class*="border-[#243244"],
+.dns-product-shell.dns-theme-light [class*="border-[#31455f"],
+.dns-product-shell.dns-theme-light [class*="border-[#30445f"],
+.dns-product-shell.dns-theme-light [class*="border-[#223246"] {
+  border-color: rgba(161, 177, 201, 0.86) !important;
+}
+
+.dns-product-shell.dns-theme-light .text-white,
+.dns-product-shell.dns-theme-light [class*="text-[#f"],
+.dns-product-shell.dns-theme-light [class*="text-[#d"],
+.dns-product-shell.dns-theme-light [class*="text-[#c"] {
+  color: #142033 !important;
+}
+
+.dns-product-shell.dns-theme-light [class*="text-[#8890a8"],
+.dns-product-shell.dns-theme-light [class*="text-[#8aa2c4"],
+.dns-product-shell.dns-theme-light [class*="text-[#9aabc6"],
+.dns-product-shell.dns-theme-light [class*="text-[#9fb0ca"],
+.dns-product-shell.dns-theme-light [class*="text-[#aebbd2"],
+.dns-product-shell.dns-theme-light [class*="text-[#b7c7df"] {
+  color: #526277 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-brand-heading,
+.dns-product-shell.dns-theme-light .dns-admin-visual-title,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-panel-head h2,
+.dns-product-shell.dns-theme-light .dns-store-map-title {
+  color: #111827 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-brand-subtitle,
+.dns-product-shell.dns-theme-light .dns-admin-visual-subtitle,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-panel-head p {
+  color: #526277 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-store-map-zone,
+.dns-product-shell.dns-theme-light .dns-store-map-tactical-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.94), rgba(243,247,252,0.9)) !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-store-map-zone-title,
+.dns-product-shell.dns-theme-light .dns-store-map-zone-detail,
+.dns-product-shell.dns-theme-light .dns-store-map-card-title,
+.dns-product-shell.dns-theme-light .dns-store-map-card-detail,
+.dns-product-shell.dns-theme-light .dns-store-map-kpi strong {
+  color: #162235 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-store-map-kpi small {
+  color: #65758c !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-store-map-meter {
+  background: rgba(218, 227, 239, 0.9);
+  border-color: rgba(164, 181, 204, 0.9);
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-session-card,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-summary-strip > div,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-passport-grid > div,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-side-field {
+  background: rgba(255, 255, 255, 0.88);
+  border-color: rgba(160, 174, 196, 0.9);
+  box-shadow: 0 14px 30px rgba(34, 54, 84, 0.08);
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-progress {
+  background: #dce6f2;
+}
+
+.dns-product-shell.dns-theme-light .dns-theme-toggle:hover {
+  background: rgba(255, 107, 0, 0.1);
+}
+
 .dark {
   /* Same as :root since it's always dark */
 }
@@ -3329,16 +3786,109 @@
 
 .dns-product-shell .dns-assessor-v2-session-list {
   display: grid;
-  gap: 0.55rem;
+  gap: 0.75rem;
 }
 
 .dns-product-shell .dns-assessor-v2-session-row {
   grid-template-columns: minmax(0, 1fr) 7rem auto auto;
 }
 
+.dns-product-shell .dns-assessor-v2-session-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(8rem, 0.65fr) minmax(7rem, 0.55fr) minmax(9.5rem, auto);
+  align-items: center;
+  gap: 0.8rem;
+  max-width: 100%;
+  overflow: hidden;
+  border: 1px solid rgba(67, 91, 126, 0.78);
+  border-radius: 0.9rem;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(94, 177, 255, 0.12), transparent 36%),
+    rgba(8, 15, 24, 0.68);
+  padding: 0.82rem;
+}
+
+.dns-product-shell .dns-assessor-v2-session-person {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.dns-product-shell .dns-assessor-v2-session-avatar {
+  display: grid;
+  width: 2.45rem;
+  height: 2.45rem;
+  place-items: center;
+  border: 1px solid rgba(255, 107, 0, 0.42);
+  border-radius: 0.78rem;
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.2), rgba(94, 177, 255, 0.12));
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.dns-product-shell .dns-assessor-v2-session-person strong {
+  display: block;
+  overflow: hidden;
+  color: #fff;
+  font-size: 0.98rem;
+  font-weight: 900;
+  line-height: 1.18;
+  text-overflow: ellipsis;
+}
+
+.dns-product-shell .dns-assessor-v2-session-person p {
+  margin-top: 0.18rem;
+  color: #aebed4;
+  font-size: 0.72rem;
+}
+
+.dns-product-shell .dns-assessor-v2-session-code {
+  display: grid;
+  gap: 0.35rem;
+  justify-items: start;
+}
+
+.dns-product-shell .dns-assessor-v2-session-code > span {
+  color: #7e8da5;
+  font-size: 0.62rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dns-product-shell .dns-assessor-v2-session-state {
+  display: grid;
+  gap: 0.32rem;
+}
+
+.dns-product-shell .dns-assessor-v2-session-state > span {
+  font-size: 0.82rem;
+  font-weight: 900;
+}
+
+.dns-product-shell .dns-assessor-v2-session-state em {
+  color: #8fa4c2;
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 850;
+  text-align: right;
+}
+
 .dns-product-shell .dns-assessor-v2-session-actions {
   display: flex;
-  gap: 0.45rem;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.dns-product-shell .dns-assessor-v2-session-actions button {
+  min-width: 0;
+  flex: 1 1 6.8rem;
+  white-space: nowrap;
 }
 
 .dns-product-shell .dns-assessor-v2-progress {
@@ -3353,6 +3903,23 @@
   height: 100%;
   border-radius: inherit;
   background: #35d38a;
+}
+
+@media (max-width: 1320px) {
+  .dns-product-shell .dns-assessor-v2-session-card {
+    grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.7fr);
+  }
+
+  .dns-product-shell .dns-assessor-v2-session-actions {
+    grid-column: 1 / -1;
+    justify-content: stretch;
+  }
+}
+
+@media (max-width: 720px) {
+  .dns-product-shell .dns-assessor-v2-session-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .dns-product-shell .dns-assessor-v2-empty {
