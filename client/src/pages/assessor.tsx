@@ -1243,7 +1243,7 @@ export default function AssessorPage() {
         type="button"
         title={copied ? "Скопировано" : "Скопировать"}
         aria-label={`Скопировать код ${code}`}
-        className="group relative inline-flex items-center gap-1.5 rounded-lg border border-[#4a9eff]/35 bg-[#101826]/90 px-2 py-1 font-mono text-sm font-black tracking-[0.16em] text-white transition-all hover:border-[#ff6b00] hover:bg-[#ff6b00]/12 focus:outline-none focus:ring-2 focus:ring-[#ff6b00]/50"
+        className="dns-assessor-v2-code-button group relative inline-flex items-center gap-1.5 rounded-lg border border-[#4a9eff]/35 bg-[#101826]/90 px-2 py-1 font-mono text-sm font-black tracking-[0.16em] text-white transition-all hover:border-[#ff6b00] hover:bg-[#ff6b00]/12 focus:outline-none focus:ring-2 focus:ring-[#ff6b00]/50"
         onClick={() => copyAccessCode(code)}
       >
         <span>{code}</span>

@@ -813,6 +813,200 @@
   background: rgba(255, 107, 0, 0.1);
 }
 
+/* Light theme: explicit product surfaces and text contrast. */
+.dns-product-shell.dns-theme-light {
+  background:
+    radial-gradient(circle at 16% 0%, rgba(255, 107, 0, 0.12), transparent 30%),
+    radial-gradient(circle at 84% 10%, rgba(74, 158, 255, 0.14), transparent 34%),
+    linear-gradient(135deg, #eef4fb 0%, #f8fbff 44%, #e5edf7 100%);
+}
+
+.dns-product-shell.dns-theme-light::before {
+  opacity: 0.22;
+  background:
+    linear-gradient(90deg, rgba(255, 107, 0, 0.16), transparent 24%, transparent 76%, rgba(74, 158, 255, 0.14)),
+    linear-gradient(rgba(30, 54, 86, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(30, 54, 86, 0.06) 1px, transparent 1px);
+}
+
+.dns-product-shell.dns-theme-light .dns-brand-header,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-header {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(139, 158, 184, 0.72) !important;
+  color: #142033 !important;
+  box-shadow: 0 18px 42px rgba(44, 67, 98, 0.14);
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-shell {
+  background: rgba(239, 245, 251, 0.94) !important;
+  border-color: rgba(139, 158, 184, 0.78) !important;
+  box-shadow: 0 22px 58px rgba(44, 67, 98, 0.16);
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-rail {
+  background: linear-gradient(180deg, #dfe9f5, #edf4fb) !important;
+  border-color: rgba(139, 158, 184, 0.75) !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-rail-item {
+  background: rgba(255, 255, 255, 0.74) !important;
+  border-color: rgba(153, 171, 196, 0.8) !important;
+  color: #526277 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-rail-item--active {
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.18), rgba(255, 255, 255, 0.92)) !important;
+  border-color: rgba(255, 107, 0, 0.7) !important;
+  color: #172235 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-rail-item--done {
+  background: linear-gradient(135deg, rgba(53, 211, 138, 0.2), rgba(255, 255, 255, 0.9)) !important;
+  color: #12623f !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-main {
+  border-color: rgba(139, 158, 184, 0.72) !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-panel,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-main-panel,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-side-card,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-choice-card,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-info-card,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-participant-queue,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-customizer,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-manual-case-block,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-launch-result,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-channel-group,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-review-row,
+.dns-product-shell.dns-theme-light [class*="bg-[#1e2a3a"],
+.dns-product-shell.dns-theme-light [class*="bg-[#101826"],
+.dns-product-shell.dns-theme-light [class*="bg-[#141c2b"],
+.dns-product-shell.dns-theme-light [class*="bg-[#121c2b"],
+.dns-product-shell.dns-theme-light [class*="bg-[#0d1117"],
+.dns-product-shell.dns-theme-light [class*="bg-[#0f1724"],
+.dns-product-shell.dns-theme-light [class*="bg-[linear-gradient"] {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(153, 171, 196, 0.82) !important;
+  color: #142033 !important;
+  box-shadow: 0 12px 30px rgba(44, 67, 98, 0.1);
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-panel h2,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-panel h3,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-side-card h3,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-choice-card span,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-info-card span,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-session-person strong,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-summary-strip strong,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-passport-grid strong,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-side-field strong,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-launch-row strong,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-launch-result-row strong,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-channel-group-head strong,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-review-row strong,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-session-row strong {
+  color: #142033 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-panel p,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-side-card p,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-choice-card em,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-info-card em,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-session-person p,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-session-code > span,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-session-state em,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-summary-strip span,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-passport-grid span,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-side-field span,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-launch-row p,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-launch-result-row span,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-review-row p,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-session-row p,
+.dns-product-shell.dns-theme-light .text-\[\#8890a8\],
+.dns-product-shell.dns-theme-light .text-\[\#8aa2c4\],
+.dns-product-shell.dns-theme-light .text-\[\#9aabc6\],
+.dns-product-shell.dns-theme-light .text-\[\#9fb0ca\],
+.dns-product-shell.dns-theme-light .text-\[\#aebbd2\],
+.dns-product-shell.dns-theme-light .text-\[\#b7c7df\],
+.dns-product-shell.dns-theme-light .text-\[\#bfd0e7\],
+.dns-product-shell.dns-theme-light .text-\[\#c8d7eb\],
+.dns-product-shell.dns-theme-light .text-\[\#d6e2f3\] {
+  color: #526277 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-input,
+.dns-product-shell.dns-theme-light input,
+.dns-product-shell.dns-theme-light textarea,
+.dns-product-shell.dns-theme-light select {
+  background: #ffffff !important;
+  border-color: rgba(145, 166, 196, 0.88) !important;
+  color: #142033 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-header-button,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-light-button,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-secondary,
+.dns-product-shell.dns-theme-light button[class*="border-[#2a3a4e"] {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border-color: rgba(92, 140, 198, 0.48) !important;
+  color: #24354a !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-primary,
+.dns-product-shell.dns-theme-light button[class*="bg-[#ff6b00"],
+.dns-product-shell.dns-theme-light button[class*="bg-[#FF6B00"],
+.dns-product-shell.dns-theme-light button[class*="bg-[#5eb1ff"] {
+  color: #ffffff !important;
+  box-shadow: 0 12px 24px rgba(255, 107, 0, 0.18);
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-code-button {
+  background: #ffffff !important;
+  border-color: rgba(74, 158, 255, 0.5) !important;
+  color: #142033 !important;
+  box-shadow: 0 8px 18px rgba(44, 67, 98, 0.12);
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-code-button svg {
+  color: #2879cf !important;
+}
+
+.dns-product-shell.dns-theme-light .metric-bar,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-progress span,
+.dns-product-shell.dns-theme-light .dns-store-map-meter-fill {
+  box-shadow: none;
+}
+
+.dns-product-shell.dns-theme-light .dns-store-map-shell,
+.dns-product-shell.dns-theme-light .dns-store-map-tactical-card {
+  background: rgba(255, 255, 255, 0.88) !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-store-map-card-grid {
+  opacity: 0.28;
+}
+
+.dns-product-shell.dns-theme-light .dns-store-map-legend,
+.dns-product-shell.dns-theme-light .dns-store-map-kicker {
+  color: #526277 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-store-map-pulse {
+  background: rgba(255, 107, 0, 0.1);
+  color: #9b4a05;
+}
+
+.dns-product-shell.dns-theme-light .dns-theme-overlay + *,
+.dns-product-shell.dns-theme-light .relative.z-10 {
+  color: #142033;
+}
+
+.dns-product-shell.dns-theme-light .custom-scroll {
+  scrollbar-color: rgba(255, 107, 0, 0.72) rgba(209, 220, 235, 0.82);
+}
+
 .dark {
   /* Same as :root since it's always dark */
 }
@@ -3795,7 +3989,10 @@
 
 .dns-product-shell .dns-assessor-v2-session-card {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(8rem, 0.65fr) minmax(7rem, 0.55fr) minmax(9.5rem, auto);
+  grid-template-areas:
+    "person code"
+    "state actions";
+  grid-template-columns: minmax(0, 1fr) minmax(8.8rem, max-content);
   align-items: center;
   gap: 0.8rem;
   max-width: 100%;
@@ -3809,6 +4006,7 @@
 }
 
 .dns-product-shell .dns-assessor-v2-session-person {
+  grid-area: person;
   display: grid;
   min-width: 0;
   grid-template-columns: auto minmax(0, 1fr);
@@ -3846,9 +4044,11 @@
 }
 
 .dns-product-shell .dns-assessor-v2-session-code {
+  grid-area: code;
   display: grid;
+  min-width: 0;
   gap: 0.35rem;
-  justify-items: start;
+  justify-items: end;
 }
 
 .dns-product-shell .dns-assessor-v2-session-code > span {
@@ -3860,7 +4060,11 @@
 }
 
 .dns-product-shell .dns-assessor-v2-session-state {
+  grid-area: state;
   display: grid;
+  min-width: 0;
+  grid-template-columns: auto minmax(4.5rem, 1fr) auto;
+  align-items: center;
   gap: 0.32rem;
 }
 
@@ -3878,6 +4082,7 @@
 }
 
 .dns-product-shell .dns-assessor-v2-session-actions {
+  grid-area: actions;
   display: flex;
   min-width: 0;
   flex-wrap: wrap;
@@ -3887,7 +4092,19 @@
 
 .dns-product-shell .dns-assessor-v2-session-actions button {
   min-width: 0;
-  flex: 1 1 6.8rem;
+  flex: 1 1 6.4rem;
+  white-space: nowrap;
+}
+
+.dns-product-shell .dns-assessor-v2-code-button {
+  max-width: 100%;
+  min-width: 0;
+  justify-content: center;
+}
+
+.dns-product-shell .dns-assessor-v2-code-button > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -3907,18 +4124,30 @@
 
 @media (max-width: 1320px) {
   .dns-product-shell .dns-assessor-v2-session-card {
-    grid-template-columns: minmax(0, 1fr) minmax(8rem, 0.7fr);
+    grid-template-columns: minmax(0, 1fr) minmax(8.5rem, max-content);
   }
 
   .dns-product-shell .dns-assessor-v2-session-actions {
-    grid-column: 1 / -1;
     justify-content: stretch;
   }
 }
 
 @media (max-width: 720px) {
   .dns-product-shell .dns-assessor-v2-session-card {
+    grid-template-areas:
+      "person"
+      "code"
+      "state"
+      "actions";
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dns-product-shell .dns-assessor-v2-session-code {
+    justify-items: start;
+  }
+
+  .dns-product-shell .dns-assessor-v2-session-state {
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
 }
 
