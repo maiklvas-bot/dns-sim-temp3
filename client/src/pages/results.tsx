@@ -29,7 +29,7 @@ function getLearningRecommendation(competencyId: string, score: number): string 
     communication: 'Пройдите курс "Эффективные коммуникации в ритейле", практикуйте активное слушание на ежедневных брифингах',
     leadership: 'Изучите материалы по situational leadership, проведите 1-на-1 с каждым сотрудником раз в неделю',
     decision_making: 'Работайте с матрицей Eisenhower, практикуйте принятие решений под time-boxing',
-    customer_focus: 'Пройдите тренинг "Клиентоориентированность DNS", изучите кейсы NPS-лидеров',
+    customer_focus: 'Пройдите тренинг "Клиентоориентированность DNS", изучите кейсы лидеров клиентской оценки',
     team_management: 'Используйте RACI-матрицу для распределения задач, внедрите систему KPI для команды',
     problem_solving: 'Изучите 5 Whys и Fishbone диаграмму, применяйте на еженедельных разборах',
     time_management: 'Внедрите time-blocking, используйте правило 2 минут для мелких задач',
@@ -810,7 +810,7 @@ export default function ResultsPage(props: any) {
               ACTIONS
           ═══════════════════════════════════════════ */}
           <div className="flex flex-col items-center gap-3 pb-8">
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="dns-result-action-block">
               <Button
                 onClick={handleRestart}
                 variant="outline"
@@ -1020,7 +1020,10 @@ export default function ResultsPage(props: any) {
                 { label: "Покупатели в зале", value: finalMetrics.customersInStore },
                 { label: "Средний чек", value: `${finalMetrics.avgCheck}₽` },
                 { label: "Конверсия", value: `${finalMetrics.conversion}%` },
-                { label: "NPS", value: finalMetrics.nps },
+                {
+                  label: "Клиентская оценка",
+                  value: Number(finalMetrics.nps || 3.3).toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                },
                 { label: "Скорость выдачи", value: `${finalMetrics.pickupSpeed} мин` },
                 { label: "Загрузка склада", value: `${finalMetrics.warehouseLoad}%` },
                 { label: "Настроение команды", value: finalMetrics.teamMorale },
@@ -1083,7 +1086,7 @@ export default function ResultsPage(props: any) {
 
           {/* Actions (preview tab) */}
           <div className="flex flex-col items-center gap-3 pb-8">
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="dns-result-action-block">
               <Button
                 onClick={handleExportPdf}
                 disabled={pdfLoading}

@@ -134,10 +134,10 @@ export default function TerKogram({
                       )}
                     </div>
                     {!chat.isGroup && chat.role && (
-                      <div className="text-[10px] text-[#555570] truncate">{chat.role}</div>
+                      <div className="text-[10px] text-[#7f8da6] truncate">{chat.role}</div>
                     )}
                     {lastMsg && (
-                      <div className="text-[10px] text-[#3a3a50] truncate mt-0.5">{lastMsg.message.slice(0, 45)}...</div>
+                      <div className="text-[10px] text-[#8b9bb6] truncate mt-0.5">{lastMsg.message.slice(0, 45)}...</div>
                     )}
                   </div>
                 </button>
@@ -159,10 +159,10 @@ export default function TerKogram({
               <div>
                 <div className="text-xs text-white font-medium">{selectedChat.name}</div>
                 {!selectedChat.isGroup && selectedChat.role && (
-                  <div className="text-[10px] text-[#555570]">{selectedChat.role}</div>
+                  <div className="text-[10px] text-[#8b9bb6]">{selectedChat.role}</div>
                 )}
                 {selectedChat.isGroup && selectedChat.members && (
-                  <div className="text-[10px] text-[#555570]">{selectedChat.members.join(", ")}</div>
+                  <div className="text-[10px] text-[#8b9bb6]">{selectedChat.members.join(", ")}</div>
                 )}
               </div>
             </div>
@@ -212,8 +212,8 @@ export default function TerKogram({
                             )}
                           </div>
 
-                          <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3a] p-3">
-                            <p className="text-[13px] leading-6 text-[#e6ecf8]">{message.message}</p>
+                          <div className="rounded-xl border border-[#8fb5e8]/45 bg-[#e8f1ff] p-3 shadow-[0_10px_26px_rgba(0,0,0,0.16)]">
+                            <p className="text-[13px] font-medium leading-6 text-[#132033]">{message.message}</p>
                             {message.imageUrl && (
                               <img
                                 src={message.imageUrl}
@@ -222,12 +222,12 @@ export default function TerKogram({
                               />
                             )}
                             {message.audioUrl && (
-                              <div className="mt-3 flex items-center justify-between rounded-xl border border-[#00d4aa]/25 bg-[#00d4aa]/8 px-3 py-2">
-                                <div className="text-[11px] text-[#c7f9ef]">К сообщению прикреплено аудио</div>
+                              <div className="mt-3 flex items-center justify-between rounded-xl border border-[#00a887]/35 bg-[#dffaf5] px-3 py-2">
+                                <div className="text-[11px] font-semibold text-[#075a4d]">К сообщению прикреплено аудио</div>
                                 <button
                                   onClick={(event) => {
                                     event.stopPropagation();
-                                    playAudioImmediate(message.audioUrl!, 0.85);
+                                    playAudioImmediate(message.audioUrl!, 0.95);
                                   }}
                                   className="inline-flex items-center gap-1.5 rounded-lg border border-[#00d4aa]/30 bg-[#101a29] px-2.5 py-1.5 text-[11px] font-semibold text-[#7ef0da] transition-all hover:border-[#00d4aa] hover:text-white"
                                 >
@@ -271,8 +271,8 @@ export default function TerKogram({
                               </span>
                               <span className="text-[11px] font-medium text-white">{participantDisplayName}</span>
                             </div>
-                            <div className="rounded-xl border border-[#4a9eff]/28 bg-[#16304e] p-3">
-                              <p className="text-[13px] leading-6 text-[#e8f3ff]">{studentDecision.optionText}</p>
+                            <div className="rounded-xl border border-[#4a9eff]/35 bg-[#dbeeff] p-3">
+                              <p className="text-[13px] font-medium leading-6 text-[#102033]">{studentDecision.optionText}</p>
                             </div>
                           </div>
                           <Avatar letter={participantAvatar} size="sm" />

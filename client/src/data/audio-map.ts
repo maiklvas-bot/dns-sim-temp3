@@ -138,6 +138,10 @@ function normalizeAudioSrc(src: string) {
   }
 }
 
+function normalizeAudioVolume(volume: number) {
+  return Math.max(0, Math.min(1, volume));
+}
+
 export async function primeAudioPlayback(): Promise<boolean> {
   if (audioUnlocked) {
     return true;
@@ -166,7 +170,7 @@ function playNext() {
   const { src, volume } = audioQueue.shift()!;
   try {
     const audio = new Audio(src);
-    audio.volume = volume;
+    audio.volume = normalizeAudioVolume(volume);
     currentAudio = audio;
     audio.addEventListener("ended", () => {
       currentAudio = null;
@@ -191,14 +195,14 @@ export function playAudioFile(src: string, volume = 0.6): void {
   if (nonCriticalAudioSuppressed || loopingAudio) {
     return;
   }
-  audioQueue.push({ src, volume });
+  audioQueue.push({ src, volume: normalizeAudioVolume(volume) });
   if (!isPlaying) playNext();
 }
 
 export function playLoopingAudio(src: string, volume = 0.6): HTMLAudioElement | null {
   try {
     if (loopingAudio && loopingSrc === src) {
-      loopingAudio.volume = volume;
+      loopingAudio.volume = normalizeAudioVolume(volume);
       return loopingAudio;
     }
 
@@ -213,7 +217,7 @@ export function playLoopingAudio(src: string, volume = 0.6): HTMLAudioElement | 
 
     const audio = new Audio(src);
     audio.loop = true;
-    audio.volume = volume;
+    audio.volume = normalizeAudioVolume(volume);
     loopingAudio = audio;
     loopingSrc = src;
     audio.play().catch(() => {
@@ -282,7 +286,7 @@ export function playAudioImmediate(src: string, volume = 0.7): HTMLAudioElement 
   try {
     stopCurrentAudio();
     const audio = new Audio(src);
-    audio.volume = volume;
+    audio.volume = normalizeAudioVolume(volume);
     currentAudio = audio;
     audio.addEventListener("ended", () => { currentAudio = null; isPlaying = false; });
     audio.play().catch(() => {});

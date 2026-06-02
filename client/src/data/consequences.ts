@@ -123,7 +123,7 @@ function formatDeltaValue(entry: MetricDeltaEntry) {
     case "minutes":
       return `${sign}${entry.delta} мин`;
     case "score":
-      return `${sign}${entry.delta.toFixed(1)}`;
+      return `${sign}${entry.delta.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     case "count":
     default:
       return `${sign}${entry.delta}`;
