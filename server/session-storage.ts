@@ -1,4 +1,4 @@
-import { and, desc, eq, like } from "drizzle-orm";
+import { and, desc, eq, sql, type SQL } from "drizzle-orm";
 import {
   participants,
   sessionAnswers,
@@ -16,6 +16,10 @@ import { parseJsonArray, parseJsonObject } from "./data-utils";
 export interface SessionListFilters {
   status?: string;
   participantName?: string;
+}
+
+function escapeLikePattern(value: string): string {
+  return value.trim().replace(/[\\%_]/g, (match) => `\\${match}`);
 }
 
 export class SessionStorage {
@@ -105,12 +109,15 @@ export class SessionStorage {
   }
 
   listSessionResults(filters: SessionListFilters = {}) {
-    const conditions = [];
+    const conditions: SQL[] = [];
     if (filters.status) {
       conditions.push(eq(simulationSessions.technicalStatus, filters.status));
     }
     if (filters.participantName) {
-      conditions.push(like(simulationSessions.participantName, `%${filters.participantName}%`));
+      const participantName = escapeLikePattern(filters.participantName);
+      if (participantName) {
+        conditions.push(sql`${simulationSessions.participantName} LIKE ${`%${participantName}%`} ESCAPE '\\'`);
+      }
     }
 
     const baseQuery = db
