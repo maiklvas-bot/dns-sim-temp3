@@ -2,6 +2,25 @@ import fs from "fs";
 import path from "path";
 import type Database from "better-sqlite3";
 
+const SQL_IDENTIFIER_RE = /^[A-Za-z_][A-Za-z0-9_]*$/;
+const COLUMN_DEFINITION_RE =
+  /^(TEXT|INTEGER|REAL|BLOB|NUMERIC)(\s+NOT\s+NULL)?(\s+DEFAULT\s+('([^']|'')*'|-?\d+(\.\d+)?|CURRENT_TIMESTAMP|NULL))?$/i;
+
+function quoteSqlIdentifier(identifier: string): string {
+  if (!SQL_IDENTIFIER_RE.test(identifier)) {
+    throw new Error(`Invalid SQL identifier: ${identifier}`);
+  }
+
+  return `"${identifier}"`;
+}
+
+function assertSafeColumnDefinition(columnDefinition: string): void {
+  const normalized = columnDefinition.trim();
+  if (!COLUMN_DEFINITION_RE.test(normalized)) {
+    throw new Error(`Invalid SQL column definition: ${columnDefinition}`);
+  }
+}
+
 function ensureMigrationTable(sqlite: Database.Database) {
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS app_migrations (
@@ -18,12 +37,16 @@ function ensureColumn(
   columnName: string,
   columnDefinition: string,
 ) {
-  const columns = sqlite.prepare(`PRAGMA table_info(${tableName})`).all() as Array<{ name: string }>;
+  const quotedTableName = quoteSqlIdentifier(tableName);
+  const quotedColumnName = quoteSqlIdentifier(columnName);
+  assertSafeColumnDefinition(columnDefinition);
+
+  const columns = sqlite.prepare(`PRAGMA table_info(${quotedTableName})`).all() as Array<{ name: string }>;
   if (columns.some((column) => column.name === columnName)) {
     return;
   }
 
-  sqlite.exec(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${columnDefinition};`);
+  sqlite.exec(`ALTER TABLE ${quotedTableName} ADD COLUMN ${quotedColumnName} ${columnDefinition.trim()};`);
 }
 
 export function runMigrations(sqlite: Database.Database): void {
