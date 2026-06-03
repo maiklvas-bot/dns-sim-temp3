@@ -1,4 +1,5 @@
 import path from "path";
+import fs from "fs";
 import { spawnSync } from "child_process";
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
@@ -44,6 +45,17 @@ function getSingleParam(value: string | string[] | undefined): string {
   }
 
   return value || "";
+}
+
+function getPdfFilenamePart(value: string): string {
+  const normalized = value
+    .normalize("NFKC")
+    .replace(/[\x00-\x1F<>:"/\\|?*]+/g, " ")
+    .trim()
+    .replace(/\s+/g, "_")
+    .slice(0, 80);
+
+  return normalized || "participant";
 }
 
 function parseStoredJson<T>(value: unknown, fallback: T): T {
@@ -660,12 +672,13 @@ export async function registerRoutes(
 
   app.post("/api/export-pdf", heavyOperationRateLimiter, validateBody(pdfExportSchema), (req, res) => {
     try {
-      const payload = req.validatedBody as any;
-      if (!payload || typeof payload !== "object") {
-        return res.status(400).json({ error: "Invalid payload" });
-      }
+      const payload = req.validatedBody as z.infer<typeof pdfExportSchema>;
 
       const scriptPath = path.resolve(__dirname, "generate_pdf.py");
+      if (!fs.existsSync(scriptPath)) {
+        return res.status(500).json({ error: "PDF generator not found" });
+      }
+
       const inputBuf = Buffer.from(JSON.stringify(payload), "utf-8");
       const pythonResult = spawnSync(
         "python3",
@@ -690,7 +703,7 @@ export async function registerRoutes(
 
       const dateStr = new Date().toISOString().slice(0, 10);
       const safeName = `report_${dateStr}.pdf`;
-      const utf8Name = encodeURIComponent((payload.participantName || "participant").replace(/\s+/g, "_") + `_${dateStr}.pdf`);
+      const utf8Name = encodeURIComponent(`${getPdfFilenamePart(payload.participantName)}_${dateStr}.pdf`);
 
       res.setHeader("Content-Type", "application/pdf");
       res.setHeader("Content-Disposition", `attachment; filename="${safeName}"; filename*=UTF-8''${utf8Name}`);
