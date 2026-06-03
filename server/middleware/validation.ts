@@ -240,10 +240,78 @@ export const mediaUploadSchema = z.object({
 /**
  * Схема для экспорта PDF.
  */
+const pdfSafeText = (maxLength: number) => z.string()
+  .max(maxLength)
+  .refine((value) => !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value), "Text contains control characters");
+
+const pdfNumberSchema = z.number().finite().min(-1_000_000_000).max(1_000_000_000);
+const pdfScoreSchema = z.number().finite().min(0).max(100);
+const pdfCompetencyScoreSchema = z.number().finite().min(0).max(5);
+const pdfRecordKeySchema = z.string().min(1).max(80).regex(/^[A-Za-z0-9._:-]+$/);
+const pdfPrimitiveSchema = z.union([
+  pdfNumberSchema,
+  pdfSafeText(500),
+  z.boolean(),
+  z.null(),
+]);
+
+function limitedPdfRecord<T extends z.ZodTypeAny>(valueSchema: T, maxKeys: number) {
+  return z.record(pdfRecordKeySchema, valueSchema)
+    .refine((value) => Object.keys(value).length <= maxKeys, `Record has too many keys; maximum is ${maxKeys}`);
+}
+
+const pdfDecisionSchema = z.object({
+  caseTitle: pdfSafeText(300).optional().default(""),
+  cycle: z.number().int().min(0).max(1000).optional(),
+  optionText: pdfSafeText(3000).optional().default(""),
+  score: pdfScoreSchema.optional().default(0),
+  simTime: pdfSafeText(80).optional().default(""),
+  competencyScores: limitedPdfRecord(pdfCompetencyScoreSchema, 60).optional().default({}),
+  rawEffects: limitedPdfRecord(pdfPrimitiveSchema, 80).optional().default({}),
+  taskType: pdfSafeText(120).optional().default(""),
+}).strict();
+
+const pdfPatternSchema = z.object({
+  label: pdfSafeText(160),
+  value: pdfSafeText(1000),
+}).strict();
+
+const pdfPauseSchema = z.object({
+  startedAtUnixMs: z.number().int().min(0).max(4_102_444_800_000).optional(),
+  endedAtUnixMs: z.number().int().min(0).max(4_102_444_800_000).optional(),
+  durationSeconds: z.number().int().min(0).max(24 * 60 * 60),
+}).strict();
+
+const pdfVerdictSchema = z.object({
+  level: pdfSafeText(120).optional().default(""),
+  description: pdfSafeText(1000).optional().default(""),
+}).strict();
+
+const pdfImpactfulDecisionSchema = z.object({
+  caseTitle: pdfSafeText(300).optional().default(""),
+  score: pdfScoreSchema.optional().default(0),
+  simTime: pdfSafeText(80).optional().default(""),
+  optionText: pdfSafeText(3000).optional().default(""),
+  taskType: pdfSafeText(120).optional().default(""),
+  impactMagnitude: pdfNumberSchema.optional().default(0),
+}).strict();
+
 export const pdfExportSchema = z.object({
-  participantName: z.string().max(100).optional().default(""),
-  // Другие поля валидируются на уровне Python-скрипта
-}).passthrough(); // Разрешаем дополнительные поля
+  participantName: pdfSafeText(100).optional().default(""),
+  assessorName: pdfSafeText(100).optional().default(""),
+  difficulty: z.enum(["easy", "medium", "hard"]).optional().default("medium"),
+  decisions: z.array(pdfDecisionSchema).max(500).optional().default([]),
+  competencyScores: limitedPdfRecord(pdfCompetencyScoreSchema, 60).optional().default({}),
+  expectedCompetencyScores: limitedPdfRecord(pdfCompetencyScoreSchema, 60).optional().default({}),
+  finalMetrics: limitedPdfRecord(pdfPrimitiveSchema, 80).optional().default({}),
+  patterns: z.array(pdfPatternSchema).max(50).optional().default([]),
+  avgScore: pdfScoreSchema.optional().default(0),
+  totalTimeMinutes: z.number().int().min(0).max(10_000).optional().default(0),
+  pauses: z.array(pdfPauseSchema).max(50).optional().default([]),
+  verdict: pdfVerdictSchema.optional().default({}),
+  retestDate: pdfSafeText(120).optional().default(""),
+  impactfulDecisions: z.array(pdfImpactfulDecisionSchema).max(100).optional().default([]),
+}).strict();
 
 /**
  * Схема для экспорта Excel.
