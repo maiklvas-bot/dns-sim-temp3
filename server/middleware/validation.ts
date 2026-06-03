@@ -240,6 +240,168 @@ export const mediaUploadSchema = z.object({
 /**
  * Схема для экспорта PDF.
  */
+const emptyOrIdStringSchema = z.union([idStringSchema, z.literal("")]);
+const nullableIdStringSchema = z.union([idStringSchema, z.literal(""), z.null()]);
+const safeLooseTextSchema = (maxLength: number) => z.string()
+  .max(maxLength)
+  .refine((value) => !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value), "Text contains control characters");
+const boundedIntSchema = (min: number, max: number) => z.number().int().min(min).max(max);
+const boundedNumberSchema = (min: number, max: number) => z.number().finite().min(min).max(max);
+
+const timingConfigSchema = z.object({
+  arrivalMinute: boundedIntSchema(0, 10_000).nullable().optional(),
+  minIntervalSeconds: boundedIntSchema(1, 86_400).nullable().optional(),
+  maxIntervalSeconds: boundedIntSchema(1, 86_400).nullable().optional(),
+  decisionDeadlineSeconds: boundedIntSchema(1, 86_400).nullable().optional(),
+  reminderIntervalSeconds: boundedIntSchema(1, 86_400).nullable().optional(),
+}).nullable().optional();
+
+const metricEffectsSchema = z.object({
+  queue: boundedNumberSchema(-1_000_000, 1_000_000).default(0),
+  conversion: boundedNumberSchema(-1_000_000, 1_000_000).default(0),
+  morale: boundedNumberSchema(-1_000_000, 1_000_000).default(0),
+  revenue_impact: boundedNumberSchema(-1_000_000, 1_000_000).default(0),
+  delivery_status: boundedNumberSchema(-1_000_000, 1_000_000).default(0),
+});
+
+const editableOptionSchema = z.object({
+  id: emptyOrIdStringSchema.optional().default(""),
+  level: boundedIntSchema(0, 1_000),
+  text: safeLooseTextSchema(5_000),
+  score: boundedIntSchema(-100, 100),
+  effects: metricEffectsSchema,
+  competency_scores: z.record(idStringSchema, boundedNumberSchema(-100, 100)).optional().default({}),
+});
+
+const signalTypeSchema = z.enum(["message", "zone_signal", "email", "call", "visitor"]);
+const zoneTypeSchema = z.enum(["торговый_зал", "склад", "выдача", "начальство"]);
+
+const caseCycleSchema = z.object({
+  id: emptyOrIdStringSchema.optional().default(""),
+  cycle: boundedIntSchema(1, 100),
+  situation: safeLooseTextSchema(10_000),
+  signal: z.object({
+    type: signalTypeSchema,
+    content: safeLooseTextSchema(5_000),
+  }),
+  options: z.array(editableOptionSchema).max(50).default([]),
+});
+
+export const editableSimCaseSchema = z.object({
+  id: emptyOrIdStringSchema.optional().default(""),
+  title: safeLooseTextSchema(300),
+  description: safeLooseTextSchema(10_000),
+  primaryCompetencies: z.array(idStringSchema).max(50).default([]),
+  secondaryCompetencies: z.array(idStringSchema).max(50).default([]),
+  trigger: z.object({
+    type: signalTypeSchema,
+    source: safeLooseTextSchema(300),
+    text: safeLooseTextSchema(5_000),
+  }),
+  zones_affected: z.array(zoneTypeSchema).max(10).default([]),
+  cycles: z.array(caseCycleSchema).min(1).max(50),
+  imageAssetId: nullableIdStringSchema.optional().default(null),
+  audioAssetId: nullableIdStringSchema.optional().default(null),
+  timing: timingConfigSchema,
+  sortOrder: boundedIntSchema(0, 100_000).optional().default(0),
+  isActive: z.boolean().optional().default(true),
+});
+
+const editableChannelBaseSchema = z.object({
+  id: emptyOrIdStringSchema.optional().default(""),
+  arrivalMinute: boundedIntSchema(0, 10_000),
+  options: z.array(editableOptionSchema).max(50).default([]),
+  primaryCompetency: z.union([idStringSchema, z.literal("")]).optional().default(""),
+  imageAssetId: nullableIdStringSchema.optional().default(null),
+  audioAssetId: nullableIdStringSchema.optional().default(null),
+  timing: timingConfigSchema,
+  sortOrder: boundedIntSchema(0, 100_000).optional().default(0),
+  isActive: z.boolean().optional().default(true),
+});
+
+export const editableEmailCaseSchema = editableChannelBaseSchema.extend({
+  subject: safeLooseTextSchema(300),
+  from: safeLooseTextSchema(200),
+  department: safeLooseTextSchema(200),
+  departmentColor: safeLooseTextSchema(50),
+  preview: safeLooseTextSchema(1_000),
+  body: safeLooseTextSchema(20_000),
+});
+
+export const editableMessengerCaseSchema = editableChannelBaseSchema.extend({
+  chatId: emptyOrIdStringSchema.optional().default(""),
+  isGroup: z.boolean().optional().default(false),
+  senderName: safeLooseTextSchema(200),
+  senderRole: safeLooseTextSchema(200),
+  senderAvatar: safeLooseTextSchema(200),
+  message: safeLooseTextSchema(20_000),
+});
+
+export const editableVideoCaseSchema = editableChannelBaseSchema.extend({
+  title: safeLooseTextSchema(300),
+  sender: safeLooseTextSchema(200),
+  role: safeLooseTextSchema(200),
+  senderAvatar: safeLooseTextSchema(200),
+  duration: safeLooseTextSchema(50),
+  situation: safeLooseTextSchema(20_000),
+  videoAssetId: nullableIdStringSchema.optional().default(null),
+});
+
+export const editableChatSchema = z.object({
+  id: emptyOrIdStringSchema.optional().default(""),
+  name: safeLooseTextSchema(300),
+  isGroup: z.boolean().optional().default(false),
+  avatar: safeLooseTextSchema(200),
+  role: safeLooseTextSchema(200).optional().default(""),
+  icon: safeLooseTextSchema(100).optional().default(""),
+  members: z.array(safeLooseTextSchema(200)).max(100).optional().default([]),
+  sortOrder: boundedIntSchema(0, 100_000).optional().default(0),
+});
+
+export const adminCaseReorderSchema = z.object({
+  ids: z.array(idStringSchema).max(1_000),
+});
+
+const nullableAssetSettingSchema = nullableIdStringSchema.optional().default(null);
+
+export const adminSettingsSchema = z.object({
+  firstSignalMinSeconds: boundedIntSchema(0, 86_400).optional(),
+  firstSignalMaxSeconds: boundedIntSchema(0, 86_400).optional(),
+  signalIntervalMinSeconds: boundedIntSchema(0, 86_400).optional(),
+  signalIntervalMaxSeconds: boundedIntSchema(0, 86_400).optional(),
+  reminderIntervalSeconds: boundedIntSchema(1, 86_400).optional(),
+  easyAutoCaseCount: boundedIntSchema(0, 100).optional(),
+  mediumAutoCaseCount: boundedIntSchema(0, 100).optional(),
+  hardAutoCaseCount: boundedIntSchema(0, 100).optional(),
+  defaultTimePerCaseMinutes: boundedIntSchema(1, 600).optional(),
+  minSimulationMinutes: boundedIntSchema(1, 600).optional(),
+  waitingImageAssetId: nullableAssetSettingSchema,
+  callSoundAssetId: nullableAssetSettingSchema,
+  emailSoundAssetId: nullableAssetSettingSchema,
+  messengerSoundAssetId: nullableAssetSettingSchema,
+  videoSoundAssetId: nullableAssetSettingSchema,
+  preSimulationInstructionHtml: safeLooseTextSchema(50_000).nullable().optional(),
+  preSimulationInstructionVideoAssetId: nullableAssetSettingSchema,
+  caseWeights: z.record(idStringSchema, boundedNumberSchema(0, 100)).optional().default({}),
+  timeInfluenceEnabled: z.boolean().optional(),
+});
+
+export const stringIdParamSchema = z.object({
+  id: idStringSchema,
+});
+
+export const liveSessionIdParamSchema = z.object({
+  id: z.string().min(1).max(80).regex(/^[A-Za-z0-9._:-]+$/),
+});
+
+export const liveRecoverSessionParamSchema = z.object({
+  sessionId: z.string().regex(/^\d+$/, "sessionId must be numeric"),
+});
+
+export const liveSessionAccessQuerySchema = z.object({
+  accessCode: z.string().max(20).optional(),
+});
+
 const pdfSafeText = (maxLength: number) => z.string()
   .max(maxLength)
   .refine((value) => !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(value), "Text contains control characters");

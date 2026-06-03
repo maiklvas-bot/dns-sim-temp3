@@ -22,16 +22,27 @@ import { generateCsrfToken } from "./middleware/csrf";
 import {
   addSessionAnswerSchema,
   addSessionMetricsSchema,
+  adminCaseReorderSchema,
+  adminSettingsSchema,
   createLiveSessionSchema,
   createSimulationSessionSchema,
+  editableChatSchema,
+  editableEmailCaseSchema,
+  editableMessengerCaseSchema,
+  editableSimCaseSchema,
+  editableVideoCaseSchema,
   excelExportSchema,
   joinLiveSessionSchema,
   listResultsQuerySchema,
+  liveRecoverSessionParamSchema,
+  liveSessionAccessQuerySchema,
+  liveSessionIdParamSchema,
   mediaUploadSchema,
   patchSessionSchema,
   pdfExportSchema,
   sessionIdParamSchema,
   staffLoginBodySchema,
+  stringIdParamSchema,
   studentSyncSchema,
   upsertSessionResultSchema,
   validateBody,
@@ -431,9 +442,10 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/live-sessions/recover/:sessionId", requireStaff, (req, res) => {
+  app.post("/api/live-sessions/recover/:sessionId", requireStaff, validateParams(liveRecoverSessionParamSchema), (req, res) => {
     try {
-      const sessionId = Number.parseInt(getSingleParam(req.params.sessionId), 10);
+      const { sessionId: validatedSessionId } = req.validatedParams as z.infer<typeof liveRecoverSessionParamSchema>;
+      const sessionId = Number.parseInt(validatedSessionId, 10);
       if (!Number.isFinite(sessionId)) {
         return res.status(400).json({ message: "Invalid session id" });
       }
@@ -502,14 +514,15 @@ export async function registerRoutes(
     res.json(session);
   });
 
-  app.post("/api/live-sessions/:id/student-sync", validateParams(z.object({ id: z.string().min(1).max(50) })), validateBody(studentSyncSchema), (req, res) => {
+  app.post("/api/live-sessions/:id/student-sync", validateParams(liveSessionIdParamSchema), validateBody(studentSyncSchema), (req, res) => {
+    const { id } = req.validatedParams as z.infer<typeof liveSessionIdParamSchema>;
     const body = req.validatedBody as z.infer<typeof studentSyncSchema>;
     const accessCode = normalizeLiveAccessCode(String(body.accessCode || ""));
     if (!accessCode) {
       return res.status(400).json({ message: "Access code is required" });
     }
 
-    const session = liveSessionService.syncStudentState(getSingleParam(req.params.id), accessCode, {
+    const session = liveSessionService.syncStudentState(id, accessCode, {
       snapshot: (body.snapshot || null) as any,
       status: body.status as any,
     });
@@ -521,13 +534,15 @@ export async function registerRoutes(
     res.json(session);
   });
 
-  app.get("/api/live-sessions/:id", (req, res) => {
-    const session = liveSessionService.getSessionById(getSingleParam(req.params.id));
+  app.get("/api/live-sessions/:id", validateParams(liveSessionIdParamSchema), validateQuery(liveSessionAccessQuerySchema), (req, res) => {
+    const { id } = req.validatedParams as z.infer<typeof liveSessionIdParamSchema>;
+    const query = req.validatedQuery as z.infer<typeof liveSessionAccessQuerySchema>;
+    const session = liveSessionService.getSessionById(id);
     if (!session) {
       return res.status(404).json({ message: "Live session not found" });
     }
 
-    const accessCode = normalizeLiveAccessCode(String(req.query?.accessCode || ""));
+    const accessCode = normalizeLiveAccessCode(String(query.accessCode || ""));
     const isStaff = Boolean(req.session.staff);
     const hasMatchingCode = Boolean(accessCode && session.config.accessCode === accessCode);
 
@@ -549,8 +564,9 @@ export async function registerRoutes(
     res.json(liveSessionService.listSessions());
   });
 
-  app.delete("/api/live-sessions/:id", requireStaff, (req, res) => {
-    const closed = liveSessionService.closeSession(getSingleParam(req.params.id));
+  app.delete("/api/live-sessions/:id", requireStaff, validateParams(liveSessionIdParamSchema), (req, res) => {
+    const { id } = req.validatedParams as z.infer<typeof liveSessionIdParamSchema>;
+    const closed = liveSessionService.closeSession(id);
     if (!closed) {
       return res.status(404).json({ message: "Live session not found" });
     }
@@ -596,8 +612,9 @@ export async function registerRoutes(
     res.json({ ok: true, message: "Сессия и связанные данные удалены" });
   });
 
-  app.put("/api/admin/settings", requireAdmin, adminRateLimiter, (req, res) => {
-    const updated = contentStorage.updateSettings(req.body || {});
+  app.put("/api/admin/settings", requireAdmin, adminRateLimiter, validateBody(adminSettingsSchema), (req, res) => {
+    const body = req.validatedBody as z.infer<typeof adminSettingsSchema>;
+    const updated = contentStorage.updateSettings(body);
     res.json(updated);
   });
 
@@ -625,48 +642,57 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/admin/cases", requireAdmin, adminRateLimiter, (req, res) => {
-    const id = contentStorage.saveCase(req.body as EditableSimCase);
+  app.post("/api/admin/cases", requireAdmin, adminRateLimiter, validateBody(editableSimCaseSchema), (req, res) => {
+    const body = req.validatedBody as z.infer<typeof editableSimCaseSchema>;
+    const id = contentStorage.saveCase(body as EditableSimCase);
     res.json({ id });
   });
 
-  app.post("/api/admin/cases/reorder", requireAdmin, adminRateLimiter, (req, res) => {
-    contentStorage.reorderCases(req.body.ids || []);
+  app.post("/api/admin/cases/reorder", requireAdmin, adminRateLimiter, validateBody(adminCaseReorderSchema), (req, res) => {
+    const body = req.validatedBody as z.infer<typeof adminCaseReorderSchema>;
+    contentStorage.reorderCases(body.ids);
     res.json({ ok: true });
   });
 
-  app.delete("/api/admin/cases/:id", requireAdmin, adminRateLimiter, (req, res) => {
-    contentStorage.deleteCase(getSingleParam(req.params.id));
+  app.delete("/api/admin/cases/:id", requireAdmin, adminRateLimiter, validateParams(stringIdParamSchema), (req, res) => {
+    const { id } = req.validatedParams as z.infer<typeof stringIdParamSchema>;
+    contentStorage.deleteCase(id);
     res.json({ ok: true });
   });
 
-  app.post("/api/admin/chats", requireAdmin, adminRateLimiter, (req, res) => {
-    const id = contentStorage.saveMessengerChat(req.body);
+  app.post("/api/admin/chats", requireAdmin, adminRateLimiter, validateBody(editableChatSchema), (req, res) => {
+    const body = req.validatedBody as z.infer<typeof editableChatSchema>;
+    const id = contentStorage.saveMessengerChat(body);
     res.json({ id });
   });
 
-  app.delete("/api/admin/chats/:id", requireAdmin, adminRateLimiter, (req, res) => {
-    contentStorage.deleteMessengerChat(getSingleParam(req.params.id));
+  app.delete("/api/admin/chats/:id", requireAdmin, adminRateLimiter, validateParams(stringIdParamSchema), (req, res) => {
+    const { id } = req.validatedParams as z.infer<typeof stringIdParamSchema>;
+    contentStorage.deleteMessengerChat(id);
     res.json({ ok: true });
   });
 
-  app.post("/api/admin/email-cases", requireAdmin, adminRateLimiter, (req, res) => {
-    const id = contentStorage.saveEmailCase(req.body as EditableEmailCase);
+  app.post("/api/admin/email-cases", requireAdmin, adminRateLimiter, validateBody(editableEmailCaseSchema), (req, res) => {
+    const body = req.validatedBody as z.infer<typeof editableEmailCaseSchema>;
+    const id = contentStorage.saveEmailCase(body as EditableEmailCase);
     res.json({ id });
   });
 
-  app.post("/api/admin/messenger-cases", requireAdmin, adminRateLimiter, (req, res) => {
-    const id = contentStorage.saveMessengerCase(req.body as EditableMessengerCase);
+  app.post("/api/admin/messenger-cases", requireAdmin, adminRateLimiter, validateBody(editableMessengerCaseSchema), (req, res) => {
+    const body = req.validatedBody as z.infer<typeof editableMessengerCaseSchema>;
+    const id = contentStorage.saveMessengerCase(body as EditableMessengerCase);
     res.json({ id });
   });
 
-  app.post("/api/admin/video-cases", requireAdmin, adminRateLimiter, (req, res) => {
-    const id = contentStorage.saveVideoCase(req.body as EditableVideoCase);
+  app.post("/api/admin/video-cases", requireAdmin, adminRateLimiter, validateBody(editableVideoCaseSchema), (req, res) => {
+    const body = req.validatedBody as z.infer<typeof editableVideoCaseSchema>;
+    const id = contentStorage.saveVideoCase(body as EditableVideoCase);
     res.json({ id });
   });
 
-  app.delete("/api/admin/channel-items/:id", requireAdmin, adminRateLimiter, (req, res) => {
-    contentStorage.deleteChannelItem(getSingleParam(req.params.id));
+  app.delete("/api/admin/channel-items/:id", requireAdmin, adminRateLimiter, validateParams(stringIdParamSchema), (req, res) => {
+    const { id } = req.validatedParams as z.infer<typeof stringIdParamSchema>;
+    contentStorage.deleteChannelItem(id);
     res.json({ ok: true });
   });
 
