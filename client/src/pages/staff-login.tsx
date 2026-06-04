@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +28,7 @@ export default function StaffLoginPage() {
     try {
       const response = await apiRequest("POST", "/api/staff/login", { role, username: trimmedUsername, password: trimmedPassword });
       const principal = await response.json();
+      queryClient.setQueryData(["/api/staff/me"], principal);
       navigate(principal.role === "admin" ? "/admin" : "/evaluator");
     } catch (err: any) {
       setError(err.message || "Не удалось войти");

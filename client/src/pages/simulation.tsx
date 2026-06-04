@@ -16,6 +16,7 @@ import storeBg from "@assets/store_bg.png";
 
 // Тип иконки из lucide-react
 type LucideIcon = React.ComponentType<{ className?: string }>;
+type SimulationPanelKey = "map" | "signals" | "metrics";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -106,7 +107,7 @@ export default function SimulationPage() {
   const { theme, themeClass, toggleTheme } = useDnsTheme();
 
   // ─── Mobile tab state ───
-  const [mobileTab, setMobileTab] = useState<'map' | 'signals' | 'metrics'>('signals');
+  const [activePanel, setActivePanel] = useState<SimulationPanelKey>('signals');
 
   // Auto-start if not running (direct navigation as participant)
   useEffect(() => {
@@ -178,7 +179,19 @@ export default function SimulationPage() {
           };
 
   // ─── Mobile tab configuration ───
-  const tabs: { key: 'map' | 'signals' | 'metrics'; label: string; icon: LucideIcon }[] = [
+  const useTabbedPanels = isReadOnly;
+  const hiddenPanelClass = useTabbedPanels ? "hidden" : "hidden md:block";
+  const panelGridClass = useTabbedPanels
+    ? "grid-cols-1"
+    : "grid-cols-1 md:grid-cols-[minmax(190px,0.85fr)_minmax(0,2fr)] lg:grid-cols-[76px_minmax(180px,0.75fr)_minmax(0,2fr)_minmax(240px,0.9fr)] xl:grid-cols-[76px_minmax(200px,0.75fr)_minmax(0,2.2fr)_minmax(260px,0.95fr)] 2xl:grid-cols-[82px_minmax(220px,0.75fr)_minmax(0,2.4fr)_minmax(280px,0.95fr)]";
+
+  useEffect(() => {
+    if (isReadOnly) {
+      setActivePanel("map");
+    }
+  }, [isReadOnly]);
+
+  const tabs: { key: SimulationPanelKey; label: string; icon: LucideIcon }[] = [
     { key: 'map', label: 'Карта', icon: Map },
     { key: 'signals', label: 'Сигналы', icon: Radio },
     { key: 'metrics', label: 'Метрики', icon: BarChart3 },
@@ -206,7 +219,7 @@ export default function SimulationPage() {
       <DecisionJournal />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col h-full">
+      <div className={`relative ${useTabbedPanels ? "z-[60]" : "z-10"} flex flex-col h-full`}>
         {/* HEADER */}
         <header className="mx-2 mt-2 flex flex-col gap-2 rounded-xl border border-[#FF6B00]/20 bg-[#101826]/88 px-3 py-2 shadow-2xl backdrop-blur-xl md:mx-3 md:flex-row md:items-center md:justify-between md:px-4">
           {/* Left header group */}
@@ -358,19 +371,22 @@ export default function SimulationPage() {
         </header>
 
         {/* ─── Mobile tab switcher ─── */}
-        <div className="flex md:hidden items-center gap-1 px-2 py-1.5 overflow-x-auto border-b border-[#2a3a4e]/40 bg-[#141c2b]/60 backdrop-blur-sm flex-shrink-0">
+        <div className={`${useTabbedPanels ? "flex" : "flex md:hidden"} relative z-[60] items-center gap-1 px-2 py-1.5 overflow-x-auto border-b border-[#2a3a4e]/40 bg-[#141c2b]/60 backdrop-blur-sm flex-shrink-0`}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
-            const isActive = mobileTab === tab.key;
+            const isActive = activePanel === tab.key;
             return (
               <button
                 key={tab.key}
-                onClick={() => setMobileTab(tab.key)}
+                type="button"
+                onClick={() => setActivePanel(tab.key)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex-1 justify-center min-w-0 ${
                   isActive
                     ? "bg-[#FF6B00]/15 border border-[#FF6B00]/40 text-[#FF6B00]"
                     : "border border-[#2a3a4e]/50 text-[#6a7088] hover:text-[#8890a8] hover:border-[#3a4a5e]"
                 }`}
+                aria-pressed={isActive}
+                data-testid={`simulation-panel-tab-${tab.key}`}
               >
                 <Icon className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="truncate">{tab.label}</span>
@@ -379,22 +395,23 @@ export default function SimulationPage() {
           })}
         </div>
 
-        <div className="px-2 pt-2 md:px-3 lg:hidden">
+        <div className={`px-2 pt-2 md:px-3 ${useTabbedPanels ? "" : "lg:hidden"}`}>
           <SimulationProgressCompact summary={progressSummary} />
         </div>
 
         {/* MAIN LAYOUT: Mobile 1-col, Tablet 2-col, Desktop 3-col */}
         <div className="flex-1 min-h-0 overflow-hidden p-2 md:p-3 xl:p-4">
-          <div className="grid h-full min-h-0 grid-cols-1 gap-2.5 md:gap-3 xl:gap-4 md:grid-cols-[minmax(190px,0.85fr)_minmax(0,2fr)] lg:grid-cols-[76px_minmax(180px,0.75fr)_minmax(0,2fr)_minmax(240px,0.9fr)] xl:grid-cols-[76px_minmax(200px,0.75fr)_minmax(0,2.2fr)_minmax(260px,0.95fr)] 2xl:grid-cols-[82px_minmax(220px,0.75fr)_minmax(0,2.4fr)_minmax(280px,0.95fr)]">
-            <div className="hidden min-h-0 lg:block">
+          <div className={`grid h-full min-h-0 gap-2.5 md:gap-3 xl:gap-4 ${panelGridClass}`}>
+            <div className={useTabbedPanels ? "hidden" : "hidden min-h-0 lg:block"}>
               <SimulationProgressRail summary={progressSummary} />
             </div>
 
             {/* ─── Left: Store Map ─── */}
             <div
               className={`min-h-0 min-w-0 overflow-hidden rounded-2xl border border-[#2a3a4e] bg-[#1e2a3acc] p-3 md:p-4 backdrop-blur-sm ${
-                mobileTab !== 'map' ? 'hidden md:block' : ''
+                activePanel !== 'map' ? hiddenPanelClass : ''
               }`}
+              data-testid="simulation-panel-map"
             >
               <StoreMap />
             </div>
@@ -402,8 +419,9 @@ export default function SimulationPage() {
             {/* ─── Center: Signal Feed + Response ─── */}
             <div
               className={`min-h-0 min-w-0 overflow-y-auto pr-0.5 md:pr-1 ${
-                mobileTab !== 'signals' ? 'hidden md:block' : ''
+                activePanel !== 'signals' ? hiddenPanelClass : ''
               }`}
+              data-testid="simulation-panel-signals"
             >
               <div className="flex h-full min-h-0 flex-col gap-2.5 md:gap-3 xl:gap-4">
                 <div className="min-h-0 flex-[3] rounded-2xl border border-[#2a3a4e] bg-[#1e2a3acc] p-3 md:p-4 backdrop-blur-sm">
@@ -418,8 +436,9 @@ export default function SimulationPage() {
             {/* ─── Right: Metrics + Active Timers ─── */}
             <div
               className={`min-h-0 min-w-0 flex flex-col gap-3 overflow-y-auto pr-1 md:gap-4 xl:gap-5 custom-scroll ${
-                mobileTab !== 'metrics' ? 'hidden md:block' : ''
+                activePanel !== 'metrics' ? hiddenPanelClass : ''
               }`}
+              data-testid="simulation-panel-metrics"
             >
               <div className="rounded-2xl border border-[#2a3a4e] bg-[#1e2a3acc] p-3 backdrop-blur-sm md:p-4">
                 <MetricsPanel />
