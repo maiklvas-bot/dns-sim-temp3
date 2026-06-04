@@ -2,6 +2,12 @@ import { existsSync, readFileSync } from "node:fs";
 import type { NextFunction, Request, Response } from "express";
 import { csrfProtection, generateCsrfToken } from "../server/middleware/csrf";
 import {
+  clearFailedAttempts,
+  getFailedLoginAttemptState,
+  loginFailedAttemptLimiter,
+  recordFailedLogin,
+} from "../server/middleware/rate-limiter";
+import {
   adminCaseReorderSchema,
   adminSettingsSchema,
   editableSimCaseSchema,
@@ -55,6 +61,45 @@ function runCsrfCheck(req: MockCsrfRequest) {
 
   csrfProtection(
     req as Request,
+    res,
+    (() => {
+      nextCalled = true;
+    }) as NextFunction,
+  );
+
+  return {
+    nextCalled,
+    statusCode,
+    jsonBody,
+  };
+}
+
+function createLoginRateLimitRequest(username: string, ip: string) {
+  return {
+    body: { username },
+    ip,
+    socket: { remoteAddress: ip },
+  } as unknown as Request;
+}
+
+function runLoginFailedAttemptCheck(req: Request) {
+  let nextCalled = false;
+  let statusCode = 200;
+  let jsonBody: unknown = null;
+
+  const res = {
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json(body: unknown) {
+      jsonBody = body;
+      return this;
+    },
+  } as Response;
+
+  loginFailedAttemptLimiter(
+    req,
     res,
     (() => {
       nextCalled = true;
@@ -130,6 +175,55 @@ const safeMethodResult = runCsrfCheck({
   headers: {},
 });
 assertCondition(safeMethodResult.nextCalled, "Safe HTTP methods must bypass CSRF protection");
+
+const rateLimitUsername = `task020-user-${Date.now()}`;
+const rateLimitReq = createLoginRateLimitRequest(rateLimitUsername, "203.0.113.20");
+clearFailedAttempts(rateLimitReq);
+for (let attempt = 1; attempt <= 5; attempt++) {
+  const preLimitResult = runLoginFailedAttemptCheck(rateLimitReq);
+  assertCondition(preLimitResult.nextCalled, `Login attempt ${attempt} must pass before the failed-attempt limit`);
+  recordFailedLogin(rateLimitReq);
+}
+
+const limitedState = getFailedLoginAttemptState(rateLimitReq);
+assertCondition(limitedState?.count === 5, "Failed login tracker must count five failed attempts");
+assertCondition(limitedState?.limited === true, "Failed login tracker must mark the sixth attempt as limited");
+
+const blockedLogin = runLoginFailedAttemptCheck(rateLimitReq);
+const blockedBody = blockedLogin.jsonBody as { code?: string; retryAfterSeconds?: number } | null;
+assertCondition(!blockedLogin.nextCalled, "Sixth failed login attempt must not continue");
+assertCondition(blockedLogin.statusCode === 429, "Sixth failed login attempt must return 429");
+assertCondition(blockedBody?.code === "LOGIN_RATE_LIMIT_EXCEEDED", "Login rate limit response must expose a stable code");
+assertCondition(
+  typeof blockedBody?.retryAfterSeconds === "number" && blockedBody.retryAfterSeconds > 0,
+  "Login rate limit response must include positive retryAfterSeconds",
+);
+
+const sameIpOtherUser = createLoginRateLimitRequest(`${rateLimitUsername}-other`, "203.0.113.20");
+assertCondition(
+  runLoginFailedAttemptCheck(sameIpOtherUser).nextCalled,
+  "Login failed-attempt limit must be isolated by username on the same IP",
+);
+
+const sameUserOtherIp = createLoginRateLimitRequest(rateLimitUsername, "203.0.113.21");
+assertCondition(
+  runLoginFailedAttemptCheck(sameUserOtherIp).nextCalled,
+  "Login failed-attempt limit must be isolated by IP for the same username",
+);
+
+const recoveryReq = createLoginRateLimitRequest(`${rateLimitUsername}-recovery`, "203.0.113.22");
+for (let attempt = 1; attempt <= 4; attempt++) {
+  recordFailedLogin(recoveryReq);
+}
+const recoveryState = getFailedLoginAttemptState(recoveryReq);
+assertCondition(recoveryState?.count === 4, "Failed login tracker must retain recoverable attempts before the limit");
+assertCondition(recoveryState?.limited === false, "Failed login tracker must not block below the limit");
+clearFailedAttempts(recoveryReq);
+assertCondition(getFailedLoginAttemptState(recoveryReq) === null, "Successful login cleanup must clear failed attempts");
+assertCondition(
+  runLoginFailedAttemptCheck(recoveryReq).nextCalled,
+  "Login must continue after failed-attempt cleanup",
+);
 
 assertSchemaAccepts(
   adminCaseReorderSchema,

@@ -16,28 +16,30 @@
  */
 
 import rateLimit, { ipKeyGenerator } from "express-rate-limit";
-import type { Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 
 /**
  * Хранилище для отслеживания неудачных попыток логина по IP+username.
  * Используется для ужесточения лимитов при повторных попытках.
  * В продакшене рекомендуется использовать Redis Store.
  */
+const LOGIN_FAILED_ATTEMPT_LIMIT = 5;
+const LOGIN_FAILED_ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
 const failedAttempts = new Map<string, { count: number; firstAttempt: number }>();
 
 /**
  * Очищает устаревшие записи о неудачных попытках каждые 15 минут.
  * Предотвращает утечку памяти в долгосрочной перспективе.
  */
-setInterval(() => {
+const failedAttemptsCleanupTimer = setInterval(() => {
   const now = Date.now();
-  const FIFTEEN_MINUTES = 15 * 60 * 1000;
   for (const [key, data] of Array.from(failedAttempts.entries())) {
-    if (now - data.firstAttempt > FIFTEEN_MINUTES) {
+    if (now - data.firstAttempt > LOGIN_FAILED_ATTEMPT_WINDOW_MS) {
       failedAttempts.delete(key);
     }
   }
-}, 15 * 60 * 1000);
+}, LOGIN_FAILED_ATTEMPT_WINDOW_MS);
+failedAttemptsCleanupTimer.unref?.();
 
 /**
  * Генерирует ключ для отслеживания по IP + username.
@@ -50,6 +52,38 @@ function getLoginKey(req: Request): string {
   return `${ip}:${username}`;
 }
 
+function getActiveFailedAttempt(key: string, now = Date.now()) {
+  const existing = failedAttempts.get(key);
+  if (!existing) {
+    return null;
+  }
+
+  if (now - existing.firstAttempt > LOGIN_FAILED_ATTEMPT_WINDOW_MS) {
+    failedAttempts.delete(key);
+    return null;
+  }
+
+  return existing;
+}
+
+function getRetryAfterSeconds(firstAttempt: number, now = Date.now()) {
+  return Math.max(1, Math.ceil((firstAttempt + LOGIN_FAILED_ATTEMPT_WINDOW_MS - now) / 1000));
+}
+
+export function getFailedLoginAttemptState(req: Request) {
+  const now = Date.now();
+  const existing = getActiveFailedAttempt(getLoginKey(req), now);
+  if (!existing) {
+    return null;
+  }
+
+  return {
+    count: existing.count,
+    limited: existing.count >= LOGIN_FAILED_ATTEMPT_LIMIT,
+    retryAfterSeconds: getRetryAfterSeconds(existing.firstAttempt, now),
+  };
+}
+
 /**
  * Увеличивает счетчик неудачных попыток для IP+username.
  * Вызывается после неудачного логина.
@@ -57,7 +91,7 @@ function getLoginKey(req: Request): string {
 export function recordFailedLogin(req: Request): void {
   const key = getLoginKey(req);
   const now = Date.now();
-  const existing = failedAttempts.get(key);
+  const existing = getActiveFailedAttempt(key, now);
   
   if (!existing) {
     failedAttempts.set(key, { count: 1, firstAttempt: now });
@@ -111,6 +145,16 @@ function loginRateLimitHandler(_req: Request, res: Response, retryAfter: number)
     code: "LOGIN_RATE_LIMIT_EXCEEDED",
     retryAfterSeconds: Math.ceil(retryAfter),
   });
+}
+
+export function loginFailedAttemptLimiter(req: Request, res: Response, next: NextFunction): void {
+  const failedAttemptState = getFailedLoginAttemptState(req);
+  if (failedAttemptState?.limited) {
+    loginRateLimitHandler(req, res, failedAttemptState.retryAfterSeconds);
+    return;
+  }
+
+  next();
 }
 
 // =============================================================================
