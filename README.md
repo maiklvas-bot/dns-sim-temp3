@@ -87,6 +87,41 @@ npm run db:generate-bootstrap -- "C:\Users\al72o\Downloads\dns-simcenter-working
 
 Генератор читает старые файлы `client/src/data/*.ts`, собирает из них `bootstrap-content.json` и подставляет стандартные изображения из `attached_assets`.
 
+
+## Локальное хранилище медиа
+
+Личные медиафайлы не коммитятся в Git: `uploads/`, `.env` и `data.db` остаются локальными. Чтобы перенести медиа из внешней папки в локальную папку сайта и зарегистрировать файлы в SQLite, используйте:
+
+```powershell
+npm.cmd run media:import-local -- --source "C:\Users\maikl\Downloads\uploads"
+```
+
+Скрипт рекурсивно ищет изображения, аудио и видео, копирует их в `./uploads`, сопоставляет файлы с уже существующими asset-записями по имени файла, создает недостающие записи в `media_assets` и печатает отчет по отсутствующим файлам или битым ссылкам. Если исходная папка содержит вложенную папку `uploads`, ведущий сегмент `uploads` автоматически убирается, чтобы на сайте не получались пути вида `/uploads/uploads/...`.
+
+Полезные режимы:
+
+```powershell
+npm.cmd run media:import-local -- --source "C:\Users\maikl\Downloads\uploads" --dry-run
+npm.cmd run media:import-local -- --source "C:\Users\maikl\Downloads\uploads" --copy-only
+```
+
+После импорта соберите и запустите сайт:
+
+```powershell
+npm.cmd run build
+npm.cmd start
+```
+
+Если PowerShell показывает ошибку `Missing script: "media:import-local"`, значит в текущей локальной ветке еще нет версии проекта с этим скриптом. Сначала проверьте, что команда есть в `package.json`:
+
+```powershell
+Select-String -Path package.json -Pattern "media:import-local"
+```
+
+Если команда ничего не вывела, обновите ветку до коммита/PR, где добавлен импорт медиа, или переключитесь на эту ветку. До появления строки `"media:import-local": "tsx script/import-local-media.ts"` команда импорта запускаться не будет, даже если `npm.cmd run build` работает успешно.
+
+Браузеры надежнее всего воспроизводят видео `MP4/H.264 + AAC` и аудио `MP3/WAV/OGG/M4A`. `MOV` импортируется, но скрипт предупреждает, что такой файл может потребовать перекодирования в MP4.
+
 ## Служебный доступ
 
 Проект читает переменные из файла `.env` в корне приложения.

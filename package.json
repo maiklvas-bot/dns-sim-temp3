@@ -17,7 +17,9 @@
     "db:seed-simulation": "tsx script/seed-simulation-content.ts",
     "db:merge-main-cases": "tsx script/import-external-main-cases.ts",
     "db:generate-bootstrap": "tsx script/generate-bootstrap-content.ts",
-    "staff:reset": "tsx script/reset-staff-accounts.ts"
+    "staff:reset": "tsx script/reset-staff-accounts.ts",
+    "media:import-local": "tsx script/import-local-media.ts",
+    "media:import": "npm run media:import-local --"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
