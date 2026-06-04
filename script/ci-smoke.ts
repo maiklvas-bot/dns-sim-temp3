@@ -1,4 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
+import Database from "better-sqlite3";
 import type { NextFunction, Request, Response } from "express";
 import { csrfProtection, generateCsrfToken } from "../server/middleware/csrf";
 import {
@@ -39,6 +41,104 @@ for (const scriptName of ["build", "check", "lint", "test"]) {
     throw new Error(`Missing npm script: ${scriptName}`);
   }
 }
+
+type MediaAssetFile = {
+  name: string;
+  mimeType: string;
+  storagePath: string;
+};
+
+function normalizeMediaStoragePath(storagePath: string) {
+  const normalized = storagePath.replace(/\\/g, "/");
+  const parts = normalized.split("/");
+  assertCondition(
+    normalized.length > 0 && !path.isAbsolute(normalized) && !parts.includes(".."),
+    `Unsafe media storage path: ${storagePath}`,
+  );
+
+  return normalized;
+}
+
+function resolveMediaStoragePath(storagePath: string) {
+  const normalized = normalizeMediaStoragePath(storagePath);
+  if (normalized.startsWith("library/")) {
+    return path.resolve("attached_assets", normalized.slice("library/".length));
+  }
+
+  if (normalized.startsWith("uploads/")) {
+    return path.resolve("uploads", normalized.slice("uploads/".length));
+  }
+
+  throw new Error(`Unsupported media storage path: ${storagePath}`);
+}
+
+function detectMediaMime(filePath: string) {
+  const bytes = readFileSync(filePath);
+  if (bytes.length >= 8 && bytes.subarray(0, 8).toString("hex") === "89504e470d0a1a0a") {
+    return "image/png";
+  }
+
+  if (bytes.length >= 12 && bytes.subarray(4, 8).toString("ascii") === "ftyp") {
+    return "video/mp4";
+  }
+
+  if (
+    (bytes.length >= 3 && bytes.subarray(0, 3).toString("ascii") === "ID3") ||
+    (bytes.length >= 2 && bytes[0] === 0xff && (bytes[1] & 0xe0) === 0xe0)
+  ) {
+    return "audio/mpeg";
+  }
+
+  return "unknown";
+}
+
+function assertMediaFileExists(asset: MediaAssetFile, source: string) {
+  const filePath = resolveMediaStoragePath(asset.storagePath);
+  assertCondition(existsSync(filePath), `${source} references missing media file: ${asset.storagePath}`);
+
+  const detectedMime = detectMediaMime(filePath);
+  const expectedMime = asset.mimeType;
+  if (["audio/mpeg", "image/png", "video/mp4"].includes(expectedMime)) {
+    assertCondition(
+      detectedMime === expectedMime,
+      `${source} media type mismatch for ${asset.storagePath}: expected ${expectedMime}, got ${detectedMime}`,
+    );
+  }
+}
+
+function loadBootstrapMediaAssets() {
+  const raw = JSON.parse(readFileSync("script/bootstrap-content.json", "utf8")) as { assets?: MediaAssetFile[] };
+  return raw.assets || [];
+}
+
+function loadLocalDatabaseMediaAssets() {
+  if (!existsSync("data.db")) {
+    return [];
+  }
+
+  const sqlite = new Database("data.db", { readonly: true });
+  try {
+    return sqlite.prepare(`
+      select name, mime_type as mimeType, storage_path as storagePath
+      from media_assets
+      order by storage_path
+    `).all() as MediaAssetFile[];
+  } finally {
+    sqlite.close();
+  }
+}
+
+function runMediaAssetFileChecks() {
+  for (const asset of loadBootstrapMediaAssets()) {
+    assertMediaFileExists(asset, "Bootstrap content");
+  }
+
+  for (const asset of loadLocalDatabaseMediaAssets()) {
+    assertMediaFileExists(asset, "Local data.db");
+  }
+}
+
+runMediaAssetFileChecks();
 
 type MockCsrfRequest = Pick<Request, "method" | "path" | "headers"> & {
   session?: Partial<Request["session"]>;

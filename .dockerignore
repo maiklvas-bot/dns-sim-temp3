@@ -43,7 +43,26 @@ temp
 
 data/
 storage/
-uploads/
+uploads/*
+!uploads/0MiyTp9T8RAOjzplbUTvu.mp3
+!uploads/3KZGYZC0ueC6ZIF098Wrb.mp4
+!uploads/7G9feC5SJlFiLkRPUhCuL.mp3
+!uploads/DXp-PloPymtagenIoZzcc.mp3
+!uploads/F88ccdsKHw3UUmMnDdgjp.mp4
+!uploads/G2hMmX-Ib2LH01vd93K6J.mp3
+!uploads/GzIczXR9GBSOg49JOgYXd.mp3
+!uploads/HvmtPowka_jZO07hZpnRS.mp4
+!uploads/JBc2FodIDajKqIGn-9KkX.mp3
+!uploads/LsGBT5ugTEx6YS1slurG3.mp3
+!uploads/NwOQSIuR9Gd_KMmUFGHqF.mp3
+!uploads/R0Ze4ohgDzWtGPcnrCe9T.mp3
+!uploads/_zfQlosyCMfXkJWEO1-XN.mp3
+!uploads/bSw4JGt0X08oP3A8LnaJw.mp3
+!uploads/doAuBBUU1CxQr3A8ErhRp.mp3
+!uploads/iwlamyGKBKtQsjZPzkRi4.mp3
+!uploads/wIQWHrg2EI-V-H4V6ZxoS.png
+!uploads/xOAhgf_J5JGAiWITWBDSc.mp3
+!uploads/yghHVz9BtM0pEPslary90.mp3
 backups/
 
 *.backup
