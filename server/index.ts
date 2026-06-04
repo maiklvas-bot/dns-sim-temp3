@@ -13,6 +13,7 @@ import { sqlite } from "./db";
 import { staffStorage } from "./staff-storage";
 import { apiRateLimiter } from "./middleware/rate-limiter";
 import { csrfProtection } from "./middleware/csrf";
+import { serveMediaStatic } from "./media-static";
 
 const app = express();
 const httpServer = createServer(app);
@@ -219,16 +220,7 @@ app.get("/health", (_req, res) => {
 
 app.use("/api", apiRateLimiter);
 app.use(csrfProtection);
-const staticMediaOptions = {
-  etag: true,
-  immutable: true,
-  maxAge: "30d",
-  setHeaders: (res: Response) => {
-    res.setHeader("Cache-Control", "public, max-age=2592000, immutable");
-  },
-} as const;
-app.use("/library", express.static(path.resolve(process.cwd(), "attached_assets"), staticMediaOptions));
-app.use("/uploads", express.static(path.resolve(process.cwd(), "uploads"), staticMediaOptions));
+serveMediaStatic(app);
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {

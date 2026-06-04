@@ -14,6 +14,7 @@ import {
   liveRecoverSessionParamSchema,
   safeParse,
 } from "../server/middleware/validation";
+import { createMediaNotFoundHandler } from "../server/media-static";
 
 const requiredFiles = [
   "package.json",
@@ -108,6 +109,29 @@ function runLoginFailedAttemptCheck(req: Request) {
 
   return {
     nextCalled,
+    statusCode,
+    jsonBody,
+  };
+}
+
+function runMediaNotFoundCheck() {
+  let statusCode = 200;
+  let jsonBody: unknown = null;
+
+  const res = {
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json(body: unknown) {
+      jsonBody = body;
+      return this;
+    },
+  } as Response;
+
+  createMediaNotFoundHandler()({} as Request, res);
+
+  return {
     statusCode,
     jsonBody,
   };
@@ -223,6 +247,14 @@ assertCondition(getFailedLoginAttemptState(recoveryReq) === null, "Successful lo
 assertCondition(
   runLoginFailedAttemptCheck(recoveryReq).nextCalled,
   "Login must continue after failed-attempt cleanup",
+);
+
+const missingMedia = runMediaNotFoundCheck();
+const missingMediaBody = missingMedia.jsonBody as { code?: string } | null;
+assertCondition(missingMedia.statusCode === 404, "Missing media assets must return 404 before the SPA fallback");
+assertCondition(
+  missingMediaBody?.code === "MEDIA_ASSET_NOT_FOUND",
+  "Missing media assets must expose a stable MEDIA_ASSET_NOT_FOUND code",
 );
 
 assertSchemaAccepts(
