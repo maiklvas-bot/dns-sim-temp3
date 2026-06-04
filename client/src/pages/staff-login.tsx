@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -11,22 +11,39 @@ export default function StaffLoginPage() {
   const [role, setRole] = useState<"admin" | "evaluator">("evaluator");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<{ username?: string; password?: string }>({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async () => {
-    const trimmedUsername = username.trim();
-    const trimmedPassword = password.trim();
+  const handleSubmit = async (event?: FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+    if (loading) {
+      return;
+    }
 
-    if (!trimmedUsername || !trimmedPassword) {
-      setError("Введите логин и пароль");
+    const trimmedUsername = username.trim();
+    const nextFieldErrors = {
+      username: trimmedUsername ? undefined : "Введите логин",
+      password: password ? undefined : "Введите пароль",
+    };
+
+    if (nextFieldErrors.username || nextFieldErrors.password) {
+      setFieldErrors(nextFieldErrors);
+      setError(
+        nextFieldErrors.username && nextFieldErrors.password
+          ? "Введите логин и пароль"
+          : nextFieldErrors.username
+            ? "Введите логин"
+            : "Введите пароль",
+      );
       return;
     }
 
     setLoading(true);
+    setFieldErrors({});
     setError("");
     try {
-      const response = await apiRequest("POST", "/api/staff/login", { role, username: trimmedUsername, password: trimmedPassword });
+      const response = await apiRequest("POST", "/api/staff/login", { role, username: trimmedUsername, password });
       const principal = await response.json();
       queryClient.setQueryData(["/api/staff/me"], principal);
       navigate(principal.role === "admin" ? "/admin" : "/evaluator");
@@ -53,48 +70,92 @@ export default function StaffLoginPage() {
 
         <div className="grid grid-cols-2 gap-2 mb-4">
           <button
+            type="button"
             onClick={() => setRole("evaluator")}
+            disabled={loading}
             className={`rounded-lg border px-3 py-2 text-sm transition-all ${role === "evaluator" ? "border-[#FF6B00] bg-[#FF6B00]/10 text-white" : "border-[#2a3a4e] text-[#8890a8]"}`}
           >
             Оценщик
           </button>
           <button
+            type="button"
             onClick={() => setRole("admin")}
+            disabled={loading}
             className={`rounded-lg border px-3 py-2 text-sm transition-all ${role === "admin" ? "border-[#00d4aa] bg-[#00d4aa]/10 text-white" : "border-[#2a3a4e] text-[#8890a8]"}`}
           >
             Администратор
           </button>
         </div>
 
-        <div
-          className="space-y-4"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              void handleSubmit();
-            }
-          }}
-        >
+        <form className="space-y-4" onSubmit={handleSubmit} noValidate>
           <div>
-            <Label className="text-xs text-[#8890a8] mb-1.5 block">Логин</Label>
-            <Input value={username} onChange={(e) => setUsername(e.target.value)} className="bg-[#141c2b] border-[#2a3a4e] text-white" />
+            <Label htmlFor="staff-login-username" className="text-xs text-[#8890a8] mb-1.5 block">Логин</Label>
+            <Input
+              id="staff-login-username"
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                if (error) {
+                  setError("");
+                }
+                if (fieldErrors.username) {
+                  setFieldErrors((current) => ({ ...current, username: undefined }));
+                }
+              }}
+              disabled={loading}
+              autoComplete="username"
+              autoFocus
+              aria-invalid={Boolean(fieldErrors.username)}
+              aria-describedby={fieldErrors.username ? "staff-login-username-error" : undefined}
+              className="bg-[#141c2b] border-[#2a3a4e] text-white"
+              data-testid="staff-login-username"
+            />
+            {fieldErrors.username && (
+              <div id="staff-login-username-error" className="mt-1.5 text-xs text-[#ff9a9a]">
+                {fieldErrors.username}
+              </div>
+            )}
           </div>
           <div>
-            <Label className="text-xs text-[#8890a8] mb-1.5 block">Пароль</Label>
-            <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-[#141c2b] border-[#2a3a4e] text-white" />
+            <Label htmlFor="staff-login-password" className="text-xs text-[#8890a8] mb-1.5 block">Пароль</Label>
+            <Input
+              id="staff-login-password"
+              type="password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (error) {
+                  setError("");
+                }
+                if (fieldErrors.password) {
+                  setFieldErrors((current) => ({ ...current, password: undefined }));
+                }
+              }}
+              disabled={loading}
+              autoComplete="current-password"
+              aria-invalid={Boolean(fieldErrors.password)}
+              aria-describedby={fieldErrors.password ? "staff-login-password-error" : undefined}
+              className="bg-[#141c2b] border-[#2a3a4e] text-white"
+              data-testid="staff-login-password"
+            />
+            {fieldErrors.password && (
+              <div id="staff-login-password-error" className="mt-1.5 text-xs text-[#ff9a9a]">
+                {fieldErrors.password}
+              </div>
+            )}
           </div>
-        </div>
 
-        {error && <div className="mt-4 rounded-lg border border-[#ff4444]/40 bg-[#ff4444]/10 px-3 py-2 text-sm text-[#ff8f8f]">{error}</div>}
+          {error && <div className="rounded-lg border border-[#ff4444]/40 bg-[#ff4444]/10 px-3 py-2 text-sm text-[#ff8f8f]">{error}</div>}
 
-        <div className="flex gap-3 mt-6">
-          <Button variant="outline" className="flex-1 border-[#2a3a4e] text-[#8890a8] bg-transparent" onClick={() => navigate("/")}>
-            Назад
-          </Button>
-          <Button className="flex-1 bg-[#FF6B00] hover:bg-[#e06000]" onClick={() => void handleSubmit()} disabled={loading}>
-            {loading ? "Вход..." : "Войти"}
-          </Button>
-        </div>
+          <div className="flex gap-3 pt-2">
+            <Button type="button" variant="outline" className="flex-1 border-[#2a3a4e] text-[#8890a8] bg-transparent" onClick={() => navigate("/")} disabled={loading}>
+              Назад
+            </Button>
+            <Button type="submit" className="flex-1 bg-[#FF6B00] hover:bg-[#e06000]" disabled={loading} data-testid="staff-login-submit">
+              {loading ? "Вход..." : "Войти"}
+            </Button>
+          </div>
+        </form>
       </div>
     </div>
   );
