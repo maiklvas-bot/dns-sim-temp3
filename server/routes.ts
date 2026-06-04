@@ -15,6 +15,7 @@ import {
   adminRateLimiter,
   clearFailedAttempts,
   heavyOperationRateLimiter,
+  loginFailedAttemptLimiter,
   loginRateLimiter,
   recordFailedLogin,
 } from "./middleware/rate-limiter";
@@ -258,6 +259,7 @@ export async function registerRoutes(
 
   app.post(
     "/api/staff/login",
+    loginFailedAttemptLimiter,
     loginRateLimiter,
     validateBody(staffLoginBodySchema),
     asyncHandler(async (req, res) => {
