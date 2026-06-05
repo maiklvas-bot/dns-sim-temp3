@@ -266,6 +266,8 @@ async function runAdminStorageAcceptanceChecks() {
     assertCondition(sessionStorage.getSessionAnswers(session.id).length === 0, "Result deletion must remove session answers");
     assertCondition(sessionStorage.getSessionMetrics(session.id).length === 0, "Result deletion must remove session metrics");
     assertCondition(sessionStorage.getSessionResult(session.id) === undefined, "Result deletion must remove session result");
+
+    await runLiveSessionRecoveryAcceptanceChecks(sqlite, tempDir);
   } finally {
     sqlite.close();
     for (const [key, value] of Object.entries(previousEnv)) {
@@ -280,6 +282,126 @@ async function runAdminStorageAcceptanceChecks() {
 }
 
 runAdminRouteContractChecks();
+
+async function runLiveSessionRecoveryAcceptanceChecks(sqlite: Database.Database, tempDir: string) {
+  const { LiveSessionService, normalizeLiveAccessCode } = await import("../server/live-session-service");
+  const storePath = path.join(tempDir, "live-sessions.json");
+  const service = new LiveSessionService({ sqlite, storePath });
+  const sessionInput = {
+    assessorName: "Task 024 Assessor",
+    participantName: "Task 024 Participant",
+    participantRole: "Deputy store manager",
+    difficulty: "medium" as const,
+    selectedCaseIds: ["CASE-01"],
+    selectedChannelItemIds: { email: ["EMAIL-01"], messenger: [], video: [] },
+    manualSelection: true,
+    repeatCases: false,
+    timeLimit: 60,
+    isTestMode: true,
+    speedMultiplier: 1,
+    enabledChannels: { audio: true, email: true, messenger: true, video: false },
+    initialMetrics: {
+      customersInStore: 12,
+      avgCheck: 0,
+      conversion: 44,
+      nps: 3.3,
+      pickupSpeed: 18,
+      warehouseLoad: 21,
+      teamMorale: 7,
+      dailyRevenue: 10000,
+    },
+  };
+
+  const config = service.createSession(sessionInput);
+  assertCondition(config.liveSessionId.length > 0, "Live session creation must assign a stable id");
+  assertCondition(/^[A-Z0-9]{6}$/.test(config.accessCode), "Live session creation must assign a six-character access code");
+  assertCondition(
+    normalizeLiveAccessCode(` ${config.accessCode.toLowerCase()} `) === config.accessCode,
+    "Live access codes must normalize case and whitespace",
+  );
+  assertCondition(service.getSessionByAccessCode(config.accessCode.toLowerCase())?.config.liveSessionId === config.liveSessionId, "Live session lookup must normalize access codes");
+
+  const rejectedSync = service.syncStudentState(config.liveSessionId, "WRONG1", { status: "running" });
+  assertCondition(rejectedSync === null, "Live session student sync must reject mismatched access codes");
+
+  const snapshot = {
+    liveSessionId: config.liveSessionId,
+    updatedAt: Date.now(),
+    state: {
+      sessionId: 24024,
+      isRunning: true,
+      isPaused: false,
+      isCompleted: false,
+      elapsedSeconds: 180,
+      timeRemaining: 3420,
+      decisions: [
+        { score: 4, caseTitle: "Task 024 Case" },
+        { score: 5, caseTitle: "Task 024 Follow-up" },
+      ],
+    },
+  };
+
+  const synced = service.syncStudentState(config.liveSessionId, config.accessCode.toLowerCase(), {
+    snapshot,
+    status: "running",
+  });
+  assertCondition(synced?.status === "running", "Live session student sync must move the session to running");
+  assertCondition(synced?.presence.studentConnected === true, "Live session student sync must mark student presence");
+  assertCondition((synced?.snapshot?.state as any)?.elapsedSeconds === 180, "Live session student sync must store snapshots");
+
+  const summary = service.listSessions()[0];
+  assertCondition(summary?.runtimeSessionId === 24024, "Live session monitor summary must expose runtime session id");
+  assertCondition(summary?.decisionsCount === 2, "Live session monitor summary must count decisions from snapshot");
+  assertCondition(summary?.currentAverageScore === 4.5, "Live session monitor summary must average snapshot decision scores");
+  assertCondition(summary?.progressPercent === 5, "Live session monitor summary must derive progress from elapsed time");
+
+  service.flushPersistence();
+  const persistedRows = sqlite.prepare("SELECT payload FROM app_live_sessions").all() as Array<{ payload: string }>;
+  assertCondition(persistedRows.length === 1, "Running live sessions must persist to SQLite");
+  const persistedFile = JSON.parse(readFileSync(storePath, "utf8")) as { sessions?: unknown[] };
+  assertCondition(persistedFile.sessions?.length === 1, "Running live sessions must persist to the JSON fallback store");
+
+  const restarted = new LiveSessionService({ sqlite, storePath });
+  restarted.restorePersistedSessions();
+  const restored = restarted.getSessionById(config.liveSessionId);
+  assertCondition(restored?.status === "running", "Restarted service must restore running live sessions");
+  assertCondition(restored?.presence.assessorConnected === false, "Restored live session assessor presence must start disconnected");
+  assertCondition(restored?.presence.studentConnected === false, "Restored live session student presence must start disconnected");
+  assertCondition(restored?.config.accessCode === config.accessCode, "Restored live session must preserve access code");
+  assertCondition((restored?.snapshot?.state as any)?.sessionId === 24024, "Restored live session must preserve snapshot state");
+  assertCondition(
+    restarted.getSessionByAccessCode(config.accessCode.toLowerCase())?.config.liveSessionId === config.liveSessionId,
+    "Restarted service must restore access-code lookup",
+  );
+
+  const completed = restarted.syncStudentState(config.liveSessionId, config.accessCode, {
+    status: "completed",
+    snapshot: {
+      ...snapshot,
+      updatedAt: Date.now(),
+      state: {
+        ...snapshot.state,
+        isCompleted: true,
+      },
+    },
+  });
+  assertCondition(completed?.status === "completed", "Live session completion must be recorded");
+  const blockedRegression = restarted.syncStudentState(config.liveSessionId, config.accessCode, { status: "running" });
+  assertCondition(blockedRegression?.status === "completed", "Completed live sessions must not regress to running");
+
+  restarted.flushPersistence();
+  const remainingRows = sqlite.prepare("SELECT payload FROM app_live_sessions").all() as Array<{ payload: string }>;
+  assertCondition(remainingRows.length === 0, "Completed live sessions must not persist as active restart candidates");
+  const completedStore = JSON.parse(readFileSync(storePath, "utf8")) as { sessions?: unknown[] };
+  assertCondition(completedStore.sessions?.length === 0, "Completed live sessions must be absent from JSON restart store");
+
+  const afterCompletedRestart = new LiveSessionService({ sqlite, storePath });
+  afterCompletedRestart.restorePersistedSessions();
+  assertCondition(
+    afterCompletedRestart.getSessionById(config.liveSessionId) === null,
+    "Restarted service must not restore completed live sessions",
+  );
+}
 
 type MockCsrfRequest = Pick<Request, "method" | "path" | "headers"> & {
   session?: Partial<Request["session"]>;

@@ -2,8 +2,9 @@ import { randomUUID } from "crypto";
 import fs from "fs";
 import type { IncomingMessage, Server } from "http";
 import path from "path";
+import type Database from "better-sqlite3";
 import { WebSocketServer, type WebSocket } from "ws";
-import { sqlite } from "./db";
+import { sqlite as defaultSqlite } from "./db";
 import type {
   LiveSimulationConfig,
   LiveSimulationMonitorSummary,
@@ -43,6 +44,11 @@ const DEFAULT_SQLITE_PATH = process.env.SQLITE_PATH || path.join(process.cwd(), 
 const LIVE_SESSION_STORE_PATH =
   process.env.LIVE_SESSION_STORE_PATH || path.join(path.dirname(DEFAULT_SQLITE_PATH), "live-sessions.json");
 
+interface LiveSessionServiceOptions {
+  sqlite?: Database.Database;
+  storePath?: string;
+}
+
 function clampNumber(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
@@ -64,7 +70,9 @@ function safeSend(socket: WebSocket, message: LiveSimulationSocketMessage) {
   socket.send(JSON.stringify(message));
 }
 
-class LiveSessionService {
+export class LiveSessionService {
+  private readonly sqlite: Database.Database;
+  private readonly liveSessionStorePath: string;
   private readonly sessions = new Map<string, LiveSessionRecord>();
   private readonly accessCodeToSessionId = new Map<string, string>();
   private readonly sockets = new Map<WebSocket, SocketContext>();
@@ -72,6 +80,11 @@ class LiveSessionService {
   private storeLoaded = false;
   private sqliteStoreReady = false;
   private persistTimer: NodeJS.Timeout | null = null;
+
+  constructor(options: LiveSessionServiceOptions = {}) {
+    this.sqlite = options.sqlite || defaultSqlite;
+    this.liveSessionStorePath = options.storePath || LIVE_SESSION_STORE_PATH;
+  }
 
   createSession(
     input: Omit<LiveSimulationConfig, "liveSessionId" | "accessCode" | "createdAt">,
@@ -467,7 +480,7 @@ class LiveSessionService {
     }
   }
 
-  private restorePersistedSessions() {
+  restorePersistedSessions() {
     if (this.storeLoaded) {
       return;
     }
@@ -476,7 +489,7 @@ class LiveSessionService {
     this.ensureSqliteStore();
 
     try {
-      const rows = sqlite
+      const rows = this.sqlite
         .prepare("SELECT payload FROM app_live_sessions")
         .all() as Array<{ payload: string }>;
 
@@ -491,12 +504,12 @@ class LiveSessionService {
       console.error("[live-session] failed to read sqlite session store", error);
     }
 
-    if (!fs.existsSync(LIVE_SESSION_STORE_PATH)) {
+    if (!fs.existsSync(this.liveSessionStorePath)) {
       return;
     }
 
     try {
-      const parsed = JSON.parse(fs.readFileSync(LIVE_SESSION_STORE_PATH, "utf8")) as PersistedLiveSessionStore;
+      const parsed = JSON.parse(fs.readFileSync(this.liveSessionStorePath, "utf8")) as PersistedLiveSessionStore;
       if (parsed.version !== 1 || !Array.isArray(parsed.sessions)) {
         return;
       }
@@ -544,7 +557,7 @@ class LiveSessionService {
       return;
     }
 
-    sqlite.exec(`
+    this.sqlite.exec(`
       CREATE TABLE IF NOT EXISTS app_live_sessions (
         live_session_id TEXT PRIMARY KEY,
         payload TEXT NOT NULL,
@@ -566,6 +579,15 @@ class LiveSessionService {
     this.persistTimer.unref?.();
   }
 
+  flushPersistence() {
+    if (this.persistTimer) {
+      clearTimeout(this.persistTimer);
+      this.persistTimer = null;
+    }
+
+    this.persistSessions();
+  }
+
   private persistSessions() {
     const sessions = Array.from(this.sessions.values())
       .filter((session) => session.status !== "completed")
@@ -583,9 +605,9 @@ class LiveSessionService {
 
     try {
       this.ensureSqliteStore();
-      const writeSqlite = sqlite.transaction((items: LiveSessionRecord[]) => {
-        sqlite.prepare("DELETE FROM app_live_sessions").run();
-        const insert = sqlite.prepare(`
+      const writeSqlite = this.sqlite.transaction((items: LiveSessionRecord[]) => {
+        this.sqlite.prepare("DELETE FROM app_live_sessions").run();
+        const insert = this.sqlite.prepare(`
           INSERT INTO app_live_sessions (live_session_id, payload, updated_at)
           VALUES (?, ?, ?)
         `);
@@ -595,9 +617,9 @@ class LiveSessionService {
       });
       writeSqlite(sessions);
 
-      fs.mkdirSync(path.dirname(LIVE_SESSION_STORE_PATH), { recursive: true });
+      fs.mkdirSync(path.dirname(this.liveSessionStorePath), { recursive: true });
       fs.writeFileSync(
-        LIVE_SESSION_STORE_PATH,
+        this.liveSessionStorePath,
         JSON.stringify({ version: 1, sessions } satisfies PersistedLiveSessionStore),
       );
     } catch (error) {
