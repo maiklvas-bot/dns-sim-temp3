@@ -111,6 +111,7 @@ export interface ActiveSignal {
   acknowledgedAt: number | null;
   narrationText: string;
   audioUrl: string | null;
+  imageUrl: string | null;
   deadline: ScenarioDeadline | null;
   reminderIntervalSeconds?: number | null;
 }
@@ -831,6 +832,10 @@ function preloadCaseMedia(caseItem: SimCase | null | undefined) {
 
   queueMediaPreload(caseItem.imageUrl, "image");
   queueMediaPreload(caseItem.audioUrl, "audio");
+  (caseItem.cycles || []).forEach((cycle) => {
+    queueMediaPreload(cycle.imageUrl || null, "image");
+    queueMediaPreload(cycle.audioUrl || null, "audio");
+  });
 }
 
 function preloadEmailMedia(emailCase: (typeof EMAIL_CASES)[number] | null | undefined) {
@@ -1131,14 +1136,14 @@ function buildSignalNarration(title: string, source: string, situation: string, 
 
 function buildMetricDeltaEntries(before: RealisticMetrics, after: RealisticMetrics): MetricDeltaEntry[] {
   const rows: Array<Omit<MetricDeltaEntry, "before" | "after" | "delta"> & { before: number; after: number }> = [
-    { key: "customersInStore", metric: "Покупатели в зале", unit: "count", betterWhen: "higher", before: before.customersInStore, after: after.customersInStore },
-    { key: "avgCheck", metric: "Средний чек", unit: "rub", betterWhen: "higher", before: before.avgCheck, after: after.avgCheck },
-    { key: "conversion", metric: "Конверсия", unit: "percent", betterWhen: "higher", before: before.conversion, after: after.conversion },
-    { key: "nps", metric: "Клиентская оценка", unit: "score", betterWhen: "higher", before: before.nps, after: after.nps },
-    { key: "pickupSpeed", metric: "Скорость выдачи", unit: "minutes", betterWhen: "lower", before: before.pickupSpeed, after: after.pickupSpeed },
-    { key: "warehouseLoad", metric: "Загрузка склада", unit: "percent", betterWhen: "lower", before: before.warehouseLoad, after: after.warehouseLoad },
-    { key: "teamMorale", metric: "Настроение команды", unit: "score", betterWhen: "higher", before: before.teamMorale, after: after.teamMorale },
-    { key: "dailyRevenue", metric: "Выручка за день", unit: "kRub", betterWhen: "higher", before: before.dailyRevenue, after: after.dailyRevenue },
+    { key: "customersInStore", metric: "Торг. зал / покупатели", unit: "count", betterWhen: "higher", before: before.customersInStore, after: after.customersInStore },
+    { key: "avgCheck", metric: "Клиенты / средний чек", unit: "rub", betterWhen: "higher", before: before.avgCheck, after: after.avgCheck },
+    { key: "conversion", metric: "Торг. зал / конверсия", unit: "percent", betterWhen: "higher", before: before.conversion, after: after.conversion },
+    { key: "nps", metric: "Клиенты / оценка", unit: "score", betterWhen: "higher", before: before.nps, after: after.nps },
+    { key: "pickupSpeed", metric: "Выдача / скорость", unit: "minutes", betterWhen: "lower", before: before.pickupSpeed, after: after.pickupSpeed },
+    { key: "warehouseLoad", metric: "Склад / загрузка", unit: "percent", betterWhen: "lower", before: before.warehouseLoad, after: after.warehouseLoad },
+    { key: "teamMorale", metric: "Команда / мораль", unit: "score", betterWhen: "higher", before: before.teamMorale, after: after.teamMorale },
+    { key: "dailyRevenue", metric: "Финансы / выручка", unit: "kRub", betterWhen: "higher", before: before.dailyRevenue, after: after.dailyRevenue },
   ];
 
   return rows
@@ -1224,7 +1229,53 @@ function getOrderedSelectedCases(selectedCaseIds: string[]) {
 }
 
 function buildMainCaseQueue(selectedCases: SimCase[]) {
-  return selectedCases.map((_, index) => index * 3);
+  let pointer = 0;
+  return selectedCases.map((caseItem) => {
+    const currentPointer = pointer;
+    pointer += Math.max(1, caseItem.cycles.length);
+    return currentPointer;
+  });
+}
+
+function resolveMainQueuePointer(pointer: number, selectedCases: SimCase[]) {
+  let cursor = 0;
+
+  for (let caseIndex = 0; caseIndex < selectedCases.length; caseIndex += 1) {
+    const caseData = selectedCases[caseIndex];
+    const cycleCount = Math.max(1, caseData.cycles.length);
+    if (pointer >= cursor && pointer < cursor + cycleCount) {
+      return {
+        caseData,
+        caseIndex,
+        cycleIndex: pointer - cursor,
+      };
+    }
+    cursor += cycleCount;
+  }
+
+  return {
+    caseData: null,
+    caseIndex: -1,
+    cycleIndex: -1,
+  };
+}
+
+function getMainQueuePointerForCaseCycle(selectedCases: SimCase[], caseIndex: number, cycleIndex: number) {
+  if (caseIndex < 0 || cycleIndex < 0 || caseIndex >= selectedCases.length) {
+    return null;
+  }
+
+  const caseData = selectedCases[caseIndex];
+  if (!caseData || cycleIndex >= caseData.cycles.length) {
+    return null;
+  }
+
+  let pointer = 0;
+  for (let index = 0; index < caseIndex; index += 1) {
+    pointer += Math.max(1, selectedCases[index].cycles.length);
+  }
+
+  return pointer + cycleIndex;
 }
 
 function getMainCaseArrivalSeconds(
@@ -1261,11 +1312,9 @@ function getNextMainSignalAtFromQueue(
   }
 
   const nextQueueItem = queue[0];
-  const nextCaseIndex = Math.floor(nextQueueItem / 3);
-  const nextCycleIndex = nextQueueItem % 3;
-  const nextCase = selectedCases[nextCaseIndex];
-  if (nextCycleIndex === 0) {
-    const scheduledAt = getMainCaseArrivalSeconds(nextCase, nextCaseIndex, selectedCases.length, totalDurationSeconds, timeLimitMinutes);
+  const resolved = resolveMainQueuePointer(nextQueueItem, selectedCases);
+  if (resolved.cycleIndex === 0) {
+    const scheduledAt = getMainCaseArrivalSeconds(resolved.caseData, resolved.caseIndex, selectedCases.length, totalDurationSeconds, timeLimitMinutes);
     if (scheduledAt > elapsedSeconds + 5) {
       return scheduledAt;
     }
@@ -1276,7 +1325,7 @@ function getNextMainSignalAtFromQueue(
     totalDurationSeconds,
     elapsedSeconds,
     queue.length,
-    nextCase?.timing,
+    resolved.caseData?.timing,
   );
 }
 
@@ -1567,8 +1616,7 @@ function collectAllTimers(state: SimulationState): TimerSnapshot[] {
 }
 
 function getQueuedCaseByPointer(queuePointer: number, selectedCases: SimCase[]) {
-  const caseIndex = Math.floor(queuePointer / 3);
-  return selectedCases[caseIndex] || null;
+  return resolveMainQueuePointer(queuePointer, selectedCases).caseData || null;
 }
 
 function getInitialState(): SimulationState {
@@ -1976,9 +2024,7 @@ function reducer(state: SimulationState, action: Action): SimulationState {
 
       const [nextQueueItem, ...restQueue] = state.caseQueue;
       const selectedCases = getOrderedSelectedCases(state.selectedCaseIds);
-      const caseIndex = Math.floor(nextQueueItem / 3);
-      const cycleIndex = nextQueueItem % 3;
-      const caseData = selectedCases[caseIndex];
+      const { caseData, caseIndex, cycleIndex } = resolveMainQueuePointer(nextQueueItem, selectedCases);
 
       if (!caseData || !caseData.cycles[cycleIndex]) {
         return {
@@ -2029,7 +2075,8 @@ function reducer(state: SimulationState, action: Action): SimulationState {
         isAcknowledged: false,
         acknowledgedAt: null,
         narrationText,
-        audioUrl: caseData.audioUrl,
+        audioUrl: cycle.audioUrl || caseData.audioUrl,
+        imageUrl: cycle.imageUrl || caseData.imageUrl,
         deadline,
         reminderIntervalSeconds: caseData.timing?.reminderIntervalSeconds ?? null,
       };
@@ -2188,7 +2235,7 @@ function reducer(state: SimulationState, action: Action): SimulationState {
       const updatedSignals = state.activeSignals.filter(s => s.id !== signal.id);
       const nextQueueItem =
         state.repeatCases && signal.cycle < caseData.cycles.length
-          ? signal.caseIndex * 3 + signal.cycle
+          ? getMainQueuePointerForCaseCycle(selectedCases, signal.caseIndex, signal.cycle)
           : null;
       const nextQueue =
         nextQueueItem != null && !state.caseQueue.includes(nextQueueItem)

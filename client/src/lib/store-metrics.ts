@@ -1,14 +1,14 @@
 import type { RealisticMetrics } from "@/context/SimulationContext";
 
 export const STORE_METRIC_LABELS: Record<keyof RealisticMetrics, string> = {
-  customersInStore: "Покупатели в зале",
-  avgCheck: "Средний чек",
-  conversion: "Конверсия",
-  nps: "Клиентская оценка",
-  pickupSpeed: "Скорость выдачи",
-  warehouseLoad: "Загрузка склада",
-  teamMorale: "Настроение команды",
-  dailyRevenue: "Выручка за день",
+  customersInStore: "Торг. зал / покупатели",
+  avgCheck: "Клиенты / средний чек",
+  conversion: "Торг. зал / конверсия",
+  nps: "Клиенты / оценка",
+  pickupSpeed: "Выдача / скорость",
+  warehouseLoad: "Склад / загрузка",
+  teamMorale: "Команда / мораль",
+  dailyRevenue: "Финансы / выручка",
 };
 
 export const STORE_METRIC_HELPERS: Partial<Record<keyof RealisticMetrics, string>> = {

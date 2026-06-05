@@ -92,6 +92,8 @@ export const caseCycles = sqliteTable("case_cycles", {
   caseId: text("case_id").notNull(),
   cycleNumber: integer("cycle_number").notNull(),
   situation: text("situation").notNull(),
+  imageAssetId: text("image_asset_id"),
+  audioAssetId: text("audio_asset_id"),
   sortOrder: integer("sort_order").notNull().default(0),
 }, (table) => ({
   caseCycleIdx: uniqueIndex("case_cycles_case_cycle_idx").on(table.caseId, table.cycleNumber),

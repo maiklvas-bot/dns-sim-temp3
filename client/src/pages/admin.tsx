@@ -318,6 +318,72 @@ const STORE_ZONE_OPTIONS = [
   { value: "начальство", label: "Начальство" },
 ] as const;
 
+const STORE_EFFECT_FIELDS = [
+  {
+    key: "queue",
+    label: "Торг. зал / поток",
+    zone: "Торг. зал",
+    metric: "Покупатели в зале",
+    helper: "Положительное значение усиливает поток покупателей, отрицательное снижает управляемость зала.",
+  },
+  {
+    key: "conversion",
+    label: "Торг. зал / конверсия",
+    zone: "Торг. зал",
+    metric: "Конверсия",
+    helper: "Положительное значение повышает долю покупок, отрицательное показывает потерю продаж.",
+  },
+  {
+    key: "morale",
+    label: "Команда / мораль",
+    zone: "Команда",
+    metric: "Настроение команды",
+    helper: "Положительное значение поддерживает смену, отрицательное усиливает напряжение.",
+  },
+  {
+    key: "revenue_impact",
+    label: "Финансы / выручка",
+    zone: "Финансы",
+    metric: "Выручка за день",
+    helper: "Положительное значение добавляет продажи, отрицательное фиксирует упущенную выручку.",
+  },
+  {
+    key: "delivery_status",
+    label: "Выдача / скорость",
+    zone: "Выдача",
+    metric: "Скорость выдачи",
+    helper: "Положительное значение ускоряет выдачу, отрицательное увеличивает ожидание.",
+  },
+] as const;
+
+const CASE_AUTHORING_WIKI = [
+  {
+    title: "Как метрики ответа влияют на карту магазина",
+    items: [
+      "Торг. зал / поток меняет нагрузку в зале и количество покупателей, которых нужно удержать в сервисе.",
+      "Торг. зал / конверсия показывает, сколько клиентов дошли до покупки. Например, -5 значит: решение ухудшило продажи в зале.",
+      "Команда / мораль влияет на состояние смены. Например, +5 означает, что руководитель снял напряжение и люди понимают роли.",
+      "Финансы / выручка отражает прямой денежный эффект. Например, -5 фиксирует потерю продаж из-за плохого сервиса.",
+      "Выдача / скорость влияет на очередь и срок получения товара. Плюс ускоряет выдачу, минус делает ожидание дольше.",
+    ],
+  },
+  {
+    title: "Как составлять кейс",
+    items: [
+      "Опишите одну управленческую проблему без лишних сюжетов: кто обратился, что случилось, что нужно решить сейчас.",
+      "Дайте 3-5 вариантов ответа: слабый, частично рабочий, нормальный, сильный и при необходимости экспертный.",
+      "Для каждого варианта отдельно задайте эффект на магазин и влияние на компетенции. Это две разные настройки.",
+      "Первичные компетенции показывают главный фокус кейса, вторичные - дополнительную область оценки.",
+      "Вес кейса меняет вклад кейса в общий сценарий, но не должен переписывать сам профиль компетенций кейса.",
+    ],
+  },
+] as const;
+
+const DRAFT_STORAGE_KEYS = {
+  caseWizard: "dns-simcenter.admin.caseWizardDraft",
+  signalWizard: "dns-simcenter.admin.signalWizardDraft",
+} as const;
+
 function clampNumber(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
@@ -648,6 +714,59 @@ function getRecommendedDifficulty(level: number) {
 
 function deepClone<T>(value: T): T {
   return JSON.parse(JSON.stringify(value));
+}
+
+function readDraftFromStorage<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) {
+      return fallback;
+    }
+
+    const parsed = JSON.parse(raw);
+    if (
+      fallback &&
+      typeof fallback === "object" &&
+      parsed &&
+      typeof parsed === "object" &&
+      !Array.isArray(fallback) &&
+      !Array.isArray(parsed)
+    ) {
+      return { ...fallback, ...parsed };
+    }
+
+    return parsed as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeDraftToStorage(key: string, value: unknown) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Локальный черновик вспомогательный: ошибка localStorage не должна блокировать админку.
+  }
+}
+
+function clearDraftFromStorage(key: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.removeItem(key);
+  } catch {
+    // См. комментарий выше: очистка черновика не критична для runtime.
+  }
 }
 
 function normalizeSettingsDraft(value: Record<string, any> | null | undefined) {
@@ -1040,6 +1159,10 @@ function createEmptyCase(order: number): SimCase {
       situation: "",
       signal: { type: "message", content: "" },
       options: [],
+      imageAssetId: null,
+      imageUrl: null,
+      audioAssetId: null,
+      audioUrl: null,
     }],
     imageAssetId: null,
     imageUrl: null,
@@ -1237,6 +1360,7 @@ export default function AdminPage() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [selectedResultId, setSelectedResultId] = useState<number | null>(null);
   const [selectedWeightCaseId, setSelectedWeightCaseId] = useState<string | null>(null);
+  const [selectedCaseCycleIndex, setSelectedCaseCycleIndex] = useState(0);
   const [caseWizardOpen, setCaseWizardOpen] = useState(false);
   const [signalWizardOpen, setSignalWizardOpen] = useState(false);
   const [signalWizardStep, setSignalWizardStep] = useState(0);
@@ -1343,6 +1467,7 @@ export default function AdminPage() {
   useEffect(() => {
     const found = contentQuery.data?.cases?.find((item: SimCase) => item.id === selectedCaseId);
     setCaseDraft(found ? deepClone(found) : null);
+    setSelectedCaseCycleIndex(0);
   }, [selectedCaseId, contentQuery.data?.cases]);
 
   useEffect(() => {
@@ -1375,6 +1500,21 @@ export default function AdminPage() {
       setSelectedResultId(resultsQuery.data[0].id);
     }
   }, [resultsQuery.data, selectedResultId]);
+
+  useEffect(() => {
+    if (caseWizardOpen) {
+      writeDraftToStorage(DRAFT_STORAGE_KEYS.caseWizard, caseWizardDraft);
+    }
+  }, [caseWizardDraft, caseWizardOpen]);
+
+  useEffect(() => {
+    if (signalWizardOpen) {
+      writeDraftToStorage(DRAFT_STORAGE_KEYS.signalWizard, {
+        mode: signalWizardMode,
+        draft: signalWizardDraft,
+      });
+    }
+  }, [signalWizardDraft, signalWizardMode, signalWizardOpen]);
 
   const assets = contentQuery.data?.assets || [];
   const imageAssets = assets.filter((asset: any) => asset.kind === "image");
@@ -1428,8 +1568,8 @@ export default function AdminPage() {
     [selectedWeightCase],
   );
   const aggregateCompetencyProfile = useMemo(
-    () => buildWeightedCompetencyProfile(activeCases, caseWeightsDraft),
-    [activeCases, caseWeightsDraft],
+    () => buildWeightedCompetencyProfile(activeCases, {}),
+    [activeCases],
   );
   const factCompetencyProfile = useMemo(
     () => (resultDetailQuery.data?.result?.competencyAverages || {}) as Record<string, number>,
@@ -1578,8 +1718,7 @@ export default function AdminPage() {
         data: dataUrl,
       });
       const asset = await response.json();
-      await queryClient.invalidateQueries({ queryKey: ["/api/staff/content"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/simulation-content"] });
+      await invalidateRuntimeContent();
       return asset.id as string;
     } catch (err: any) {
       setError(err.message || "Не удалось загрузить медиафайл");
@@ -1587,6 +1726,11 @@ export default function AdminPage() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const invalidateRuntimeContent = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["/api/staff/content"] });
+    await queryClient.invalidateQueries({ queryKey: ["/api/simulation-content"] });
   };
 
   const saveCurrent = async () => {
@@ -1620,8 +1764,7 @@ export default function AdminPage() {
         await saveSchedule();
         return;
       }
-      await queryClient.invalidateQueries({ queryKey: ["/api/staff/content"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/simulation-content"] });
+      await invalidateRuntimeContent();
       await queryClient.invalidateQueries({ queryKey: ["/api/staff/results"] });
     } catch (err: any) {
       setError(err.message || "Не удалось сохранить");
@@ -1771,8 +1914,7 @@ export default function AdminPage() {
         }
       }
 
-      await queryClient.invalidateQueries({ queryKey: ["/api/staff/content"] });
-      await queryClient.invalidateQueries({ queryKey: ["/api/simulation-content"] });
+      await invalidateRuntimeContent();
     } catch (err: any) {
       setError(err.message || "Не удалось сохранить расписание");
     } finally {
@@ -1782,7 +1924,7 @@ export default function AdminPage() {
 
   const openCaseWizard = () => {
     const nextOrder = (contentQuery.data?.cases?.length || 0) + 1;
-    setCaseWizardDraft(createEmptyCase(nextOrder));
+    setCaseWizardDraft(readDraftFromStorage(DRAFT_STORAGE_KEYS.caseWizard, createEmptyCase(nextOrder)));
     setCaseWizardStep(0);
     setCaseWizardOpen(true);
   };
@@ -1795,19 +1937,24 @@ export default function AdminPage() {
           ? (contentQuery.data?.messengerCases?.length || 0) + 1
           : (contentQuery.data?.videoCases?.length || 0) + 1;
 
-    setSignalWizardMode(mode);
-    setSignalWizardStep(0);
-    setSignalWizardDraft(
+    const fallbackDraft =
       mode === "email"
         ? createEmptyEmail(nextOrder)
         : mode === "messenger"
           ? createEmptyMessenger(nextOrder)
-          : createEmptyVideo(nextOrder),
+          : createEmptyVideo(nextOrder);
+    const stored = readDraftFromStorage<{ mode: ChannelTab; draft: EmailCase | MessengerCase | VideoCase } | null>(
+      DRAFT_STORAGE_KEYS.signalWizard,
+      null,
     );
+
+    setSignalWizardMode(mode);
+    setSignalWizardStep(0);
+    setSignalWizardDraft(stored?.mode === mode ? stored.draft : fallbackDraft);
     setSignalWizardOpen(true);
   };
 
-  const confirmCaseWizard = () => {
+  const confirmCaseWizard = async () => {
     const nextDraft = deepClone(caseWizardDraft);
     nextDraft.id = nextDraft.id || `CASE-${String((contentQuery.data?.cases?.length || 0) + 1).padStart(2, "0")}`;
     nextDraft.cycles = (nextDraft.cycles || []).map((cycle, index) => ({
@@ -1821,34 +1968,89 @@ export default function AdminPage() {
       })),
     }));
 
-    setSelectedCaseId(null);
-    setCaseDraft(nextDraft);
-    setCaseWizardOpen(false);
+    setSaving(true);
+    setError("");
+    try {
+      const response = await apiRequest("POST", "/api/admin/cases", nextDraft);
+      const payload = await response.json();
+      const savedId = payload.id || nextDraft.id;
+      clearDraftFromStorage(DRAFT_STORAGE_KEYS.caseWizard);
+      await invalidateRuntimeContent();
+      setSelectedCaseId(savedId);
+      setCaseDraft({ ...nextDraft, id: savedId });
+      setCaseWizardOpen(false);
+    } catch (err: any) {
+      setError(err.message || "Не удалось создать кейс. Черновик сохранён в браузере.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const confirmSignalWizard = () => {
+  const confirmSignalWizard = async () => {
+    setSaving(true);
+    setError("");
+
     if (signalWizardMode === "email") {
       const nextDraft = deepClone(signalWizardDraft as EmailCase);
       nextDraft.id = nextDraft.id || `EMAIL-${String((contentQuery.data?.emailCases?.length || 0) + 1).padStart(2, "0")}`;
-      setSelectedEmailId(null);
-      setEmailDraft(nextDraft);
+      try {
+        const response = await apiRequest("POST", "/api/admin/email-cases", nextDraft);
+        const payload = await response.json();
+        const savedId = payload.id || nextDraft.id;
+        clearDraftFromStorage(DRAFT_STORAGE_KEYS.signalWizard);
+        await invalidateRuntimeContent();
+        setSelectedEmailId(savedId);
+        setEmailDraft({ ...nextDraft, id: savedId });
+        setSignalWizardOpen(false);
+      } catch (err: any) {
+        setError(err.message || "Не удалось создать письмо. Черновик сохранён в браузере.");
+      } finally {
+        setSaving(false);
+      }
+      return;
     }
 
     if (signalWizardMode === "messenger") {
       const nextDraft = deepClone(signalWizardDraft as MessengerCase);
       nextDraft.id = nextDraft.id || `MSG-${String((contentQuery.data?.messengerCases?.length || 0) + 1).padStart(2, "0")}`;
-      setSelectedMessengerId(null);
-      setMessengerDraft(nextDraft);
+      try {
+        const response = await apiRequest("POST", "/api/admin/messenger-cases", nextDraft);
+        const payload = await response.json();
+        const savedId = payload.id || nextDraft.id;
+        clearDraftFromStorage(DRAFT_STORAGE_KEYS.signalWizard);
+        await invalidateRuntimeContent();
+        setSelectedMessengerId(savedId);
+        setMessengerDraft({ ...nextDraft, id: savedId });
+        setSignalWizardOpen(false);
+      } catch (err: any) {
+        setError(err.message || "Не удалось создать сообщение. Черновик сохранён в браузере.");
+      } finally {
+        setSaving(false);
+      }
+      return;
     }
 
     if (signalWizardMode === "video") {
       const nextDraft = deepClone(signalWizardDraft as VideoCase);
       nextDraft.id = nextDraft.id || `VIDEO-${String((contentQuery.data?.videoCases?.length || 0) + 1).padStart(2, "0")}`;
-      setSelectedVideoId(null);
-      setVideoDraft(nextDraft);
+      try {
+        const response = await apiRequest("POST", "/api/admin/video-cases", nextDraft);
+        const payload = await response.json();
+        const savedId = payload.id || nextDraft.id;
+        clearDraftFromStorage(DRAFT_STORAGE_KEYS.signalWizard);
+        await invalidateRuntimeContent();
+        setSelectedVideoId(savedId);
+        setVideoDraft({ ...nextDraft, id: savedId });
+        setSignalWizardOpen(false);
+      } catch (err: any) {
+        setError(err.message || "Не удалось создать видеосигнал. Черновик сохранён в браузере.");
+      } finally {
+        setSaving(false);
+      }
+      return;
     }
 
-    setSignalWizardOpen(false);
+    setSaving(false);
   };
 
   const exportResultsExcel = async () => {
@@ -2229,6 +2431,41 @@ export default function AdminPage() {
                   </div>
                 ))}
               </div>
+              {caseDraft && (
+                <div className="mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <div>
+                      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">Циклы кейса</div>
+                      <div className="mt-1 text-[11px] text-[#8aa2c4]">{caseDraft.cycles?.length || 0} событий внутри выбранного кейса</div>
+                    </div>
+                    <span className="rounded-full border border-[#2a3a4e] bg-[#141c2b] px-2 py-1 text-[10px] text-[#cbd8ef]">
+                      Вкладка
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {(caseDraft.cycles || []).map((cycle, index) => (
+                      <button
+                        key={`${cycle.id || "cycle"}-${index}`}
+                        type="button"
+                        onClick={() => setSelectedCaseCycleIndex(index)}
+                        className={`w-full rounded-lg border px-3 py-2 text-left transition ${
+                          selectedCaseCycleIndex === index
+                            ? "border-[#4a9eff] bg-[#4a9eff]/12"
+                            : "border-[#2a3a4e] bg-[#0d1522]/70 hover:border-[#3b5878]"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-semibold text-white">Цикл {index + 1}</span>
+                          <span className="text-[10px] text-[#8aa2c4]">{(cycle.options || []).length} отв.</span>
+                        </div>
+                        <div className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8aa2c4]">
+                          {cycle.situation || cycle.signal?.content || "Пустой цикл"}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="dns-admin-case-note mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">Методическое пояснение</div>
                 <div className="mt-3 space-y-3 text-sm leading-relaxed text-[#cbd8ef]">
@@ -2260,6 +2497,8 @@ export default function AdminPage() {
                     onAddOption={() => addOption(setCaseDraft)}
                     onTogglePreviewAudio={togglePreviewAudio}
                     activePreviewKey={activePreviewKey}
+                    selectedCycleIndex={selectedCaseCycleIndex}
+                    onSelectedCycleIndexChange={setSelectedCaseCycleIndex}
                   />
                 )}
               </div>
@@ -2279,8 +2518,8 @@ export default function AdminPage() {
                       <CompetencyHorizontalImpactChart
                         data={caseDraftBarData}
                         series={[
-                          { key: "aggregate", label: "Профиль", color: "#4a9eff" },
-                          { key: "selected", label: "С весом", color: "#00d4aa" },
+                          { key: "aggregate", label: "Профиль кейса", color: "#4a9eff" },
+                          { key: "selected", label: "Регулируемый вклад", color: "#00d4aa" },
                         ]}
                       />
                     </div>
@@ -3396,7 +3635,7 @@ export default function AdminPage() {
                   <div>
                     <div className="text-sm font-semibold text-white">Влияние выбранного кейса</div>
                     <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
-                      График показывает общий профиль симуляции по всем кейсам и вклад кейса, который вы сейчас настраиваете.
+                      График показывает статичный профиль симуляции по контенту и регулируемый вклад кейса, который вы сейчас настраиваете.
                     </div>
                   </div>
                   {selectedWeightCase && (
@@ -3409,8 +3648,8 @@ export default function AdminPage() {
                   <CompetencyHorizontalImpactChart
                     data={aggregateBarData}
                     series={[
-                      { key: "aggregate", label: "Все кейсы", color: "#4a9eff" },
-                      { key: "selected", label: "Выбранный", color: "#00d4aa" },
+                      { key: "aggregate", label: "Статичный профиль", color: "#4a9eff" },
+                      { key: "selected", label: "Регулируемый вклад", color: "#00d4aa" },
                     ]}
                   />
                 </div>
@@ -3502,6 +3741,30 @@ export default function AdminPage() {
                   ))}
                 </div>
               </div>
+
+              <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4">
+                <div className="text-sm font-semibold text-white mb-3">WIKI: составление кейсов</div>
+                <div className="space-y-3">
+                  {CASE_AUTHORING_WIKI.map((section) => (
+                    <div key={section.title} className="rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
+                      <div className="text-xs font-semibold uppercase tracking-wider text-[#6fa0ff]">{section.title}</div>
+                      <ul className="mt-3 space-y-2 text-xs leading-relaxed text-[#b8c5db]">
+                        {section.items.map((item) => (
+                          <li key={item} className="flex gap-2">
+                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF6B00]" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                  <div className="rounded-xl border border-[#FF6B00]/30 bg-[#FF6B00]/10 p-3 text-xs leading-relaxed text-[#ffd9bf]">
+                    Пример: вариант “провести планёрку и перераспределить людей” может дать Команда / мораль +5,
+                    Выдача / скорость +3 и Финансы / выручка +3. Если решение грубое и без контроля, ставьте отрицательные
+                    значения там, где магазин реально проседает.
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -3572,6 +3835,8 @@ function EntityEditor({
   onAddOption,
   onTogglePreviewAudio,
   activePreviewKey,
+  selectedCycleIndex,
+  onSelectedCycleIndexChange,
 }: {
   title: string;
   entity: any;
@@ -3591,6 +3856,8 @@ function EntityEditor({
   onAddOption: () => void;
   onTogglePreviewAudio: (previewKey: string, url: string | null) => void;
   activePreviewKey: string | null;
+  selectedCycleIndex?: number;
+  onSelectedCycleIndexChange?: (index: number) => void;
 }) {
   const imageAssets = assets.filter((asset) => asset.kind === "image");
   const audioAssets = assets.filter((asset) => asset.kind === "audio");
@@ -3604,6 +3871,13 @@ function EntityEditor({
     value: competency.id,
     label: competency.name,
   }));
+  const [caseEditorSection, setCaseEditorSection] = useState<"details" | "cycles">("details");
+
+  useEffect(() => {
+    if (mode === "case" && typeof selectedCycleIndex === "number") {
+      setCaseEditorSection("cycles");
+    }
+  }, [entity.id, mode, selectedCycleIndex]);
 
   const update = (patch: Record<string, any>) => onChange({ ...entity, ...patch });
   const updateTiming = (patch: Record<string, number | null>) => {
@@ -3701,22 +3975,70 @@ function EntityEditor({
         </div>
       </div>
       {mode === "case" && (
+        <div className="flex flex-wrap gap-2 rounded-xl border border-[#243244] bg-[#101826]/60 p-2">
+          {([
+            ["details", "Карточка кейса"],
+            ["cycles", "Циклы и медиа"],
+          ] as const).map(([section, label]) => (
+            <button
+              key={section}
+              type="button"
+              onClick={() => setCaseEditorSection(section)}
+              className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
+                caseEditorSection === section
+                  ? "border-[#FF6B00] bg-[#FF6B00]/15 text-white"
+                  : "border-[#2a3a4e] bg-[#0d1522]/70 text-[#9aabc6] hover:border-[#3b5878]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+      {mode === "case" && (
         <>
-          <Field label="Название" value={entity.title} onChange={(value) => update({ title: value })} />
-          <FieldArea label="Описание" value={entity.description} onChange={(value) => update({ description: value })} />
-          <div className="grid gap-4 md:grid-cols-3">
-            <SuggestField label="Источник сигнала" value={entity.trigger.source} onChange={(value) => update({ trigger: { ...entity.trigger, source: value } })} options={caseSourceOptions} />
-            <SelectField label="Тип сигнала" value={entity.trigger.type} onChange={(value) => update({ trigger: { ...entity.trigger, type: value } })} options={[...CASE_SIGNAL_TYPE_OPTIONS]} />
-            <MultiSelectField label="Зоны магазина" values={entity.zones_affected || []} onChange={(values) => update({ zones_affected: values })} options={[...STORE_ZONE_OPTIONS]} />
-          </div>
-          <FieldArea label="Текст сигнала" value={entity.trigger.text} onChange={(value) => update({ trigger: { ...entity.trigger, text: value } })} />
-          <MultiSelectField label="Основные компетенции" values={entity.primaryCompetencies || []} onChange={(values) => update({ primaryCompetencies: values })} options={competencyOptions} />
-          <MultiSelectField label="Вторичные компетенции" values={entity.secondaryCompetencies || []} onChange={(values) => update({ secondaryCompetencies: values })} options={competencyOptions} />
-          <StructuredCyclesEditor
-            cycles={entity.cycles || []}
-            competencies={competencies}
-            onChange={(cycles) => update({ cycles })}
-          />
+          {caseEditorSection === "details" && (
+            <>
+              <CaseMediaPanel
+                title="Медиа кейса по умолчанию"
+                helper="Эти файлы используются как fallback, если у конкретного цикла не выбраны свои изображение или озвучка."
+                target={entity}
+                assets={assets}
+                onChange={(patch) => update(patch)}
+                onUploadAsset={onUploadAsset}
+                onTogglePreviewAudio={onTogglePreviewAudio}
+                activePreviewKey={activePreviewKey}
+                previewKey={`case-default:${entity.id}`}
+              />
+              <Field label="Название" value={entity.title} onChange={(value) => update({ title: value })} />
+              <FieldArea label="Описание" value={entity.description} onChange={(value) => update({ description: value })} />
+              <div className="grid gap-4 md:grid-cols-3">
+                <SuggestField label="Источник сигнала" value={entity.trigger.source} onChange={(value) => update({ trigger: { ...entity.trigger, source: value } })} options={caseSourceOptions} />
+                <SelectField label="Тип сигнала" value={entity.trigger.type} onChange={(value) => update({ trigger: { ...entity.trigger, type: value } })} options={[...CASE_SIGNAL_TYPE_OPTIONS]} />
+                <MultiSelectField label="Зоны магазина" values={entity.zones_affected || []} onChange={(values) => update({ zones_affected: values })} options={[...STORE_ZONE_OPTIONS]} />
+              </div>
+              <FieldArea label="Текст сигнала" value={entity.trigger.text} onChange={(value) => update({ trigger: { ...entity.trigger, text: value } })} />
+              <CompetencyRoleSelector
+                primaryValues={entity.primaryCompetencies || []}
+                secondaryValues={entity.secondaryCompetencies || []}
+                onChange={(next) => update(next)}
+                competencies={competencies}
+              />
+            </>
+          )}
+          {caseEditorSection === "cycles" && (
+            <StructuredCyclesEditor
+              cycles={entity.cycles || []}
+              competencies={competencies}
+              assets={assets}
+              onUploadAsset={onUploadAsset}
+              onTogglePreviewAudio={onTogglePreviewAudio}
+              activePreviewKey={activePreviewKey}
+              selectedCycleIndex={selectedCycleIndex}
+              onSelectedCycleIndexChange={onSelectedCycleIndexChange}
+              onChange={(cycles) => update({ cycles })}
+            />
+          )}
         </>
       )}
       {mode === "email" && (
@@ -3797,7 +4119,7 @@ function EntityEditor({
         </>
       )}
 
-      {mode === "video" ? (
+      {mode === "case" ? null : mode === "video" ? (
         <div className="rounded-lg border border-[#2a3a4e] bg-[#141c2b]/40 p-4">
           <div className="text-xs font-semibold text-[#8890a8] mb-3 uppercase tracking-wider">Видеофайл</div>
           <div className="grid gap-3 sm:grid-cols-[1fr,auto]">
@@ -3942,7 +4264,7 @@ function CaseCreationWizard({
   onOpenChange: (open: boolean) => void;
   onStepChange: (step: number) => void;
   onDraftChange: (draft: SimCase) => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
 }) {
   const wizardSteps = [
     {
@@ -4022,17 +4344,11 @@ function CaseCreationWizard({
                   value={draft.description}
                   onChange={(value) => setDraft({ description: value })}
                 />
-                <MultiSelectField
-                  label="Основные компетенции"
-                  values={draft.primaryCompetencies || []}
-                  onChange={(values) => setDraft({ primaryCompetencies: values })}
-                  options={competencies.map((competency) => ({ value: competency.id, label: competency.name }))}
-                />
-                <MultiSelectField
-                  label="Вторичные компетенции"
-                  values={draft.secondaryCompetencies || []}
-                  onChange={(values) => setDraft({ secondaryCompetencies: values })}
-                  options={competencies.map((competency) => ({ value: competency.id, label: competency.name }))}
+                <CompetencyRoleSelector
+                  primaryValues={draft.primaryCompetencies || []}
+                  secondaryValues={draft.secondaryCompetencies || []}
+                  onChange={(next) => setDraft(next)}
+                  competencies={competencies}
                 />
               </div>
             )}
@@ -4146,7 +4462,7 @@ function CaseCreationWizard({
               </Button>
             ) : (
               <Button type="button" className="bg-[#FF6B00] hover:bg-[#e06000]" onClick={onConfirm}>
-                Открыть полный редактор
+                Создать и сохранить
               </Button>
             )}
           </div>
@@ -4189,7 +4505,7 @@ function SignalCreationWizard({
   onOpenChange: (open: boolean) => void;
   onStepChange: (step: number) => void;
   onDraftChange: (draft: EmailCase | MessengerCase | VideoCase) => void;
-  onConfirm: () => void;
+  onConfirm: () => void | Promise<void>;
 }) {
   const competencyOptions = competencies.map((competency) => ({
     value: competency.id,
@@ -4332,7 +4648,7 @@ function SignalCreationWizard({
               </Button>
             ) : (
               <Button type="button" className="bg-[#FF6B00] hover:bg-[#e06000]" onClick={onConfirm}>
-                Открыть полный редактор
+                Создать и сохранить
               </Button>
             )}
           </div>
@@ -4449,11 +4765,16 @@ function StructuredOptionsEditor({
             </div>
             <FieldArea label="Текст ответа" value={option.text} onChange={(value) => updateOption(index, { text: value })} />
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-              <Field label="Очередь" value={option.effects?.queue ?? 0} onChange={(value) => updateEffects(index, "queue", Number(value))} />
-              <Field label="Конверсия" value={option.effects?.conversion ?? 0} onChange={(value) => updateEffects(index, "conversion", Number(value))} />
-              <Field label="Мораль" value={option.effects?.morale ?? 0} onChange={(value) => updateEffects(index, "morale", Number(value))} />
-              <Field label="Выручка" value={option.effects?.revenue_impact ?? 0} onChange={(value) => updateEffects(index, "revenue_impact", Number(value))} />
-              <Field label="Доставка" value={option.effects?.delivery_status ?? 0} onChange={(value) => updateEffects(index, "delivery_status", Number(value))} />
+              {STORE_EFFECT_FIELDS.map((field) => (
+                <div key={field.key}>
+                  <Field
+                    label={field.label}
+                    value={option.effects?.[field.key] ?? 0}
+                    onChange={(value) => updateEffects(index, field.key, Number(value))}
+                  />
+                  <div className="mt-1 text-[10px] leading-relaxed text-[#71839d]">{field.metric}</div>
+                </div>
+              ))}
             </div>
             <div className="rounded-xl border border-[#243244] bg-[#0d1522]/80 p-3">
               <div className="mb-3 flex items-start justify-between gap-3">
@@ -4516,15 +4837,170 @@ function StructuredOptionsEditor({
   );
 }
 
+function CaseMediaPanel({
+  title,
+  helper,
+  target,
+  assets,
+  onChange,
+  onUploadAsset,
+  onTogglePreviewAudio,
+  activePreviewKey,
+  previewKey,
+}: {
+  title: string;
+  helper: string;
+  target: { imageAssetId?: string | null; imageUrl?: string | null; audioAssetId?: string | null; audioUrl?: string | null };
+  assets: any[];
+  onChange: (patch: Record<string, any>) => void;
+  onUploadAsset: (file: File) => Promise<string | null>;
+  onTogglePreviewAudio: (previewKey: string, url: string | null) => void;
+  activePreviewKey: string | null;
+  previewKey: string;
+}) {
+  const imageAssets = assets.filter((asset) => asset.kind === "image");
+  const audioAssets = assets.filter((asset) => asset.kind === "audio");
+  const selectedImage = imageAssets.find((asset) => asset.id === target.imageAssetId);
+  const selectedAudio = audioAssets.find((asset) => asset.id === target.audioAssetId);
+  const audioUrl = selectedAudio?.publicUrl || target.audioUrl || null;
+  const isPreviewActive = activePreviewKey === previewKey;
+
+  return (
+    <div className="rounded-2xl border border-[#4a9eff]/25 bg-[#122031]/80 p-4 shadow-[0_18px_45px_rgba(74,158,255,0.08)]">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">Медиа</div>
+          <div className="mt-1 text-base font-bold text-white">{title}</div>
+          <div className="mt-1 max-w-2xl text-xs leading-relaxed text-[#b8c7df]">{helper}</div>
+        </div>
+        {(target.imageAssetId || target.audioAssetId) && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="border-[#2a3a4e] bg-transparent text-[#cbd8ef]"
+            onClick={() => onChange({ imageAssetId: null, imageUrl: null, audioAssetId: null, audioUrl: null })}
+          >
+            Очистить медиа
+          </Button>
+        )}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#6fa0ff]">Изображение</div>
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr),auto]">
+            <select
+              value={target.imageAssetId || ""}
+              onChange={(e) => onChange({ imageAssetId: e.target.value || null })}
+              className="min-w-0 rounded-md border border-[#2a3a4e] bg-[#141c2b] px-3 py-2 text-white"
+            >
+              <option value="">Без изображения</option>
+              {imageAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.name}</option>)}
+            </select>
+            <Input
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              className="bg-[#141c2b] border-[#2a3a4e] text-white"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const assetId = await onUploadAsset(file);
+                if (assetId) onChange({ imageAssetId: assetId });
+              }}
+            />
+          </div>
+          {(selectedImage?.publicUrl || target.imageUrl) && (
+            <div className="mt-3 overflow-hidden rounded-lg border border-[#2a3a4e]">
+              <img
+                src={selectedImage?.publicUrl || target.imageUrl || ""}
+                alt={selectedImage?.name || "Изображение"}
+                className="h-28 w-full object-cover"
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#6fa0ff]">Озвучка</div>
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr),auto]">
+            <select
+              value={target.audioAssetId || ""}
+              onChange={(e) => onChange({ audioAssetId: e.target.value || null })}
+              className="min-w-0 rounded-md border border-[#2a3a4e] bg-[#141c2b] px-3 py-2 text-white"
+            >
+              <option value="">Без отдельной озвучки</option>
+              {audioAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.name}</option>)}
+            </select>
+            <Input
+              type="file"
+              accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/ogg,audio/webm,audio/mp4,audio/x-m4a,audio/aac"
+              className="bg-[#141c2b] border-[#2a3a4e] text-white"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const assetId = await onUploadAsset(file);
+                if (assetId) onChange({ audioAssetId: assetId });
+              }}
+            />
+          </div>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button
+              type="button"
+              size="sm"
+              className="bg-[#00d4aa] text-[#0d1117] hover:bg-[#00c39c]"
+              onClick={() => onTogglePreviewAudio(previewKey, audioUrl)}
+              disabled={!audioUrl}
+            >
+              <Play className="mr-2 h-4 w-4" />
+              {isPreviewActive ? "Стоп" : "Плей"}
+            </Button>
+            <span className="min-w-0 truncate text-[11px] text-[#8aa2c4]">
+              {selectedAudio?.name || (audioUrl ? "Связанный аудиофайл" : "Аудио не выбрано")}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StructuredCyclesEditor({
   cycles,
   onChange,
   competencies,
+  assets,
+  onUploadAsset,
+  onTogglePreviewAudio,
+  activePreviewKey,
+  selectedCycleIndex: controlledSelectedCycleIndex,
+  onSelectedCycleIndexChange,
 }: {
   cycles: any[];
   onChange: (cycles: any[]) => void;
   competencies: CompetencyDefinition[];
+  assets: any[];
+  onUploadAsset: (file: File) => Promise<string | null>;
+  onTogglePreviewAudio: (previewKey: string, url: string | null) => void;
+  activePreviewKey: string | null;
+  selectedCycleIndex?: number;
+  onSelectedCycleIndexChange?: (index: number) => void;
 }) {
+  const [internalSelectedCycleIndex, setInternalSelectedCycleIndex] = useState(0);
+  const normalizedCycles = cycles || [];
+  const selectedCycleIndex = controlledSelectedCycleIndex ?? internalSelectedCycleIndex;
+  const setSelectedCycleIndex = (index: number) => {
+    setInternalSelectedCycleIndex(index);
+    onSelectedCycleIndexChange?.(index);
+  };
+  const selectedCycle = normalizedCycles[Math.min(selectedCycleIndex, Math.max(0, normalizedCycles.length - 1))] || null;
+
+  useEffect(() => {
+    if (selectedCycleIndex > Math.max(0, normalizedCycles.length - 1)) {
+      setSelectedCycleIndex(Math.max(0, normalizedCycles.length - 1));
+    }
+  }, [normalizedCycles.length, selectedCycleIndex]);
+
   const updateCycle = (index: number, patch: Record<string, any>) => {
     onChange(cycles.map((cycle, cycleIndex) => cycleIndex === index ? { ...cycle, ...patch } : cycle));
   };
@@ -4538,12 +5014,21 @@ function StructuredCyclesEditor({
         situation: "",
         signal: { type: "message", content: "" },
         options: [createEmptyStructuredOption(1)],
+        imageAssetId: null,
+        imageUrl: null,
+        audioAssetId: null,
+        audioUrl: null,
       },
     ]);
+    setSelectedCycleIndex(cycles?.length || 0);
   };
 
   const removeCycle = (index: number) => {
+    if ((cycles || []).length <= 1) {
+      return;
+    }
     onChange(cycles.filter((_, cycleIndex) => cycleIndex !== index).map((cycle, cycleIndex) => ({ ...cycle, cycle: cycleIndex + 1 })));
+    setSelectedCycleIndex(Math.max(0, index - 1));
   };
 
   return (
@@ -4555,28 +5040,83 @@ function StructuredCyclesEditor({
         </div>
         <Button type="button" size="sm" onClick={addCycle}>Добавить цикл</Button>
       </div>
-      <div className="space-y-4">
-        {(cycles || []).map((cycle, index) => (
-          <div key={`${cycle.id || "cycle"}-${index}`} className="rounded-xl border border-[#243244] bg-[#101826]/60 p-4">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="text-sm font-semibold text-white">Цикл {index + 1}</div>
-              <Button type="button" size="sm" variant="outline" className="border-[#ff4444]/30 bg-transparent text-[#ff9999]" onClick={() => removeCycle(index)}>
+
+      <div className="grid gap-4 xl:grid-cols-[240px,minmax(0,1fr)]">
+        <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
+          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#8ec5ff]">Циклы выбранного кейса</div>
+          <div className="space-y-2">
+            {normalizedCycles.map((cycle, index) => (
+              <button
+                key={`${cycle.id || "cycle"}-${index}`}
+                type="button"
+                onClick={() => setSelectedCycleIndex(index)}
+                className={`w-full rounded-lg border px-3 py-2 text-left transition ${
+                  index === selectedCycleIndex
+                    ? "border-[#FF6B00] bg-[#FF6B00]/12"
+                    : "border-[#2a3a4e] bg-[#0d1522]/75 hover:border-[#3b5878]"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold text-white">Цикл {index + 1}</span>
+                  <span className="rounded-full border border-[#2a3a4e] bg-[#101826] px-2 py-0.5 text-[10px] text-[#8aa2c4]">
+                    {(cycle.options || []).length} отв.
+                  </span>
+                </div>
+                <div className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8aa2c4]">
+                  {cycle.situation || cycle.signal?.content || "Пустой цикл"}
+                </div>
+              </button>
+            ))}
+          </div>
+          <Button type="button" size="sm" className="mt-3 w-full" onClick={addCycle}>
+            Добавить цикл
+          </Button>
+        </div>
+
+        {selectedCycle && (
+          <div className="rounded-xl border border-[#243244] bg-[#101826]/60 p-4">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold text-white">Цикл {selectedCycleIndex + 1}</div>
+                <div className="mt-1 text-[11px] text-[#8890a8]">Ситуация, сигнал, медиа и варианты ответа для текущего цикла.</div>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="border-[#ff4444]/30 bg-transparent text-[#ff9999]"
+                onClick={() => removeCycle(selectedCycleIndex)}
+                disabled={normalizedCycles.length <= 1}
+              >
                 Удалить цикл
               </Button>
             </div>
-            <FieldArea label="Ситуация" value={cycle.situation} onChange={(value) => updateCycle(index, { situation: value })} />
+
+            <CaseMediaPanel
+              title="Медиа выбранного цикла"
+              helper="Если здесь выбрать файлы, в симуляции для этого цикла они заменят медиа кейса по умолчанию."
+              target={selectedCycle}
+              assets={assets}
+              onChange={(patch) => updateCycle(selectedCycleIndex, patch)}
+              onUploadAsset={onUploadAsset}
+              onTogglePreviewAudio={onTogglePreviewAudio}
+              activePreviewKey={activePreviewKey}
+              previewKey={`case-cycle:${selectedCycle.id || selectedCycleIndex}`}
+            />
+
+            <FieldArea label="Ситуация" value={selectedCycle.situation} onChange={(value) => updateCycle(selectedCycleIndex, { situation: value })} />
             <div className="grid gap-4 md:grid-cols-2">
-              <SelectField label="Тип сигнала" value={cycle.signal?.type} onChange={(value) => updateCycle(index, { signal: { ...(cycle.signal || {}), type: value } })} options={[...CASE_SIGNAL_TYPE_OPTIONS]} />
-              <FieldArea label="Текст сигнала" value={cycle.signal?.content} onChange={(value) => updateCycle(index, { signal: { ...(cycle.signal || {}), content: value } })} />
+              <SelectField label="Тип сигнала" value={selectedCycle.signal?.type} onChange={(value) => updateCycle(selectedCycleIndex, { signal: { ...(selectedCycle.signal || {}), type: value } })} options={[...CASE_SIGNAL_TYPE_OPTIONS]} />
+              <FieldArea label="Текст сигнала" value={selectedCycle.signal?.content} onChange={(value) => updateCycle(selectedCycleIndex, { signal: { ...(selectedCycle.signal || {}), content: value } })} />
             </div>
             <StructuredOptionsEditor
               title="Варианты ответа для цикла"
-              options={cycle.options || []}
+              options={selectedCycle.options || []}
               competencies={competencies}
-              onChange={(options) => updateCycle(index, { options })}
+              onChange={(options) => updateCycle(selectedCycleIndex, { options })}
             />
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
@@ -4689,6 +5229,100 @@ function MultiSelectField({
             </button>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+function CompetencyRoleSelector({
+  label = "Компетенции кейса",
+  primaryValues,
+  secondaryValues,
+  onChange,
+  competencies,
+}: {
+  label?: string;
+  primaryValues: string[];
+  secondaryValues: string[];
+  onChange: (next: { primaryCompetencies: string[]; secondaryCompetencies: string[] }) => void;
+  competencies: CompetencyDefinition[];
+}) {
+  const primarySet = new Set(primaryValues || []);
+  const secondarySet = new Set(secondaryValues || []);
+
+  const setRole = (competencyId: string, role: "none" | "primary" | "secondary") => {
+    const nextPrimary = (primaryValues || []).filter((value) => value !== competencyId);
+    const nextSecondary = (secondaryValues || []).filter((value) => value !== competencyId);
+
+    if (role === "primary") {
+      nextPrimary.push(competencyId);
+    }
+    if (role === "secondary") {
+      nextSecondary.push(competencyId);
+    }
+
+    onChange({
+      primaryCompetencies: nextPrimary,
+      secondaryCompetencies: nextSecondary,
+    });
+  };
+
+  return (
+    <div>
+      <Label className="mb-1.5 block text-xs text-[#8890a8]">{label}</Label>
+      <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/45 p-3">
+        <div className="mb-3 text-[11px] leading-relaxed text-[#9fb0ca]">
+          Один список вместо двух блоков: первичная компетенция задаёт главный фокус кейса, вторичная добавляет дополнительный вес в оценке.
+        </div>
+        <div className="grid gap-2 lg:grid-cols-2">
+          {competencies.map((competency) => {
+            const role = primarySet.has(competency.id)
+              ? "primary"
+              : secondarySet.has(competency.id)
+                ? "secondary"
+                : "none";
+
+            return (
+              <div key={competency.id} className="rounded-lg border border-[#243244] bg-[#101826]/70 p-2">
+                <div className="mb-2 flex min-w-0 items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="truncate text-xs font-semibold text-white">{competency.name}</div>
+                    <div className="text-[10px] uppercase tracking-[0.14em] text-[#70829d]">{competency.category}</div>
+                  </div>
+                  <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold ${
+                    role === "primary"
+                      ? "border-[#4a9eff]/50 bg-[#4a9eff]/15 text-[#b7d9ff]"
+                      : role === "secondary"
+                        ? "border-[#00d4aa]/45 bg-[#00d4aa]/12 text-[#8ff5de]"
+                        : "border-[#2a3a4e] bg-[#0d1522] text-[#7f91ad]"
+                  }`}>
+                    {role === "primary" ? "Первичная" : role === "secondary" ? "Вторичная" : "Не выбрана"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  {([
+                    ["none", "Нет"],
+                    ["primary", "Первичная"],
+                    ["secondary", "Вторичная"],
+                  ] as const).map(([targetRole, title]) => (
+                    <button
+                      key={targetRole}
+                      type="button"
+                      onClick={() => setRole(competency.id, targetRole)}
+                      className={`rounded-md border px-2 py-1.5 text-[11px] transition ${
+                        role === targetRole
+                          ? "border-[#FF6B00] bg-[#FF6B00]/15 text-white"
+                          : "border-[#2a3a4e] bg-[#0d1522]/70 text-[#91a2bd] hover:border-[#3b5878]"
+                      }`}
+                    >
+                      {title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

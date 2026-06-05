@@ -41,6 +41,10 @@ export interface CaseCycle {
   situation: string;
   signal: CycleSignal;
   options: CaseOption[];
+  imageAssetId?: string | null;
+  imageUrl?: string | null;
+  audioAssetId?: string | null;
+  audioUrl?: string | null;
 }
 
 export interface CaseTrigger {

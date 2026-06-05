@@ -87,4 +87,6 @@ export function runMigrations(sqlite: Database.Database): void {
   ensureColumn(sqlite, "simulation_settings", "case_weights_json", "TEXT NOT NULL DEFAULT '{}'");
   ensureColumn(sqlite, "simulation_settings", "time_influence_enabled", "INTEGER NOT NULL DEFAULT 0");
   ensureColumn(sqlite, "case_timings", "decision_deadline_seconds", "INTEGER");
+  ensureColumn(sqlite, "case_cycles", "image_asset_id", "TEXT");
+  ensureColumn(sqlite, "case_cycles", "audio_asset_id", "TEXT");
 }

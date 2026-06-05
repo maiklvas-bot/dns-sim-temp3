@@ -30,7 +30,10 @@ export function requireStaff(req: Request, res: Response, next: NextFunction) {
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.session.staff || req.session.staff.role !== "admin") {
-    return res.status(403).json({ message: "Forbidden", code: "ADMIN_REQUIRED" });
+    return res.status(403).json({
+      message: "Недостаточно прав для этого действия. Войдите под учётной записью администратора.",
+      code: "ADMIN_REQUIRED",
+    });
   }
   next();
 }

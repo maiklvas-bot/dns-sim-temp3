@@ -66,7 +66,11 @@ export default function SignalFeed() {
     return caseData?.zones_affected || [];
   };
 
-  const getCaseImage = (caseId: string) => {
+  const getCaseImage = (caseId: string, signalImageUrl?: string | null) => {
+    if (signalImageUrl) {
+      return signalImageUrl;
+    }
+
     const caseData = CASES_DATA.find(c => c.id === caseId);
     return caseData?.imageUrl || null;
   };
@@ -127,7 +131,7 @@ export default function SignalFeed() {
               <div className="mb-2 flex-shrink-0 space-y-1">
                 {pendingSignals.map(signal => {
                   const isSelected = signal.id === currentSignalId;
-                  const img = getSignalImage(signal.type, getCaseZones(signal.caseId), signal.title, undefined, getCaseImage(signal.caseId));
+                  const img = getSignalImage(signal.type, getCaseZones(signal.caseId), signal.title, undefined, getCaseImage(signal.caseId, signal.imageUrl));
                   return (
                     <button
                       key={signal.id}
@@ -172,7 +176,7 @@ export default function SignalFeed() {
                 <div className="grid h-full min-h-0 md:grid-cols-[168px_minmax(0,1fr)]">
                   <div className="relative min-h-[150px] border-r border-[#233347] bg-[#101826]">
                     <img
-                      src={getSignalImage(currentSignal.type, getCaseZones(currentSignal.caseId), currentSignal.title, undefined, getCaseImage(currentSignal.caseId))}
+                      src={getSignalImage(currentSignal.type, getCaseZones(currentSignal.caseId), currentSignal.title, undefined, getCaseImage(currentSignal.caseId, currentSignal.imageUrl))}
                       alt={currentSignal.title}
                       loading="eager"
                       decoding="async"

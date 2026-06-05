@@ -268,10 +268,16 @@ export class ContentStorage {
           .sort((a, b) => a.cycleNumber - b.cycleNumber)
           .map((cycle) => {
             const signal = caseSignalsRows.find((item) => item.signalRole === "cycle" && item.cycleId === cycle.id);
+            const cycleImage = cycle.imageAssetId ? assetMap.get(cycle.imageAssetId) || null : null;
+            const cycleAudio = cycle.audioAssetId ? assetMap.get(cycle.audioAssetId) || null : null;
             return {
               id: cycle.id,
               cycle: cycle.cycleNumber,
               situation: cycle.situation,
+              imageAssetId: cycle.imageAssetId || null,
+              imageUrl: cycleImage?.publicUrl || null,
+              audioAssetId: cycle.audioAssetId || null,
+              audioUrl: cycleAudio?.publicUrl || null,
               signal: {
                 type: (signal?.signalType || "message") as SimCase["cycles"][number]["signal"]["type"],
                 content: signal?.content || "",
@@ -571,6 +577,8 @@ export class ContentStorage {
           caseId,
           cycleNumber: cycle.cycle,
           situation: cycle.situation,
+          imageAssetId: cycle.imageAssetId || null,
+          audioAssetId: cycle.audioAssetId || null,
           sortOrder: cycle.cycle,
         }).run();
 

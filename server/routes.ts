@@ -136,11 +136,20 @@ function buildRecoveredLiveSnapshot(sessionDetails: NonNullable<ReturnType<typeo
       .filter((answer) => answer.sourceType === "main_case")
       .map((answer) => `${answer.contentId}:${answer.cycle}`),
   );
-  const caseQueue = selectedCaseIds.flatMap((caseId, caseIndex) => (
-    [1, 2, 3]
-      .filter((cycle) => !answeredMainCycles.has(`${caseId}:${cycle}`))
-      .map((cycle) => caseIndex * 3 + (cycle - 1))
-  ));
+  const content = contentStorage.getPublicContent(true);
+  const selectedCases = selectedCaseIds
+    .map((caseId) => content.cases.find((caseItem) => caseItem.id === caseId))
+    .filter((caseItem): caseItem is NonNullable<typeof caseItem> => Boolean(caseItem));
+  let queuePointer = 0;
+  const caseQueue = selectedCases.flatMap((caseItem) => {
+    const caseStartPointer = queuePointer;
+    const cycles = caseItem.cycles.length > 0 ? caseItem.cycles : [{ cycle: 1 }];
+    queuePointer += Math.max(1, cycles.length);
+
+    return cycles
+      .filter((cycle) => !answeredMainCycles.has(`${caseItem.id}:${cycle.cycle}`))
+      .map((cycle) => caseStartPointer + Math.max(0, cycle.cycle - 1));
+  });
   const competencyTotals: Record<string, { total: number; count: number }> = {};
   const decisions = answers.map((answer) => {
     const details = (answer.details || {}) as Record<string, any>;

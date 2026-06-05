@@ -280,6 +280,8 @@ const caseCycleSchema = z.object({
   id: emptyOrIdStringSchema.optional().default(""),
   cycle: boundedIntSchema(1, 100),
   situation: safeLooseTextSchema(10_000),
+  imageAssetId: nullableIdStringSchema.optional().default(null),
+  audioAssetId: nullableIdStringSchema.optional().default(null),
   signal: z.object({
     type: signalTypeSchema,
     content: safeLooseTextSchema(5_000),
