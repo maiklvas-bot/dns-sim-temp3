@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import Database from "better-sqlite3";
 import type { NextFunction, Request, Response } from "express";
@@ -13,8 +14,12 @@ import {
   adminCaseReorderSchema,
   adminSettingsSchema,
   editableSimCaseSchema,
+  excelExportSchema,
+  listResultsQuerySchema,
   liveRecoverSessionParamSchema,
+  pdfExportSchema,
   safeParse,
+  sessionIdParamSchema,
 } from "../server/middleware/validation";
 import { createMediaNotFoundHandler } from "../server/media-static";
 
@@ -139,6 +144,142 @@ function runMediaAssetFileChecks() {
 }
 
 runMediaAssetFileChecks();
+
+function runAdminRouteContractChecks() {
+  const routesSource = readFileSync("server/routes.ts", "utf8");
+
+  assertCondition(routesSource.includes('app.get("/api/health"'), "Admin acceptance requires the health endpoint");
+  assertCondition(routesSource.includes('app.get("/api/admin/staff"'), "Admin acceptance requires staff list endpoint");
+  assertCondition(
+    routesSource.includes('app.delete("/api/admin/results/:id"'),
+    "Admin acceptance requires result deletion endpoint",
+  );
+  assertCondition(routesSource.includes('app.post("/api/export-pdf"'), "Admin acceptance requires PDF export endpoint");
+  assertCondition(routesSource.includes('app.post("/api/export-xlsx"'), "Admin acceptance requires XLSX export endpoint");
+  assertCondition(
+    !/api\/export-json|exportJson|export-json/i.test(routesSource),
+    "JSON export endpoint must not be exposed",
+  );
+}
+
+async function runAdminStorageAcceptanceChecks() {
+  const previousEnv = {
+    SQLITE_PATH: process.env.SQLITE_PATH,
+    ADMIN_USERNAME: process.env.ADMIN_USERNAME,
+    ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
+    ADMIN_DISPLAY_NAME: process.env.ADMIN_DISPLAY_NAME,
+    EVALUATOR_USERNAME: process.env.EVALUATOR_USERNAME,
+    EVALUATOR_PASSWORD: process.env.EVALUATOR_PASSWORD,
+    EVALUATOR_DISPLAY_NAME: process.env.EVALUATOR_DISPLAY_NAME,
+  };
+  const tempDir = mkdtempSync(path.join(os.tmpdir(), "dns-task023-"));
+
+  process.env.SQLITE_PATH = path.join(tempDir, "acceptance.db");
+  process.env.ADMIN_USERNAME = "task023-admin";
+  process.env.ADMIN_PASSWORD = "Task023Admin!";
+  process.env.ADMIN_DISPLAY_NAME = "Task 023 Admin";
+  process.env.EVALUATOR_USERNAME = "task023-evaluator";
+  process.env.EVALUATOR_PASSWORD = "Task023Evaluator!";
+  process.env.EVALUATOR_DISPLAY_NAME = "Task 023 Evaluator";
+
+  const { sqlite } = await import("../server/db");
+  try {
+    const { runMigrations } = await import("../server/migrations");
+    runMigrations(sqlite);
+
+    const { staffStorage } = await import("../server/staff-storage");
+    const { sessionStorage } = await import("../server/session-storage");
+
+    await staffStorage.ensureDefaults();
+    const staff = staffStorage.listStaff();
+    assertCondition(staff.admins.length === 1, "Admin staff list must include the seeded admin account");
+    assertCondition(staff.evaluators.length === 1, "Admin staff list must include the seeded evaluator account");
+    assertCondition(staff.admins[0]?.role === "admin", "Admin staff list must preserve admin role");
+    assertCondition(staff.evaluators[0]?.role === "evaluator", "Admin staff list must preserve evaluator role");
+    assertCondition(!("passwordHash" in (staff.admins[0] || {})), "Admin staff list must not expose password hashes");
+    assertCondition(!("passwordHash" in (staff.evaluators[0] || {})), "Evaluator staff list must not expose password hashes");
+    assertCondition(
+      Boolean(await staffStorage.authenticate({ role: "admin", username: "task023-admin", password: "Task023Admin!" })),
+      "Seeded admin account must authenticate in the acceptance database",
+    );
+    assertCondition(
+      Boolean(await staffStorage.authenticate({ role: "evaluator", username: "task023-evaluator", password: "Task023Evaluator!" })),
+      "Seeded evaluator account must authenticate in the acceptance database",
+    );
+
+    const now = new Date().toISOString();
+    const session = sessionStorage.createSimulationSession({
+      participantId: null,
+      participantName: "Task 023 Participant",
+      evaluatorAccountId: null,
+      evaluatorName: "Task 023 Admin",
+      difficulty: "medium",
+      selectedCaseIdsJson: JSON.stringify(["CASE-01"]),
+      enabledChannelsJson: JSON.stringify({ audio: true, email: true, messenger: true, video: false }),
+      manualSelection: false,
+      timeLimit: 60,
+      isTestMode: true,
+      speedMultiplier: 1,
+      startedAt: now,
+      completedAt: now,
+      technicalStatus: "completed",
+    });
+
+    sessionStorage.addSessionAnswer({
+      sessionId: session.id,
+      sourceType: "main_case",
+      contentId: "CASE-01",
+      caseTitle: "Task 023 Case",
+      cycle: 1,
+      optionLevel: 3,
+      optionText: "Acceptance answer",
+      score: 4,
+      rawEffectsJson: JSON.stringify({ queue: -1 }),
+      competencyScoresJson: JSON.stringify({ planning: 4 }),
+      detailsJson: JSON.stringify({ baseScore: 4 }),
+      timestamp: now,
+      simTime: "09:10",
+    });
+    sessionStorage.addSessionMetrics({
+      sessionId: session.id,
+      timestamp: now,
+      queue: 10,
+      conversion: 50,
+      morale: 70,
+      revenueImpact: 100,
+      deliveryStatus: 5,
+    });
+    sessionStorage.upsertSessionResult({
+      sessionId: session.id,
+      totalScore: 42,
+      averageScore: 4,
+      competencyAveragesJson: JSON.stringify({ planning: 4 }),
+      finalMetricsJson: JSON.stringify({ queue: 10 }),
+      timersJson: JSON.stringify([]),
+      pausesJson: JSON.stringify([]),
+      exportedAt: now,
+    });
+
+    assertCondition(sessionStorage.getSessionDetails(session.id) !== null, "Acceptance session must be readable before deletion");
+    sessionStorage.deleteSessionResult(session.id);
+    assertCondition(sessionStorage.getSimulationSession(session.id) === undefined, "Result deletion must remove the session row");
+    assertCondition(sessionStorage.getSessionAnswers(session.id).length === 0, "Result deletion must remove session answers");
+    assertCondition(sessionStorage.getSessionMetrics(session.id).length === 0, "Result deletion must remove session metrics");
+    assertCondition(sessionStorage.getSessionResult(session.id) === undefined, "Result deletion must remove session result");
+  } finally {
+    sqlite.close();
+    for (const [key, value] of Object.entries(previousEnv)) {
+      if (value === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = value;
+      }
+    }
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
+runAdminRouteContractChecks();
 
 type MockCsrfRequest = Pick<Request, "method" | "path" | "headers"> & {
   session?: Partial<Request["session"]>;
@@ -421,5 +562,55 @@ assertSchemaRejects(
   { sessionId: "not-a-number" },
   "Live session recovery params must reject non-numeric session ids",
 );
+
+assertSchemaAccepts(
+  sessionIdParamSchema,
+  { id: "123" },
+  "Admin result deletion params must accept numeric session ids",
+);
+assertSchemaRejects(
+  sessionIdParamSchema,
+  { id: "1 OR 1=1" },
+  "Admin result deletion params must reject SQL-like session ids",
+);
+assertSchemaRejects(
+  sessionIdParamSchema,
+  { id: "-1" },
+  "Admin result deletion params must reject negative session ids",
+);
+
+assertSchemaAccepts(
+  listResultsQuerySchema,
+  { status: "completed", participantName: "Task 023 Participant" },
+  "Admin results query schema must accept bounded filters",
+);
+assertSchemaRejects(
+  listResultsQuerySchema,
+  { status: "all" },
+  "Admin results query schema must reject unsupported status filters",
+);
+
+assertSchemaAccepts(
+  pdfExportSchema,
+  {},
+  "PDF export schema must accept minimal report payloads with defaults",
+);
+assertSchemaRejects(
+  pdfExportSchema,
+  { participantName: "Task 023 Participant", format: "json" },
+  "PDF export schema must reject unknown JSON-export style fields",
+);
+assertSchemaAccepts(
+  excelExportSchema,
+  { sheets: [{ name: "Summary", rows: [{ score: 4 }] }] },
+  "XLSX export schema must accept sheet payloads",
+);
+assertSchemaRejects(
+  excelExportSchema,
+  { sheets: [] },
+  "XLSX export schema must reject empty workbook payloads",
+);
+
+await runAdminStorageAcceptanceChecks();
 
 console.log("CI smoke checks passed");
