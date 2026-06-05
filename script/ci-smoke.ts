@@ -268,6 +268,7 @@ async function runAdminStorageAcceptanceChecks() {
     assertCondition(sessionStorage.getSessionResult(session.id) === undefined, "Result deletion must remove session result");
 
     await runLiveSessionRecoveryAcceptanceChecks(sqlite, tempDir);
+    await runConcurrentLiveSessionAcceptanceChecks(sqlite, tempDir);
   } finally {
     sqlite.close();
     for (const [key, value] of Object.entries(previousEnv)) {
@@ -400,6 +401,130 @@ async function runLiveSessionRecoveryAcceptanceChecks(sqlite: Database.Database,
   assertCondition(
     afterCompletedRestart.getSessionById(config.liveSessionId) === null,
     "Restarted service must not restore completed live sessions",
+  );
+}
+
+async function runConcurrentLiveSessionAcceptanceChecks(sqlite: Database.Database, tempDir: string) {
+  const { LiveSessionService } = await import("../server/live-session-service");
+  const storePath = path.join(tempDir, "concurrent-live-sessions.json");
+  const service = new LiveSessionService({ sqlite, storePath });
+  const sessionCount = 10;
+  const configs = Array.from({ length: sessionCount }, (_, index) =>
+    service.createSession({
+      assessorName: "Task 027 Assessor",
+      participantName: `Task 027 Participant ${index + 1}`,
+      participantRole: "Deputy store manager",
+      difficulty: "medium",
+      selectedCaseIds: [`CASE-${String(index + 1).padStart(2, "0")}`],
+      selectedChannelItemIds: { email: [], messenger: [], video: [] },
+      manualSelection: true,
+      repeatCases: false,
+      timeLimit: 60,
+      isTestMode: true,
+      speedMultiplier: 1,
+      enabledChannels: { audio: true, email: true, messenger: true, video: false },
+      initialMetrics: {
+        customersInStore: 10 + index,
+        avgCheck: 0,
+        conversion: 40 + index,
+        nps: 3,
+        pickupSpeed: 15,
+        warehouseLoad: 20,
+        teamMorale: 7,
+        dailyRevenue: 10000,
+      },
+    }),
+  );
+
+  assertCondition(service.listSessions().length === sessionCount, "Ten live sessions must coexist in one service");
+  assertCondition(
+    new Set(configs.map((config) => config.liveSessionId)).size === sessionCount,
+    "Concurrent live sessions must have unique ids",
+  );
+  assertCondition(
+    new Set(configs.map((config) => config.accessCode)).size === sessionCount,
+    "Concurrent live sessions must have unique access codes",
+  );
+
+  configs.forEach((config, index) => {
+    const synced = service.syncStudentState(config.liveSessionId, config.accessCode, {
+      status: "running",
+      snapshot: {
+        liveSessionId: config.liveSessionId,
+        updatedAt: Date.now(),
+        state: {
+          sessionId: 27000 + index,
+          isRunning: true,
+          isPaused: false,
+          isCompleted: false,
+          elapsedSeconds: index * 30,
+          timeRemaining: 3600 - index * 30,
+          decisions: [{ score: (index % 5) + 1, caseTitle: `Task 027 Case ${index + 1}` }],
+        },
+      },
+    });
+
+    assertCondition(synced?.status === "running", `Concurrent session ${index + 1} must start independently`);
+    assertCondition(
+      (synced?.snapshot?.state as any)?.sessionId === 27000 + index,
+      `Concurrent session ${index + 1} must preserve its own snapshot`,
+    );
+  });
+
+  const firstConfig = configs[0];
+  const secondConfig = configs[1];
+  assertCondition(
+    service.syncStudentState(firstConfig.liveSessionId, secondConfig.accessCode, { status: "completed" }) === null,
+    "A participant access code must not update another concurrent session",
+  );
+  assertCondition(
+    service.getSessionById(firstConfig.liveSessionId)?.status === "running",
+    "Rejected cross-session sync must leave the target session unchanged",
+  );
+
+  service.flushPersistence();
+  const persistedRows = sqlite.prepare("SELECT payload FROM app_live_sessions").all() as Array<{ payload: string }>;
+  assertCondition(persistedRows.length === sessionCount, "All concurrent sessions must persist to SQLite");
+  const persistedFile = JSON.parse(readFileSync(storePath, "utf8")) as { sessions?: unknown[] };
+  assertCondition(
+    persistedFile.sessions?.length === sessionCount,
+    "All concurrent sessions must persist to the JSON fallback store",
+  );
+
+  const restarted = new LiveSessionService({ sqlite, storePath });
+  restarted.restorePersistedSessions();
+  assertCondition(
+    restarted.listSessions().length === sessionCount,
+    "Restarted service must restore all concurrent sessions",
+  );
+
+  configs.forEach((config, index) => {
+    const restored = restarted.getSessionById(config.liveSessionId);
+    assertCondition(restored?.config.accessCode === config.accessCode, `Session ${index + 1} access code must survive restart`);
+    assertCondition(
+      (restored?.snapshot?.state as any)?.sessionId === 27000 + index,
+      `Session ${index + 1} snapshot must remain isolated after restart`,
+    );
+  });
+
+  assertCondition(restarted.closeSession(firstConfig.liveSessionId), "One concurrent session must close successfully");
+  assertCondition(restarted.getSessionById(firstConfig.liveSessionId) === null, "Closed session must be removed");
+  assertCondition(
+    restarted.listSessions().length === sessionCount - 1,
+    "Closing one concurrent session must not remove the other sessions",
+  );
+  assertCondition(
+    restarted.getSessionById(secondConfig.liveSessionId)?.status === "running",
+    "Closing one concurrent session must not change another session",
+  );
+
+  configs.slice(1).forEach((config) => {
+    restarted.closeSession(config.liveSessionId);
+  });
+  restarted.flushPersistence();
+  assertCondition(
+    (sqlite.prepare("SELECT COUNT(*) AS count FROM app_live_sessions").get() as { count: number }).count === 0,
+    "Concurrent session acceptance cleanup must leave no active persisted sessions",
   );
 }
 
