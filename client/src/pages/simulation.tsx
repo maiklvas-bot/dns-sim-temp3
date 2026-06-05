@@ -275,7 +275,7 @@ export default function SimulationPage() {
           </div>
 
           {/* Right header group */}
-          <div className="flex items-center gap-1.5 md:gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2 md:flex-nowrap">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
             {/* Channel counts — desktop only */}
             <div className="hidden items-center gap-2 rounded-xl border border-[#2a3a4e] bg-[#141c2b]/70 px-3 py-2 lg:flex">
@@ -311,7 +311,7 @@ export default function SimulationPage() {
             {/* Pause button — компактный на мобильных */}
             <button
               onClick={() => dispatch({ type: "TOGGLE_PAUSE" })}
-              className={`flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border transition-all text-xs ${
+              className={`flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs transition-all md:min-h-0 md:px-3 md:py-1.5 ${
                 state.isPaused
                   ? "border-[#00d4aa]/40 bg-[#00d4aa]/10 text-[#00d4aa]"
                   : "border-[#2a3a4e] bg-[#1e2a3a]/60 text-[#8890a8] hover:text-white hover:border-[#3a4a5e]"
@@ -319,8 +319,8 @@ export default function SimulationPage() {
               data-testid="button-pause"
               disabled={isReadOnly}
             >
-              {state.isPaused ? <PlayCircle className="w-3.5 h-3.5" /> : <PauseCircle className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">{isReadOnly ? "Наблюдение" : state.isPaused ? "Продолжить" : "Пауза"}</span>
+              {state.isPaused ? <PlayCircle className="h-4 w-4" /> : <PauseCircle className="h-4 w-4" />}
+              <span>{isReadOnly ? "Наблюдение" : state.isPaused ? "Продолжить" : "Пауза"}</span>
             </button>
 
             {/* Journal button — скрыт на самых маленьких экранах */}
@@ -359,19 +359,19 @@ export default function SimulationPage() {
             {/* End simulation — компактная на мобильных */}
             <button
               onClick={() => dispatch({ type: "COMPLETE_SIMULATION" })}
-              className="flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-1 md:py-1.5 rounded-lg border border-[#ff4444]/30 bg-[#ff4444]/5 text-[#ff4444] hover:bg-[#ff4444]/10 transition-all text-xs flex-shrink-0"
+              className="flex min-h-11 flex-shrink-0 items-center gap-1.5 rounded-lg border border-[#ff4444]/30 bg-[#ff4444]/5 px-3 py-2 text-xs text-[#ff4444] transition-all hover:bg-[#ff4444]/10 md:min-h-0 md:px-3 md:py-1.5"
               data-testid="button-end"
               disabled={isReadOnly}
             >
-              <StopCircle className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{isReadOnly ? "Только просмотр" : "Завершить"}</span>
+              <StopCircle className="h-4 w-4" />
+              <span>{isReadOnly ? "Только просмотр" : "Завершить"}</span>
             </button>
           </div>
         {pauseLimitReached && !state.isPaused ? (<div className="mx-3 mt-2 rounded-xl border border-[#ff4444]/40 bg-[#ff4444]/10 px-3 py-2 text-xs text-[#ffd7d7]">Достигнут лимит пауз. Новая пауза недоступна: это нарушение безопасности проведения симуляции.</div>) : null}
         </header>
 
         {/* ─── Mobile tab switcher ─── */}
-        <div className={`${useTabbedPanels ? "flex" : "flex md:hidden"} relative z-[60] items-center gap-1 px-2 py-1.5 overflow-x-auto border-b border-[#2a3a4e]/40 bg-[#141c2b]/60 backdrop-blur-sm flex-shrink-0`}>
+        <div className={`${useTabbedPanels ? "flex" : "flex md:hidden"} relative z-[60] flex-shrink-0 items-center gap-1.5 overflow-x-auto border-b border-[#2a3a4e]/40 bg-[#141c2b]/60 px-2 py-2 backdrop-blur-sm`}>
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activePanel === tab.key;
@@ -380,7 +380,7 @@ export default function SimulationPage() {
                 key={tab.key}
                 type="button"
                 onClick={() => setActivePanel(tab.key)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex-1 justify-center min-w-0 ${
+                className={`flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-medium transition-all ${
                   isActive
                     ? "bg-[#FF6B00]/15 border border-[#FF6B00]/40 text-[#FF6B00]"
                     : "border border-[#2a3a4e]/50 text-[#6a7088] hover:text-[#8890a8] hover:border-[#3a4a5e]"
@@ -388,7 +388,7 @@ export default function SimulationPage() {
                 aria-pressed={isActive}
                 data-testid={`simulation-panel-tab-${tab.key}`}
               >
-                <Icon className="w-3.5 h-3.5 flex-shrink-0" />
+                <Icon className="h-4 w-4 flex-shrink-0" />
                 <span className="truncate">{tab.label}</span>
               </button>
             );
@@ -578,7 +578,7 @@ export default function SimulationPage() {
               </div>
               <button
                 onClick={() => dispatch({ type: "TOGGLE_PAUSE" })}
-                className="inline-flex items-center gap-2 rounded-lg bg-[#00d4aa] px-4 py-2 text-sm font-semibold text-[#0d1117] transition-all hover:bg-[#00c39c]"
+                className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#00d4aa] px-4 py-2.5 text-sm font-semibold text-[#0d1117] transition-all hover:bg-[#00c39c]"
                 disabled={isReadOnly}
               >
                 <PlayCircle className="h-4 w-4" />
