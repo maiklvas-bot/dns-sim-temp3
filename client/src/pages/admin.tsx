@@ -2786,7 +2786,7 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
-            <div className="dns-admin-case-workspace grid gap-5 2xl:grid-cols-[minmax(780px,1fr),420px] 2xl:gap-6 items-start">
+            <div className="dns-admin-case-workspace grid gap-5 min-[1900px]:grid-cols-[minmax(920px,1fr),380px] min-[1900px]:gap-6 items-start">
               <div className="dns-admin-case-editor-panel min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5">
                 {caseDraft && (
                   <EntityEditor
@@ -2813,7 +2813,7 @@ export default function AdminPage() {
                   />
                 )}
               </div>
-              <div className="dns-admin-case-impact-panel min-w-0 rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4 2xl:sticky 2xl:top-4 2xl:max-h-[calc(100vh-2rem)] 2xl:overflow-y-auto 2xl:overflow-x-hidden 2xl:p-5 2xl:pr-4 custom-scroll">
+              <div className="dns-admin-case-impact-panel min-w-0 rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4 min-[1900px]:sticky min-[1900px]:top-4 min-[1900px]:max-h-[calc(100vh-2rem)] min-[1900px]:overflow-y-auto min-[1900px]:overflow-x-hidden min-[1900px]:p-5 min-[1900px]:pr-4 custom-scroll">
                 <div className="text-sm font-semibold text-white">Влияние выбранного кейса</div>
                 <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
                   Этот блок фиксирован рядом с редактором и показывает, как текущая настройка кейса влияет на ожидаемый профиль компетенций.
@@ -5097,17 +5097,17 @@ function StructuredOptionsEditor({
   };
 
   return (
-    <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/35 p-4">
+    <div className="dns-admin-options-card rounded-xl border border-[#2a3a4e] bg-[#141c2b]/35 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-white">{title}</div>
           <div className="mt-1 text-[11px] text-[#8890a8]">Каждый вариант ответа заполняется отдельными полями без JSON.</div>
         </div>
-        <Button type="button" size="sm" onClick={addOption}>Добавить вариант</Button>
+        <Button type="button" size="sm" className="shrink-0 whitespace-nowrap" onClick={addOption}>Добавить вариант</Button>
       </div>
       <div className="space-y-3">
         {(options || []).map((option, index) => (
-          <div key={`${option.id || "option"}-${index}`} className="rounded-xl border border-[#243244] bg-[#101826]/60 p-3">
+          <div key={`${option.id || "option"}-${index}`} className="dns-admin-option-card rounded-xl border border-[#243244] bg-[#101826]/60 p-3">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div className="text-sm font-semibold text-white">Вариант {index + 1}</div>
               <Button type="button" size="sm" variant="outline" className="border-[#ff4444]/30 bg-transparent text-[#ff9999]" onClick={() => removeOption(index)}>
@@ -5122,7 +5122,7 @@ function StructuredOptionsEditor({
               <Field label="Оценка" value={option.score} onChange={(value) => updateOption(index, { score: Number(value) })} />
             </div>
             <FieldArea label="Текст ответа" value={option.text} onChange={(value) => updateOption(index, { text: value })} />
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="dns-admin-option-routing-grid">
               <SelectField
                 label="Статус ответа"
                 value={option.status || "active"}
@@ -5167,7 +5167,7 @@ function StructuredOptionsEditor({
               value={option.comment || ""}
               onChange={(value) => updateOption(index, { comment: value })}
             />
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <div className="dns-admin-store-effects-grid">
               {STORE_EFFECT_FIELDS.map((field) => (
                 <div key={field.key}>
                   <Field
@@ -5267,9 +5267,11 @@ function CaseMediaPanel({
   const selectedAudio = audioAssets.find((asset) => asset.id === target.audioAssetId);
   const audioUrl = selectedAudio?.publicUrl || target.audioUrl || null;
   const isPreviewActive = activePreviewKey === previewKey;
+  const imageInputId = useId();
+  const audioInputId = useId();
 
   return (
-    <div className="rounded-2xl border border-[#4a9eff]/25 bg-[#122031]/80 p-4 shadow-[0_18px_45px_rgba(74,158,255,0.08)]">
+    <div className="dns-admin-media-panel rounded-2xl border border-[#4a9eff]/25 bg-[#122031]/80 p-4 shadow-[0_18px_45px_rgba(74,158,255,0.08)]">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">Медиа</div>
@@ -5289,22 +5291,23 @@ function CaseMediaPanel({
         )}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
+      <div className="dns-admin-media-grid">
+        <div className="dns-admin-media-card rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
           <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#6fa0ff]">Изображение</div>
-          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr),auto]">
+          <div className="dns-admin-media-picker">
             <select
               value={target.imageAssetId || ""}
               onChange={(e) => onChange({ imageAssetId: e.target.value || null })}
-              className="min-w-0 rounded-md border border-[#2a3a4e] bg-[#141c2b] px-3 py-2 text-white"
+              className="dns-admin-select min-w-0 rounded-md border border-[#2a3a4e] bg-[#141c2b] px-3 py-2 text-white"
             >
               <option value="">Без изображения</option>
               {imageAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.name}</option>)}
             </select>
-            <Input
+            <input
+              id={imageInputId}
               type="file"
               accept="image/png,image/jpeg,image/webp"
-              className="bg-[#141c2b] border-[#2a3a4e] text-white"
+              className="sr-only"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
@@ -5312,6 +5315,12 @@ function CaseMediaPanel({
                 if (assetId) onChange({ imageAssetId: assetId });
               }}
             />
+            <label className="dns-admin-upload-button" htmlFor={imageInputId}>
+              Выбрать файл
+            </label>
+          </div>
+          <div className="mt-2 min-h-[1rem] truncate text-[11px] text-[#9fb0ca]">
+            {selectedImage?.name || (target.imageUrl ? "Внешнее изображение" : "Файл не выбран")}
           </div>
           {(selectedImage?.publicUrl || target.imageUrl) && (
             <div className="mt-3 overflow-hidden rounded-lg border border-[#2a3a4e]">
@@ -5324,21 +5333,22 @@ function CaseMediaPanel({
           )}
         </div>
 
-        <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
+        <div className="dns-admin-media-card rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
           <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-[#6fa0ff]">Озвучка</div>
-          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr),auto]">
+          <div className="dns-admin-media-picker">
             <select
               value={target.audioAssetId || ""}
               onChange={(e) => onChange({ audioAssetId: e.target.value || null })}
-              className="min-w-0 rounded-md border border-[#2a3a4e] bg-[#141c2b] px-3 py-2 text-white"
+              className="dns-admin-select min-w-0 rounded-md border border-[#2a3a4e] bg-[#141c2b] px-3 py-2 text-white"
             >
               <option value="">Без отдельной озвучки</option>
               {audioAssets.map((asset) => <option key={asset.id} value={asset.id}>{asset.name}</option>)}
             </select>
-            <Input
+            <input
+              id={audioInputId}
               type="file"
               accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/ogg,audio/webm,audio/mp4,audio/x-m4a,audio/aac"
-              className="bg-[#141c2b] border-[#2a3a4e] text-white"
+              className="sr-only"
               onChange={async (e) => {
                 const file = e.target.files?.[0];
                 if (!file) return;
@@ -5346,6 +5356,9 @@ function CaseMediaPanel({
                 if (assetId) onChange({ audioAssetId: assetId });
               }}
             />
+            <label className="dns-admin-upload-button" htmlFor={audioInputId}>
+              Выбрать файл
+            </label>
           </div>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <Button
@@ -5435,16 +5448,16 @@ function StructuredCyclesEditor({
   };
 
   return (
-    <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/35 p-4">
+    <div className="dns-admin-cycles-panel rounded-xl border border-[#2a3a4e] bg-[#141c2b]/35 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-white">Циклы кейса</div>
           <div className="mt-1 text-[11px] text-[#8890a8]">Каждый цикл, сигнал и варианты ответа редактируются отдельными полями.</div>
         </div>
-        <Button type="button" size="sm" onClick={addCycle}>Добавить цикл</Button>
+        <Button type="button" size="sm" className="shrink-0 whitespace-nowrap" onClick={addCycle}>Добавить цикл</Button>
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[240px,minmax(0,1fr)]">
+      <div className="dns-admin-cycles-grid">
         <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
           <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#8ec5ff]">Циклы выбранного кейса</div>
           <div className="space-y-2">
@@ -5477,7 +5490,7 @@ function StructuredCyclesEditor({
         </div>
 
         {selectedCycle && (
-          <div className="rounded-xl border border-[#243244] bg-[#101826]/60 p-4">
+          <div className="dns-admin-cycle-detail rounded-xl border border-[#243244] bg-[#101826]/60 p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold text-white">Цикл {selectedCycleIndex + 1}</div>
@@ -5549,7 +5562,7 @@ function SelectField({
       <select
         value={value || ""}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-md border border-[#2a3a4e] bg-[#141c2b] px-3 py-2 text-white"
+        className="dns-admin-select w-full rounded-md border border-[#2a3a4e] bg-[#141c2b] px-3 py-2 text-white"
       >
         <option value="">{emptyLabel}</option>
         {options.map((option) => (
@@ -5585,7 +5598,7 @@ function SuggestField({
         value={value || ""}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
-        className="bg-[#141c2b] border-[#2a3a4e] text-white"
+        className="dns-admin-input bg-[#141c2b] border-[#2a3a4e] text-white"
       />
       <datalist id={listId}>
         {options.map((option) => (
@@ -5740,7 +5753,7 @@ function Field({ label, value, onChange }: { label: string; value: any; onChange
   return (
     <div>
       <Label className="text-xs text-[#8890a8] mb-1.5 block">{label}</Label>
-      <Input value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} className="bg-[#141c2b] border-[#2a3a4e] text-white" />
+      <Input value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} className="dns-admin-input bg-[#141c2b] border-[#2a3a4e] text-white" />
     </div>
   );
 }
@@ -5749,7 +5762,7 @@ function FieldArea({ label, value, onChange, onBlur }: { label: string; value: a
   return (
     <div>
       <Label className="text-xs text-[#8890a8] mb-1.5 block">{label}</Label>
-      <Textarea value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} className="min-h-[120px] bg-[#141c2b] border-[#2a3a4e] text-white" />
+      <Textarea value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} onBlur={onBlur} className="dns-admin-textarea min-h-[120px] bg-[#141c2b] border-[#2a3a4e] text-white" />
     </div>
   );
 }

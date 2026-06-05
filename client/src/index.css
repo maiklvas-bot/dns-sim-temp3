@@ -973,6 +973,37 @@
   color: #2879cf !important;
 }
 
+.dns-product-shell.dns-theme-light .dns-admin-input,
+.dns-product-shell.dns-theme-light .dns-admin-select,
+.dns-product-shell.dns-theme-light .dns-admin-textarea {
+  border-color: rgba(148, 163, 184, 0.88) !important;
+  background: rgba(255, 255, 255, 0.94) !important;
+  color: #152033 !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-upload-button {
+  border-color: rgba(74, 158, 255, 0.52);
+  background: linear-gradient(135deg, rgba(74, 158, 255, 0.16), rgba(255, 255, 255, 0.84));
+  color: #193552;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-upload-button:hover {
+  border-color: rgba(255, 107, 0, 0.72);
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.18), rgba(255, 255, 255, 0.9));
+  color: #111827;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-media-panel,
+.dns-product-shell.dns-theme-light .dns-admin-media-card,
+.dns-product-shell.dns-theme-light .dns-admin-options-card,
+.dns-product-shell.dns-theme-light .dns-admin-option-card,
+.dns-product-shell.dns-theme-light .dns-admin-cycles-panel,
+.dns-product-shell.dns-theme-light .dns-admin-cycle-detail {
+  border-color: rgba(148, 163, 184, 0.72);
+  background: rgba(255, 255, 255, 0.78);
+}
+
 .dns-product-shell.dns-theme-light .metric-bar,
 .dns-product-shell.dns-theme-light .dns-assessor-v2-progress span,
 .dns-product-shell.dns-theme-light .dns-store-map-meter-fill {
@@ -1807,6 +1838,129 @@
     border-color: rgba(142, 197, 255, 0.58);
     color: #eef6ff;
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
+  }
+
+  .dns-admin-input,
+  .dns-admin-select,
+  .dns-admin-textarea {
+    min-height: 2.65rem;
+    border-color: rgba(76, 103, 137, 0.95) !important;
+    background: rgba(13, 21, 34, 0.92) !important;
+    color: #f4f8ff !important;
+    font-size: 0.88rem;
+    font-weight: 650;
+    line-height: 1.35;
+  }
+
+  .dns-admin-select {
+    padding-right: 2.2rem;
+    white-space: normal;
+  }
+
+  .dns-admin-textarea {
+    min-height: 9.5rem;
+    resize: vertical;
+  }
+
+  .dns-admin-input::placeholder,
+  .dns-admin-textarea::placeholder {
+    color: #7e91ad;
+  }
+
+  .dns-admin-cycles-panel,
+  .dns-admin-options-card,
+  .dns-admin-media-panel {
+    min-width: 0;
+  }
+
+  .dns-admin-cycles-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .dns-admin-cycle-detail {
+    min-width: 0;
+    display: grid;
+    gap: 1rem;
+  }
+
+  .dns-admin-media-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+    gap: 1rem;
+  }
+
+  .dns-admin-media-card {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .dns-admin-media-picker {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.65rem;
+  }
+
+  .dns-admin-upload-button {
+    display: inline-flex;
+    min-height: 2.65rem;
+    width: 100%;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(142, 197, 255, 0.44);
+    border-radius: 0.62rem;
+    background: linear-gradient(135deg, rgba(74, 158, 255, 0.18), rgba(74, 158, 255, 0.08));
+    color: #eef6ff;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.82rem;
+    font-weight: 850;
+    line-height: 1.1;
+    text-align: center;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .dns-admin-upload-button:hover {
+    border-color: rgba(255, 107, 0, 0.72);
+    background: linear-gradient(135deg, rgba(255, 107, 0, 0.22), rgba(255, 107, 0, 0.1));
+    color: #fff;
+  }
+
+  .dns-admin-option-card {
+    min-width: 0;
+    overflow: visible;
+  }
+
+  .dns-admin-option-routing-grid,
+  .dns-admin-store-effects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13.5rem), 1fr));
+    gap: 1rem;
+    align-items: start;
+  }
+
+  .dns-admin-store-effects-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr));
+  }
+
+  @media (min-width: 1180px) {
+    .dns-admin-cycles-grid {
+      grid-template-columns: minmax(15.5rem, 0.34fr) minmax(0, 1fr);
+    }
+  }
+
+  @media (min-width: 1500px) and (max-width: 1899px) {
+    .dns-admin-cycles-grid {
+      grid-template-columns: minmax(17rem, 0.3fr) minmax(0, 1fr);
+    }
+  }
+
+  @media (min-width: 640px) {
+    .dns-admin-media-picker {
+      grid-template-columns: minmax(0, 1fr) minmax(9.5rem, auto);
+    }
   }
 
   .dns-mobile-stack {
