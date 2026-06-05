@@ -90,7 +90,7 @@ export default function SignalFeed() {
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Tab bar */}
-      <div className="mb-3 flex flex-shrink-0 items-center gap-1.5 border-b border-[#38506d]/70 pb-2">
+      <div className="mb-3 flex flex-shrink-0 items-center gap-1.5 overflow-x-auto border-b border-[#38506d]/70 pb-2">
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -101,16 +101,16 @@ export default function SignalFeed() {
                 setActiveTab(tab.key);
                 dispatch({ type: "CLEAR_ACTION_PANEL" });
               }}
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition-all ${
+              className={`flex min-h-11 flex-shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition-all ${
                 isActive ? "text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)_inset]" : "text-[#d6e2f3] hover:bg-[#213149]/70 hover:text-white"
               }`}
               style={isActive ? { background: tab.color + "22", color: "#f8fbff", borderBottom: `2px solid ${tab.color}` } : {}}
               data-testid={`tab-${tab.key}`}
             >
-              <Icon className="w-3.5 h-3.5" />
+              <Icon className="h-4 w-4" />
               <span>{tab.label}</span>
               {tab.count > 0 && (
-                <span className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold text-white" style={{ background: tab.color }}>
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white" style={{ background: tab.color }}>
                   {tab.count}
                 </span>
               )}
