@@ -52,6 +52,7 @@ COPY shared ./shared
 COPY script ./script
 COPY migrations ./migrations
 COPY attached_assets ./attached_assets
+COPY uploads ./uploads
 COPY .env.example ./.env.example
 COPY components.json ./
 COPY drizzle.config.ts ./
@@ -114,6 +115,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/attached_assets ./attached_assets
+COPY --from=builder /app/uploads ./uploads
 COPY --from=builder /app/bootstrap/data.db ./bootstrap/data.db
 
 # -----------------------------------------------------------------------------
