@@ -19,7 +19,7 @@ import {
   loginRateLimiter,
   recordFailedLogin,
 } from "./middleware/rate-limiter";
-import { generateCsrfToken } from "./middleware/csrf";
+import { generateCsrfToken, getCsrfToken } from "./middleware/csrf";
 import {
   addSessionAnswerSchema,
   addSessionMetricsSchema,
@@ -298,7 +298,7 @@ export async function registerRoutes(
     if (!req.session.staff) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    res.json(req.session.staff);
+    res.json({ ...req.session.staff, csrfToken: getCsrfToken(req) });
   });
 
   app.post("/api/sessions", validateBody(createSimulationSessionSchema), (req, res) => {

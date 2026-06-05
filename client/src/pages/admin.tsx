@@ -32,7 +32,7 @@ import {
   resolveSimulationBriefingHtml,
 } from "@/lib/runtime-content";
 import { buildPdfPayloadFromReport, buildReportFromSessionDetails } from "@/lib/report-data";
-import { ArrowDown, ArrowUp, ChevronDown, FileSpreadsheet, Info, Pause, Play, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, ChevronDown, FileSpreadsheet, Info, Pause, Play, Trash2, X } from "lucide-react";
 import {
   Legend,
   PolarAngleAxis,
@@ -379,6 +379,186 @@ const CASE_AUTHORING_WIKI = [
   },
 ] as const;
 
+const ADMIN_WIKI_CONTENT: Record<TabKey, {
+  title: string;
+  purpose: string;
+  steps: string[];
+  fields: string[];
+  example: string;
+  mistakes: string[];
+  checklist: string[];
+}> = {
+  cases: {
+    title: "Wiki: кейсы, ответы и циклы",
+    purpose: "Раздел собирает управленческий сценарий: стартовый сигнал, варианты ответа, переходы к циклам, медиа, тайминги и влияние на оценку.",
+    steps: [
+      "Выберите существующий кейс или нажмите «Новый».",
+      "Заполните карточку кейса: название, описание, источник, тип сигнала и зоны магазина.",
+      "Откройте «Циклы и медиа»: цикл 1 обычно является стартовым событием, последующие циклы — развитием ситуации.",
+      "В каждом цикле настройте варианты ответа и укажите, какой цикл запускается после выбранного ответа.",
+      "Добавьте медиа на уровне кейса по умолчанию или отдельно для нужного цикла.",
+      "Сохраните кейс и проверьте предпросмотр/влияние справа.",
+    ],
+    fields: [
+      "Основные компетенции — главный фокус оценки кейса.",
+      "Вторичные компетенции — дополнительное наблюдение, не заменяющее основной фокус.",
+      "Статус ответа «Активен» показывает вариант студенту, «Скрыт» и «Черновик» не участвуют в симуляции.",
+      "«После ответа запустить» связывает конкретный ответ с конкретным циклом.",
+      "Метрики магазина меняют операционную карту, а компетенции формируют итоговый профиль участника.",
+    ],
+    example: "Ответ «Провести планёрку» может дать +5 к коммуникации и запустить цикл с проверкой склада через 30 секунд. Ответ «Разберитесь сами» может ухудшить мораль и завершить кейс.",
+    mistakes: [
+      "Ответ создан, но оставлен в статусе «Черновик». Студент его не увидит.",
+      "Цикл заполнен, но ни один ответ на него не ссылается.",
+      "Вариант ответа влияет только на магазин, но не имеет компетенций: в итоговом профиле он почти не объясняется.",
+      "Слишком длинный текст сигнала без конкретного управленческого выбора.",
+    ],
+    checklist: [
+      "У кейса есть название, описание, источник и стартовый сигнал.",
+      "В первом цикле есть минимум 3-5 активных ответов.",
+      "Каждый важный ответ ведёт к циклу или явно завершает кейс.",
+      "Медиа выбраны там, где они должны заменить fallback кейса.",
+      "Влияние на магазин и компетенции заполнено отдельно.",
+    ],
+  },
+  channels: {
+    title: "Wiki: каналы коммуникации",
+    purpose: "Каналы добавляют параллельную нагрузку: почта, мессенджер и видеообращения приходят по расписанию и проверяют реакцию участника вне основного кейса.",
+    steps: [
+      "Выберите тип канала: почта, мессенджер или видео.",
+      "Создайте сигнал и заполните отправителя, текст, время прихода и варианты ответа.",
+      "Для мессенджера сначала настройте чат, затем привяжите к нему сообщения.",
+      "Укажите срок решения и интервал напоминаний.",
+      "Проверьте влияние вариантов на метрики и компетенции.",
+    ],
+    fields: [
+      "Минута прихода — когда сигнал появится в симуляции.",
+      "Срок решения — когда задача станет просроченной.",
+      "Первичная компетенция помогает отнести канал к нужному профилю оценки.",
+      "Аудио и изображение усиливают сигнал, но не меняют его механику.",
+    ],
+    example: "Письмо клиента на 15-й минуте с дедлайном 5 минут проверяет коммуникацию и ответственность, а мессенджер от склада может проверить делегирование.",
+    mistakes: [
+      "Не выбран чат для сообщения мессенджера.",
+      "Минута прихода совпадает у слишком большого числа сигналов.",
+      "Варианты ответа есть, но все с нулевыми компетенциями.",
+    ],
+    checklist: [
+      "У каждого сигнала есть отправитель и текст.",
+      "Настроены arrivalMinute, deadline и reminder.",
+      "Все варианты ответа активны и читаемы.",
+      "Канал выбран оценщиком при запуске сессии.",
+    ],
+  },
+  schedule: {
+    title: "Wiki: расписание событий",
+    purpose: "Расписание управляет порядком и временем поступления кейсов и сигналов, чтобы нагрузка была предсказуемой и тестируемой.",
+    steps: [
+      "Проверьте общий список событий.",
+      "Переместите событие выше или ниже.",
+      "После ручной перестановки система предложит новое время прихода.",
+      "При необходимости скорректируйте минуту, deadline и напоминания вручную.",
+      "Сохраните расписание и проверьте тестовый запуск.",
+    ],
+    fields: [
+      "Порядок отвечает за последовательность.",
+      "Минута прихода отвечает за фактическое время в симуляции.",
+      "Deadline задаёт критический таймер.",
+      "Reminder определяет повторное напоминание.",
+    ],
+    example: "Основной кейс можно поставить первым, письмо клиента — на 15-й минуте, мессенджер склада — на 22-й минуте, видео руководителя — ближе к финалу.",
+    mistakes: [
+      "Все события приходят в одну минуту и перегружают участника.",
+      "Deadline пустой, поэтому критический таймер не появляется.",
+      "Порядок изменён, но расписание не сохранено.",
+    ],
+    checklist: [
+      "У каждого события есть понятное время прихода.",
+      "Нагрузка распределена по всей симуляции.",
+      "Критичные сигналы имеют deadline.",
+      "После сохранения список не сбрасывается.",
+    ],
+  },
+  results: {
+    title: "Wiki: результаты",
+    purpose: "Раздел хранит прохождения, отчёты, PDF/XLSX-выгрузки и удаление тестовых или ошибочных результатов.",
+    steps: [
+      "Выберите участника в списке результатов.",
+      "Проверьте статус, итоговый балл, ответы и профиль компетенций.",
+      "Скачайте PDF для передачи руководителю или HR.",
+      "Удаляйте только тестовые и ошибочные результаты.",
+    ],
+    fields: [
+      "НАДО — ожидаемый профиль по текущей настройке симуляции.",
+      "ФАКТ — фактический результат участника.",
+      "Ответы показывают, где именно сформировался балл.",
+    ],
+    example: "Если участник получил низкую коммуникацию, откройте ответы и найдите, какие письма, сообщения или циклы кейса дали слабые оценки.",
+    mistakes: [
+      "Удаление результата необратимо.",
+      "Нельзя сравнивать тестовый запуск с рабочим без пометки.",
+    ],
+    checklist: [
+      "Выбран правильный участник.",
+      "PDF открывается и содержит читаемые данные.",
+      "Перед удалением понятно, что результат лишний.",
+    ],
+  },
+  comparison: {
+    title: "Wiki: сравнение",
+    purpose: "Сравнение помогает сопоставить несколько участников по общему баллу и компетенциям, чтобы увидеть группу, лидеров и зоны риска.",
+    steps: [
+      "Выберите до пяти завершённых прохождений.",
+      "Сравните общий балл и компетенции.",
+      "Откройте сильные и слабые зоны каждого участника.",
+      "Сформулируйте вопросы руководителю и план развития.",
+    ],
+    fields: [
+      "Лучшее значение подсвечивает лидера по компетенции.",
+      "Групповая средняя помогает увидеть отклонение участника.",
+      "Инсайты переводят цифры в управленческий вывод.",
+    ],
+    example: "У одного участника сильное планирование, но слабая ответственность; у другого наоборот. Это помогает распределить наставничество.",
+    mistakes: [
+      "Сравниваются прохождения разной сложности без учёта контекста.",
+      "Выбраны незавершённые или тестовые сессии.",
+    ],
+    checklist: [
+      "Выбраны сопоставимые сессии.",
+      "Проверены сильные и слабые компетенции.",
+      "Сделан вывод для обучения или отбора.",
+    ],
+  },
+  settings: {
+    title: "Wiki: настройки симуляции",
+    purpose: "Настройки задают системную механику: интервалы, длительность, звуки, стартовые инструкции, веса кейсов и общий режим оценки.",
+    steps: [
+      "Проверьте интервалы первого сигнала и последующих событий.",
+      "Настройте количество кейсов по сложности.",
+      "Задайте медиа и звуки по умолчанию.",
+      "Настройте веса кейсов без изменения их внутреннего профиля.",
+      "Сохраните настройки и сделайте тестовый запуск.",
+    ],
+    fields: [
+      "Вес кейса меняет вклад кейса в общий сценарий, но не переписывает компетенции внутри кейса.",
+      "Time influence включает влияние сроков и просрочек.",
+      "Звуки каналов помогают участнику различать типы событий.",
+    ],
+    example: "Для сложного режима можно увеличить количество кейсов, но оставить профиль компетенций статичным, чтобы сравнение участников было честным.",
+    mistakes: [
+      "Сильно увеличены кейсы, но не увеличена длительность.",
+      "Весами пытаются исправить неправильные компетенции внутри ответов.",
+      "Не сохранены настройки после изменения.",
+    ],
+    checklist: [
+      "Длительность соответствует количеству кейсов.",
+      "Веса проверены на вкладке влияния.",
+      "Звуки и инструкции открываются.",
+      "После сохранения настройки остались на месте.",
+    ],
+  },
+};
+
 const DRAFT_STORAGE_KEYS = {
   caseWizard: "dns-simcenter.admin.caseWizardDraft",
   signalWizard: "dns-simcenter.admin.signalWizardDraft",
@@ -468,6 +648,69 @@ function buildEntityCompetencyProfile(entity: any) {
   }
 
   return {};
+}
+
+function buildCaseSetupIssues(caseItem: SimCase | null | undefined) {
+  if (!caseItem) {
+    return [];
+  }
+
+  const issues: string[] = [];
+  if (!caseItem.title?.trim()) issues.push("Не заполнено название кейса.");
+  if (!caseItem.trigger?.text?.trim()) issues.push("Не заполнен стартовый сигнал кейса.");
+  if (!caseItem.trigger?.source?.trim()) issues.push("Не заполнен источник сигнала.");
+  if (!caseItem.timing?.decisionDeadlineSeconds) issues.push("Не задан срок решения.");
+  if (!caseItem.cycles?.length) issues.push("Не создан ни один цикл.");
+
+  (caseItem.cycles || []).forEach((cycle, cycleIndex) => {
+    if (!cycle.situation?.trim()) issues.push(`Цикл ${cycleIndex + 1}: не заполнена ситуация.`);
+    if (!cycle.signal?.content?.trim()) issues.push(`Цикл ${cycleIndex + 1}: не заполнен текст сигнала.`);
+    const activeOptions = (cycle.options || []).filter((option: any) => (option.status || "active") === "active");
+    if (activeOptions.length === 0) issues.push(`Цикл ${cycleIndex + 1}: нет активных вариантов ответа.`);
+    activeOptions.forEach((option: any, optionIndex: number) => {
+      if (!option.text?.trim()) issues.push(`Цикл ${cycleIndex + 1}, ответ ${optionIndex + 1}: не заполнен текст ответа.`);
+      if (Object.keys(option.competency_scores || {}).length === 0) {
+        issues.push(`Цикл ${cycleIndex + 1}, ответ ${optionIndex + 1}: нет влияния на компетенции.`);
+      }
+      if (option.nextCycleId && option.nextCycleId !== "__complete" && !(caseItem.cycles || []).some((item) => item.id === option.nextCycleId)) {
+        issues.push(`Цикл ${cycleIndex + 1}, ответ ${optionIndex + 1}: ссылка ведёт на несуществующий цикл.`);
+      }
+    });
+  });
+
+  return issues;
+}
+
+function buildCaseRouteRows(caseItem: SimCase | null | undefined) {
+  if (!caseItem) {
+    return [];
+  }
+
+  return (caseItem.cycles || []).flatMap((cycle, cycleIndex) => (
+    (cycle.options || [])
+      .filter((option: any) => (option.status || "active") === "active")
+      .map((option: any, optionIndex: number) => {
+        const linkedCycle = option.nextCycleId && option.nextCycleId !== "__complete"
+          ? (caseItem.cycles || []).find((item) => item.id === option.nextCycleId)
+          : null;
+        const fallbackCycle = (caseItem.cycles || [])[cycleIndex + 1] || null;
+        const targetLabel = option.nextCycleId === "__complete"
+          ? "Завершить кейс"
+          : linkedCycle
+            ? `Цикл ${linkedCycle.cycle}`
+            : fallbackCycle
+              ? `Цикл ${fallbackCycle.cycle} по порядку`
+              : "Финал кейса";
+
+        return {
+          id: `${cycle.id || cycleIndex}-${option.id || optionIndex}`,
+          from: `Цикл ${cycleIndex + 1}, ответ ${optionIndex + 1}`,
+          targetLabel,
+          delay: Number(option.nextDelaySeconds || 0),
+          text: option.text || "Ответ без текста",
+        };
+      })
+  ));
 }
 
 function buildWeightedCompetencyProfile(
@@ -665,6 +908,59 @@ function ChannelInfluencePanel({
         </div>
       )}
     </div>
+  );
+}
+
+function AdminWikiDialog({
+  open,
+  onOpenChange,
+  tab,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  tab: TabKey;
+}) {
+  const wiki = ADMIN_WIKI_CONTENT[tab];
+  const sections = [
+    { title: "Пошаговая инструкция", items: wiki.steps },
+    { title: "Описание полей", items: wiki.fields },
+    { title: "Частые ошибки", items: wiki.mistakes },
+    { title: "Чек-лист перед запуском", items: wiki.checklist },
+  ];
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[88vh] max-w-4xl overflow-y-auto border-[#2a3a4e] bg-[#101826] text-white custom-scroll">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <BookOpen className="h-5 w-5 text-[#FF6B00]" />
+            {wiki.title}
+          </DialogTitle>
+          <DialogDescription className="text-[#9fb0ca]">
+            {wiki.purpose}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 md:grid-cols-2">
+          {sections.map((section) => (
+            <div key={section.title} className="rounded-xl border border-[#243244] bg-[#141c2b]/70 p-4">
+              <div className="text-sm font-semibold uppercase tracking-[0.14em] text-[#8ec5ff]">{section.title}</div>
+              <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[#d5e2f4]">
+                {section.items.map((item) => (
+                  <li key={item} className="flex gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-[#FF6B00]" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-xl border border-[#FF6B00]/35 bg-[#FF6B00]/10 p-4 text-sm leading-relaxed text-[#ffe1cb]">
+          <div className="mb-1 font-semibold text-[#ffb27a]">Пример настройки</div>
+          {wiki.example}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -1154,7 +1450,7 @@ function createEmptyCase(order: number): SimCase {
     trigger: { type: "message", source: "", text: "" },
     zones_affected: [],
     cycles: [{
-      id: "",
+      id: `CASE-${String(order).padStart(2, "0")}__cycle_1`,
       cycle: 1,
       situation: "",
       signal: { type: "message", content: "" },
@@ -1363,6 +1659,7 @@ export default function AdminPage() {
   const [selectedCaseCycleIndex, setSelectedCaseCycleIndex] = useState(0);
   const [caseWizardOpen, setCaseWizardOpen] = useState(false);
   const [signalWizardOpen, setSignalWizardOpen] = useState(false);
+  const [adminWikiOpen, setAdminWikiOpen] = useState(false);
   const [signalWizardStep, setSignalWizardStep] = useState(0);
   const [signalWizardMode, setSignalWizardMode] = useState<ChannelTab>("email");
   const [caseWizardStep, setCaseWizardStep] = useState(0);
@@ -1664,6 +1961,14 @@ export default function AdminPage() {
   const caseDraftBarData = useMemo(
     () => buildCompetencyBarData(competencies, caseDraftProfile, caseDraftProfile, caseDraftWeight),
     [caseDraftProfile, caseDraftWeight, competencies],
+  );
+  const caseSetupIssues = useMemo(
+    () => buildCaseSetupIssues(caseDraft),
+    [caseDraft],
+  );
+  const caseRouteRows = useMemo(
+    () => buildCaseRouteRows(caseDraft),
+    [caseDraft],
   );
   const selectedChannelDraft = channelTab === "email"
     ? emailDraft
@@ -2370,6 +2675,10 @@ export default function AdminPage() {
           </div>
           <div className="dns-header-actions dns-admin-header-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            <Button variant="outline" className="border-[#4a9eff]/45 bg-[#4a9eff]/10 text-[#cfe6ff]" onClick={() => setAdminWikiOpen(true)}>
+              <BookOpen className="mr-2 h-4 w-4" />
+              Wiki
+            </Button>
             <div className="inline-flex items-center rounded-full border border-[#FF6B00]/35 bg-[#FF6B00]/12 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
               Product UI v4.1
             </div>
@@ -2402,6 +2711,8 @@ export default function AdminPage() {
         </div>
 
         {error && <div className="mb-4 rounded-lg border border-[#ff4444]/30 bg-[#ff4444]/10 px-4 py-3 text-sm text-[#ff9999]">{error}</div>}
+
+        <AdminWikiDialog open={adminWikiOpen} onOpenChange={setAdminWikiOpen} tab={tab} />
 
         <AdminVisualPanel visual={activeAdminVisual} />
 
@@ -2522,6 +2833,44 @@ export default function AdminPage() {
                           { key: "selected", label: "Регулируемый вклад", color: "#00d4aa" },
                         ]}
                       />
+                    </div>
+                    <div className="mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="text-sm font-semibold text-white">Предпросмотр логики</div>
+                          <div className="mt-1 text-[11px] leading-relaxed text-[#8aa2c4]">
+                            Проверка связей «ответ → цикл» без запуска реальной сессии.
+                          </div>
+                        </div>
+                        <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${caseSetupIssues.length === 0 ? "border-[#00d4aa]/40 text-[#7fffd4]" : "border-[#ffb000]/40 text-[#ffd36e]"}`}>
+                          {caseSetupIssues.length === 0 ? "Готово" : `${caseSetupIssues.length} замеч.`}
+                        </span>
+                      </div>
+                      <div className="mt-3 max-h-48 space-y-2 overflow-y-auto pr-1 custom-scroll">
+                        {caseRouteRows.length === 0 && (
+                          <div className="rounded-lg border border-dashed border-[#31455f] px-3 py-3 text-[11px] text-[#8aa2c4]">
+                            Добавьте активные варианты ответа, чтобы увидеть переходы.
+                          </div>
+                        )}
+                        {caseRouteRows.map((row) => (
+                          <div key={row.id} className="rounded-lg border border-[#223245] bg-[#0d1522]/75 px-3 py-2">
+                            <div className="flex items-center justify-between gap-2 text-[11px]">
+                              <span className="font-semibold text-[#cfe6ff]">{row.from}</span>
+                              <span className="text-[#ffb27a]">→ {row.targetLabel}</span>
+                            </div>
+                            <div className="mt-1 line-clamp-2 text-[11px] text-[#8aa2c4]">{row.text}</div>
+                            {row.delay > 0 && <div className="mt-1 text-[10px] text-[#7fffd4]">Задержка: {row.delay} сек.</div>}
+                          </div>
+                        ))}
+                      </div>
+                      {caseSetupIssues.length > 0 && (
+                        <div className="mt-3 rounded-lg border border-[#ffb000]/25 bg-[#ffb000]/8 p-3">
+                          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ffd36e]">Что исправить до запуска</div>
+                          <ul className="mt-2 space-y-1 text-[11px] leading-relaxed text-[#ffe6a6]">
+                            {caseSetupIssues.slice(0, 5).map((issue) => <li key={issue}>• {issue}</li>)}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   </>
                 ) : (
@@ -4240,6 +4589,11 @@ function createEmptyStructuredOption(level: number) {
     level,
     text: "",
     score: 1,
+    comment: "",
+    nextCycleId: "",
+    nextDelaySeconds: null,
+    nextChannel: "main_case",
+    status: "active",
     effects: { queue: 0, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 },
     competency_scores: {},
   };
@@ -4689,11 +5043,15 @@ function StructuredOptionsEditor({
   options,
   onChange,
   competencies,
+  cycleOptions = [],
+  currentCycleId,
 }: {
   title: string;
   options: any[];
   onChange: (options: any[]) => void;
   competencies: CompetencyDefinition[];
+  cycleOptions?: Array<{ value: string; label: string }>;
+  currentCycleId?: string;
 }) {
   const previewData = useMemo(() => {
     const profile = buildOptionCompetencyProfile(options);
@@ -4764,6 +5122,51 @@ function StructuredOptionsEditor({
               <Field label="Оценка" value={option.score} onChange={(value) => updateOption(index, { score: Number(value) })} />
             </div>
             <FieldArea label="Текст ответа" value={option.text} onChange={(value) => updateOption(index, { text: value })} />
+            <div className="grid gap-4 md:grid-cols-4">
+              <SelectField
+                label="Статус ответа"
+                value={option.status || "active"}
+                onChange={(value) => updateOption(index, { status: value || "active" })}
+                options={[
+                  { value: "active", label: "Активен" },
+                  { value: "hidden", label: "Скрыт" },
+                  { value: "draft", label: "Черновик" },
+                ]}
+              />
+              {cycleOptions.length > 0 && (
+                <SelectField
+                  label="После ответа запустить"
+                  value={option.nextCycleId || ""}
+                  onChange={(value) => updateOption(index, { nextCycleId: value || "" })}
+                  emptyLabel="Следующий цикл по порядку"
+                  options={[
+                    ...cycleOptions.filter((cycle) => cycle.value !== currentCycleId),
+                    { value: "__complete", label: "Завершить кейс" },
+                  ]}
+                />
+              )}
+              <Field
+                label="Задержка, сек"
+                value={option.nextDelaySeconds ?? ""}
+                onChange={(value) => updateOption(index, { nextDelaySeconds: value ? Number(value) : null })}
+              />
+              <SelectField
+                label="Канал следующего события"
+                value={option.nextChannel || "main_case"}
+                onChange={(value) => updateOption(index, { nextChannel: value || "main_case" })}
+                options={[
+                  { value: "main_case", label: "Основной кейс" },
+                  { value: "email", label: "Почта" },
+                  { value: "messenger", label: "Мессенджер" },
+                  { value: "video", label: "Видео" },
+                ]}
+              />
+            </div>
+            <FieldArea
+              label="Комментарий / пояснение для администратора"
+              value={option.comment || ""}
+              onChange={(value) => updateOption(index, { comment: value })}
+            />
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
               {STORE_EFFECT_FIELDS.map((field) => (
                 <div key={field.key}>
@@ -5009,7 +5412,7 @@ function StructuredCyclesEditor({
     onChange([
       ...(cycles || []),
       {
-        id: "",
+        id: `draft-cycle-${Date.now()}`,
         cycle: (cycles?.length || 0) + 1,
         situation: "",
         signal: { type: "message", content: "" },
@@ -5113,6 +5516,11 @@ function StructuredCyclesEditor({
               title="Варианты ответа для цикла"
               options={selectedCycle.options || []}
               competencies={competencies}
+              cycleOptions={normalizedCycles.map((cycle, index) => ({
+                value: cycle.id || `cycle-${index + 1}`,
+                label: `Цикл ${index + 1}: ${(cycle.situation || cycle.signal?.content || "без описания").slice(0, 48)}`,
+              }))}
+              currentCycleId={selectedCycle.id || `cycle-${selectedCycleIndex + 1}`}
               onChange={(options) => updateCycle(selectedCycleIndex, { options })}
             />
           </div>

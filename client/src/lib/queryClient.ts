@@ -115,7 +115,11 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    const payload = await res.json();
+    if (payload?.csrfToken && typeof payload.csrfToken === "string") {
+      setCsrfToken(payload.csrfToken);
+    }
+    return payload;
   };
 
 export const queryClient = new QueryClient({

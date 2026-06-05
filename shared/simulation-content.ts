@@ -28,6 +28,11 @@ export interface CaseOption {
   score: number;
   effects: MetricEffects;
   competency_scores: Record<string, number>;
+  comment?: string | null;
+  nextCycleId?: string | null;
+  nextDelaySeconds?: number | null;
+  nextChannel?: "main_case" | "email" | "messenger" | "video" | null;
+  status?: "active" | "hidden" | "draft";
 }
 
 export interface CycleSignal {

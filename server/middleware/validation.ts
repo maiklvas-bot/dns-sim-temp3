@@ -269,6 +269,11 @@ const editableOptionSchema = z.object({
   level: boundedIntSchema(0, 1_000),
   text: safeLooseTextSchema(5_000),
   score: boundedIntSchema(-100, 100),
+  comment: safeLooseTextSchema(2_000).nullable().optional().default(null),
+  nextCycleId: z.union([idStringSchema, z.literal(""), z.literal("__complete"), z.null()]).optional().default(null),
+  nextDelaySeconds: boundedIntSchema(0, 86_400).nullable().optional().default(null),
+  nextChannel: z.enum(["main_case", "email", "messenger", "video"]).nullable().optional().default(null),
+  status: z.enum(["active", "hidden", "draft"]).optional().default("active"),
   effects: metricEffectsSchema,
   competency_scores: z.record(idStringSchema, boundedNumberSchema(-100, 100)).optional().default({}),
 });

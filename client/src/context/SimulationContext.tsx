@@ -1278,6 +1278,26 @@ function getMainQueuePointerForCaseCycle(selectedCases: SimCase[], caseIndex: nu
   return pointer + cycleIndex;
 }
 
+function resolveNextCaseCycleIndex(caseData: SimCase, signalCycleNumber: number, option: CaseOption) {
+  if (option.nextCycleId === "__complete") {
+    return null;
+  }
+
+  if (option.nextCycleId) {
+    const linkedIndex = caseData.cycles.findIndex((cycle) => cycle.id === option.nextCycleId);
+    if (linkedIndex >= 0) {
+      return linkedIndex;
+    }
+  }
+
+  const nextLinearIndex = signalCycleNumber;
+  return nextLinearIndex < caseData.cycles.length ? nextLinearIndex : null;
+}
+
+function getVisibleCaseOptions(options: CaseOption[]) {
+  return (options || []).filter((option) => (option.status || "active") === "active");
+}
+
 function getMainCaseArrivalSeconds(
   caseData: SimCase | null | undefined,
   caseIndex: number,
@@ -2068,7 +2088,7 @@ function reducer(state: SimulationState, action: Action): SimulationState {
         source: caseData.trigger.source,
         preview: cycle.signal.content.slice(0, 100) + (cycle.signal.content.length > 100 ? "..." : ""),
         fullSituation: cycle.situation,
-        options: shuffleOptions(cycle.options), // randomize order so answer isn't predictable
+        options: shuffleOptions(getVisibleCaseOptions(cycle.options)), // randomize order so answer isn't predictable
         arrivedAt: state.elapsedSeconds,
         isExpired: false,
         isActive: false,
@@ -2233,14 +2253,17 @@ function reducer(state: SimulationState, action: Action): SimulationState {
 
       // Remove signal from active
       const updatedSignals = state.activeSignals.filter(s => s.id !== signal.id);
+      const nextCycleIndex = resolveNextCaseCycleIndex(caseData, signal.cycle, option);
       const nextQueueItem =
-        state.repeatCases && signal.cycle < caseData.cycles.length
-          ? getMainQueuePointerForCaseCycle(selectedCases, signal.caseIndex, signal.cycle)
+        nextCycleIndex != null
+          ? getMainQueuePointerForCaseCycle(selectedCases, signal.caseIndex, nextCycleIndex)
           : null;
       const nextQueue =
         nextQueueItem != null && !state.caseQueue.includes(nextQueueItem)
           ? [...state.caseQueue, nextQueueItem]
           : state.caseQueue;
+      const shouldScheduleLinkedCycle = nextQueueItem != null && nextQueue.length > state.caseQueue.length && state.caseQueue.length === 0;
+      const linkedCycleDelaySeconds = Math.max(0, Number(option.nextDelaySeconds || 0));
 
       return {
         ...state,
@@ -2249,6 +2272,9 @@ function reducer(state: SimulationState, action: Action): SimulationState {
         decisions: [...state.decisions, decision],
         competencyTotals: newTotals,
         caseQueue: nextQueue,
+        nextSignalAt: shouldScheduleLinkedCycle
+          ? state.elapsedSeconds + linkedCycleDelaySeconds
+          : state.nextSignalAt,
         activeSignals: updatedSignals,
         currentSignalId: null,
         actionPanelSource: state.actionPanelSource === "main_case" && state.actionPanelContentId === signal.id ? null : state.actionPanelSource,
