@@ -38,6 +38,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Verify Docker data safety
+        run: node script/check-docker-safety.mjs
+
       - name: Prepare Docker env
         run: cp .env.example .env
 
