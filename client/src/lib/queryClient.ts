@@ -86,7 +86,7 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
-  if (url === "/api/staff/login") {
+  if (url === "/api/staff/login" || url === "/api/staff/elevate") {
     try {
       const payload = await res.clone().json();
       setCsrfToken(typeof payload?.csrfToken === "string" ? payload.csrfToken : null);
