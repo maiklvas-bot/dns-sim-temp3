@@ -21,6 +21,7 @@ import {
   recordFailedLogin,
 } from "./middleware/rate-limiter";
 import { generateCsrfToken, getCsrfToken } from "./middleware/csrf";
+import { internalApiError } from "./middleware/error-handler";
 import {
   addSessionAnswerSchema,
   addSessionMetricsSchema,
@@ -454,7 +455,7 @@ export async function registerRoutes(
     res.json({ ...req.session.staff, csrfToken: getCsrfToken(req) });
   });
 
-  app.post("/api/sessions", validateBody(createSimulationSessionSchema), (req, res) => {
+  app.post("/api/sessions", validateBody(createSimulationSessionSchema), (req, res, next) => {
     try {
       const body = req.validatedBody as z.infer<typeof createSimulationSessionSchema>;
       const participant = sessionStorage.createOrFindParticipant(
@@ -489,8 +490,11 @@ export async function registerRoutes(
       });
       res.json(session);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Failed to create session" });
+      next(internalApiError(
+        "SIMULATION_SESSION_CREATE_FAILED",
+        "Не удалось создать сессию симуляции.",
+        error,
+      ));
     }
   });
 
@@ -527,7 +531,7 @@ export async function registerRoutes(
     res.json(updated);
   });
 
-  app.post("/api/sessions/:id/answers", validateParams(sessionIdParamSchema), validateBody(addSessionAnswerSchema), (req, res) => {
+  app.post("/api/sessions/:id/answers", validateParams(sessionIdParamSchema), validateBody(addSessionAnswerSchema), (req, res, next) => {
     try {
       const { id } = req.validatedParams as { id: string };
       const body = req.validatedBody as z.infer<typeof addSessionAnswerSchema>;
@@ -563,12 +567,15 @@ export async function registerRoutes(
       });
       res.json(answer);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Failed to save answer" });
+      next(internalApiError(
+        "SIMULATION_ANSWER_SAVE_FAILED",
+        "Не удалось сохранить ответ участника.",
+        error,
+      ));
     }
   });
 
-  app.post("/api/sessions/:id/metrics", validateParams(sessionIdParamSchema), validateBody(addSessionMetricsSchema), (req, res) => {
+  app.post("/api/sessions/:id/metrics", validateParams(sessionIdParamSchema), validateBody(addSessionMetricsSchema), (req, res, next) => {
     try {
       const { id } = req.validatedParams as { id: string };
       const body = req.validatedBody as z.infer<typeof addSessionMetricsSchema>;
@@ -583,12 +590,15 @@ export async function registerRoutes(
       });
       res.json(metrics);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Failed to save metrics" });
+      next(internalApiError(
+        "SIMULATION_METRICS_SAVE_FAILED",
+        "Не удалось сохранить показатели симуляции.",
+        error,
+      ));
     }
   });
 
-  app.put("/api/sessions/:id/result", validateParams(sessionIdParamSchema), validateBody(upsertSessionResultSchema), (req, res) => {
+  app.put("/api/sessions/:id/result", validateParams(sessionIdParamSchema), validateBody(upsertSessionResultSchema), (req, res, next) => {
     try {
       const { id } = req.validatedParams as { id: string };
       const body = req.validatedBody as z.infer<typeof upsertSessionResultSchema>;
@@ -613,12 +623,15 @@ export async function registerRoutes(
       });
       res.json(result);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Failed to save result" });
+      next(internalApiError(
+        "SIMULATION_RESULT_SAVE_FAILED",
+        "Не удалось сохранить результат симуляции.",
+        error,
+      ));
     }
   });
 
-  app.post("/api/live-sessions", requireStaff, validateBody(createLiveSessionSchema), (req, res) => {
+  app.post("/api/live-sessions", requireStaff, validateBody(createLiveSessionSchema), (req, res, next) => {
     try {
       const body = req.validatedBody as z.infer<typeof createLiveSessionSchema>;
       const config = liveSessionService.createSession({
@@ -652,12 +665,15 @@ export async function registerRoutes(
       });
       res.json(config);
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Failed to create live session" });
+      next(internalApiError(
+        "LIVE_SESSION_CREATE_FAILED",
+        "Не удалось запустить live-сессию.",
+        error,
+      ));
     }
   });
 
-  app.post("/api/live-sessions/recover/:sessionId", requireStaff, validateParams(liveRecoverSessionParamSchema), (req, res) => {
+  app.post("/api/live-sessions/recover/:sessionId", requireStaff, validateParams(liveRecoverSessionParamSchema), (req, res, next) => {
     try {
       const { sessionId: validatedSessionId } = req.validatedParams as z.infer<typeof liveRecoverSessionParamSchema>;
       const sessionId = Number.parseInt(validatedSessionId, 10);
@@ -718,8 +734,11 @@ export async function registerRoutes(
       });
       res.json(recovered || { config });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Failed to recover live session" });
+      next(internalApiError(
+        "LIVE_SESSION_RECOVERY_FAILED",
+        "Не удалось восстановить live-сессию.",
+        error,
+      ));
     }
   });
 
@@ -899,7 +918,7 @@ export async function registerRoutes(
     res.json(updated);
   });
 
-  app.post("/api/admin/assets", requireAdmin, heavyOperationRateLimiter, validateBody(mediaUploadSchema), (req, res) => {
+  app.post("/api/admin/assets", requireAdmin, heavyOperationRateLimiter, validateBody(mediaUploadSchema), (req, res, next) => {
     try {
       const body = req.validatedBody as z.infer<typeof mediaUploadSchema>;
       const upload = saveMediaUpload({
@@ -931,8 +950,8 @@ export async function registerRoutes(
         },
       });
       res.json(asset);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message || "Upload failed" });
+    } catch (error) {
+      next(error);
     }
   });
 
@@ -1086,13 +1105,18 @@ export async function registerRoutes(
     res.json({ ok: true });
   });
 
-  app.post("/api/export-pdf", heavyOperationRateLimiter, validateBody(pdfExportSchema), (req, res) => {
+  app.post("/api/export-pdf", heavyOperationRateLimiter, validateBody(pdfExportSchema), (req, res, next) => {
     try {
       const payload = req.validatedBody as z.infer<typeof pdfExportSchema>;
 
       const scriptPath = path.resolve(__dirname, "generate_pdf.py");
       if (!fs.existsSync(scriptPath)) {
-        return res.status(500).json({ error: "PDF generator not found" });
+        next(internalApiError(
+          "PDF_EXPORT_FAILED",
+          "Не удалось сформировать PDF.",
+          new Error(`PDF generator not found: ${scriptPath}`),
+        ));
+        return;
       }
 
       const inputBuf = Buffer.from(JSON.stringify(payload), "utf-8");
@@ -1107,14 +1131,22 @@ export async function registerRoutes(
       );
 
       if (pythonResult.error) {
-        console.error("PDF spawn error:", pythonResult.error);
-        return res.status(500).json({ error: "PDF generation failed", detail: pythonResult.error.message });
+        next(internalApiError(
+          "PDF_EXPORT_FAILED",
+          "Не удалось сформировать PDF.",
+          pythonResult.error,
+        ));
+        return;
       }
 
       if (pythonResult.status !== 0) {
         const stderr = pythonResult.stderr ? (pythonResult.stderr as Buffer).toString("utf-8") : "unknown error";
-        console.error("PDF script stderr:", stderr);
-        return res.status(500).json({ error: "PDF generation error", detail: stderr.slice(0, 500) });
+        next(internalApiError(
+          "PDF_EXPORT_FAILED",
+          "Не удалось сформировать PDF.",
+          new Error(`PDF generator exited with status ${pythonResult.status}: ${stderr.slice(0, 2_000)}`),
+        ));
+        return;
       }
 
       const dateStr = new Date().toISOString().slice(0, 10);
@@ -1126,13 +1158,16 @@ export async function registerRoutes(
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
       res.setHeader("Pragma", "no-cache");
       res.send(pythonResult.stdout);
-    } catch (err: any) {
-      console.error("PDF export error:", err);
-      res.status(500).json({ error: "Internal error", detail: err.message });
+    } catch (error) {
+      next(internalApiError(
+        "PDF_EXPORT_FAILED",
+        "Не удалось сформировать PDF.",
+        error,
+      ));
     }
   });
 
-  app.post("/api/export-xlsx", heavyOperationRateLimiter, validateBody(excelExportSchema), (req, res) => {
+  app.post("/api/export-xlsx", heavyOperationRateLimiter, validateBody(excelExportSchema), (req, res, next) => {
     try {
       const body = req.validatedBody as z.infer<typeof excelExportSchema>;
       const sheets = Array.isArray(body.sheets) ? body.sheets : [];
@@ -1155,9 +1190,12 @@ export async function registerRoutes(
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
       res.setHeader("Pragma", "no-cache");
       res.send(workbook);
-    } catch (error: any) {
-      console.error("XLSX export error:", error);
-      res.status(500).json({ message: error.message || "Не удалось сформировать Excel" });
+    } catch (error) {
+      next(internalApiError(
+        "XLSX_EXPORT_FAILED",
+        "Не удалось сформировать Excel.",
+        error,
+      ));
     }
   });
 

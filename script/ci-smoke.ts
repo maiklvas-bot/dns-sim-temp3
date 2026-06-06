@@ -24,6 +24,11 @@ import {
   staffElevationBodySchema,
 } from "../server/middleware/validation";
 import { createMediaNotFoundHandler } from "../server/media-static";
+import {
+  ApiError,
+  apiErrorHandler,
+  internalApiError,
+} from "../server/middleware/error-handler";
 
 const requiredFiles = [
   "package.json",
@@ -732,6 +737,60 @@ function runMediaNotFoundCheck() {
   };
 }
 
+function runApiErrorHandlerCheck(error: unknown) {
+  let nextCalled = false;
+  let statusCode = 200;
+  let jsonBody: unknown = null;
+  const headers = new Map<string, string>();
+  const originalConsoleError = console.error;
+  const originalConsoleWarn = console.warn;
+
+  const req = {
+    method: "POST",
+    originalUrl: "/api/task-032-test",
+    path: "/api/task-032-test",
+    url: "/api/task-032-test",
+  } as Request;
+  const res = {
+    headersSent: false,
+    setHeader(name: string, value: string) {
+      headers.set(name.toLowerCase(), String(value));
+      return this;
+    },
+    status(code: number) {
+      statusCode = code;
+      return this;
+    },
+    json(body: unknown) {
+      jsonBody = body;
+      return this;
+    },
+  } as unknown as Response;
+
+  try {
+    console.error = () => undefined;
+    console.warn = () => undefined;
+    apiErrorHandler(
+      error,
+      req,
+      res,
+      (() => {
+        nextCalled = true;
+      }) as NextFunction,
+    );
+  } finally {
+    console.error = originalConsoleError;
+    console.warn = originalConsoleWarn;
+  }
+
+  return {
+    nextCalled,
+    statusCode,
+    jsonBody,
+    requestIdHeader: headers.get("x-request-id") || "",
+  };
+}
+
 function assertCondition(condition: unknown, message: string) {
   if (!condition) {
     throw new Error(message);
@@ -850,6 +909,113 @@ assertCondition(missingMedia.statusCode === 404, "Missing media assets must retu
 assertCondition(
   missingMediaBody?.code === "MEDIA_ASSET_NOT_FOUND",
   "Missing media assets must expose a stable MEDIA_ASSET_NOT_FOUND code",
+);
+
+const secretInternalMessage = "SQLITE_CANTOPEN C:\\private\\production\\data.db";
+const genericInternalError = runApiErrorHandlerCheck(new Error(secretInternalMessage));
+const genericInternalBody = genericInternalError.jsonBody as {
+  message?: string;
+  code?: string;
+  requestId?: string;
+} | null;
+assertCondition(genericInternalError.statusCode === 500, "Unhandled API errors must return status 500");
+assertCondition(!genericInternalError.nextCalled, "Handled API errors must not continue through middleware");
+assertCondition(
+  genericInternalBody?.code === "INTERNAL_SERVER_ERROR",
+  "Unhandled API errors must expose a stable INTERNAL_SERVER_ERROR code",
+);
+assertCondition(
+  typeof genericInternalBody?.requestId === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(genericInternalBody.requestId),
+  "Internal API errors must expose a UUID requestId",
+);
+assertCondition(
+  genericInternalError.requestIdHeader === genericInternalBody?.requestId,
+  "Internal API error response header and body must use the same requestId",
+);
+assertCondition(
+  !JSON.stringify(genericInternalBody).includes(secretInternalMessage),
+  "Internal API responses must not expose database paths or technical exception messages",
+);
+
+const pdfInternalError = runApiErrorHandlerCheck(internalApiError(
+  "PDF_EXPORT_FAILED",
+  "Не удалось сформировать PDF.",
+  new Error("python stderr: /srv/private/generate_pdf.py traceback"),
+));
+const pdfInternalBody = pdfInternalError.jsonBody as { message?: string; code?: string } | null;
+assertCondition(pdfInternalError.statusCode === 500, "PDF internal errors must return status 500");
+assertCondition(pdfInternalBody?.code === "PDF_EXPORT_FAILED", "PDF errors must expose a stable public code");
+assertCondition(
+  pdfInternalBody?.message === "Не удалось сформировать PDF.",
+  "PDF errors must expose only the safe public message",
+);
+assertCondition(
+  !JSON.stringify(pdfInternalBody).includes("traceback"),
+  "PDF errors must not expose Python stderr",
+);
+
+const mediaInputError = runApiErrorHandlerCheck(new ApiError(
+  400,
+  "MEDIA_TYPE_NOT_ALLOWED",
+  "Допустимый тип файла не выбран.",
+));
+const mediaInputBody = mediaInputError.jsonBody as { message?: string; code?: string } | null;
+assertCondition(mediaInputError.statusCode === 400, "Known media input errors must preserve status 400");
+assertCondition(
+  mediaInputBody?.code === "MEDIA_TYPE_NOT_ALLOWED",
+  "Known media input errors must preserve their stable public code",
+);
+assertCondition(
+  mediaInputBody?.message === "Допустимый тип файла не выбран.",
+  "Known media input errors must preserve their useful public message",
+);
+
+const malformedJsonError = new SyntaxError("Expected property name at position 17") as SyntaxError & {
+  status: number;
+  type: string;
+};
+malformedJsonError.status = 400;
+malformedJsonError.type = "entity.parse.failed";
+const malformedJsonResult = runApiErrorHandlerCheck(malformedJsonError);
+const malformedJsonBody = malformedJsonResult.jsonBody as { message?: string; code?: string } | null;
+assertCondition(malformedJsonResult.statusCode === 400, "Malformed JSON must preserve status 400");
+assertCondition(malformedJsonBody?.code === "INVALID_JSON", "Malformed JSON must expose a stable INVALID_JSON code");
+assertCondition(
+  malformedJsonBody?.message === "Некорректный формат JSON в теле запроса.",
+  "Malformed JSON must expose a safe public message",
+);
+assertCondition(
+  !JSON.stringify(malformedJsonBody).includes("position 17"),
+  "Malformed JSON responses must not expose parser offsets or technical details",
+);
+
+const unknownClientError = new Error("proxy parser leaked C:\\private\\gateway.conf") as Error & {
+  status: number;
+};
+unknownClientError.status = 400;
+const unknownClientResult = runApiErrorHandlerCheck(unknownClientError);
+const unknownClientBody = unknownClientResult.jsonBody as { message?: string; code?: string } | null;
+assertCondition(unknownClientResult.statusCode === 400, "Unknown client errors must preserve their safe HTTP status");
+assertCondition(
+  unknownClientBody?.message === "Некорректный запрос.",
+  "Unknown client errors must use a neutral public message",
+);
+assertCondition(
+  !JSON.stringify(unknownClientBody).includes("gateway.conf"),
+  "Unknown client errors must not expose library or proxy details",
+);
+
+const routesErrorSource = readFileSync("server/routes.ts", "utf8");
+assertCondition(
+  !routesErrorSource.includes("detail: pythonResult.error.message") &&
+    !routesErrorSource.includes("detail: stderr") &&
+    !routesErrorSource.includes("detail: err.message"),
+  "Export routes must not return process errors or stderr details",
+);
+assertCondition(
+  !routesErrorSource.includes('message: error.message || "Не удалось сформировать Excel"'),
+  "XLSX export must not return raw exception messages",
 );
 
 assertSchemaAccepts(

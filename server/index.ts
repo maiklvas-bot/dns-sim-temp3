@@ -1,5 +1,5 @@
 import "./load-env";
-import express, { type Request, Response, NextFunction } from "express";
+import express from "express";
 import session from "express-session";
 import helmet from "helmet";
 import { registerRoutes } from "./routes";
@@ -13,6 +13,7 @@ import { sqlite } from "./db";
 import { staffStorage } from "./staff-storage";
 import { apiRateLimiter } from "./middleware/rate-limiter";
 import { csrfProtection } from "./middleware/csrf";
+import { apiErrorHandler } from "./middleware/error-handler";
 import { serveMediaStatic } from "./media-static";
 
 const app = express();
@@ -264,18 +265,7 @@ app.use((req, res, next) => {
   await staffStorage.ensureDefaults();
   await registerRoutes(httpServer, app);
 
-  app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    console.error("Internal Server Error:", err);
-
-    if (res.headersSent) {
-      return next(err);
-    }
-
-    return res.status(status).json({ message });
-  });
+  app.use(apiErrorHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route

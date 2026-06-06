@@ -3,6 +3,7 @@ import path from "path";
 import { nanoid } from "nanoid";
 import type { Request, Response, NextFunction } from "express";
 import { auditStorage } from "./audit-storage";
+import { ApiError } from "./middleware/error-handler";
 
 const ALLOWED_ASSET_TYPES = new Map<string, { extension: string; kind: "image" | "audio" | "video"; maxBytes: number }>([
   ["image/png", { extension: ".png", kind: "image", maxBytes: 5 * 1024 * 1024 }],
@@ -67,14 +68,22 @@ export function saveMediaUpload(params: {
 }) {
   const definition = ALLOWED_ASSET_TYPES.get(params.mimeType);
   if (!definition) {
-    throw new Error("Допустимы PNG, JPEG, WEBP, MP3, WAV, OGG, WEBM, M4A, MP4 и MOV");
+    throw new ApiError(
+      400,
+      "MEDIA_TYPE_NOT_ALLOWED",
+      "Допустимы PNG, JPEG, WEBP, MP3, WAV, OGG, WEBM, M4A, MP4 и MOV",
+    );
   }
 
   const base64 = params.data.includes(",") ? params.data.split(",")[1] : params.data;
   const buffer = Buffer.from(base64, "base64");
   if (buffer.length === 0 || buffer.length > definition.maxBytes) {
     const sizeLabel = definition.kind === "image" ? "5 МБ" : definition.kind === "audio" ? "20 МБ" : "150 МБ";
-    throw new Error(`Размер файла должен быть в диапазоне до ${sizeLabel}`);
+    throw new ApiError(
+      400,
+      "MEDIA_SIZE_INVALID",
+      `Размер файла должен быть в диапазоне до ${sizeLabel}`,
+    );
   }
 
   const uploadDir = ensureUploadDir();
@@ -83,7 +92,7 @@ export function saveMediaUpload(params: {
   const resolvedOutputPath = path.resolve(outputPath);
   const resolvedUploadDir = path.resolve(uploadDir);
   if (!resolvedOutputPath.startsWith(resolvedUploadDir + path.sep)) {
-    throw new Error("Некорректный путь файла");
+    throw new ApiError(400, "MEDIA_PATH_INVALID", "Некорректный путь файла");
   }
 
   fs.writeFileSync(outputPath, buffer);
