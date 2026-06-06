@@ -19,6 +19,7 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle, useDnsTheme } from "@/components/theme-toggle";
+import { AdminAuditHistory } from "@/components/admin-audit-history";
 import {
   getSignalSoundOptions,
   resolveChannelSoundSource,
@@ -32,7 +33,7 @@ import {
   resolveSimulationBriefingHtml,
 } from "@/lib/runtime-content";
 import { buildPdfPayloadFromReport, buildReportFromSessionDetails } from "@/lib/report-data";
-import { ArrowDown, ArrowUp, BookOpen, ChevronDown, FileSpreadsheet, Info, Pause, Play, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, BookOpen, ChevronDown, FileSpreadsheet, History, Info, Pause, Play, Trash2, X } from "lucide-react";
 import {
   Legend,
   PolarAngleAxis,
@@ -1660,6 +1661,7 @@ export default function AdminPage() {
   const [caseWizardOpen, setCaseWizardOpen] = useState(false);
   const [signalWizardOpen, setSignalWizardOpen] = useState(false);
   const [adminWikiOpen, setAdminWikiOpen] = useState(false);
+  const [auditHistoryOpen, setAuditHistoryOpen] = useState(false);
   const [signalWizardStep, setSignalWizardStep] = useState(0);
   const [signalWizardMode, setSignalWizardMode] = useState<ChannelTab>("email");
   const [caseWizardStep, setCaseWizardStep] = useState(0);
@@ -2675,6 +2677,14 @@ export default function AdminPage() {
           </div>
           <div className="dns-header-actions dns-admin-header-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            <Button
+              variant="outline"
+              className="border-[#19d3ae]/40 bg-[#19d3ae]/10 text-[#aaf7e7]"
+              onClick={() => setAuditHistoryOpen(true)}
+            >
+              <History className="mr-2 h-4 w-4" />
+              История изменений
+            </Button>
             <Button variant="outline" className="border-[#4a9eff]/45 bg-[#4a9eff]/10 text-[#cfe6ff]" onClick={() => setAdminWikiOpen(true)}>
               <BookOpen className="mr-2 h-4 w-4" />
               Wiki
@@ -2713,6 +2723,7 @@ export default function AdminPage() {
         {error && <div className="mb-4 rounded-lg border border-[#ff4444]/30 bg-[#ff4444]/10 px-4 py-3 text-sm text-[#ff9999]">{error}</div>}
 
         <AdminWikiDialog open={adminWikiOpen} onOpenChange={setAdminWikiOpen} tab={tab} />
+        <AdminAuditHistory open={auditHistoryOpen} onOpenChange={setAuditHistoryOpen} />
 
         <AdminVisualPanel visual={activeAdminVisual} />
 

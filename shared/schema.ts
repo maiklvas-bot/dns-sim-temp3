@@ -27,6 +27,33 @@ export const evaluatorAccounts = sqliteTable("evaluator_accounts", {
   usernameIdx: uniqueIndex("evaluator_accounts_username_idx").on(table.username),
 }));
 
+export const auditLogs = sqliteTable("audit_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  area: text("area").notNull(),
+  action: text("action").notNull(),
+  outcome: text("outcome").notNull().default("success"),
+  actorId: integer("actor_id"),
+  actorUsername: text("actor_username"),
+  actorDisplayName: text("actor_display_name"),
+  actorRole: text("actor_role"),
+  ipAddress: text("ip_address").notNull(),
+  userAgent: text("user_agent"),
+  entityType: text("entity_type"),
+  entityId: text("entity_id"),
+  summary: text("summary").notNull(),
+  changedFieldsJson: text("changed_fields_json").notNull().default("[]"),
+  beforeJson: text("before_json"),
+  afterJson: text("after_json"),
+  metadataJson: text("metadata_json").notNull().default("{}"),
+}, (table) => ({
+  createdAtIdx: index("audit_logs_created_at_idx").on(table.createdAt),
+  areaIdx: index("audit_logs_area_idx").on(table.area),
+  actionIdx: index("audit_logs_action_idx").on(table.action),
+  actorUsernameIdx: index("audit_logs_actor_username_idx").on(table.actorUsername),
+  ipAddressIdx: index("audit_logs_ip_address_idx").on(table.ipAddress),
+}));
+
 export const participants = sqliteTable("participants", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   externalId: text("external_id"),
@@ -331,6 +358,7 @@ export const staffLoginSchema = z.object({
 
 export type AdminAccount = typeof admins.$inferSelect;
 export type EvaluatorAccount = typeof evaluatorAccounts.$inferSelect;
+export type AuditLog = typeof auditLogs.$inferSelect;
 export type Participant = typeof participants.$inferSelect;
 export type Competency = typeof competencies.$inferSelect;
 export type MediaAsset = typeof mediaAssets.$inferSelect;

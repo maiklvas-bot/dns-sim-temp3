@@ -10,6 +10,7 @@ import type { EditableEmailCase, EditableMessengerCase, EditableSimCase, Editabl
 import { liveSessionService, normalizeLiveAccessCode } from "./live-session-service";
 import { sessionStorage } from "./session-storage";
 import { staffStorage } from "./staff-storage";
+import { auditStorage, type AuditRecordInput } from "./audit-storage";
 import { requireAdmin, requireStaff, saveMediaUpload } from "./route-utils";
 import {
   adminRateLimiter,
@@ -23,6 +24,7 @@ import { generateCsrfToken, getCsrfToken } from "./middleware/csrf";
 import {
   addSessionAnswerSchema,
   addSessionMetricsSchema,
+  auditLogsQuerySchema,
   adminCaseReorderSchema,
   adminSettingsSchema,
   createLiveSessionSchema,
@@ -81,6 +83,46 @@ function parseStoredJson<T>(value: unknown, fallback: T): T {
   } catch {
     return fallback;
   }
+}
+
+function recordAudit(req: Request, input: AuditRecordInput) {
+  try {
+    return auditStorage.record(req, input);
+  } catch (error) {
+    console.error("Failed to persist audit event", error);
+    return null;
+  }
+}
+
+function getCaseSnapshot(id: string) {
+  return contentStorage.getPublicContent(true).cases.find((item) => item.id === id) || null;
+}
+
+function getEmailSnapshot(id: string) {
+  return contentStorage.getPublicContent(true).emailCases.find((item) => item.id === id) || null;
+}
+
+function getMessengerSnapshot(id: string) {
+  return contentStorage.getPublicContent(true).messengerCases.find((item) => item.id === id) || null;
+}
+
+function getVideoSnapshot(id: string) {
+  return contentStorage.getPublicContent(true).videoCases.find((item) => item.id === id) || null;
+}
+
+function getChatSnapshot(id: string) {
+  return contentStorage.getPublicContent(true).messengerChats.find((item) => item.id === id) || null;
+}
+
+function getChannelEntitySnapshot(id: string) {
+  const content = contentStorage.getPublicContent(true);
+  const email = content.emailCases.find((item) => item.id === id);
+  if (email) return { entityType: "email" as const, value: email };
+  const messenger = content.messengerCases.find((item) => item.id === id);
+  if (messenger) return { entityType: "messenger" as const, value: messenger };
+  const video = content.videoCases.find((item) => item.id === id);
+  if (video) return { entityType: "video" as const, value: video };
+  return { entityType: "channel-item" as const, value: null };
 }
 
 function clampNumber(value: number, min: number, max: number) {
@@ -277,6 +319,23 @@ export async function registerRoutes(
       const principal = await staffStorage.authenticate(body);
       if (!principal) {
         recordFailedLogin(req);
+        recordAudit(req, {
+          area: "security",
+          action: "login_failed",
+          outcome: "failure",
+          actor: {
+            username: body.username,
+            displayName: body.username,
+            role: body.role || null,
+          },
+          entityType: "staff-session",
+          entityId: body.username,
+          summary: `Неудачная попытка входа: ${body.username}`,
+          metadata: {
+            requestedRole: body.role || null,
+            passwordProvided: body.password.length > 0,
+          },
+        });
         res.status(401).json({ message: "Неверный логин или пароль" });
         return;
       }
@@ -285,11 +344,32 @@ export async function registerRoutes(
       const csrfToken = generateCsrfToken();
       req.session.staff = principal;
       req.session.csrfToken = csrfToken;
+      recordAudit(req, {
+        area: "security",
+        action: "login_success",
+        actor: principal,
+        entityType: "staff-session",
+        entityId: principal.id,
+        summary: `Вход выполнен: ${principal.displayName}`,
+        metadata: {
+          requestedRole: body.role || principal.role,
+          passwordProvided: body.password.length > 0,
+        },
+      });
       res.json({ ...principal, csrfToken });
     }),
   );
 
   app.post("/api/staff/logout", (req, res) => {
+    const actor = req.session.staff || null;
+    recordAudit(req, {
+      area: "security",
+      action: "logout",
+      actor,
+      entityType: "staff-session",
+      entityId: actor?.id || null,
+      summary: actor ? `Выход из системы: ${actor.displayName}` : "Выход из анонимной сессии",
+    });
     req.session.destroy(() => {
       res.json({ ok: true });
     });
@@ -302,7 +382,17 @@ export async function registerRoutes(
     loginRateLimiter,
     validateBody(staffElevationBodySchema),
     asyncHandler(async (req, res) => {
+      const evaluatorActor = req.session.staff || null;
       if (req.session.staff?.role !== "evaluator") {
+        recordAudit(req, {
+          area: "security",
+          action: "role_elevation_denied",
+          outcome: "failure",
+          actor: evaluatorActor,
+          entityType: "staff-session",
+          entityId: evaluatorActor?.id || null,
+          summary: "Отклонена попытка перехода в меню администратора",
+        });
         res.status(403).json({
           message: "Повышение роли доступно только из меню оценщика.",
           code: "EVALUATOR_REQUIRED",
@@ -314,6 +404,16 @@ export async function registerRoutes(
       const principal = await staffStorage.authenticateAdminByPassword(body.password);
       if (!principal) {
         recordFailedLogin(req);
+        recordAudit(req, {
+          area: "security",
+          action: "role_elevation_failed",
+          outcome: "failure",
+          actor: evaluatorActor,
+          entityType: "staff-session",
+          entityId: evaluatorActor?.id || null,
+          summary: "Неверный пароль при переходе оценщика в меню администратора",
+          metadata: { passwordProvided: body.password.length > 0 },
+        });
         res.status(401).json({ message: "Неверный пароль администратора." });
         return;
       }
@@ -332,6 +432,17 @@ export async function registerRoutes(
       const csrfToken = generateCsrfToken();
       req.session.staff = principal;
       req.session.csrfToken = csrfToken;
+      recordAudit(req, {
+        area: "security",
+        action: "role_elevation_success",
+        actor: evaluatorActor,
+        entityType: "staff-session",
+        entityId: evaluatorActor?.id || null,
+        summary: `Оценщик ${evaluatorActor?.displayName || ""} перешел в меню администратора`,
+        before: evaluatorActor,
+        after: principal,
+        metadata: { passwordProvided: body.password.length > 0 },
+      });
       res.json({ ...principal, csrfToken });
     }),
   );
@@ -368,6 +479,14 @@ export async function registerRoutes(
         technicalStatus: body.technicalStatus || "in_progress",
       });
 
+      recordAudit(req, {
+        area: req.session.staff?.role === "admin" ? "admin" : "evaluator",
+        action: "simulation_session_created",
+        entityType: "simulation-session",
+        entityId: session.id,
+        summary: `Создана симуляция для участника ${session.participantName}`,
+        after: session,
+      });
       res.json(session);
     } catch (error) {
       console.error(error);
@@ -387,13 +506,24 @@ export async function registerRoutes(
   app.patch("/api/sessions/:id", validateParams(sessionIdParamSchema), validateBody(patchSessionSchema), (req, res) => {
     const { id } = req.validatedParams as { id: string };
     const body = req.validatedBody as z.infer<typeof patchSessionSchema>;
-    const updated = sessionStorage.updateSimulationSession(parseInt(id, 10), {
+    const sessionId = parseInt(id, 10);
+    const before = sessionStorage.getSimulationSession(sessionId);
+    const updated = sessionStorage.updateSimulationSession(sessionId, {
       completedAt: body.completedAt || null,
       technicalStatus: body.technicalStatus || body.status || "completed",
     });
     if (!updated) {
       return res.status(404).json({ message: "Session not found" });
     }
+    recordAudit(req, {
+      area: "simulation",
+      action: "simulation_session_updated",
+      entityType: "simulation-session",
+      entityId: sessionId,
+      summary: `Обновлен статус симуляции #${sessionId}`,
+      before,
+      after: updated,
+    });
     res.json(updated);
   });
 
@@ -415,6 +545,21 @@ export async function registerRoutes(
         detailsJson: JSON.stringify(body.details || {}),
         timestamp: body.timestamp || new Date().toISOString(),
         simTime: body.simTime || "",
+      });
+      const session = sessionStorage.getSimulationSession(parseInt(id, 10));
+      recordAudit(req, {
+        area: "simulation",
+        action: "simulation_answer_recorded",
+        actor: req.session.staff || {
+          username: session?.participantName || "participant",
+          displayName: session?.participantName || "Участник",
+          role: "participant",
+        },
+        entityType: "session-answer",
+        entityId: answer.id,
+        summary: `Сохранен ответ в симуляции #${id}: ${answer.caseTitle}`,
+        after: answer,
+        metadata: { sessionId: Number(id) },
       });
       res.json(answer);
     } catch (error) {
@@ -457,6 +602,15 @@ export async function registerRoutes(
         pausesJson: JSON.stringify(body.pauses || []),
         exportedAt: body.exportedAt || null,
       });
+      recordAudit(req, {
+        area: "simulation",
+        action: "simulation_result_saved",
+        entityType: "simulation-result",
+        entityId: result.id,
+        summary: `Сохранен итог симуляции #${id}`,
+        after: result,
+        metadata: { sessionId: Number(id) },
+      });
       res.json(result);
     } catch (error) {
       console.error(error);
@@ -488,6 +642,14 @@ export async function registerRoutes(
         initialMetrics: (body.initialMetrics || {}) as any,
       });
 
+      recordAudit(req, {
+        area: "evaluator",
+        action: "live_session_started",
+        entityType: "live-session",
+        entityId: config.liveSessionId,
+        summary: `Запущена live-сессия для ${config.participantName}`,
+        after: config,
+      });
       res.json(config);
     } catch (error) {
       console.error(error);
@@ -545,6 +707,15 @@ export async function registerRoutes(
         completedAt: null,
       });
 
+      recordAudit(req, {
+        area: "evaluator",
+        action: "live_session_recovered",
+        entityType: "live-session",
+        entityId: config.liveSessionId,
+        summary: `Восстановлена live-сессия из симуляции #${sessionId}`,
+        after: recovered || { config },
+        metadata: { persistedSessionId: sessionId },
+      });
       res.json(recovered || { config });
     } catch (error) {
       console.error(error);
@@ -561,9 +732,31 @@ export async function registerRoutes(
 
     const session = liveSessionService.getSessionByAccessCode(accessCode);
     if (!session) {
+      recordAudit(req, {
+        area: "security",
+        action: "participant_join_failed",
+        outcome: "failure",
+        actor: { username: "participant", displayName: "Участник", role: "participant" },
+        entityType: "live-session",
+        summary: "Неудачная попытка входа участника по коду сессии",
+        metadata: { accessCodeProvided: accessCode.length > 0 },
+      });
       return res.status(404).json({ message: "Live session not found" });
     }
 
+    recordAudit(req, {
+      area: "simulation",
+      action: "participant_joined",
+      actor: {
+        username: session.config.participantName,
+        displayName: session.config.participantName,
+        role: "participant",
+      },
+      entityType: "live-session",
+      entityId: session.config.liveSessionId,
+      summary: `Участник ${session.config.participantName} подключился к симуляции`,
+      metadata: { accessCodeProvided: accessCode.length > 0 },
+    });
     res.json(session);
   });
 
@@ -619,11 +812,21 @@ export async function registerRoutes(
 
   app.delete("/api/live-sessions/:id", requireStaff, validateParams(liveSessionIdParamSchema), (req, res) => {
     const { id } = req.validatedParams as z.infer<typeof liveSessionIdParamSchema>;
+    const before = liveSessionService.getSessionById(id);
     const closed = liveSessionService.closeSession(id);
     if (!closed) {
       return res.status(404).json({ message: "Live session not found" });
     }
 
+    recordAudit(req, {
+      area: req.session.staff?.role === "admin" ? "admin" : "evaluator",
+      action: "live_session_closed",
+      entityType: "live-session",
+      entityId: id,
+      summary: `Закрыта live-сессия ${id}`,
+      before,
+      after: null,
+    });
     res.json({ ok: true });
   });
 
@@ -653,6 +856,11 @@ export async function registerRoutes(
     res.json(staffStorage.listStaff());
   });
 
+  app.get("/api/admin/audit-logs", requireAdmin, adminRateLimiter, validateQuery(auditLogsQuerySchema), (req, res) => {
+    const query = req.validatedQuery as z.infer<typeof auditLogsQuerySchema>;
+    res.json(auditStorage.list(query));
+  });
+
   app.delete("/api/admin/results/:id", requireAdmin, adminRateLimiter, validateParams(sessionIdParamSchema), (req, res) => {
     const { id } = req.validatedParams as { id: string };
     const sessionId = parseInt(id, 10);
@@ -661,13 +869,33 @@ export async function registerRoutes(
       return res.status(404).json({ message: "Сессия не найдена" });
     }
 
+    const before = sessionStorage.getSessionDetails(sessionId);
     sessionStorage.deleteSessionResult(sessionId);
+    recordAudit(req, {
+      area: "admin",
+      action: "simulation_result_deleted",
+      entityType: "simulation-result",
+      entityId: sessionId,
+      summary: `Удалены результаты симуляции #${sessionId}`,
+      before,
+      after: null,
+    });
     res.json({ ok: true, message: "Сессия и связанные данные удалены" });
   });
 
   app.put("/api/admin/settings", requireAdmin, adminRateLimiter, validateBody(adminSettingsSchema), (req, res) => {
     const body = req.validatedBody as z.infer<typeof adminSettingsSchema>;
+    const before = contentStorage.getSettings();
     const updated = contentStorage.updateSettings(body);
+    recordAudit(req, {
+      area: "admin",
+      action: "settings_updated",
+      entityType: "simulation-settings",
+      entityId: updated?.id || before?.id || "default",
+      summary: "Изменены системные параметры симуляции",
+      before,
+      after: updated,
+    });
     res.json(updated);
   });
 
@@ -689,6 +917,19 @@ export async function registerRoutes(
         sizeBytes: upload.sizeBytes,
       });
 
+      recordAudit(req, {
+        area: "admin",
+        action: "media_uploaded",
+        entityType: "media-asset",
+        entityId: asset.id,
+        summary: `Загружен медиафайл: ${asset.name}`,
+        after: asset,
+        metadata: {
+          mimeType: body.mimeType,
+          originalFilename: body.originalFilename,
+          sizeBytes: upload.sizeBytes,
+        },
+      });
       res.json(asset);
     } catch (error: any) {
       res.status(400).json({ message: error.message || "Upload failed" });
@@ -697,55 +938,151 @@ export async function registerRoutes(
 
   app.post("/api/admin/cases", requireAdmin, adminRateLimiter, validateBody(editableSimCaseSchema), (req, res) => {
     const body = req.validatedBody as z.infer<typeof editableSimCaseSchema>;
+    const before = body.id ? getCaseSnapshot(body.id) : null;
     const id = contentStorage.saveCase(body as EditableSimCase);
+    const after = getCaseSnapshot(id);
+    recordAudit(req, {
+      area: "admin",
+      action: before ? "case_updated" : "case_created",
+      entityType: "case",
+      entityId: id,
+      summary: `${before ? "Изменен" : "Создан"} кейс: ${after?.title || id}`,
+      before,
+      after,
+    });
     res.json({ id });
   });
 
   app.post("/api/admin/cases/reorder", requireAdmin, adminRateLimiter, validateBody(adminCaseReorderSchema), (req, res) => {
     const body = req.validatedBody as z.infer<typeof adminCaseReorderSchema>;
+    const before = contentStorage.getPublicContent(true).cases.map((item) => ({ id: item.id, title: item.title, sortOrder: item.sortOrder }));
     contentStorage.reorderCases(body.ids);
+    const after = contentStorage.getPublicContent(true).cases.map((item) => ({ id: item.id, title: item.title, sortOrder: item.sortOrder }));
+    recordAudit(req, {
+      area: "admin",
+      action: "cases_reordered",
+      entityType: "case-order",
+      entityId: "all",
+      summary: "Изменен порядок основных кейсов",
+      before,
+      after,
+    });
     res.json({ ok: true });
   });
 
   app.delete("/api/admin/cases/:id", requireAdmin, adminRateLimiter, validateParams(stringIdParamSchema), (req, res) => {
     const { id } = req.validatedParams as z.infer<typeof stringIdParamSchema>;
+    const before = getCaseSnapshot(id);
     contentStorage.deleteCase(id);
+    recordAudit(req, {
+      area: "admin",
+      action: "case_deleted",
+      entityType: "case",
+      entityId: id,
+      summary: `Удален кейс: ${before?.title || id}`,
+      before,
+      after: null,
+    });
     res.json({ ok: true });
   });
 
   app.post("/api/admin/chats", requireAdmin, adminRateLimiter, validateBody(editableChatSchema), (req, res) => {
     const body = req.validatedBody as z.infer<typeof editableChatSchema>;
+    const before = body.id ? getChatSnapshot(body.id) : null;
     const id = contentStorage.saveMessengerChat(body);
+    const after = getChatSnapshot(id);
+    recordAudit(req, {
+      area: "admin",
+      action: before ? "chat_updated" : "chat_created",
+      entityType: "chat",
+      entityId: id,
+      summary: `${before ? "Изменен" : "Создан"} чат: ${after?.name || id}`,
+      before,
+      after,
+    });
     res.json({ id });
   });
 
   app.delete("/api/admin/chats/:id", requireAdmin, adminRateLimiter, validateParams(stringIdParamSchema), (req, res) => {
     const { id } = req.validatedParams as z.infer<typeof stringIdParamSchema>;
+    const before = getChatSnapshot(id);
     contentStorage.deleteMessengerChat(id);
+    recordAudit(req, {
+      area: "admin",
+      action: "chat_deleted",
+      entityType: "chat",
+      entityId: id,
+      summary: `Удален чат: ${before?.name || id}`,
+      before,
+      after: null,
+    });
     res.json({ ok: true });
   });
 
   app.post("/api/admin/email-cases", requireAdmin, adminRateLimiter, validateBody(editableEmailCaseSchema), (req, res) => {
     const body = req.validatedBody as z.infer<typeof editableEmailCaseSchema>;
+    const before = body.id ? getEmailSnapshot(body.id) : null;
     const id = contentStorage.saveEmailCase(body as EditableEmailCase);
+    const after = getEmailSnapshot(id);
+    recordAudit(req, {
+      area: "admin",
+      action: before ? "email_updated" : "email_created",
+      entityType: "email",
+      entityId: id,
+      summary: `${before ? "Изменено" : "Создано"} письмо: ${after?.subject || id}`,
+      before,
+      after,
+    });
     res.json({ id });
   });
 
   app.post("/api/admin/messenger-cases", requireAdmin, adminRateLimiter, validateBody(editableMessengerCaseSchema), (req, res) => {
     const body = req.validatedBody as z.infer<typeof editableMessengerCaseSchema>;
+    const before = body.id ? getMessengerSnapshot(body.id) : null;
     const id = contentStorage.saveMessengerCase(body as EditableMessengerCase);
+    const after = getMessengerSnapshot(id);
+    recordAudit(req, {
+      area: "admin",
+      action: before ? "messenger_updated" : "messenger_created",
+      entityType: "messenger",
+      entityId: id,
+      summary: `${before ? "Изменено" : "Создано"} сообщение: ${after?.senderName || id}`,
+      before,
+      after,
+    });
     res.json({ id });
   });
 
   app.post("/api/admin/video-cases", requireAdmin, adminRateLimiter, validateBody(editableVideoCaseSchema), (req, res) => {
     const body = req.validatedBody as z.infer<typeof editableVideoCaseSchema>;
+    const before = body.id ? getVideoSnapshot(body.id) : null;
     const id = contentStorage.saveVideoCase(body as EditableVideoCase);
+    const after = getVideoSnapshot(id);
+    recordAudit(req, {
+      area: "admin",
+      action: before ? "video_updated" : "video_created",
+      entityType: "video",
+      entityId: id,
+      summary: `${before ? "Изменено" : "Создано"} видео: ${after?.title || id}`,
+      before,
+      after,
+    });
     res.json({ id });
   });
 
   app.delete("/api/admin/channel-items/:id", requireAdmin, adminRateLimiter, validateParams(stringIdParamSchema), (req, res) => {
     const { id } = req.validatedParams as z.infer<typeof stringIdParamSchema>;
+    const before = getChannelEntitySnapshot(id);
     contentStorage.deleteChannelItem(id);
+    recordAudit(req, {
+      area: "admin",
+      action: `${before.entityType}_deleted`,
+      entityType: before.entityType,
+      entityId: id,
+      summary: `Удален элемент канала: ${id}`,
+      before: before.value,
+      after: null,
+    });
     res.json({ ok: true });
   });
 

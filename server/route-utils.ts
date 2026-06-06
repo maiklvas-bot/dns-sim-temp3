@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { nanoid } from "nanoid";
 import type { Request, Response, NextFunction } from "express";
+import { auditStorage } from "./audit-storage";
 
 const ALLOWED_ASSET_TYPES = new Map<string, { extension: string; kind: "image" | "audio" | "video"; maxBytes: number }>([
   ["image/png", { extension: ".png", kind: "image", maxBytes: 5 * 1024 * 1024 }],
@@ -30,6 +31,21 @@ export function requireStaff(req: Request, res: Response, next: NextFunction) {
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.session.staff || req.session.staff.role !== "admin") {
+    try {
+      auditStorage.record(req, {
+        area: "security",
+        action: "admin_access_denied",
+        outcome: "failure",
+        summary: "Отклонена попытка доступа к административной функции",
+        entityType: "admin-route",
+        entityId: req.path,
+        metadata: {
+          method: req.method,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to write denied admin access audit event:", error);
+    }
     return res.status(403).json({
       message: "Недостаточно прав для этого действия. Войдите под учётной записью администратора.",
       code: "ADMIN_REQUIRED",
