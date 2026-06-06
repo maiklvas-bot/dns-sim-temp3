@@ -504,6 +504,18 @@ export const listResultsQuerySchema = z.object({
   participantName: z.string().max(100).optional(),
 });
 
+export const auditLogsQuerySchema = z.object({
+  area: z.enum(["security", "admin", "evaluator", "simulation", "system"]).optional(),
+  actor: z.string().trim().min(1).max(100).optional(),
+  action: z.string().trim().min(1).max(100).optional(),
+  outcome: z.enum(["success", "failure"]).optional(),
+  search: z.string().trim().max(200).optional(),
+  from: z.string().datetime().optional(),
+  to: z.string().datetime().optional(),
+  limit: z.coerce.number().int().min(1).max(200).optional().default(50),
+  offset: z.coerce.number().int().min(0).max(100_000).optional().default(0),
+});
+
 /**
  * Схема для ID параметра URL.
  */

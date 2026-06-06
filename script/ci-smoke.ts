@@ -13,6 +13,7 @@ import {
 import {
   adminCaseReorderSchema,
   adminSettingsSchema,
+  auditLogsQuerySchema,
   editableSimCaseSchema,
   excelExportSchema,
   listResultsQuerySchema,
@@ -159,6 +160,10 @@ function runAdminRouteContractChecks() {
     routesSource.includes('app.delete("/api/admin/results/:id"'),
     "Admin acceptance requires result deletion endpoint",
   );
+  assertCondition(
+    routesSource.includes('app.get("/api/admin/audit-logs"'),
+    "Admin acceptance requires protected audit log endpoint",
+  );
   assertCondition(routesSource.includes('app.post("/api/export-pdf"'), "Admin acceptance requires PDF export endpoint");
   assertCondition(routesSource.includes('app.post("/api/export-xlsx"'), "Admin acceptance requires XLSX export endpoint");
   assertCondition(
@@ -194,6 +199,7 @@ async function runAdminStorageAcceptanceChecks() {
 
     const { staffStorage } = await import("../server/staff-storage");
     const { sessionStorage } = await import("../server/session-storage");
+    const { auditStorage } = await import("../server/audit-storage");
 
     await staffStorage.ensureDefaults();
     const staff = staffStorage.listStaff();
@@ -218,6 +224,94 @@ async function runAdminStorageAcceptanceChecks() {
     assertCondition(
       (await staffStorage.authenticateAdminByPassword("Task023Evaluator!")) === null,
       "Evaluator password must not authorize admin role elevation",
+    );
+
+    const auditRequest = {
+      session: {
+        staff: {
+          id: staff.admins[0].id,
+          username: staff.admins[0].username,
+          displayName: staff.admins[0].displayName,
+          role: "admin",
+        },
+      },
+      headers: { "user-agent": "TASK-031 acceptance" },
+      ip: "127.0.0.31",
+      socket: { remoteAddress: "127.0.0.31" },
+      get(name: string) {
+        return name.toLowerCase() === "user-agent" ? "TASK-031 acceptance" : undefined;
+      },
+    } as unknown as Request;
+
+    auditStorage.record(auditRequest, {
+      area: "admin",
+      action: "settings_updated",
+      entityType: "simulation-settings",
+      entityId: "1",
+      summary: "TASK-031 audit acceptance",
+      before: { signalInterval: 40, password: "must-not-be-stored" },
+      after: { signalInterval: 60, passwordHash: "must-not-be-stored" },
+      metadata: { csrfToken: "must-not-be-stored" },
+    });
+    const auditResult = auditStorage.list({
+      area: "admin",
+      actor: staff.admins[0].username,
+      action: "settings_updated",
+      limit: 50,
+      offset: 0,
+    });
+    assertCondition(auditResult.total === 1, "Audit storage must filter administrator changes");
+    assertCondition(auditResult.items[0]?.ipAddress === "127.0.0.31", "Audit storage must preserve request IP");
+    assertCondition(
+      auditResult.items[0]?.changedFields.includes("signalInterval"),
+      "Audit storage must list changed data fields",
+    );
+    const serializedAudit = JSON.stringify(auditResult.items[0]);
+    assertCondition(!serializedAudit.includes("must-not-be-stored"), "Audit storage must redact passwords and security tokens");
+    assertCondition(serializedAudit.includes("[REDACTED]"), "Audit storage must mark redacted sensitive values");
+
+    const { requireAdmin } = await import("../server/route-utils");
+    const deniedRequest = {
+      ...auditRequest,
+      method: "GET",
+      path: "/api/admin/audit-logs",
+      session: {
+        staff: {
+          id: staff.evaluators[0].id,
+          username: staff.evaluators[0].username,
+          displayName: staff.evaluators[0].displayName,
+          role: "evaluator",
+        },
+      },
+    } as unknown as Request;
+    let deniedStatus = 200;
+    let deniedNextCalled = false;
+    const deniedResponse = {
+      status(code: number) {
+        deniedStatus = code;
+        return this;
+      },
+      json() {
+        return this;
+      },
+    } as unknown as Response;
+    requireAdmin(deniedRequest, deniedResponse, (() => {
+      deniedNextCalled = true;
+    }) as NextFunction);
+    assertCondition(deniedStatus === 403, "Evaluator access to administrator routes must remain forbidden");
+    assertCondition(!deniedNextCalled, "Denied administrator access must not continue to the route handler");
+    const deniedAudit = auditStorage.list({
+      area: "security",
+      actor: staff.evaluators[0].username,
+      action: "admin_access_denied",
+      outcome: "failure",
+      limit: 50,
+      offset: 0,
+    });
+    assertCondition(deniedAudit.total === 1, "Denied administrator access must be written to the security journal");
+    assertCondition(
+      deniedAudit.items[0]?.entityId === "/api/admin/audit-logs",
+      "Denied administrator access must identify the protected route",
     );
 
     const now = new Date().toISOString();
@@ -756,6 +850,25 @@ assertCondition(missingMedia.statusCode === 404, "Missing media assets must retu
 assertCondition(
   missingMediaBody?.code === "MEDIA_ASSET_NOT_FOUND",
   "Missing media assets must expose a stable MEDIA_ASSET_NOT_FOUND code",
+);
+
+assertSchemaAccepts(
+  auditLogsQuerySchema,
+  {
+    area: "security",
+    actor: "admin",
+    action: "login_success",
+    outcome: "success",
+    search: "127.0.0.1",
+    limit: "50",
+    offset: "0",
+  },
+  "Audit query filters must accept valid pagination and filter values",
+);
+assertSchemaRejects(
+  auditLogsQuerySchema,
+  { area: "unknown", limit: "5000" },
+  "Audit query filters must reject unknown areas and oversized pages",
 );
 
 assertSchemaAccepts(
