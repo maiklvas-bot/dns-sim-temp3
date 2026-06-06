@@ -48,8 +48,14 @@ failedAttemptsCleanupTimer.unref?.();
  */
 function getLoginKey(req: Request): string {
   const ip = ipKeyGenerator(req.ip || req.socket.remoteAddress || "0.0.0.0");
-  const username = (req.body?.username || "unknown").toLowerCase().trim();
-  return `${ip}:${username}`;
+  const submittedUsername = req.body?.username;
+  const sessionStaff = req.session?.staff;
+  const subject = submittedUsername
+    ? `login:${submittedUsername}`
+    : sessionStaff
+      ? `session:${sessionStaff.role}:${sessionStaff.username}`
+      : "unknown";
+  return `${ip}:${subject.toLowerCase().trim()}`;
 }
 
 function getActiveFailedAttempt(key: string, now = Date.now()) {

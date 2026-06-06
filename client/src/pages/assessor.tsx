@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, type FormEvent } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import type { RealisticMetrics } from "../context/SimulationContext";
@@ -9,11 +9,19 @@ import { VIDEO_CASES } from "../data/video-cases";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { ThemeToggle, useDnsTheme } from "@/components/theme-toggle";
-import { apiRequest, getQueryFn } from "@/lib/queryClient";
+import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient";
 import { getSimulationSettingsSnapshot } from "@/lib/runtime-content";
 import type { SimulationRuntimeSettings } from "@shared/simulation-content";
 import {
@@ -23,7 +31,7 @@ import {
   UserCheck, Timer, CheckCircle2, Rocket, Info, BookOpen, Workflow,
   MousePointerClick, ListChecks, Settings2, Target, GitBranch,
   ArrowUpRight, ArrowDownRight, SlidersHorizontal, ClipboardCheck, Map,
-  Activity, Gauge, Copy,
+  Activity, Gauge, Copy, ShieldCheck,
 } from "lucide-react";
 import { primeAudioPlayback } from "@/data/audio-map";
 import {
@@ -668,7 +676,11 @@ function AssessorWiki({
   );
 }
 
-export default function AssessorPage() {
+interface AssessorPageProps {
+  staffRole?: "admin" | "evaluator";
+}
+
+export default function AssessorPage({ staffRole = "evaluator" }: AssessorPageProps) {
   const [, navigate] = useLocation();
   const { theme, themeClass, toggleTheme } = useDnsTheme();
   const settings = getSimulationSettingsSnapshot<SimulationRuntimeSettings>();
@@ -718,6 +730,10 @@ export default function AssessorPage() {
   // ── Wiki toggle ──
   const [showWiki, setShowWiki] = useState(false);
   const [wikiProcessOpen, setWikiProcessOpen] = useState(false);
+  const [adminAccessOpen, setAdminAccessOpen] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
+  const [adminAccessError, setAdminAccessError] = useState("");
+  const [adminAccessLoading, setAdminAccessLoading] = useState(false);
   const [activePanel, setActivePanel] = useState<AssessorPanel>("participant");
   const [setupMode, setSetupMode] = useState<AssessorSetupMode>("recommended");
   const [scenarioConfirmed, setScenarioConfirmed] = useState(false);
@@ -729,6 +745,43 @@ export default function AssessorPage() {
     queryFn: getQueryFn<LiveSimulationMonitorSummary[]>({ on401: "throw" }),
     refetchInterval: 2500,
   });
+
+  const handleAdminAccess = () => {
+    if (staffRole === "admin") {
+      navigate("/admin");
+      return;
+    }
+
+    setAdminPassword("");
+    setAdminAccessError("");
+    setAdminAccessOpen(true);
+  };
+
+  const handleAdminElevation = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (adminAccessLoading) {
+      return;
+    }
+
+    if (!adminPassword) {
+      setAdminAccessError("Введите пароль администратора.");
+      return;
+    }
+
+    setAdminAccessLoading(true);
+    setAdminAccessError("");
+    try {
+      const response = await apiRequest("POST", "/api/staff/elevate", { password: adminPassword });
+      const principal = await response.json();
+      queryClient.setQueryData(["/api/staff/me"], principal);
+      setAdminAccessOpen(false);
+      navigate("/admin");
+    } catch (error: any) {
+      setAdminAccessError(error.message || "Не удалось подтвердить административный доступ.");
+    } finally {
+      setAdminAccessLoading(false);
+    }
+  };
 
   // Auto-set channels based on difficulty
   useEffect(() => {
@@ -2095,6 +2148,15 @@ export default function AssessorPage() {
               WIKI
             </button>
             <button
+              type="button"
+              onClick={handleAdminAccess}
+              className="dns-assessor-v2-header-button"
+              data-testid="open-admin-access"
+            >
+              <ShieldCheck className="h-4 w-4" />
+              В администратора
+            </button>
+            <button
               onClick={() => navigate("/")}
               className="dns-assessor-v2-header-button"
               data-testid="back-button"
@@ -2103,6 +2165,78 @@ export default function AssessorPage() {
             </button>
           </div>
         </header>
+
+        <Dialog
+          open={adminAccessOpen}
+          onOpenChange={(open) => {
+            if (adminAccessLoading) {
+              return;
+            }
+            setAdminAccessOpen(open);
+            if (!open) {
+              setAdminPassword("");
+              setAdminAccessError("");
+            }
+          }}
+        >
+          <DialogContent className="border-[#34465f] bg-[#162234] text-white sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Вход в меню администратора</DialogTitle>
+              <DialogDescription className="text-[#aebbd0]">
+                Подтвердите административный пароль. Учетные данные при этом не изменяются.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleAdminElevation} className="space-y-4">
+              <div>
+                <Label htmlFor="admin-access-password" className="mb-1.5 block text-xs text-[#aebbd0]">
+                  Пароль администратора
+                </Label>
+                <Input
+                  id="admin-access-password"
+                  type="password"
+                  value={adminPassword}
+                  onChange={(event) => {
+                    setAdminPassword(event.target.value);
+                    if (adminAccessError) {
+                      setAdminAccessError("");
+                    }
+                  }}
+                  autoComplete="current-password"
+                  autoFocus
+                  disabled={adminAccessLoading}
+                  aria-invalid={Boolean(adminAccessError)}
+                  aria-describedby={adminAccessError ? "admin-access-error" : undefined}
+                  className="border-[#34465f] bg-[#0f1826] text-white"
+                  data-testid="admin-access-password"
+                />
+                {adminAccessError && (
+                  <div id="admin-access-error" className="mt-2 text-sm text-[#ff9a9a]" role="alert">
+                    {adminAccessError}
+                  </div>
+                )}
+              </div>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setAdminAccessOpen(false)}
+                  disabled={adminAccessLoading}
+                  className="border-[#34465f] bg-transparent text-[#c1ccdc]"
+                >
+                  Отмена
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={adminAccessLoading}
+                  className="border border-[#FF6B00] bg-[#FF6B00] text-white hover:bg-[#e06000]"
+                  data-testid="confirm-admin-access"
+                >
+                  {adminAccessLoading ? "Проверка..." : "Перейти"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         {showWiki ? (
           <AssessorWiki

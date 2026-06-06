@@ -94,6 +94,10 @@ export const staffLoginBodySchema = z.object({
   password: passwordSchema,
 });
 
+export const staffElevationBodySchema = z.object({
+  password: passwordSchema,
+}).strict();
+
 /**
  * Схема для создания симуляционной сессии.
  * Валидация всех полей с ограничениями диапазонов.

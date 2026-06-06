@@ -42,6 +42,7 @@ import {
   patchSessionSchema,
   pdfExportSchema,
   sessionIdParamSchema,
+  staffElevationBodySchema,
   staffLoginBodySchema,
   stringIdParamSchema,
   studentSyncSchema,
@@ -293,6 +294,47 @@ export async function registerRoutes(
       res.json({ ok: true });
     });
   });
+
+  app.post(
+    "/api/staff/elevate",
+    requireStaff,
+    loginFailedAttemptLimiter,
+    loginRateLimiter,
+    validateBody(staffElevationBodySchema),
+    asyncHandler(async (req, res) => {
+      if (req.session.staff?.role !== "evaluator") {
+        res.status(403).json({
+          message: "Повышение роли доступно только из меню оценщика.",
+          code: "EVALUATOR_REQUIRED",
+        });
+        return;
+      }
+
+      const body = req.validatedBody as { password: string };
+      const principal = await staffStorage.authenticateAdminByPassword(body.password);
+      if (!principal) {
+        recordFailedLogin(req);
+        res.status(401).json({ message: "Неверный пароль администратора." });
+        return;
+      }
+
+      clearFailedAttempts(req);
+      await new Promise<void>((resolve, reject) => {
+        req.session.regenerate((error) => {
+          if (error) {
+            reject(error);
+            return;
+          }
+          resolve();
+        });
+      });
+
+      const csrfToken = generateCsrfToken();
+      req.session.staff = principal;
+      req.session.csrfToken = csrfToken;
+      res.json({ ...principal, csrfToken });
+    }),
+  );
 
   app.get("/api/staff/me", (req, res) => {
     if (!req.session.staff) {

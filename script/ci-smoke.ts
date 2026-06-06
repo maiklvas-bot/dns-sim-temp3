@@ -20,6 +20,7 @@ import {
   pdfExportSchema,
   safeParse,
   sessionIdParamSchema,
+  staffElevationBodySchema,
 } from "../server/middleware/validation";
 import { createMediaNotFoundHandler } from "../server/media-static";
 
@@ -151,6 +152,10 @@ function runAdminRouteContractChecks() {
   assertCondition(routesSource.includes('app.get("/api/health"'), "Admin acceptance requires the health endpoint");
   assertCondition(routesSource.includes('app.get("/api/admin/staff"'), "Admin acceptance requires staff list endpoint");
   assertCondition(
+    routesSource.includes('"/api/staff/elevate"'),
+    "Evaluator acceptance requires protected admin elevation endpoint",
+  );
+  assertCondition(
     routesSource.includes('app.delete("/api/admin/results/:id"'),
     "Admin acceptance requires result deletion endpoint",
   );
@@ -205,6 +210,14 @@ async function runAdminStorageAcceptanceChecks() {
     assertCondition(
       Boolean(await staffStorage.authenticate({ role: "evaluator", username: "task023-evaluator", password: "Task023Evaluator!" })),
       "Seeded evaluator account must authenticate in the acceptance database",
+    );
+    assertCondition(
+      (await staffStorage.authenticateAdminByPassword("Task023Admin!"))?.role === "admin",
+      "Existing admin password must authorize evaluator role elevation",
+    );
+    assertCondition(
+      (await staffStorage.authenticateAdminByPassword("Task023Evaluator!")) === null,
+      "Evaluator password must not authorize admin role elevation",
     );
 
     const now = new Date().toISOString();
@@ -835,6 +848,22 @@ assertSchemaRejects(
   listResultsQuerySchema,
   { status: "all" },
   "Admin results query schema must reject unsupported status filters",
+);
+
+assertSchemaAccepts(
+  staffElevationBodySchema,
+  { password: "Task030Admin!" },
+  "Staff elevation schema must accept an administrative password",
+);
+assertSchemaRejects(
+  staffElevationBodySchema,
+  { password: "short" },
+  "Staff elevation schema must reject undersized passwords",
+);
+assertSchemaRejects(
+  staffElevationBodySchema,
+  { password: "Task030Admin!", username: "unexpected" },
+  "Staff elevation schema must reject unexpected credential fields",
 );
 
 assertSchemaAccepts(
