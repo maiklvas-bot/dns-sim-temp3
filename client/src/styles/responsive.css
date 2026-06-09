@@ -1,0 +1,323 @@
+/* Admin light theme: placed last because the admin review layer defines dark surfaces later in the cascade. */
+.dns-product-shell.dns-theme-light {
+  --dns-admin-border: rgba(142, 164, 194, 0.78);
+  --dns-admin-border-soft: rgba(181, 196, 216, 0.78);
+  --dns-admin-text-muted: #526277;
+  --dns-admin-text-soft: #23344a;
+  --dns-admin-text-dim: #6a7890;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-header-surface,
+.dns-product-shell.dns-theme-light .dns-admin-visual-panel {
+  background:
+    radial-gradient(circle at 92% 16%, rgba(255, 107, 0, 0.12), transparent 28%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(239, 245, 252, 0.9)) !important;
+  border-color: rgba(142, 164, 194, 0.82) !important;
+  color: #142033 !important;
+  box-shadow: 0 18px 42px rgba(44, 67, 98, 0.14);
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-visual-panel::before {
+  opacity: 0.5;
+  background:
+    linear-gradient(90deg, rgba(255, 107, 0, 0.08), transparent 48%),
+    linear-gradient(135deg, rgba(74, 158, 255, 0.08), transparent 62%);
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-tab-button {
+  background: rgba(255, 255, 255, 0.82) !important;
+  border-color: rgba(142, 164, 194, 0.76) !important;
+  color: #34465e !important;
+  box-shadow: 0 10px 22px rgba(44, 67, 98, 0.1);
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-tab-button:hover,
+.dns-product-shell.dns-theme-light .dns-admin-tab-button:focus-visible {
+  background: rgba(255, 246, 238, 0.94) !important;
+  border-color: rgba(255, 107, 0, 0.54) !important;
+  color: #172235 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-tab-button.dns-tab-button-active,
+.dns-product-shell.dns-theme-light .dns-admin-tab-button-active {
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.18), rgba(255, 255, 255, 0.94)) !important;
+  border-color: rgba(255, 107, 0, 0.72) !important;
+  color: #172235 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-nav,
+.dns-product-shell.dns-theme-light .dns-admin-case-editor-panel,
+.dns-product-shell.dns-theme-light .dns-admin-case-impact-panel,
+.dns-product-shell.dns-theme-light .dns-admin-structure-nav,
+.dns-product-shell.dns-theme-light .dns-comparison-insights,
+.dns-product-shell.dns-theme-light .dns-comparison-person-card,
+.dns-product-shell.dns-theme-light .dns-comparison-table-wrap,
+.dns-product-shell.dns-theme-light .dns-comparison-insight-card,
+.dns-product-shell.dns-theme-light .dns-comparison-group-conclusion,
+.dns-product-shell.dns-theme-light .dns-comparison-insight-columns > div,
+.dns-product-shell.dns-theme-light .dns-comparison-risk-block,
+.dns-product-shell.dns-theme-light .dns-comparison-question-block {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(142, 164, 194, 0.82) !important;
+  color: #142033 !important;
+  box-shadow: 0 16px 36px rgba(44, 67, 98, 0.12);
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-structure-nav-item {
+  color: #526277;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-structure-nav-item:hover,
+.dns-product-shell.dns-theme-light .dns-admin-structure-nav-item:focus-visible {
+  background: rgba(240, 247, 255, 0.98);
+  border-color: rgba(74, 158, 255, 0.48);
+  color: #142033;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-structure-nav-item--active {
+  background: rgba(255, 107, 0, 0.12);
+  border-color: rgba(255, 107, 0, 0.58);
+  color: #142033;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-structure-nav-head strong,
+.dns-product-shell.dns-theme-light .dns-admin-structure-profile strong,
+.dns-product-shell.dns-theme-light .dns-admin-case-control-head strong,
+.dns-product-shell.dns-theme-light .dns-admin-case-control-stats strong,
+.dns-product-shell.dns-theme-light .dns-admin-cycle-final-toggle strong {
+  color: #142033;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-structure-profile,
+.dns-product-shell.dns-theme-light .dns-admin-case-control-panel,
+.dns-product-shell.dns-theme-light .dns-admin-case-control-stats div,
+.dns-product-shell.dns-theme-light .dns-admin-cycle-final-toggle {
+  background: rgba(248, 251, 255, 0.95);
+  border-color: rgba(166, 184, 208, 0.82);
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-nav-header {
+  border-color: rgba(181, 196, 216, 0.88) !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-list,
+.dns-product-shell.dns-theme-light .dns-admin-side-list {
+  scrollbar-color: rgba(255, 107, 0, 0.66) rgba(220, 229, 240, 0.92);
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-list::-webkit-scrollbar-track,
+.dns-product-shell.dns-theme-light .dns-admin-side-list::-webkit-scrollbar-track {
+  background: rgba(220, 229, 240, 0.92);
+  border-color: rgba(181, 196, 216, 0.72);
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-list::-webkit-scrollbar-thumb,
+.dns-product-shell.dns-theme-light .dns-admin-side-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 107, 0, 0.7);
+  border-color: rgba(236, 243, 250, 0.95);
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-list-item,
+.dns-product-shell.dns-theme-light .dns-admin-side-list button,
+.dns-product-shell.dns-theme-light .dns-admin-case-note,
+.dns-product-shell.dns-theme-light .dns-admin-case-editor-panel .rounded-xl,
+.dns-product-shell.dns-theme-light .dns-admin-case-editor-panel .rounded-lg,
+.dns-product-shell.dns-theme-light .dns-admin-case-impact-panel .rounded-xl,
+.dns-product-shell.dns-theme-light .dns-admin-case-impact-panel .rounded-lg,
+.dns-product-shell.dns-theme-light .dns-admin-action-block,
+.dns-product-shell.dns-theme-light .dns-comparison-table th,
+.dns-product-shell.dns-theme-light .dns-comparison-table td {
+  background: rgba(248, 251, 255, 0.94) !important;
+  border-color: rgba(166, 184, 208, 0.82) !important;
+  color: #142033 !important;
+  box-shadow: none;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-list-item:hover,
+.dns-product-shell.dns-theme-light .dns-admin-side-list button:hover {
+  background: rgba(240, 247, 255, 0.98) !important;
+  border-color: rgba(74, 158, 255, 0.52) !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-list-item--active,
+.dns-product-shell.dns-theme-light .dns-admin-side-list button[class*="bg-[#4a9eff"],
+.dns-product-shell.dns-theme-light .dns-admin-side-list button[class*="bg-[#00d4aa"],
+.dns-product-shell.dns-theme-light .dns-admin-side-list button[class*="bg-[#FF6B00"] {
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.16), rgba(255, 246, 238, 0.98)) !important;
+  border-color: rgba(255, 107, 0, 0.7) !important;
+  color: #142033 !important;
+  box-shadow: inset 3px 0 0 rgba(255, 107, 0, 0.9);
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-order-index {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(166, 184, 208, 0.9) !important;
+  color: #526277 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-list-item--active .dns-admin-case-order-index {
+  background: rgba(255, 107, 0, 0.12) !important;
+  border-color: rgba(255, 107, 0, 0.58) !important;
+  color: #9b4a05 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-list-title,
+.dns-product-shell.dns-theme-light .dns-admin-case-nav-header .text-white,
+.dns-product-shell.dns-theme-light .dns-admin-case-editor-panel .text-white,
+.dns-product-shell.dns-theme-light .dns-admin-case-impact-panel .text-white,
+.dns-product-shell.dns-theme-light .dns-admin-side-list .text-white,
+.dns-product-shell.dns-theme-light .dns-comparison-insights .text-white,
+.dns-product-shell.dns-theme-light .dns-comparison-person-card h3,
+.dns-product-shell.dns-theme-light .dns-comparison-table th,
+.dns-product-shell.dns-theme-light .dns-comparison-table td:first-child,
+.dns-product-shell.dns-theme-light .dns-comparison-insight-card-head h3,
+.dns-product-shell.dns-theme-light .dns-comparison-insight-card-head strong {
+  color: #142033 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-list-meta,
+.dns-product-shell.dns-theme-light .dns-admin-case-note p,
+.dns-product-shell.dns-theme-light .dns-admin-case-editor-panel .text-\[\#8890a8\],
+.dns-product-shell.dns-theme-light .dns-admin-case-editor-panel .text-\[\#8aa2c4\],
+.dns-product-shell.dns-theme-light .dns-admin-case-editor-panel .text-\[\#c7d3e7\],
+.dns-product-shell.dns-theme-light .dns-admin-case-impact-panel .text-\[\#8890a8\],
+.dns-product-shell.dns-theme-light .dns-admin-case-impact-panel .text-\[\#8aa2c4\],
+.dns-product-shell.dns-theme-light .dns-admin-case-impact-panel .text-\[\#cbd8ef\],
+.dns-product-shell.dns-theme-light .dns-admin-side-list .text-\[\#8890a8\],
+.dns-product-shell.dns-theme-light .dns-comparison-insights p,
+.dns-product-shell.dns-theme-light .dns-comparison-insight-summary,
+.dns-product-shell.dns-theme-light .dns-comparison-insight-columns span,
+.dns-product-shell.dns-theme-light .dns-comparison-risk-block span,
+.dns-product-shell.dns-theme-light .dns-comparison-question-block span {
+  color: #526277 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-editor-panel input,
+.dns-product-shell.dns-theme-light .dns-admin-case-editor-panel textarea,
+.dns-product-shell.dns-theme-light .dns-admin-case-editor-panel select,
+.dns-product-shell.dns-theme-light .dns-admin-case-impact-panel input,
+.dns-product-shell.dns-theme-light .dns-admin-case-impact-panel textarea,
+.dns-product-shell.dns-theme-light .dns-admin-case-impact-panel select {
+  background: #ffffff !important;
+  border-color: rgba(145, 166, 196, 0.9) !important;
+  color: #142033 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-editor-panel input::placeholder,
+.dns-product-shell.dns-theme-light .dns-admin-case-editor-panel textarea::placeholder,
+.dns-product-shell.dns-theme-light .dns-admin-case-impact-panel input::placeholder,
+.dns-product-shell.dns-theme-light .dns-admin-case-impact-panel textarea::placeholder {
+  color: #7a879b !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-nav-action,
+.dns-product-shell.dns-theme-light .dns-admin-case-editor-panel button[class*="border-[#2a3a4e"],
+.dns-product-shell.dns-theme-light .dns-admin-case-impact-panel button[class*="border-[#2a3a4e"] {
+  background: #ffffff !important;
+  border-color: rgba(92, 140, 198, 0.48) !important;
+  color: #24354a !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-admin-case-editor-panel button:not([class*="bg-transparent"]),
+.dns-product-shell.dns-theme-light .dns-admin-case-nav button:not(.dns-admin-case-nav-action),
+.dns-product-shell.dns-theme-light .dns-admin-side-list + button {
+  color: #ffffff;
+}
+
+/* Assessor light theme final contrast layer. Keep after admin review overrides. */
+.dns-product-shell.dns-theme-light .dns-assessor-v2-rail-item,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-rail-footer-button {
+  background: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(145, 166, 196, 0.78) !important;
+  color: #42546c !important;
+  opacity: 1 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-rail-item--active,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-rail-item[aria-current="page"] {
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.16), #ffffff) !important;
+  border-color: rgba(255, 107, 0, 0.72) !important;
+  color: #142033 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-candidate-summary,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-main-panel,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-side-card,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-participant-queue,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-customizer,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-manual-case-block,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-launch-result,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-review-row,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-session-card,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-choice-card,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-info-card,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-mode-note,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-toggle-line,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-channel-card,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-channel-group,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-check-row,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-validation-list button,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-summary-strip > div,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-passport-grid > div,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-side-field,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-inline-actions,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-side-actions {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: rgba(145, 166, 196, 0.78) !important;
+  color: #142033 !important;
+  box-shadow: 0 8px 22px rgba(44, 67, 98, 0.07);
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-choice-card--active,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-info-card--active,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-mode-note--active,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-participant-card--active {
+  background: linear-gradient(135deg, rgba(255, 107, 0, 0.12), #ffffff) !important;
+  border-color: rgba(255, 107, 0, 0.68) !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-choice-card--disabled {
+  background: #f0f4f8 !important;
+  color: #526277 !important;
+  opacity: 0.72 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-input,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-main input,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-main textarea,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-main select {
+  background: #ffffff !important;
+  border-color: rgba(117, 145, 180, 0.78) !important;
+  color: #142033 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-input::placeholder,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-main input::placeholder,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-main textarea::placeholder {
+  color: #74839a !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-light-button,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-secondary {
+  background: #ffffff !important;
+  border-color: rgba(74, 133, 198, 0.62) !important;
+  color: #24415f !important;
+  opacity: 1 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-panel h2,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-panel h3,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-panel strong,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-section-title,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-choice-card span,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-participant-card strong,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-validation-list strong {
+  color: #142033 !important;
+}
+
+.dns-product-shell.dns-theme-light .dns-assessor-v2-panel p,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-participant-card p,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-validation-list small,
+.dns-product-shell.dns-theme-light .dns-assessor-v2-candidate-identity p {
+  color: #526277 !important;
+}

@@ -43,8 +43,17 @@ export interface CycleSignal {
 export interface CaseCycle {
   id: string;
   cycle: number;
+  title?: string | null;
+  description?: string | null;
+  source?: string | null;
   situation: string;
   signal: CycleSignal;
+  zonesAffected?: ZoneType[];
+  timing?: CaseTimingConfig | null;
+  status?: "active" | "draft" | "hidden";
+  isFinal?: boolean;
+  priority?: "normal" | "high" | "critical";
+  criticality?: "normal" | "attention" | "risk";
   options: CaseOption[];
   imageAssetId?: string | null;
   imageUrl?: string | null;

@@ -205,6 +205,7 @@ async function runAdminStorageAcceptanceChecks() {
     const { staffStorage } = await import("../server/staff-storage");
     const { sessionStorage } = await import("../server/session-storage");
     const { auditStorage } = await import("../server/audit-storage");
+    const { contentStorage } = await import("../server/content-storage");
 
     await staffStorage.ensureDefaults();
     const staff = staffStorage.listStaff();
@@ -230,6 +231,48 @@ async function runAdminStorageAcceptanceChecks() {
       (await staffStorage.authenticateAdminByPassword("Task023Evaluator!")) === null,
       "Evaluator password must not authorize admin role elevation",
     );
+
+    contentStorage.saveCase({
+      id: "TASK-CYCLE-META",
+      title: "Cycle metadata acceptance",
+      description: "Checks nested case persistence",
+      primaryCompetencies: [],
+      secondaryCompetencies: [],
+      trigger: { type: "message", source: "Acceptance", text: "Start" },
+      zones_affected: ["торговый_зал"],
+      cycles: [{
+        id: "TASK-CYCLE-META-C1",
+        cycle: 1,
+        title: "Escalation",
+        description: "Full nested case",
+        source: "Store manager",
+        situation: "Acceptance situation",
+        zonesAffected: ["склад"],
+        timing: { decisionDeadlineSeconds: 240, reminderIntervalSeconds: 60 },
+        status: "active",
+        isFinal: true,
+        priority: "critical",
+        criticality: "risk",
+        imageAssetId: null,
+        audioAssetId: null,
+        signal: { type: "message", content: "Acceptance signal" },
+        options: [],
+      }],
+      imageAssetId: null,
+      audioAssetId: null,
+      timing: { decisionDeadlineSeconds: 300, reminderIntervalSeconds: 60 },
+      sortOrder: 1,
+      isActive: true,
+    });
+    const persistedCase = contentStorage.getPublicContent(true).cases.find((item) => item.id === "TASK-CYCLE-META");
+    const persistedCycle = persistedCase?.cycles[0];
+    assertCondition(persistedCycle?.title === "Escalation", "Cycle title must survive persistence");
+    assertCondition(persistedCycle?.source === "Store manager", "Cycle source must survive persistence");
+    assertCondition(persistedCycle?.timing?.decisionDeadlineSeconds === 240, "Cycle timing must survive persistence");
+    assertCondition(persistedCycle?.zonesAffected?.[0] === "склад", "Cycle zones must survive persistence");
+    assertCondition(persistedCycle?.isFinal === true, "Cycle final flag must survive persistence");
+    assertCondition(persistedCycle?.priority === "critical", "Cycle priority must survive persistence");
+    assertCondition(persistedCycle?.criticality === "risk", "Cycle criticality must survive persistence");
 
     const auditRequest = {
       session: {

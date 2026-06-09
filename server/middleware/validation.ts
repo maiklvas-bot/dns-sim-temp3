@@ -288,7 +288,16 @@ const zoneTypeSchema = z.enum(["торговый_зал", "склад", "выд�
 const caseCycleSchema = z.object({
   id: emptyOrIdStringSchema.optional().default(""),
   cycle: boundedIntSchema(1, 100),
+  title: safeLooseTextSchema(300).nullable().optional().default(null),
+  description: safeLooseTextSchema(10_000).nullable().optional().default(null),
+  source: safeLooseTextSchema(300).nullable().optional().default(null),
   situation: safeLooseTextSchema(10_000),
+  zonesAffected: z.array(zoneTypeSchema).max(10).optional().default([]),
+  timing: timingConfigSchema,
+  status: z.enum(["active", "draft", "hidden"]).optional().default("active"),
+  isFinal: z.boolean().optional().default(false),
+  priority: z.enum(["normal", "high", "critical"]).optional().default("normal"),
+  criticality: z.enum(["normal", "attention", "risk"]).optional().default("normal"),
   imageAssetId: nullableIdStringSchema.optional().default(null),
   audioAssetId: nullableIdStringSchema.optional().default(null),
   signal: z.object({

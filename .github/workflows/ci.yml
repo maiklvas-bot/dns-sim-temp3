@@ -41,6 +41,12 @@ jobs:
       - name: Verify Docker data safety
         run: node script/check-docker-safety.mjs
 
+      - name: Verify backup and restore safety
+        run: npm run test:ops
+
+      - name: Verify UI acceptance contracts
+        run: npm run test:ui
+
       - name: Prepare Docker env
         run: cp .env.example .env
 

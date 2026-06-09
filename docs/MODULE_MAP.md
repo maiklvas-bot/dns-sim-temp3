@@ -1,6 +1,15 @@
 # Module Map
 
-`client/` — React frontend: pages, UI components, simulation interface, admin and assessor flows.
+`client/` — React frontend.
+
+- `client/src/pages/` — thin route compatibility entrypoints.
+- `client/src/features/admin/` — admin workspace, schedule utilities, permissions, drafts and admin UI components.
+- `client/src/features/assessor/` — assessor workspace, setup types, constants and participant setup factories.
+- `client/src/features/simulation/` — participant simulation workspace and layout components.
+- `client/src/features/simulation-engine/` — simulation provider plus independent scheduling, timer and action modules.
+- `client/src/components/` — reusable product and UI components shared across features.
+- `client/src/styles/` — ordered base, admin, assessor, simulation and responsive style modules.
+- `client/src/context/SimulationContext.tsx` — compatibility export for the simulation engine provider.
 
 `server/` — Express backend: routes, storage, live-session persistence, PDF generation, middleware.
 

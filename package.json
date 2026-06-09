@@ -10,6 +10,8 @@
     "check": "tsc",
     "lint": "npm run check",
     "test": "tsx script/ci-smoke.ts",
+    "test:ops": "node script/check-ops-safety.mjs",
+    "test:ui": "node script/check-ui-acceptance.mjs",
     "release:prune": "tsx script/prune-release.ts",
     "template:generate": "tsx script/generate-case-signal-template.ts",
     "db:push": "drizzle-kit push",

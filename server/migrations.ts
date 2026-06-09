@@ -89,6 +89,15 @@ export function runMigrations(sqlite: Database.Database): void {
   ensureColumn(sqlite, "case_timings", "decision_deadline_seconds", "INTEGER");
   ensureColumn(sqlite, "case_cycles", "image_asset_id", "TEXT");
   ensureColumn(sqlite, "case_cycles", "audio_asset_id", "TEXT");
+  ensureColumn(sqlite, "case_cycles", "title", "TEXT");
+  ensureColumn(sqlite, "case_cycles", "description", "TEXT");
+  ensureColumn(sqlite, "case_cycles", "source", "TEXT");
+  ensureColumn(sqlite, "case_cycles", "zones_affected_json", "TEXT NOT NULL DEFAULT '[]'");
+  ensureColumn(sqlite, "case_cycles", "timing_json", "TEXT NOT NULL DEFAULT '{}'");
+  ensureColumn(sqlite, "case_cycles", "status", "TEXT NOT NULL DEFAULT 'active'");
+  ensureColumn(sqlite, "case_cycles", "is_final", "INTEGER NOT NULL DEFAULT 0");
+  ensureColumn(sqlite, "case_cycles", "priority", "TEXT NOT NULL DEFAULT 'normal'");
+  ensureColumn(sqlite, "case_cycles", "criticality", "TEXT NOT NULL DEFAULT 'normal'");
   ensureColumn(sqlite, "case_options", "comment", "TEXT");
   ensureColumn(sqlite, "case_options", "next_cycle_id", "TEXT");
   ensureColumn(sqlite, "case_options", "next_delay_seconds", "INTEGER");
