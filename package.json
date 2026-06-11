@@ -21,7 +21,8 @@
     "db:generate-bootstrap": "tsx script/generate-bootstrap-content.ts",
     "staff:reset": "tsx script/reset-staff-accounts.ts",
     "media:import-local": "tsx script/import-local-media.ts",
-    "media:import": "npm run media:import-local --"
+    "media:import": "npm run media:import-local --",
+    "typecheck": "npm run check"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
