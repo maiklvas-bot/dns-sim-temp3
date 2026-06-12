@@ -1,10 +1,11 @@
 import path from "path";
 import fs from "fs";
-import { spawnSync } from "child_process";
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import { buildWorkbookBuffer } from "./excel-export";
+import { requireExportAccess } from "./export-access";
+import { generatePdfBuffer } from "./pdf-export";
 import { contentStorage } from "./content-storage";
 import type { EditableEmailCase, EditableMessengerCase, EditableSimCase, EditableVideoCase } from "./content-storage";
 import { liveSessionService, normalizeLiveAccessCode } from "./live-session-service";
@@ -302,6 +303,7 @@ export async function registerRoutes(
 ): Promise<Server> {
   liveSessionService.attach(httpServer);
   const requireSessionAccess = requireSimulationAccess(sessionStorage);
+  const requireAuthorizedExport = requireExportAccess(sessionStorage);
 
   app.get("/api/simulation-content", (_req, res) => {
     res.json(contentStorage.getPublicContent(false));
@@ -1115,7 +1117,7 @@ export async function registerRoutes(
     res.json({ ok: true });
   });
 
-  app.post("/api/export-pdf", heavyOperationRateLimiter, validateBody(pdfExportSchema), (req, res, next) => {
+  app.post("/api/export-pdf", heavyOperationRateLimiter, validateBody(pdfExportSchema), requireAuthorizedExport, async (req, res, next) => {
     try {
       const payload = req.validatedBody as z.infer<typeof pdfExportSchema>;
 
@@ -1129,35 +1131,7 @@ export async function registerRoutes(
         return;
       }
 
-      const inputBuf = Buffer.from(JSON.stringify(payload), "utf-8");
-      const pythonResult = spawnSync(
-        "python3",
-        [scriptPath],
-        {
-          input: inputBuf,
-          maxBuffer: 20 * 1024 * 1024,
-          timeout: 60000,
-        },
-      );
-
-      if (pythonResult.error) {
-        next(internalApiError(
-          "PDF_EXPORT_FAILED",
-          "Не удалось сформировать PDF.",
-          pythonResult.error,
-        ));
-        return;
-      }
-
-      if (pythonResult.status !== 0) {
-        const stderr = pythonResult.stderr ? (pythonResult.stderr as Buffer).toString("utf-8") : "unknown error";
-        next(internalApiError(
-          "PDF_EXPORT_FAILED",
-          "Не удалось сформировать PDF.",
-          new Error(`PDF generator exited with status ${pythonResult.status}: ${stderr.slice(0, 2_000)}`),
-        ));
-        return;
-      }
+      const pdf = await generatePdfBuffer(payload, scriptPath);
 
       const dateStr = new Date().toISOString().slice(0, 10);
       const safeName = `report_${dateStr}.pdf`;
@@ -1167,7 +1141,7 @@ export async function registerRoutes(
       res.setHeader("Content-Disposition", `attachment; filename="${safeName}"; filename*=UTF-8''${utf8Name}`);
       res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
       res.setHeader("Pragma", "no-cache");
-      res.send(pythonResult.stdout);
+      res.send(pdf);
     } catch (error) {
       next(internalApiError(
         "PDF_EXPORT_FAILED",
@@ -1177,7 +1151,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/export-xlsx", heavyOperationRateLimiter, validateBody(excelExportSchema), (req, res, next) => {
+  app.post("/api/export-xlsx", heavyOperationRateLimiter, validateBody(excelExportSchema), requireAuthorizedExport, (req, res, next) => {
     try {
       const body = req.validatedBody as z.infer<typeof excelExportSchema>;
       const sheets = Array.isArray(body.sheets) ? body.sheets : [];

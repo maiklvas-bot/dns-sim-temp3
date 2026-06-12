@@ -1200,7 +1200,7 @@ assertSchemaRejects(
 );
 assertSchemaAccepts(
   excelExportSchema,
-  { sheets: [{ name: "Summary", rows: [{ score: 4 }] }] },
+  { sheets: [{ name: "Summary", rows: [["Score"], [4]] }] },
   "XLSX export schema must accept sheet payloads",
 );
 assertSchemaRejects(

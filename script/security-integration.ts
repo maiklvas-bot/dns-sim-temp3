@@ -144,6 +144,21 @@ async function loginStaff(
   };
 }
 
+function exportWorkbookPayload(sessionId?: number) {
+  return {
+    ...(sessionId ? { sessionId } : {}),
+    sheets: [{ name: "Summary", rows: [["Score"], [4]] }],
+  };
+}
+
+function postJson(baseUrl: string, pathname: string, body: unknown, headers: Record<string, string> = {}) {
+  return fetch(`${baseUrl}${pathname}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...headers },
+    body: JSON.stringify(body),
+  });
+}
+
 async function run() {
   console.log("Starting security integration server...");
   const server = await startServer();
@@ -206,6 +221,54 @@ async function run() {
       headers: { Cookie: admin.cookie },
     });
     assert.equal(adminRead.response.status, 200);
+
+    const anonymousExport = await postJson(
+      server.baseUrl,
+      "/api/export-xlsx",
+      exportWorkbookPayload(),
+    );
+    assert.equal(anonymousExport.status, 401);
+
+    const participantExport = await postJson(
+      server.baseUrl,
+      "/api/export-xlsx",
+      exportWorkbookPayload(first.body.id),
+      { "X-Simulation-Token": first.body.sessionToken },
+    );
+    assert.equal(participantExport.status, 200);
+
+    const crossSessionExport = await postJson(
+      server.baseUrl,
+      "/api/export-xlsx",
+      exportWorkbookPayload(second.body.id),
+      { "X-Simulation-Token": first.body.sessionToken },
+    );
+    assert.equal(crossSessionExport.status, 403);
+
+    const evaluatorExport = await postJson(
+      server.baseUrl,
+      "/api/export-xlsx",
+      exportWorkbookPayload(),
+      {
+        Cookie: evaluator.cookie,
+        "X-CSRF-Token": evaluator.csrfToken,
+      },
+    );
+    assert.equal(evaluatorExport.status, 200);
+
+    const adminExport = await postJson(
+      server.baseUrl,
+      "/api/export-xlsx",
+      exportWorkbookPayload(),
+      {
+        Cookie: admin.cookie,
+        "X-CSRF-Token": admin.csrfToken,
+      },
+    );
+    assert.equal(adminExport.status, 200);
+
+    const anonymousPdf = await postJson(server.baseUrl, "/api/export-pdf", {});
+    assert.equal(anonymousPdf.status, 401);
 
     const sqlite = new Database(server.databasePath);
     const legacyId = Number(sqlite.prepare(`

@@ -35,6 +35,35 @@ export function toPublicSimulationSession(session: SimulationSession) {
   return publicSession;
 }
 
+export function hasSimulationSessionAccess(
+  req: Request,
+  res: Response,
+  simulationSession: SimulationSession,
+): boolean {
+  if (req.session.staff) {
+    return true;
+  }
+
+  const submittedToken = req.get(SIMULATION_TOKEN_HEADER) || "";
+  if (!simulationSession.participantTokenHash || !submittedToken) {
+    res.status(401).json({
+      message: "Simulation token required",
+      code: "SIMULATION_TOKEN_REQUIRED",
+    });
+    return false;
+  }
+
+  if (!verifySimulationSessionToken(submittedToken, simulationSession.participantTokenHash)) {
+    res.status(403).json({
+      message: "Invalid simulation token",
+      code: "SIMULATION_TOKEN_INVALID",
+    });
+    return false;
+  }
+
+  return true;
+}
+
 export function requireSimulationAccess(sessionStorage: SessionStorage) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const params = req.validatedParams as { id?: string } | undefined;
@@ -49,25 +78,7 @@ export function requireSimulationAccess(sessionStorage: SessionStorage) {
     }
 
     req.simulationSession = simulationSession;
-    if (req.session.staff) {
-      next();
-      return;
-    }
-
-    const submittedToken = req.get(SIMULATION_TOKEN_HEADER) || "";
-    if (!simulationSession.participantTokenHash || !submittedToken) {
-      res.status(401).json({
-        message: "Simulation token required",
-        code: "SIMULATION_TOKEN_REQUIRED",
-      });
-      return;
-    }
-
-    if (!verifySimulationSessionToken(submittedToken, simulationSession.participantTokenHash)) {
-      res.status(403).json({
-        message: "Invalid simulation token",
-        code: "SIMULATION_TOKEN_INVALID",
-      });
+    if (!hasSimulationSessionAccess(req, res, simulationSession)) {
       return;
     }
 

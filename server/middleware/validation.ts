@@ -479,6 +479,7 @@ const pdfImpactfulDecisionSchema = z.object({
 }).strict();
 
 export const pdfExportSchema = z.object({
+  sessionId: z.number().int().positive().optional(),
   participantName: pdfSafeText(100).optional().default(""),
   assessorName: pdfSafeText(100).optional().default(""),
   difficulty: z.enum(["easy", "medium", "hard"]).optional().default("medium"),
@@ -499,11 +500,19 @@ export const pdfExportSchema = z.object({
  * Схема для экспорта Excel.
  */
 export const excelExportSchema = z.object({
+  sessionId: z.number().int().positive().optional(),
   sheets: z.array(z.object({
     name: z.string().max(100).optional(),
-    rows: z.array(z.record(z.any())).optional().default([]),
-  })).min(1, "Необходим хотя бы один лист"),
-});
+    rows: z.array(
+      z.array(z.union([
+        z.string().max(10_000),
+        z.number().finite(),
+        z.boolean(),
+        z.null(),
+      ])).max(250),
+    ).max(10_000).optional().default([]),
+  }).strict()).min(1, "Необходим хотя бы один лист").max(20),
+}).strict();
 
 /**
  * Схема для получения списка результатов (query params).

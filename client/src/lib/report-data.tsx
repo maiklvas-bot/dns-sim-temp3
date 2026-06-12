@@ -253,6 +253,7 @@ export function buildReportFromState(
       dailyRevenue: state.metrics.dailyRevenue,
     },
     retestDate: getRetestDateLabel(),
+    sessionId: state.sessionId || 0,
     expectedCompScoresMap,
     ...competencyRows,
   };
@@ -328,6 +329,7 @@ export function buildReportFromSessionDetails(
 
 export function buildPdfPayloadFromReport(report: ReturnType<typeof buildReportFromState> | ReturnType<typeof buildReportFromSessionDetails>) {
   return {
+    sessionId: report.sessionId || undefined,
     participantName: report.participantName,
     assessorName: report.assessorName,
     difficulty: report.difficulty,
