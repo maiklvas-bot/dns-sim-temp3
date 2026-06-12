@@ -7,6 +7,8 @@ npm ci
 npm run lint
 npm run test
 npm run build
+npx playwright install chromium
+npm run test:browser
 docker compose build app
 ```
 
@@ -35,6 +37,10 @@ Manual smoke checks:
 - result page shows scores and competency profile;
 - PDF export opens and contains Cyrillic text correctly;
 - PDF competency radar shows expected line and actual line.
+
+Browser acceptance covers `/`, `/student` and `/staff-login` at `1920x1080`,
+`1366x768` and `390x844`. It verifies navigation, the instruction dialog,
+theme switching, horizontal overflow and browser console errors.
 
 Before production release:
 
