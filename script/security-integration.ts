@@ -5,6 +5,7 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import Database from "better-sqlite3";
+import WebSocket from "ws";
 
 interface RunningServer {
   baseUrl: string;
@@ -159,9 +160,79 @@ function postJson(baseUrl: string, pathname: string, body: unknown, headers: Rec
   });
 }
 
+function toWebSocketUrl(baseUrl: string, params: Record<string, string>) {
+  const url = new URL("/ws/live", baseUrl);
+  url.protocol = "ws:";
+  Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+  return url.toString();
+}
+
+async function expectSocketRejected(url: string, headers: Record<string, string> = {}) {
+  return new Promise<number>((resolve, reject) => {
+    const socket = new WebSocket(url, { headers });
+    const timeout = setTimeout(() => {
+      socket.terminate();
+      reject(new Error(`Timed out waiting for rejected WebSocket handshake: ${url}`));
+    }, 5_000);
+
+    socket.once("open", () => {
+      clearTimeout(timeout);
+      socket.close();
+      reject(new Error(`WebSocket handshake was unexpectedly accepted: ${url}`));
+    });
+    socket.once("unexpected-response", (_request, response) => {
+      clearTimeout(timeout);
+      response.resume();
+      resolve(response.statusCode || 0);
+    });
+    socket.on("error", () => undefined);
+  });
+}
+
+function waitForSocketMessage(
+  socket: WebSocket,
+  predicate: (message: any) => boolean,
+  timeoutMs = 5_000,
+) {
+  return new Promise<any>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      socket.off("message", onMessage);
+      reject(new Error("Timed out waiting for WebSocket message"));
+    }, timeoutMs);
+    const onMessage = (raw: WebSocket.RawData) => {
+      const message = JSON.parse(raw.toString());
+      if (!predicate(message)) {
+        return;
+      }
+      clearTimeout(timeout);
+      socket.off("message", onMessage);
+      resolve(message);
+    };
+    socket.on("message", onMessage);
+  });
+}
+
+async function connectSocketAndWaitForHello(
+  url: string,
+  headers: Record<string, string> = {},
+) {
+  const socket = new WebSocket(url, { headers });
+  const hello = waitForSocketMessage(socket, (message) => message.type === "hello");
+  await new Promise<void>((resolve, reject) => {
+    socket.once("open", () => resolve());
+    socket.once("error", reject);
+    socket.once("unexpected-response", (_request, response) => {
+      response.resume();
+      reject(new Error(`WebSocket handshake failed with ${response.statusCode}`));
+    });
+  });
+  return { socket, hello: await hello };
+}
+
 async function run() {
   console.log("Starting security integration server...");
   const server = await startServer();
+  const sockets: WebSocket[] = [];
   console.log(`Security integration server ready at ${server.baseUrl}`);
   try {
     const first = await requestJson(server.baseUrl, "/api/sessions", {
@@ -270,6 +341,119 @@ async function run() {
     const anonymousPdf = await postJson(server.baseUrl, "/api/export-pdf", {});
     assert.equal(anonymousPdf.status, 401);
 
+    const liveResponse = await requestJson(server.baseUrl, "/api/live-sessions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Cookie: evaluator.cookie,
+        "X-CSRF-Token": evaluator.csrfToken,
+      },
+      body: JSON.stringify({ participantName: "Live Participant" }),
+    });
+    assert.equal(liveResponse.response.status, 200);
+    const liveSessionId = liveResponse.body.liveSessionId as string;
+    const accessCode = liveResponse.body.accessCode as string;
+
+    assert.equal(
+      await expectSocketRejected(toWebSocketUrl(server.baseUrl, {
+        liveSessionId,
+        role: "student",
+      })),
+      401,
+    );
+    assert.equal(
+      await expectSocketRejected(toWebSocketUrl(server.baseUrl, {
+        liveSessionId,
+        role: "student",
+        accessCode: "WRONG1",
+      })),
+      403,
+    );
+    assert.equal(
+      await expectSocketRejected(toWebSocketUrl(server.baseUrl, {
+        liveSessionId,
+        role: "assessor",
+      })),
+      401,
+    );
+
+    const studentConnection = await connectSocketAndWaitForHello(
+      toWebSocketUrl(server.baseUrl, { liveSessionId, role: "student", accessCode }),
+    );
+    sockets.push(studentConnection.socket);
+    assert.equal(studentConnection.hello.payload.config.liveSessionId, liveSessionId);
+
+    const evaluatorConnection = await connectSocketAndWaitForHello(
+      toWebSocketUrl(server.baseUrl, { liveSessionId, role: "assessor" }),
+      { Cookie: evaluator.cookie },
+    );
+    sockets.push(evaluatorConnection.socket);
+
+    const adminConnection = await connectSocketAndWaitForHello(
+      toWebSocketUrl(server.baseUrl, { liveSessionId, role: "assessor" }),
+      { Cookie: admin.cookie },
+    );
+    sockets.push(adminConnection.socket);
+
+    const forbiddenStatus = waitForSocketMessage(
+      studentConnection.socket,
+      (message) => message.type === "error" && /status/i.test(message.payload?.message || ""),
+    );
+    studentConnection.socket.send(JSON.stringify({ type: "status", payload: "completed" }));
+    await forbiddenStatus;
+
+    const forbiddenReset = waitForSocketMessage(
+      studentConnection.socket,
+      (message) => message.type === "error" && /reset/i.test(message.payload?.message || ""),
+    );
+    studentConnection.socket.send(JSON.stringify({ type: "reset" }));
+    await forbiddenReset;
+
+    const snapshot = {
+      liveSessionId,
+      updatedAt: Date.now(),
+      state: { isRunning: true, isCompleted: false, decisions: [] },
+    };
+    const assessorSnapshot = waitForSocketMessage(
+      evaluatorConnection.socket,
+      (message) => message.type === "snapshot" && message.payload?.updatedAt === snapshot.updatedAt,
+    );
+    studentConnection.socket.send(JSON.stringify({ type: "snapshot", payload: snapshot }));
+    await assessorSnapshot;
+
+    const statusAfterStudentCommands = await requestJson(server.baseUrl, `/api/live-sessions/${liveSessionId}`, {
+      headers: { Cookie: evaluator.cookie },
+    });
+    assert.equal(statusAfterStudentCommands.response.status, 200);
+    assert.equal(statusAfterStudentCommands.body.status, "running");
+
+    const studentReset = waitForSocketMessage(studentConnection.socket, (message) => message.type === "reset");
+    evaluatorConnection.socket.send(JSON.stringify({ type: "reset" }));
+    await studentReset;
+
+    const studentStatus = waitForSocketMessage(
+      studentConnection.socket,
+      (message) => message.type === "status" && message.payload === "running",
+    );
+    adminConnection.socket.send(JSON.stringify({ type: "status", payload: "running" }));
+    await studentStatus;
+
+    const forgedHttpStatus = await requestJson(server.baseUrl, `/api/live-sessions/${liveSessionId}/student-sync`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        accessCode,
+        status: "completed",
+        snapshot: {
+          liveSessionId,
+          updatedAt: Date.now(),
+          state: { isRunning: true, isCompleted: false, decisions: [] },
+        },
+      }),
+    });
+    assert.equal(forgedHttpStatus.response.status, 200);
+    assert.equal(forgedHttpStatus.body.status, "running");
+
     const sqlite = new Database(server.databasePath);
     const legacyId = Number(sqlite.prepare(`
       INSERT INTO simulation_sessions (
@@ -299,6 +483,7 @@ async function run() {
 
     console.log("Security integration checks passed: persisted session access matrix verified.");
   } finally {
+    sockets.forEach((socket) => socket.close());
     await stopServer(server);
   }
 }

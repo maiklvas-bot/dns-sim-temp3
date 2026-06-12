@@ -2565,6 +2565,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
           }
         },
       },
+      liveRole === "student" ? liveConfig.accessCode : undefined,
     );
 
     liveSocketRef.current = controller;
@@ -2757,15 +2758,6 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       state,
     } satisfies LiveSimulationSnapshot<SimulationState>);
   }, [liveConfig, liveRole, state]);
-
-  useEffect(() => {
-    if (liveRole !== "student" || !liveSocketRef.current) {
-      return;
-    }
-
-    const nextStatus: LiveSimulationStatus = state.isCompleted ? "completed" : state.isRunning ? "running" : "waiting";
-    liveSocketRef.current.sendStatus(nextStatus);
-  }, [liveRole, state.isCompleted, state.isRunning]);
 
   useEffect(() => {
     if (!state.sessionId) {
