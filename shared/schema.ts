@@ -273,6 +273,7 @@ export const simulationSettings = sqliteTable("simulation_settings", {
 export const simulationSessions = sqliteTable("simulation_sessions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   participantId: integer("participant_id"),
+  participantTokenHash: text("participant_token_hash"),
   participantName: text("participant_name").notNull(),
   evaluatorAccountId: integer("evaluator_account_id"),
   evaluatorName: text("evaluator_name").notNull().default(""),
@@ -295,7 +296,7 @@ export const simulationSessions = sqliteTable("simulation_sessions", {
 
 export const sessionAnswers = sqliteTable("session_answers", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  sessionId: integer("session_id").notNull(),
+  sessionId: integer("session_id").notNull().references(() => simulationSessions.id, { onDelete: "cascade" }),
   sourceType: text("source_type").notNull(), // main_case | email | messenger | video
   contentId: text("content_id").notNull(),
   caseTitle: text("case_title").notNull(),
@@ -314,7 +315,7 @@ export const sessionAnswers = sqliteTable("session_answers", {
 
 export const sessionResults = sqliteTable("session_results", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  sessionId: integer("session_id").notNull(),
+  sessionId: integer("session_id").notNull().references(() => simulationSessions.id, { onDelete: "cascade" }),
   totalScore: integer("total_score").notNull().default(0),
   averageScore: integer("average_score").notNull().default(0),
   competencyAveragesJson: text("competency_averages_json").notNull().default("{}"),
@@ -329,7 +330,7 @@ export const sessionResults = sqliteTable("session_results", {
 
 export const sessionMetrics = sqliteTable("session_metrics", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  sessionId: integer("session_id").notNull(),
+  sessionId: integer("session_id").notNull().references(() => simulationSessions.id, { onDelete: "cascade" }),
   timestamp: text("timestamp").notNull(),
   queue: integer("queue").notNull().default(20),
   conversion: integer("conversion").notNull().default(50),
