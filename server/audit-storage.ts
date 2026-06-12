@@ -2,6 +2,7 @@ import type { Request } from "express";
 import { and, desc, eq, like, or, sql } from "drizzle-orm";
 import { auditLogs } from "@shared/schema";
 import { db } from "./db";
+import { sanitizeSensitiveData } from "./sensitive-data";
 
 export type AuditArea = "security" | "admin" | "evaluator" | "simulation" | "system";
 export type AuditOutcome = "success" | "failure";
@@ -38,52 +39,7 @@ export interface AuditListFilters {
   offset: number;
 }
 
-const REDACTED = "[REDACTED]";
-const OMITTED_BINARY = "[BINARY CONTENT OMITTED]";
-const SENSITIVE_KEYS = new Set([
-  "password",
-  "passwordhash",
-  "currentpassword",
-  "newpassword",
-  "confirmpassword",
-  "csrftoken",
-  "sessionsecret",
-  "secret",
-  "authorization",
-  "cookie",
-  "accesscode",
-]);
 const VOLATILE_KEYS = new Set(["updatedAt", "createdAt", "publicUrl", "imageUrl", "audioUrl", "videoUrl"]);
-
-function sanitizeValue(value: unknown, key = "", depth = 0): unknown {
-  if (SENSITIVE_KEYS.has(key.toLowerCase())) {
-    return REDACTED;
-  }
-  if (depth > 10) {
-    return "[DEPTH LIMIT]";
-  }
-  if (value == null || typeof value === "number" || typeof value === "boolean") {
-    return value;
-  }
-  if (typeof value === "string") {
-    if (key.toLowerCase() === "data" && value.length > 256) {
-      return OMITTED_BINARY;
-    }
-    return value.length > 20_000 ? `${value.slice(0, 20_000)}...[TRUNCATED]` : value;
-  }
-  if (Array.isArray(value)) {
-    return value.slice(0, 500).map((item) => sanitizeValue(item, key, depth + 1));
-  }
-  if (typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>).map(([entryKey, entryValue]) => [
-        entryKey,
-        sanitizeValue(entryValue, entryKey, depth + 1),
-      ]),
-    );
-  }
-  return String(value);
-}
 
 function stripVolatile(value: unknown): unknown {
   if (Array.isArray(value)) {
@@ -157,9 +113,9 @@ export class AuditStorage {
   record(req: Request, input: AuditRecordInput) {
     const sessionActor = req.session?.staff;
     const actor = input.actor || sessionActor || null;
-    const before = stripVolatile(sanitizeValue(input.before));
-    const after = stripVolatile(sanitizeValue(input.after));
-    const metadata = sanitizeValue(input.metadata ?? {});
+    const before = stripVolatile(sanitizeSensitiveData(input.before));
+    const after = stripVolatile(sanitizeSensitiveData(input.after));
+    const metadata = sanitizeSensitiveData(input.metadata ?? {});
     const changedFields = collectChangedFields(before, after);
 
     return db.insert(auditLogs).values({

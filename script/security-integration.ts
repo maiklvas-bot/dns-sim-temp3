@@ -481,6 +481,23 @@ async function run() {
     });
     assert.equal(legacyStaff.response.status, 200);
 
+    const capturedLogs = server.logs();
+    for (const sensitiveValue of [
+      first.body.sessionToken,
+      second.body.sessionToken,
+      evaluator.csrfToken,
+      admin.csrfToken,
+      accessCode,
+      "SecurityEvaluator!123",
+      "SecurityAdmin!123",
+    ]) {
+      assert.equal(
+        capturedLogs.includes(sensitiveValue),
+        false,
+        `Server logs must not contain sensitive value: ${sensitiveValue}`,
+      );
+    }
+
     console.log("Security integration checks passed: persisted session access matrix verified.");
   } finally {
     sockets.forEach((socket) => socket.close());

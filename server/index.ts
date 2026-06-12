@@ -1,4 +1,5 @@
 import "./load-env";
+import { randomUUID } from "node:crypto";
 import express from "express";
 import helmet from "helmet";
 import { registerRoutes } from "./routes";
@@ -12,6 +13,7 @@ import { csrfProtection } from "./middleware/csrf";
 import { apiErrorHandler } from "./middleware/error-handler";
 import { serveMediaStatic } from "./media-static";
 import { staffSessionMiddleware } from "./staff-session";
+import { buildContentSecurityPolicyDirectives } from "./security-headers";
 
 const app = express();
 const httpServer = createServer(app);
@@ -22,21 +24,21 @@ declare module "http" {
   }
 }
 
+declare global {
+  namespace Express {
+    interface Request {
+      requestId?: string;
+    }
+  }
+}
+
 const isHttps = process.env.HTTPS === "true";
 
 app.disable("x-powered-by");
 app.use(
   helmet({
     contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-        imgSrc: ["'self'", "data:", "blob:"],
-        mediaSrc: ["'self'", "data:", "blob:"],
-        connectSrc: ["'self'", "ws:", "wss:"],
-      },
+      directives: buildContentSecurityPolicyDirectives(),
     },
     crossOriginEmbedderPolicy: false,
     hsts: isHttps,
@@ -58,6 +60,11 @@ app.use(
 
 app.use(express.urlencoded({ extended: false }));
 app.use(staffSessionMiddleware);
+app.use((req, res, next) => {
+  req.requestId = randomUUID();
+  res.setHeader("X-Request-Id", req.requestId);
+  next();
+});
 
 app.get("/health", (_req, res) => {
   res.json({
@@ -86,24 +93,11 @@ export function log(message: string, source = "express") {
 
 app.use((req, res, next) => {
   const start = Date.now();
-  const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
-
-  const originalResJson = res.json;
-  res.json = function (bodyJson, ...args) {
-    capturedJsonResponse = bodyJson;
-    return originalResJson.apply(res, [bodyJson, ...args]);
-  };
 
   res.on("finish", () => {
     const duration = Date.now() - start;
-    if (path.startsWith("/api")) {
-      let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
-      }
-
-      log(logLine);
+    if (req.path.startsWith("/api")) {
+      log(`${req.method} ${req.path} ${res.statusCode} in ${duration}ms requestId=${req.requestId}`);
     }
   });
 

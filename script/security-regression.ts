@@ -9,6 +9,8 @@ import {
   hashSimulationSessionToken,
   verifySimulationSessionToken,
 } from "../server/simulation-session-access";
+import { sanitizeSensitiveData } from "../server/sensitive-data";
+import { buildContentSecurityPolicyDirectives } from "../server/security-headers";
 
 function testSimulationSessionTokens() {
   const token = createSimulationSessionToken();
@@ -58,7 +60,42 @@ function testSessionForeignKeys() {
   }
 }
 
+function testSensitiveDataSanitization() {
+  const sanitized = sanitizeSensitiveData({
+    sessionToken: "session-value",
+    participant_token_hash: "participant-hash",
+    nested: {
+      "csrf-token": "csrf-value",
+      accessCode: "access-value",
+      password: "password-value",
+      authorization: "Bearer value",
+      cookie: "cookie-value",
+      visible: "safe-value",
+    },
+  }) as Record<string, any>;
+
+  assert.equal(sanitized.sessionToken, "[REDACTED]");
+  assert.equal(sanitized.participant_token_hash, "[REDACTED]");
+  assert.equal(sanitized.nested["csrf-token"], "[REDACTED]");
+  assert.equal(sanitized.nested.accessCode, "[REDACTED]");
+  assert.equal(sanitized.nested.password, "[REDACTED]");
+  assert.equal(sanitized.nested.authorization, "[REDACTED]");
+  assert.equal(sanitized.nested.cookie, "[REDACTED]");
+  assert.equal(sanitized.nested.visible, "safe-value");
+}
+
+function testProductionCsp() {
+  const production = buildContentSecurityPolicyDirectives("production");
+  assert.deepEqual(production.scriptSrc, ["'self'"]);
+  assert.equal(production.scriptSrc.includes("'unsafe-eval'"), false);
+
+  const development = buildContentSecurityPolicyDirectives("development");
+  assert.equal(development.scriptSrc.includes("'unsafe-eval'"), true);
+}
+
 testSimulationSessionTokens();
 testSessionForeignKeys();
+testSensitiveDataSanitization();
+testProductionCsp();
 
-console.log("Security regression checks passed: participant tokens and session foreign keys verified.");
+console.log("Security regression checks passed: tokens, foreign keys, sanitization, and CSP verified.");

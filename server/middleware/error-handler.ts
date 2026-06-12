@@ -100,7 +100,7 @@ export const apiErrorHandler: ErrorRequestHandler = (error, req, res, next) => {
   }
 
   const statusCode = getStatusCode(error);
-  const requestId = randomUUID();
+  const requestId = req.requestId || randomUUID();
   const code = getErrorCode(error, statusCode);
 
   const logEntry = {
