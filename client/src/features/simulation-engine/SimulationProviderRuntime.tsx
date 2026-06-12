@@ -46,6 +46,10 @@ import type {
   LiveSimulationStatus,
 } from "@shared/live-session";
 import {
+  accumulateCompetencyTotals,
+  calculateSimulationScoreSummary,
+} from "@shared/simulation-scoring";
+import {
   consumePendingLiveSimulationState,
   connectToLiveSimulationSession,
   fetchRemoteLiveSimulation,
@@ -988,41 +992,6 @@ function shouldAutoCompleteSimulation(state: SimulationState) {
   );
 }
 
-function buildCompetencyAverageMap(totals: SimulationState["competencyTotals"]): Record<string, number> {
-  return Object.fromEntries(
-    Object.entries(totals)
-      .filter(([, value]) => value.count > 0)
-      .map(([key, value]) => [key, Math.round((value.total / value.count) * 10) / 10]),
-  );
-}
-
-const TIME_PROFILE_EVALUATION_COEFFICIENT: Record<SimulationState["difficulty"], number> = {
-  easy: 0.95,
-  medium: 1,
-  hard: 1.08,
-};
-
-function getCaseWeightRatio(caseId: string, sourceType: SessionSourceType) {
-  if (sourceType !== "main_case") {
-    return 1;
-  }
-
-  const settings = getSimulationSettingsSnapshot<SimulationRuntimeSettings>();
-  const explicitWeight = Number(settings?.caseWeights?.[caseId]);
-  if (!Number.isFinite(explicitWeight)) {
-    return 1;
-  }
-
-  return clamp(explicitWeight / 100, 0, 1);
-}
-
-function getTimeEvaluationCoefficient(
-  difficulty: SimulationState["difficulty"],
-  timeInfluenceEnabled: boolean,
-) {
-  return timeInfluenceEnabled ? TIME_PROFILE_EVALUATION_COEFFICIENT[difficulty] : 1;
-}
-
 function applyCompetencyContribution(
   currentTotals: SimulationState["competencyTotals"],
   competencyScores: Record<string, number> | null | undefined,
@@ -1030,71 +999,24 @@ function applyCompetencyContribution(
   sourceType: SessionSourceType,
   resolvedScore: number,
 ) {
-  const weightRatio = getCaseWeightRatio(caseId, sourceType);
-  const qualityRatio = clamp(resolvedScore / 5, 0.1, 1);
-  const nextTotals = { ...currentTotals };
-
-  Object.entries(competencyScores || {}).forEach(([competencyId, rawScore]) => {
-    const score = Number(rawScore || 0);
-    if (!nextTotals[competencyId]) {
-      nextTotals[competencyId] = { total: 0, count: 0 };
-    }
-
-    nextTotals[competencyId] = {
-      total: nextTotals[competencyId].total + score * weightRatio * qualityRatio,
-      count: nextTotals[competencyId].count + weightRatio,
-    };
-  });
-
-  return nextTotals;
+  return accumulateCompetencyTotals(
+    currentTotals,
+    competencyScores,
+    caseId,
+    sourceType,
+    resolvedScore,
+    getSimulationSettingsSnapshot<SimulationRuntimeSettings>(),
+  );
 }
 
 function buildAdjustedSessionSummary(state: SimulationState) {
   const settings = getSimulationSettingsSnapshot<SimulationRuntimeSettings>();
-  const timeCoefficient = getTimeEvaluationCoefficient(
-    state.difficulty,
-    Boolean(settings?.timeInfluenceEnabled),
-  );
-
-  let weightedScoreTotal = 0;
-  let weightedDecisionCount = 0;
-
-  state.decisions.forEach((decision) => {
-    const weightRatio = getCaseWeightRatio(decision.caseId, decision.sourceType);
-    weightedScoreTotal += decision.score * weightRatio;
-    weightedDecisionCount += weightRatio;
+  return calculateSimulationScoreSummary({
+    decisions: state.decisions,
+    difficulty: state.difficulty,
+    settings,
+    competencyTotals: state.competencyTotals,
   });
-
-  const averageScore = weightedDecisionCount > 0
-    ? Math.round(clamp((weightedScoreTotal / weightedDecisionCount) * timeCoefficient, 0, 5) * 10) / 10
-    : 0;
-
-  const reconstructedTotals = state.decisions.reduce<SimulationState["competencyTotals"]>((totals, decision) => (
-    applyCompetencyContribution(
-      totals,
-      decision.competencyScores,
-      decision.caseId,
-      decision.sourceType,
-      decision.score,
-    )
-  ), {});
-  const effectiveCompetencyTotals = Object.keys(state.competencyTotals || {}).length > 0
-    ? state.competencyTotals
-    : reconstructedTotals;
-
-  const competencyAverages = Object.fromEntries(
-    Object.entries(buildCompetencyAverageMap(effectiveCompetencyTotals)).map(([competencyId, value]) => ([
-      competencyId,
-      Math.round(clamp(value * timeCoefficient, 0, 5) * 10) / 10,
-    ])),
-  );
-
-  return {
-    totalScore: Math.round(weightedScoreTotal * timeCoefficient),
-    averageScore,
-    competencyAverages,
-    timeCoefficient,
-  };
 }
 
 function buildSessionMetricPayload(metrics: RealisticMetrics, timestamp: string) {

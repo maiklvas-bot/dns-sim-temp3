@@ -3,6 +3,7 @@ import fs from "fs";
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
+import { accumulateCompetencyTotals } from "@shared/simulation-scoring";
 import { buildWorkbookBuffer } from "./excel-export";
 import { requireExportAccess } from "./export-access";
 import { generatePdfBuffer } from "./pdf-export";
@@ -201,22 +202,20 @@ function buildRecoveredLiveSnapshot(sessionDetails: NonNullable<ReturnType<typeo
       .filter((cycle) => !answeredMainCycles.has(`${caseItem.id}:${cycle.cycle}`))
       .map((cycle) => caseStartPointer + Math.max(0, cycle.cycle - 1));
   });
-  const competencyTotals: Record<string, { total: number; count: number }> = {};
+  let competencyTotals: Record<string, { total: number; count: number }> = {};
   const decisions = answers.map((answer) => {
     const details = (answer.details || {}) as Record<string, any>;
     const rawEffects = (answer.rawEffects || {}) as Record<string, any>;
     const competencyScores = (answer.competencyScores || {}) as Record<string, any>;
     const score = Number(answer.score || 0);
-    const qualityRatio = clampNumber(score / 5, 0.1, 1);
-
-    Object.entries(competencyScores).forEach(([competencyId, rawScore]) => {
-      const value = Number(rawScore || 0);
-      if (!competencyTotals[competencyId]) {
-        competencyTotals[competencyId] = { total: 0, count: 0 };
-      }
-      competencyTotals[competencyId].total += value * qualityRatio;
-      competencyTotals[competencyId].count += 1;
-    });
+    competencyTotals = accumulateCompetencyTotals(
+      competencyTotals,
+      competencyScores,
+      answer.contentId,
+      answer.sourceType,
+      score,
+      content.settings,
+    );
 
     return {
       caseId: answer.contentId,
