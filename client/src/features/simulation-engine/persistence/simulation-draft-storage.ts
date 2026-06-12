@@ -1,4 +1,5 @@
 import type { LiveSimulationRole } from "@/lib/live-session";
+import { getSimulationSessionToken } from "@/lib/simulation-session-access";
 
 const RUNTIME_DRAFT_KEY = "rrs.runtime-draft";
 
@@ -65,6 +66,11 @@ export function readPersistedSimulationDraft<TState>(
     const payload = JSON.parse(raw) as PersistedSimulationDraft<TState>;
     if (payload.version !== 1 || payload.liveRole !== liveRole) return null;
     if ((payload.liveSessionId || null) !== (liveSessionId || null)) return null;
+    const sessionId = (payload.state as { sessionId?: number | null })?.sessionId;
+    if (sessionId != null && !getSimulationSessionToken(sessionId)) {
+      clearPersistedSimulationState();
+      return null;
+    }
     return payload;
   } catch {
     return null;

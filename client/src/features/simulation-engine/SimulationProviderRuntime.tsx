@@ -15,8 +15,14 @@ import {
   stopCurrentAudio,
   stopLoopingAudio,
 } from "@/data/audio-map";
-import { apiRequest } from "@/lib/queryClient";
 import { getSimulationContentSnapshot, getSimulationSettingsSnapshot } from "@/lib/runtime-content";
+import {
+  appendPersistedAnswer,
+  appendPersistedMetrics,
+  createPersistedSession,
+  savePersistedResult,
+  updatePersistedSession,
+} from "./persistence/session-sync-client";
 import {
   buildConfiguredDeadline,
   extractScenarioDeadline,
@@ -2814,7 +2820,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
     (async () => {
       try {
-        const response = await apiRequest("POST", "/api/sessions", {
+        const session = await createPersistedSession({
           participantName: state.participantName || "Участник",
           assessorName: state.assessorName || "",
           difficulty: state.difficulty,
@@ -2827,10 +2833,8 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
           technicalStatus: "in_progress",
           startedAt: new Date().toISOString(),
         });
-        const session = await response.json();
-
         if (!isCancelled) {
-          dispatch({ type: "SET_SESSION_ID", payload: Number(session.id) });
+          dispatch({ type: "SET_SESSION_ID", payload: session.id });
         }
       } catch (error) {
         console.error("Failed to create simulation session", error);
@@ -2895,6 +2899,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       return;
     }
 
+    const sessionId = state.sessionId;
     answerSyncInFlightRef.current = true;
     let isCancelled = false;
 
@@ -2911,7 +2916,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
             timerPenalty: decision.timerPenalty,
             overdue: decision.timer?.wasOverdue || false,
           };
-          await apiRequest("POST", `/api/sessions/${state.sessionId}/answers`, {
+          await appendPersistedAnswer(sessionId, {
             sourceType: decision.sourceType,
             contentId: decision.caseId,
             caseTitle: decision.caseTitle,
@@ -2935,9 +2940,8 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
         if (persistedMetricCountRef.current < state.decisions.length && state.decisions.length > 0) {
           const lastDecision = state.decisions[state.decisions.length - 1];
-          await apiRequest(
-            "POST",
-            `/api/sessions/${state.sessionId}/metrics`,
+          await appendPersistedMetrics(
+            sessionId,
             buildSessionMetricPayload(state.metrics, lastDecision.timestamp),
           );
           persistedMetricCountRef.current = state.decisions.length;
@@ -2960,7 +2964,8 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       return;
     }
 
-    const completionKey = `${state.sessionId}:${state.decisions.length}:${state.timeRemaining}:${state.pauses.length}`;
+    const sessionId = state.sessionId;
+    const completionKey = `${sessionId}:${state.decisions.length}:${state.timeRemaining}:${state.pauses.length}`;
     if (completedSessionKeyRef.current === completionKey) {
       return;
     }
@@ -2972,8 +2977,8 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
     (async () => {
       try {
-        await apiRequest("PUT", `/api/sessions/${state.sessionId}/result`, resultPayload);
-        await apiRequest("PATCH", `/api/sessions/${state.sessionId}`, {
+        await savePersistedResult(sessionId, resultPayload);
+        await updatePersistedSession(sessionId, {
           technicalStatus: violatesPauseLimits ? "interrupted" : "completed",
           completedAt: new Date().toISOString(),
         });
@@ -3003,7 +3008,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
     resumedSessionStatusRef.current = state.sessionId;
 
-    apiRequest("PATCH", `/api/sessions/${state.sessionId}`, {
+    updatePersistedSession(state.sessionId, {
       technicalStatus: "in_progress",
       completedAt: null,
     }).catch((error) => {
@@ -3021,16 +3026,14 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
         return;
       }
 
-      fetch(`/api/sessions/${state.sessionId}`, {
-        method: "PATCH",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      updatePersistedSession(
+        state.sessionId!,
+        {
           technicalStatus: "interrupted",
           completedAt: new Date().toISOString(),
-        }),
-        keepalive: true,
-      }).catch(() => undefined);
+        },
+        { keepalive: true },
+      ).catch(() => undefined);
     };
 
     window.addEventListener("beforeunload", interruptSession);
