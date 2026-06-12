@@ -100,12 +100,7 @@ export class SessionStorage {
   }
 
   deleteSessionResult(sessionId: number): void {
-    db.transaction((tx) => {
-      tx.delete(sessionAnswers).where(eq(sessionAnswers.sessionId, sessionId)).run();
-      tx.delete(sessionMetrics).where(eq(sessionMetrics.sessionId, sessionId)).run();
-      tx.delete(sessionResults).where(eq(sessionResults.sessionId, sessionId)).run();
-      tx.delete(simulationSessions).where(eq(simulationSessions.id, sessionId)).run();
-    });
+    db.delete(simulationSessions).where(eq(simulationSessions.id, sessionId)).run();
   }
 
   listSessionResults(filters: SessionListFilters = {}) {

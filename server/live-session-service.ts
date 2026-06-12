@@ -507,12 +507,13 @@ export class LiveSessionService {
     this.storeLoaded = true;
     this.ensureSqliteStore();
 
+    let sqliteRows: Array<{ payload: string }> | null = null;
     try {
-      const rows = this.sqlite
+      sqliteRows = this.sqlite
         .prepare("SELECT payload FROM app_live_sessions")
         .all() as Array<{ payload: string }>;
 
-      rows.forEach((row) => {
+      sqliteRows.forEach((row) => {
         try {
           this.restorePersistedSessionRecord(JSON.parse(row.payload) as LiveSessionRecord);
         } catch (error) {
@@ -523,7 +524,7 @@ export class LiveSessionService {
       console.error("[live-session] failed to read sqlite session store", error);
     }
 
-    if (!fs.existsSync(this.liveSessionStorePath)) {
+    if (sqliteRows == null || sqliteRows.length > 0 || !fs.existsSync(this.liveSessionStorePath)) {
       return;
     }
 
@@ -534,6 +535,9 @@ export class LiveSessionService {
       }
 
       parsed.sessions.forEach((session) => this.restorePersistedSessionRecord(session));
+      if (this.persistSessions()) {
+        fs.unlinkSync(this.liveSessionStorePath);
+      }
     } catch (error) {
       console.error("[live-session] failed to restore persisted sessions", error);
     }
@@ -607,7 +611,7 @@ export class LiveSessionService {
     this.persistSessions();
   }
 
-  private persistSessions() {
+  private persistSessions(): boolean {
     const sessions = Array.from(this.sessions.values())
       .filter((session) => session.status !== "completed")
       .map((session) => ({
@@ -635,14 +639,10 @@ export class LiveSessionService {
         });
       });
       writeSqlite(sessions);
-
-      fs.mkdirSync(path.dirname(this.liveSessionStorePath), { recursive: true });
-      fs.writeFileSync(
-        this.liveSessionStorePath,
-        JSON.stringify({ version: 1, sessions } satisfies PersistedLiveSessionStore),
-      );
+      return true;
     } catch (error) {
       console.error("[live-session] failed to persist sessions", error);
+      return false;
     }
   }
 

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import Database from "better-sqlite3";
@@ -93,9 +93,113 @@ function testProductionCsp() {
   assert.equal(development.scriptSrc.includes("'unsafe-eval'"), true);
 }
 
+async function testSessionDeletionAndLegacyLiveMigration() {
+  const tempDir = mkdtempSync(path.join(os.tmpdir(), "dns-storage-regression-"));
+  const databasePath = path.join(tempDir, "storage.db");
+  const legacyStorePath = path.join(tempDir, "live-sessions.json");
+  process.env.SQLITE_PATH = databasePath;
+
+  const { sqlite } = await import("../server/db");
+  const { SessionStorage } = await import("../server/session-storage");
+  const { LiveSessionService } = await import("../server/live-session-service");
+
+  try {
+    sqlite.pragma("foreign_keys = ON");
+    runMigrations(sqlite);
+
+    const sessionId = Number(sqlite.prepare(`
+      INSERT INTO simulation_sessions (
+        participant_name,
+        evaluator_name,
+        difficulty,
+        selected_case_ids_json,
+        enabled_channels_json,
+        manual_selection,
+        time_limit,
+        is_test_mode,
+        speed_multiplier,
+        started_at,
+        technical_status,
+        participant_token_hash
+      )
+      VALUES ('Cascade Participant', '', 'medium', '[]', '{}', 0, 60, 0, 1, ?, 'completed', NULL)
+    `).run(new Date().toISOString()).lastInsertRowid);
+    sqlite.prepare(`
+      INSERT INTO session_answers (
+        session_id, source_type, content_id, case_title, cycle, option_level,
+        option_text, score, raw_effects_json, competency_scores_json, timestamp,
+        sim_time, details_json
+      ) VALUES (?, 'case', 'case-1', 'Case', 1, 1, 'Answer', 4, '{}', '{}', ?, '00:01', '{}')
+    `).run(sessionId, new Date().toISOString());
+    sqlite.prepare(`
+      INSERT INTO session_metrics (
+        session_id, timestamp, queue, conversion, morale, revenue_impact, delivery_status
+      ) VALUES (?, ?, 1, 1, 1, 1, 1)
+    `).run(sessionId, new Date().toISOString());
+    sqlite.prepare(`
+      INSERT INTO session_results (
+        session_id, total_score, average_score, competency_averages_json,
+        final_metrics_json, timers_json, pauses_json
+      ) VALUES (?, 4, 4, '{}', '{}', '[]', '[]')
+    `).run(sessionId);
+
+    new SessionStorage().deleteSessionResult(sessionId);
+    for (const table of ["simulation_sessions", "session_answers", "session_metrics", "session_results"]) {
+      const count = Number((sqlite.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get() as { count: number }).count);
+      assert.equal(count, 0, `${table} must be empty after deleting the parent session`);
+    }
+
+    const liveSessionId = "legacy-live-session";
+    writeFileSync(legacyStorePath, JSON.stringify({
+      version: 1,
+      sessions: [{
+        config: {
+          liveSessionId,
+          accessCode: "ABC123",
+          assessorName: "Legacy Evaluator",
+          participantName: "Legacy Participant",
+          participantRole: "Participant",
+          difficulty: "medium",
+          selectedCaseIds: [],
+          manualSelection: false,
+          repeatCases: false,
+          timeLimit: 60,
+          isTestMode: false,
+          speedMultiplier: 1,
+          enabledChannels: { audio: true, email: true, messenger: true, video: false },
+          initialMetrics: {},
+          createdAt: Date.now(),
+        },
+        snapshot: null,
+        presence: { assessorConnected: false, studentConnected: false },
+        status: "waiting",
+        completedAt: null,
+        updatedAt: Date.now(),
+        lastSeenAt: { assessor: null, student: null },
+      }],
+    }));
+
+    const liveService = new LiveSessionService({ sqlite, storePath: legacyStorePath });
+    liveService.restorePersistedSessions();
+    assert.ok(liveService.getSessionById(liveSessionId));
+    const persisted = sqlite
+      .prepare("SELECT COUNT(*) AS count FROM app_live_sessions WHERE live_session_id = ?")
+      .get(liveSessionId) as { count: number };
+    assert.equal(Number(persisted.count), 1, "Legacy live session must be migrated into SQLite");
+    assert.equal(existsSync(legacyStorePath), false, "Legacy JSON must be removed after successful migration");
+
+    liveService.flushPersistence();
+    assert.equal(existsSync(legacyStorePath), false, "Subsequent persistence must not recreate legacy JSON");
+  } finally {
+    sqlite.close();
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+}
+
 testSimulationSessionTokens();
 testSessionForeignKeys();
 testSensitiveDataSanitization();
 testProductionCsp();
+await testSessionDeletionAndLegacyLiveMigration();
 
 console.log("Security regression checks passed: tokens, foreign keys, sanitization, and CSP verified.");
