@@ -34,8 +34,6 @@ import gridOverlay from "@/assets/brand/patterns/pattern_grid_overlay.png";
 import noiseOverlay from "@/assets/brand/patterns/pattern_noise_overlay.png";
 import orbitOverlay from "@/assets/brand/patterns/pattern_orbit_overlay.png";
 import scanlineOverlay from "@/assets/brand/patterns/pattern_scanline_overlay.png";
-import likedMainScreen from "@/assets/brand/reference/reference_main_screen_mockup_liked_by_user.png";
-import rejectedDirection from "@/assets/brand/reference/reference_full_project_mockup_rejected_direction.png";
 
 export const BRAND_ASSETS = Object.freeze({
   backgrounds: {
@@ -82,10 +80,6 @@ export const BRAND_ASSETS = Object.freeze({
     noiseOverlay,
     scanlineOverlay,
     orbitOverlay,
-  },
-  reference: {
-    mainScreenMockupLikedByUser: likedMainScreen,
-    fullProjectMockupRejectedDirection: rejectedDirection,
   },
 });
 

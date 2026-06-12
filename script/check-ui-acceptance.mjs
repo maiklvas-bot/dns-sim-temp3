@@ -1,4 +1,5 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 
 function readText(filePath) {
   return readFileSync(filePath, "utf8").replace(/\r\n/g, "\n");
@@ -8,6 +9,13 @@ function assertCondition(condition, message) {
   if (!condition) {
     throw new Error(message);
   }
+}
+
+function listFilesRecursive(directory) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const entryPath = path.join(directory, entry.name);
+    return entry.isDirectory() ? listFilesRecursive(entryPath) : [entryPath];
+  });
 }
 
 const app = readText("client/src/App.tsx");
@@ -94,6 +102,19 @@ for (const expected of [
   ".dns-assessor-v2-validation-list",
 ]) {
   assertCondition(styles.includes(expected), `Assessor responsive style contract is missing: ${expected}`);
+}
+
+const productionAssetsDirectory = "dist/public/assets";
+assertCondition(existsSync(productionAssetsDirectory), "UI bundle contract requires a completed production build");
+const productionAssetNames = listFilesRecursive(productionAssetsDirectory).map((filePath) => path.basename(filePath));
+for (const forbiddenReference of [
+  "reference_main_screen_mockup",
+  "reference_full_project_mockup",
+]) {
+  assertCondition(
+    productionAssetNames.every((filename) => !filename.includes(forbiddenReference)),
+    `Production bundle must exclude design reference asset: ${forbiddenReference}`,
+  );
 }
 
 console.log("UI acceptance checks passed: shared themes, responsive admin editor, assessor workspace and simulation scrolling verified.");
