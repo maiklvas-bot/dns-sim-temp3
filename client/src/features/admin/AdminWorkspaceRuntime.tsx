@@ -18,6 +18,7 @@ import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { ThemeToggle, useDnsTheme } from "@/components/theme-toggle";
+import { BrandMark, BrandVisualBackdrop } from "@/components/brand-access-shell";
 import { AdminAuditHistory } from "@/components/admin-audit-history";
 import {
   getSignalSoundOptions,
@@ -2093,7 +2094,7 @@ export default function AdminPage() {
 
   return (
     <div
-      className={`dns-product-shell ${themeClass} relative`}
+      className={`dns-product-shell dns-visual-shell dns-visual-shell--product ${themeClass} relative`}
       style={{
         backgroundImage: `url(${storeBg})`,
         backgroundSize: "cover",
@@ -2101,11 +2102,12 @@ export default function AdminPage() {
         backgroundAttachment: "fixed",
       }}
     >
+      <BrandVisualBackdrop variant="product" />
       <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0d1421ef] via-[#16213ef5] to-[#0d1421f7]" />
       <div className="dns-page-frame max-w-[1560px]">
         <header className="dns-brand-header dns-admin-header-surface">
           <div className="dns-brand-title">
-            <div className="dns-brand-mark">D</div>
+            <BrandMark compact />
             <div>
               <div className="dns-brand-kicker">DNS SimCenter</div>
               <h1 className="dns-brand-heading">Администрирование симуляции</h1>
@@ -2138,7 +2140,7 @@ export default function AdminPage() {
           </div>
         </header>
 
-        <div className="dns-admin-dashboard-shell">
+        <div className={`dns-admin-dashboard-shell dns-admin-dashboard-shell--${tab}`}>
           <aside className="dns-admin-structure-nav" aria-label="Основные разделы администрирования">
             <div className="dns-admin-structure-nav-head">
               <span>Рабочий центр</span>
@@ -2181,7 +2183,7 @@ export default function AdminPage() {
             </div>
           </aside>
 
-          <main className="dns-admin-dashboard-main">
+          <main className={`dns-admin-dashboard-main dns-admin-dashboard-main--${tab}`}>
         {error && <div className="mb-4 rounded-lg border border-[#ff4444]/30 bg-[#ff4444]/10 px-4 py-3 text-sm text-[#ff9999]">{error}</div>}
 
         <AdminWikiDialog open={adminWikiOpen} onOpenChange={setAdminWikiOpen} tab={tab} />

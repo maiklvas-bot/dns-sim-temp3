@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { BrandAccessShell, BrandMiniHeader } from "@/components/brand-access-shell";
 import { primeAudioPlayback } from "@/data/audio-map";
 import {
   joinRemoteLiveSimulation,
@@ -19,8 +20,8 @@ import {
   setPendingLiveSimulationState,
   setLiveSimulationRole,
 } from "@/lib/live-session";
+import { BRAND_ASSETS, hideMissingBrandAsset } from "@/lib/brand-assets";
 import { getSimulationContentSnapshot, getSimulationSettingsSnapshot, resolveSimulationBriefingHtml } from "@/lib/runtime-content";
-import storeBg from "@assets/store_bg.png";
 
 export default function StudentJoinPage() {
   const [, navigate] = useLocation();
@@ -62,30 +63,32 @@ export default function StudentJoinPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
-      style={{
-        backgroundImage: `url(${storeBg})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a1a2eee] via-[#16213ef0] to-[#1a1a2eee]" />
-
-      <div className="relative z-10 w-full max-w-xl px-4">
+    <BrandAccessShell className="flex flex-col items-center justify-center">
+      <main className="dns-access-content dns-access-content--form">
         <button
           onClick={() => navigate("/")}
-          className="mb-6 inline-flex items-center gap-2 text-sm text-[#8890a8] transition-colors hover:text-white"
+          className="dns-access-back-button mb-4 inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm text-[#8890a8] transition-colors hover:text-white"
           data-testid="back-to-role-select"
         >
           <ArrowLeft className="h-4 w-4" />
           Назад
         </button>
 
-        <div className="rounded-2xl border border-[#2a3a4e] bg-[#1e2a3acc] p-6 backdrop-blur-sm shadow-2xl">
+        <div className="dns-access-form-card rounded-2xl border border-[#2a3a4e] bg-[#1e2a3acc] p-6 backdrop-blur-sm shadow-2xl">
+          <div className="dns-access-visual-strip">
+            <BrandMiniHeader />
+            <span className="dns-access-visual-strip-label">Команда рядом и поможет уверенно начать симуляцию.</span>
+            <img
+              className="dns-access-character dns-access-character--student"
+              src={BRAND_ASSETS.heroes.alienPoint}
+              alt="Фирменный alien DNS указывает участнику на вход в симуляцию"
+              onError={hideMissingBrandAsset}
+            />
+          </div>
+
           <div className="mb-5 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#00d4aa]/30 bg-[#00d4aa]/10">
-              <Rocket className="h-6 w-6 text-[#00d4aa]" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#FF6B00]/30 bg-[#FF6B00]/10">
+              <Rocket className="h-6 w-6 text-[#FF6B00]" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Вход космонавта</h1>
@@ -93,7 +96,7 @@ export default function StudentJoinPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/70 p-4">
+          <div className="dns-visual-hud rounded-xl p-4">
             <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">Как начать</div>
             <ol className="mt-3 space-y-2 text-sm leading-relaxed text-[#c9d2e6]">
               <li>1. Дождитесь, пока оценщик настроит симуляцию.</li>
@@ -114,7 +117,7 @@ export default function StudentJoinPage() {
             <button
               onClick={handleJoin}
               disabled={isJoining}
-              className="rounded-lg border border-[#00d4aa]/35 bg-[#00d4aa]/14 px-4 py-2 text-sm font-semibold text-[#8ef0d9] transition-all hover:border-[#00d4aa] hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="dns-visual-cta-glow rounded-lg border border-[#FF6B00]/45 bg-[#FF6B00] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#e86000] disabled:cursor-not-allowed disabled:opacity-60"
               data-testid="student-join-live-session"
             >
               {isJoining ? "Подключаем..." : "Войти в сессию"}
@@ -135,7 +138,7 @@ export default function StudentJoinPage() {
                   Инструктаж перед стартом
                 </button>
               </DialogTrigger>
-              <DialogContent className="max-w-3xl border-[#2a3a4e] bg-[#101826] p-0 text-white">
+              <DialogContent className="dns-access-dialog max-w-3xl border-[#2a3a4e] bg-[#101826] p-0 text-white">
                 <div className="max-h-[80vh] overflow-y-auto custom-scroll p-6">
                   <DialogHeader className="border-b border-[#2a3a4e] pb-4 text-left">
                     <DialogTitle className="flex items-center gap-2 text-xl text-white">
@@ -155,7 +158,7 @@ export default function StudentJoinPage() {
             </Dialog>
           </div>
         </div>
-      </div>
-    </div>
+      </main>
+    </BrandAccessShell>
   );
 }

@@ -19,6 +19,7 @@ import { clearLiveSimulationRole, closeRemoteLiveSimulation, getLiveSimulationCo
 import type { SimulationRuntimeSettings } from "@shared/simulation-content";
 import { buildPdfPayloadFromReport, buildReportFromSessionDetails, buildReportFromState } from "@/lib/report-data";
 import { DNS_COLORS, DNS_GRADIENTS } from "@/styles/dns-theme";
+import { BrandMark, BrandVisualBackdrop } from "@/components/brand-access-shell";
 import storeBg from "@assets/store_bg.png";
 
 // ============================================================
@@ -361,7 +362,7 @@ export default function ResultsPage(props: any) {
 
   return (
     <div
-      className="dns-product-shell relative"
+      className="dns-product-shell dns-visual-shell dns-visual-shell--results relative"
       style={{
         backgroundImage: `url(${storeBg})`,
         backgroundSize: "cover",
@@ -369,6 +370,7 @@ export default function ResultsPage(props: any) {
         backgroundAttachment: "fixed",
       }}
     >
+      <BrandVisualBackdrop variant="results" />
       {/* Градиентный оверлей */}
       <div className="absolute inset-0" style={{ background: DNS_GRADIENTS.dark }} />
       <div className="absolute inset-0 bg-gradient-to-b from-[#0d1421f2] via-[#16213ef5] to-[#0d1421f7]" />
@@ -380,7 +382,7 @@ export default function ResultsPage(props: any) {
         ═══════════════════════════════════════════ */}
         <header className="dns-brand-header">
           <div className="dns-brand-title">
-            <div className="dns-brand-mark">D</div>
+            <BrandMark compact />
             <div>
               <div className="dns-brand-kicker">DNS SimCenter</div>
               <h1 className="dns-brand-heading">{participantName || "Результаты симуляции"}</h1>
@@ -889,9 +891,9 @@ export default function ResultsPage(props: any) {
             }, {
               label: "Время", value: `${totalMinutes} мин`,
             }].map((kpi, i) => (
-              <div key={i} className="rounded-lg border border-[#2a3a4e] bg-[#1A2634] p-3 text-center">
-                <div className="text-lg font-bold text-white tabular-nums">{kpi.value}</div>
-                <div className="text-[10px] mt-0.5" style={{ color: DNS_COLORS.textMuted }}>{kpi.label}</div>
+              <div key={i} className="dns-kpi-card text-center">
+                <div className="dns-kpi-card__metric text-lg tabular-nums">{kpi.value}</div>
+                <div className="dns-kpi-card__caption text-[10px]">{kpi.label}</div>
               </div>
             ))}
           </div>

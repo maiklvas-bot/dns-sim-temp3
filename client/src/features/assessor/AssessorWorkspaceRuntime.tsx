@@ -21,6 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Slider } from "@/components/ui/slider";
 import { ThemeToggle, useDnsTheme } from "@/components/theme-toggle";
+import { BrandMark, BrandVisualBackdrop } from "@/components/brand-access-shell";
 import { apiRequest, getQueryFn, queryClient } from "@/lib/queryClient";
 import { getSimulationSettingsSnapshot } from "@/lib/runtime-content";
 import type { SimulationRuntimeSettings } from "@shared/simulation-content";
@@ -1550,7 +1551,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
 
   return (
     <div
-      className={`dns-product-shell ${themeClass} relative overflow-auto`}
+      className={`dns-product-shell dns-visual-shell dns-visual-shell--product ${themeClass} relative overflow-auto`}
       style={{
         backgroundImage: `url(${storeBg})`,
         backgroundSize: "cover",
@@ -1558,12 +1559,13 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         backgroundAttachment: "fixed",
       }}
     >
+      <BrandVisualBackdrop variant="product" />
       <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0d1421ee] via-[#16213ef2] to-[#0d1421f7]" />
 
       <div className="dns-page-frame dns-assessor-v2-frame">
         <header className="dns-brand-header dns-assessor-v2-header">
           <div className="dns-brand-title">
-            <div className="dns-brand-mark">D</div>
+            <BrandMark compact />
             <div>
               <div className="dns-brand-kicker">DNS SimCenter</div>
               <h1 className="dns-brand-heading">Кабинет оценщика</h1>

@@ -1,3 +1,4 @@
+import { hideMissingBrandAsset } from "@/lib/brand-assets";
 import type { AdminVisualIdentity } from "../admin-types";
 
 export function AdminVisualPanel({ visual }: { visual: AdminVisualIdentity }) {
@@ -13,6 +14,7 @@ export function AdminVisualPanel({ visual }: { visual: AdminVisualIdentity }) {
           src={visual.primarySrc}
           alt={visual.primaryAlt}
           className={`dns-admin-visual-image dns-admin-visual-primary ${visual.primaryClassName}`}
+          onError={hideMissingBrandAsset}
         />
       </div>
     </section>
