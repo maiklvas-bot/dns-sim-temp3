@@ -9,6 +9,12 @@ import { contentStorage } from "./content-storage";
 import type { EditableEmailCase, EditableMessengerCase, EditableSimCase, EditableVideoCase } from "./content-storage";
 import { liveSessionService, normalizeLiveAccessCode } from "./live-session-service";
 import { sessionStorage } from "./session-storage";
+import {
+  createSimulationSessionToken,
+  hashSimulationSessionToken,
+  requireSimulationAccess,
+  toPublicSimulationSession,
+} from "./simulation-session-access";
 import { staffStorage } from "./staff-storage";
 import { auditStorage, type AuditRecordInput } from "./audit-storage";
 import { requireAdmin, requireStaff, saveMediaUpload } from "./route-utils";
@@ -295,6 +301,7 @@ export async function registerRoutes(
   app: Express,
 ): Promise<Server> {
   liveSessionService.attach(httpServer);
+  const requireSessionAccess = requireSimulationAccess(sessionStorage);
 
   app.get("/api/simulation-content", (_req, res) => {
     res.json(contentStorage.getPublicContent(false));
@@ -463,8 +470,10 @@ export async function registerRoutes(
         body.participantExternalId || null,
       );
       const staff = req.session.staff;
+      const sessionToken = createSimulationSessionToken();
       const session = sessionStorage.createSimulationSession({
         participantId: participant?.id || null,
+        participantTokenHash: hashSimulationSessionToken(sessionToken),
         participantName: body.participantName || participant?.fullName || "Участник",
         evaluatorAccountId: staff?.role === "evaluator" ? staff.id : null,
         evaluatorName: body.assessorName || staff?.displayName || "",
@@ -480,15 +489,16 @@ export async function registerRoutes(
         technicalStatus: body.technicalStatus || "in_progress",
       });
 
+      const publicSession = toPublicSimulationSession(session);
       recordAudit(req, {
         area: req.session.staff?.role === "admin" ? "admin" : "evaluator",
         action: "simulation_session_created",
         entityType: "simulation-session",
         entityId: session.id,
         summary: `Создана симуляция для участника ${session.participantName}`,
-        after: session,
+        after: publicSession,
       });
-      res.json(session);
+      res.json({ ...publicSession, sessionToken });
     } catch (error) {
       next(internalApiError(
         "SIMULATION_SESSION_CREATE_FAILED",
@@ -498,16 +508,16 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/sessions/:id", validateParams(sessionIdParamSchema), (req, res) => {
-    const { id } = req.validatedParams as { id: string };
-    const session = sessionStorage.getSimulationSession(parseInt(id, 10));
-    if (!session) {
-      return res.status(404).json({ message: "Session not found" });
-    }
-    res.json(session);
-  });
+  app.get(
+    "/api/sessions/:id",
+    validateParams(sessionIdParamSchema),
+    requireSessionAccess,
+    (req, res) => {
+      res.json(toPublicSimulationSession(req.simulationSession!));
+    },
+  );
 
-  app.patch("/api/sessions/:id", validateParams(sessionIdParamSchema), validateBody(patchSessionSchema), (req, res) => {
+  app.patch("/api/sessions/:id", validateParams(sessionIdParamSchema), requireSessionAccess, validateBody(patchSessionSchema), (req, res) => {
     const { id } = req.validatedParams as { id: string };
     const body = req.validatedBody as z.infer<typeof patchSessionSchema>;
     const sessionId = parseInt(id, 10);
@@ -528,10 +538,10 @@ export async function registerRoutes(
       before,
       after: updated,
     });
-    res.json(updated);
+    res.json(toPublicSimulationSession(updated));
   });
 
-  app.post("/api/sessions/:id/answers", validateParams(sessionIdParamSchema), validateBody(addSessionAnswerSchema), (req, res, next) => {
+  app.post("/api/sessions/:id/answers", validateParams(sessionIdParamSchema), requireSessionAccess, validateBody(addSessionAnswerSchema), (req, res, next) => {
     try {
       const { id } = req.validatedParams as { id: string };
       const body = req.validatedBody as z.infer<typeof addSessionAnswerSchema>;
@@ -575,7 +585,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/sessions/:id/metrics", validateParams(sessionIdParamSchema), validateBody(addSessionMetricsSchema), (req, res, next) => {
+  app.post("/api/sessions/:id/metrics", validateParams(sessionIdParamSchema), requireSessionAccess, validateBody(addSessionMetricsSchema), (req, res, next) => {
     try {
       const { id } = req.validatedParams as { id: string };
       const body = req.validatedBody as z.infer<typeof addSessionMetricsSchema>;
@@ -598,7 +608,7 @@ export async function registerRoutes(
     }
   });
 
-  app.put("/api/sessions/:id/result", validateParams(sessionIdParamSchema), validateBody(upsertSessionResultSchema), (req, res, next) => {
+  app.put("/api/sessions/:id/result", validateParams(sessionIdParamSchema), requireSessionAccess, validateBody(upsertSessionResultSchema), (req, res, next) => {
     try {
       const { id } = req.validatedParams as { id: string };
       const body = req.validatedBody as z.infer<typeof upsertSessionResultSchema>;
