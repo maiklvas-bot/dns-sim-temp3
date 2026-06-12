@@ -514,8 +514,7 @@ async function runLiveSessionRecoveryAcceptanceChecks(sqlite: Database.Database,
   service.flushPersistence();
   const persistedRows = sqlite.prepare("SELECT payload FROM app_live_sessions").all() as Array<{ payload: string }>;
   assertCondition(persistedRows.length === 1, "Running live sessions must persist to SQLite");
-  const persistedFile = JSON.parse(readFileSync(storePath, "utf8")) as { sessions?: unknown[] };
-  assertCondition(persistedFile.sessions?.length === 1, "Running live sessions must persist to the JSON fallback store");
+  assertCondition(!existsSync(storePath), "Running live sessions must not recreate the legacy JSON store");
 
   const restarted = new LiveSessionService({ sqlite, storePath });
   restarted.restorePersistedSessions();
@@ -548,8 +547,7 @@ async function runLiveSessionRecoveryAcceptanceChecks(sqlite: Database.Database,
   restarted.flushPersistence();
   const remainingRows = sqlite.prepare("SELECT payload FROM app_live_sessions").all() as Array<{ payload: string }>;
   assertCondition(remainingRows.length === 0, "Completed live sessions must not persist as active restart candidates");
-  const completedStore = JSON.parse(readFileSync(storePath, "utf8")) as { sessions?: unknown[] };
-  assertCondition(completedStore.sessions?.length === 0, "Completed live sessions must be absent from JSON restart store");
+  assertCondition(!existsSync(storePath), "Completed live sessions must not recreate the legacy JSON store");
 
   const afterCompletedRestart = new LiveSessionService({ sqlite, storePath });
   afterCompletedRestart.restorePersistedSessions();
@@ -640,11 +638,7 @@ async function runConcurrentLiveSessionAcceptanceChecks(sqlite: Database.Databas
   service.flushPersistence();
   const persistedRows = sqlite.prepare("SELECT payload FROM app_live_sessions").all() as Array<{ payload: string }>;
   assertCondition(persistedRows.length === sessionCount, "All concurrent sessions must persist to SQLite");
-  const persistedFile = JSON.parse(readFileSync(storePath, "utf8")) as { sessions?: unknown[] };
-  assertCondition(
-    persistedFile.sessions?.length === sessionCount,
-    "All concurrent sessions must persist to the JSON fallback store",
-  );
+  assertCondition(!existsSync(storePath), "Concurrent sessions must not recreate the legacy JSON store");
 
   const restarted = new LiveSessionService({ sqlite, storePath });
   restarted.restorePersistedSessions();
@@ -1200,7 +1194,7 @@ assertSchemaRejects(
 );
 assertSchemaAccepts(
   excelExportSchema,
-  { sheets: [{ name: "Summary", rows: [{ score: 4 }] }] },
+  { sheets: [{ name: "Summary", rows: [["Score"], [4]] }] },
   "XLSX export schema must accept sheet payloads",
 );
 assertSchemaRejects(

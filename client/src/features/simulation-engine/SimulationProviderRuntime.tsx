@@ -15,8 +15,14 @@ import {
   stopCurrentAudio,
   stopLoopingAudio,
 } from "@/data/audio-map";
-import { apiRequest } from "@/lib/queryClient";
 import { getSimulationContentSnapshot, getSimulationSettingsSnapshot } from "@/lib/runtime-content";
+import {
+  appendPersistedAnswer,
+  appendPersistedMetrics,
+  createPersistedSession,
+  savePersistedResult,
+  updatePersistedSession,
+} from "./persistence/session-sync-client";
 import {
   buildConfiguredDeadline,
   extractScenarioDeadline,
@@ -39,6 +45,10 @@ import type {
   LiveSimulationSnapshot,
   LiveSimulationStatus,
 } from "@shared/live-session";
+import {
+  accumulateCompetencyTotals,
+  calculateSimulationScoreSummary,
+} from "@shared/simulation-scoring";
 import {
   consumePendingLiveSimulationState,
   connectToLiveSimulationSession,
@@ -982,41 +992,6 @@ function shouldAutoCompleteSimulation(state: SimulationState) {
   );
 }
 
-function buildCompetencyAverageMap(totals: SimulationState["competencyTotals"]): Record<string, number> {
-  return Object.fromEntries(
-    Object.entries(totals)
-      .filter(([, value]) => value.count > 0)
-      .map(([key, value]) => [key, Math.round((value.total / value.count) * 10) / 10]),
-  );
-}
-
-const TIME_PROFILE_EVALUATION_COEFFICIENT: Record<SimulationState["difficulty"], number> = {
-  easy: 0.95,
-  medium: 1,
-  hard: 1.08,
-};
-
-function getCaseWeightRatio(caseId: string, sourceType: SessionSourceType) {
-  if (sourceType !== "main_case") {
-    return 1;
-  }
-
-  const settings = getSimulationSettingsSnapshot<SimulationRuntimeSettings>();
-  const explicitWeight = Number(settings?.caseWeights?.[caseId]);
-  if (!Number.isFinite(explicitWeight)) {
-    return 1;
-  }
-
-  return clamp(explicitWeight / 100, 0, 1);
-}
-
-function getTimeEvaluationCoefficient(
-  difficulty: SimulationState["difficulty"],
-  timeInfluenceEnabled: boolean,
-) {
-  return timeInfluenceEnabled ? TIME_PROFILE_EVALUATION_COEFFICIENT[difficulty] : 1;
-}
-
 function applyCompetencyContribution(
   currentTotals: SimulationState["competencyTotals"],
   competencyScores: Record<string, number> | null | undefined,
@@ -1024,71 +999,24 @@ function applyCompetencyContribution(
   sourceType: SessionSourceType,
   resolvedScore: number,
 ) {
-  const weightRatio = getCaseWeightRatio(caseId, sourceType);
-  const qualityRatio = clamp(resolvedScore / 5, 0.1, 1);
-  const nextTotals = { ...currentTotals };
-
-  Object.entries(competencyScores || {}).forEach(([competencyId, rawScore]) => {
-    const score = Number(rawScore || 0);
-    if (!nextTotals[competencyId]) {
-      nextTotals[competencyId] = { total: 0, count: 0 };
-    }
-
-    nextTotals[competencyId] = {
-      total: nextTotals[competencyId].total + score * weightRatio * qualityRatio,
-      count: nextTotals[competencyId].count + weightRatio,
-    };
-  });
-
-  return nextTotals;
+  return accumulateCompetencyTotals(
+    currentTotals,
+    competencyScores,
+    caseId,
+    sourceType,
+    resolvedScore,
+    getSimulationSettingsSnapshot<SimulationRuntimeSettings>(),
+  );
 }
 
 function buildAdjustedSessionSummary(state: SimulationState) {
   const settings = getSimulationSettingsSnapshot<SimulationRuntimeSettings>();
-  const timeCoefficient = getTimeEvaluationCoefficient(
-    state.difficulty,
-    Boolean(settings?.timeInfluenceEnabled),
-  );
-
-  let weightedScoreTotal = 0;
-  let weightedDecisionCount = 0;
-
-  state.decisions.forEach((decision) => {
-    const weightRatio = getCaseWeightRatio(decision.caseId, decision.sourceType);
-    weightedScoreTotal += decision.score * weightRatio;
-    weightedDecisionCount += weightRatio;
+  return calculateSimulationScoreSummary({
+    decisions: state.decisions,
+    difficulty: state.difficulty,
+    settings,
+    competencyTotals: state.competencyTotals,
   });
-
-  const averageScore = weightedDecisionCount > 0
-    ? Math.round(clamp((weightedScoreTotal / weightedDecisionCount) * timeCoefficient, 0, 5) * 10) / 10
-    : 0;
-
-  const reconstructedTotals = state.decisions.reduce<SimulationState["competencyTotals"]>((totals, decision) => (
-    applyCompetencyContribution(
-      totals,
-      decision.competencyScores,
-      decision.caseId,
-      decision.sourceType,
-      decision.score,
-    )
-  ), {});
-  const effectiveCompetencyTotals = Object.keys(state.competencyTotals || {}).length > 0
-    ? state.competencyTotals
-    : reconstructedTotals;
-
-  const competencyAverages = Object.fromEntries(
-    Object.entries(buildCompetencyAverageMap(effectiveCompetencyTotals)).map(([competencyId, value]) => ([
-      competencyId,
-      Math.round(clamp(value * timeCoefficient, 0, 5) * 10) / 10,
-    ])),
-  );
-
-  return {
-    totalScore: Math.round(weightedScoreTotal * timeCoefficient),
-    averageScore,
-    competencyAverages,
-    timeCoefficient,
-  };
 }
 
 function buildSessionMetricPayload(metrics: RealisticMetrics, timestamp: string) {
@@ -2559,6 +2487,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
           }
         },
       },
+      liveRole === "student" ? liveConfig.accessCode : undefined,
     );
 
     liveSocketRef.current = controller;
@@ -2753,15 +2682,6 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
   }, [liveConfig, liveRole, state]);
 
   useEffect(() => {
-    if (liveRole !== "student" || !liveSocketRef.current) {
-      return;
-    }
-
-    const nextStatus: LiveSimulationStatus = state.isCompleted ? "completed" : state.isRunning ? "running" : "waiting";
-    liveSocketRef.current.sendStatus(nextStatus);
-  }, [liveRole, state.isCompleted, state.isRunning]);
-
-  useEffect(() => {
     if (!state.sessionId) {
       persistedAnswerCountRef.current = 0;
       persistedMetricCountRef.current = 0;
@@ -2814,7 +2734,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
     (async () => {
       try {
-        const response = await apiRequest("POST", "/api/sessions", {
+        const session = await createPersistedSession({
           participantName: state.participantName || "Участник",
           assessorName: state.assessorName || "",
           difficulty: state.difficulty,
@@ -2827,10 +2747,8 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
           technicalStatus: "in_progress",
           startedAt: new Date().toISOString(),
         });
-        const session = await response.json();
-
         if (!isCancelled) {
-          dispatch({ type: "SET_SESSION_ID", payload: Number(session.id) });
+          dispatch({ type: "SET_SESSION_ID", payload: session.id });
         }
       } catch (error) {
         console.error("Failed to create simulation session", error);
@@ -2895,6 +2813,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       return;
     }
 
+    const sessionId = state.sessionId;
     answerSyncInFlightRef.current = true;
     let isCancelled = false;
 
@@ -2911,7 +2830,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
             timerPenalty: decision.timerPenalty,
             overdue: decision.timer?.wasOverdue || false,
           };
-          await apiRequest("POST", `/api/sessions/${state.sessionId}/answers`, {
+          await appendPersistedAnswer(sessionId, {
             sourceType: decision.sourceType,
             contentId: decision.caseId,
             caseTitle: decision.caseTitle,
@@ -2935,9 +2854,8 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
         if (persistedMetricCountRef.current < state.decisions.length && state.decisions.length > 0) {
           const lastDecision = state.decisions[state.decisions.length - 1];
-          await apiRequest(
-            "POST",
-            `/api/sessions/${state.sessionId}/metrics`,
+          await appendPersistedMetrics(
+            sessionId,
             buildSessionMetricPayload(state.metrics, lastDecision.timestamp),
           );
           persistedMetricCountRef.current = state.decisions.length;
@@ -2960,7 +2878,8 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       return;
     }
 
-    const completionKey = `${state.sessionId}:${state.decisions.length}:${state.timeRemaining}:${state.pauses.length}`;
+    const sessionId = state.sessionId;
+    const completionKey = `${sessionId}:${state.decisions.length}:${state.timeRemaining}:${state.pauses.length}`;
     if (completedSessionKeyRef.current === completionKey) {
       return;
     }
@@ -2972,8 +2891,8 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
     (async () => {
       try {
-        await apiRequest("PUT", `/api/sessions/${state.sessionId}/result`, resultPayload);
-        await apiRequest("PATCH", `/api/sessions/${state.sessionId}`, {
+        await savePersistedResult(sessionId, resultPayload);
+        await updatePersistedSession(sessionId, {
           technicalStatus: violatesPauseLimits ? "interrupted" : "completed",
           completedAt: new Date().toISOString(),
         });
@@ -3003,7 +2922,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
 
     resumedSessionStatusRef.current = state.sessionId;
 
-    apiRequest("PATCH", `/api/sessions/${state.sessionId}`, {
+    updatePersistedSession(state.sessionId, {
       technicalStatus: "in_progress",
       completedAt: null,
     }).catch((error) => {
@@ -3021,16 +2940,14 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
         return;
       }
 
-      fetch(`/api/sessions/${state.sessionId}`, {
-        method: "PATCH",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      updatePersistedSession(
+        state.sessionId!,
+        {
           technicalStatus: "interrupted",
           completedAt: new Date().toISOString(),
-        }),
-        keepalive: true,
-      }).catch(() => undefined);
+        },
+        { keepalive: true },
+      ).catch(() => undefined);
     };
 
     window.addEventListener("beforeunload", interruptSession);

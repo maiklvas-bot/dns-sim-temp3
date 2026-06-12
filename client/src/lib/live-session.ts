@@ -215,10 +215,14 @@ export function connectToLiveSimulationSession(
   liveSessionId: string,
   role: "student" | "assessor",
   handlers: LiveSimulationSocketHandlers,
+  accessCode?: string,
 ): LiveSimulationSocketController {
   const socketUrl = getSocketBaseUrl();
   socketUrl.searchParams.set("liveSessionId", liveSessionId);
   socketUrl.searchParams.set("role", role);
+  if (role === "student" && accessCode) {
+    socketUrl.searchParams.set("accessCode", accessCode);
+  }
   const socket = new WebSocket(socketUrl);
 
   socket.addEventListener("open", () => {

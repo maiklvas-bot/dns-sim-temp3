@@ -12,6 +12,7 @@
     "test": "tsx script/ci-smoke.ts",
     "test:ops": "node script/check-ops-safety.mjs",
     "test:ui": "node script/check-ui-acceptance.mjs",
+    "test:browser": "node script/browser-acceptance.mjs",
     "release:prune": "tsx script/prune-release.ts",
     "template:generate": "tsx script/generate-case-signal-template.ts",
     "db:push": "drizzle-kit push",
@@ -61,7 +62,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
-    "drizzle-orm": "^0.39.3",
+    "drizzle-orm": "^0.45.2",
     "drizzle-zod": "^0.7.0",
     "embla-carousel-react": "^8.6.0",
     "express": "^5.0.1",
@@ -93,6 +94,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/typography": "^0.5.15",
     "@tailwindcss/vite": "^4.1.18",
     "@types/bcrypt": "^6.0.0",

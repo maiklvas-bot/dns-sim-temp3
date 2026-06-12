@@ -14,6 +14,8 @@ import {
   Shield, Calendar, Cpu, HeartHandshake, BarChart2, Sparkles
 } from "lucide-react";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
+import { getPersistedSession } from "@/features/simulation-engine/persistence/session-sync-client";
+import { buildSimulationAccessHeaders } from "@/lib/simulation-session-access";
 import { getSimulationSettingsSnapshot } from "@/lib/runtime-content";
 import { clearLiveSimulationRole, closeRemoteLiveSimulation, getLiveSimulationConfig, resetLiveSimulation } from "@/lib/live-session";
 import type { SimulationRuntimeSettings } from "@shared/simulation-content";
@@ -241,7 +243,9 @@ export default function ResultsPage(props: any) {
     setPdfError(null);
     try {
       const payload = buildPdfPayloadFromReport(report);
-      const response = await apiRequest("POST", "/api/export-pdf", payload);
+      const response = await apiRequest("POST", "/api/export-pdf", payload, {
+        headers: payload.sessionId ? buildSimulationAccessHeaders(payload.sessionId) : {},
+      });
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -269,7 +273,7 @@ export default function ResultsPage(props: any) {
         persistedSessionId != null
           ? (persistedResultQuery.data?.session || null)
           : state.sessionId != null
-            ? await apiRequest("GET", `/api/sessions/${state.sessionId}`).then((response) => response.json())
+            ? await getPersistedSession(state.sessionId)
           : null;
 
       const timerRows = reportDecisions
@@ -326,6 +330,7 @@ export default function ResultsPage(props: any) {
       ];
 
       const response = await apiRequest("POST", "/api/export-xlsx", {
+        sessionId: report.sessionId || undefined,
         sheets: [
           { name: "Результат", rows: summaryRows },
           { name: "Кейсы", rows: detailRows },
@@ -339,6 +344,8 @@ export default function ResultsPage(props: any) {
             }]
             : []),
         ],
+      }, {
+        headers: report.sessionId ? buildSimulationAccessHeaders(report.sessionId) : {},
       });
 
       const blob = await response.blob();

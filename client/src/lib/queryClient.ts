@@ -71,8 +71,15 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+  options?: {
+    headers?: Record<string, string>;
+    keepalive?: boolean;
+  },
 ): Promise<Response> {
-  const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
+  const headers: Record<string, string> = {
+    ...(data ? { "Content-Type": "application/json" } : {}),
+    ...options?.headers,
+  };
   const csrfToken = getCsrfToken();
   if (csrfToken && isMutatingMethod(method)) {
     headers["X-CSRF-Token"] = csrfToken;
@@ -83,6 +90,7 @@ export async function apiRequest(
     credentials: "same-origin",
     headers,
     body: data ? JSON.stringify(data) : undefined,
+    keepalive: options?.keepalive,
   });
 
   await throwIfResNotOk(res);

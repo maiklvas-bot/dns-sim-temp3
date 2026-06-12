@@ -6,6 +6,7 @@ dist/
 
 # Local tooling / wrappers
 .tools/
+.worktrees/
 node.cmd
 npm.cmd
 npx.cmd
