@@ -1284,8 +1284,13 @@
     border: 1px solid rgba(58, 74, 94, 0.78);
     border-radius: 1rem;
     background:
+      radial-gradient(circle at 92% 16%, rgba(var(--dns-admin-scene-accent-rgb), 0.13), transparent 30%),
       linear-gradient(135deg, rgba(16, 24, 38, 0.94), rgba(31, 44, 64, 0.84)),
-      linear-gradient(90deg, rgba(255, 107, 0, 0.08), rgba(74, 158, 255, 0.08));
+      linear-gradient(
+        90deg,
+        rgba(var(--dns-admin-scene-accent-rgb), 0.06),
+        rgba(var(--dns-admin-scene-secondary-rgb), 0.07)
+      );
     box-shadow: 0 16px 38px rgba(0, 0, 0, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.055);
   }
 

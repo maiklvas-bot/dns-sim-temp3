@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./styles/base.css";
 import "./styles/themes.css";
+import "./styles/visual-system.css";
 import "./styles/shared-controls.css";
 import "./styles/admin.css";
 import "./styles/assessor.css";

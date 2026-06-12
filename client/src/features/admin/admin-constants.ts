@@ -1,13 +1,14 @@
 import { BarChart3, CalendarClock, LayoutDashboard, Radio, Settings, Workflow } from "lucide-react";
+import { BRAND_ASSETS } from "@/lib/brand-assets";
 import type { AdminTabKey, AdminVisualIdentity } from "./admin-types";
 
 const ADMIN_BRAND_ASSETS = {
-  workstation: "/brand-admin/admin-device-workstation.png",
-  content: "/brand-admin/admin-mascot-content.png",
-  supervisor: "/brand-admin/admin-mascot-supervisor.png",
-  monitoring: "/brand-admin/admin-mascot-monitoring.png",
-  assistant: "/brand-admin/admin-mascot-assistant.png",
-  balance: "/brand-admin/admin-mascot-balance.png",
+  workstation: BRAND_ASSETS.heroes.alienWorkPc,
+  content: BRAND_ASSETS.heroes.alienPen,
+  supervisor: BRAND_ASSETS.heroes.alienIdea,
+  monitoring: BRAND_ASSETS.heroes.alienObserve,
+  assistant: BRAND_ASSETS.heroes.alienPoint,
+  balance: BRAND_ASSETS.heroes.alienOk,
 } as const;
 
 export const ADMIN_VISUALS: Record<AdminTabKey, AdminVisualIdentity> = {

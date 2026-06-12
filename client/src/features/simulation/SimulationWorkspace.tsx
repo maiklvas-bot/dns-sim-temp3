@@ -12,6 +12,7 @@ import ActiveTimersPanel from "@/components/active-timers-panel";
 import { Timer, Calendar, User, FileText, StopCircle, FlaskConical, PauseCircle, PlayCircle, Map, BarChart3, Radio } from "lucide-react";
 import { setLiveSimulationRole } from "@/lib/live-session";
 import { ThemeToggle, useDnsTheme } from "@/components/theme-toggle";
+import { BrandVisualBackdrop } from "@/components/brand-access-shell";
 import { SimulationProgressCompact, SimulationProgressRail } from "./layout/SimulationProgressRail";
 import storeBg from "@assets/store_bg.png";
 
@@ -124,13 +125,14 @@ export default function SimulationPage() {
 
   return (
     <div
-      className={`dns-product-shell ${themeClass} h-screen flex flex-col overflow-hidden relative`}
+      className={`dns-product-shell dns-visual-shell dns-visual-shell--simulation ${themeClass} h-screen flex flex-col overflow-hidden relative`}
       style={{
         backgroundImage: `url(${storeBg})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
       }}
     >
+      <BrandVisualBackdrop variant="simulation" />
       {/* Dark overlay */}
       <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0d1421f2] via-[#16213ef5] to-[#0d1421f7]" />
 
