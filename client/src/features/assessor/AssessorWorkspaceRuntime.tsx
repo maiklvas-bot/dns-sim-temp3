@@ -1511,7 +1511,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         <>
           <section className="dns-assessor-v2-panel dns-assessor-v2-side-card">
             <div className="dns-assessor-v2-side-title-row">
-              <div><span className="dns-assessor-v2-kicker">Готовность запуска</span><h3>{setupProgress === 4 ? "Можно запускать" : "Нужна проверка"}</h3></div>
+              <div><span className="dns-assessor-v2-kicker">Готовность оценки</span><h3>{setupProgress === 4 ? "Можно запускать" : "Нужна проверка"}</h3></div>
               <strong>{Math.round((setupProgress / 4) * 100)}%</strong>
             </div>
             <div className="dns-assessor-v2-progress dns-assessor-v2-progress--setup"><span style={{ width: `${Math.round((setupProgress / 4) * 100)}%` }} /></div>
@@ -1523,12 +1523,17 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
             </div>
           </section>
           <section className="dns-assessor-v2-panel dns-assessor-v2-side-card">
-            <h3>Проверка настройки</h3>
+            <h3>Перед запуском</h3>
             <div className="dns-assessor-v2-validation-list">
-              {reviewItems.map((item) => (
+              {reviewItems.map((item, index) => (
                 <button key={item.title} type="button" onClick={() => setActivePanel(item.title === "Участник" ? "participant" : item.title === "Сценарий" ? "scenario" : item.title === "Состав" ? "composition" : "review")}>
                   {item.done ? <CheckCircle2 className="h-4 w-4" /> : <Info className="h-4 w-4" />}
-                  <span><strong>{item.title}</strong><small>{item.detail}</small></span>
+                  <span><strong>{item.title}</strong><small>{[
+                    "ФИО заполнены.",
+                    "Выбран режим оценки.",
+                    "Кейсы и стартовые параметры проверены.",
+                    "Все включенные каналы содержат события.",
+                  ][index]}</small></span>
                 </button>
               ))}
             </div>
