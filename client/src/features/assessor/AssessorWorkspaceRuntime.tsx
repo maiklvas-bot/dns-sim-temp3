@@ -1017,8 +1017,8 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       <div className="dns-assessor-v2-panel-head">
         <div>
           <div className="dns-assessor-v2-kicker">Шаг 2</div>
-          <h2>Выберите сценарий оценки</h2>
-          <p>Оценщик выбирает понятный смысл оценки. Система сама собирает сложность, каналы, кейсы и стартовые метрики.</p>
+          <h2>Выберите режим оценки</h2>
+          <p>Выберите понятный режим нагрузки. Система сама подберёт кейсы, каналы, время и стартовые параметры.</p>
         </div>
         <span className={`dns-assessor-v2-pill ${scenarioConfirmed ? "dns-assessor-v2-pill--ok" : "dns-assessor-v2-pill--warn"}`}>
           {scenarioConfirmed ? "Сценарий выбран" : "Выберите"}
@@ -1031,36 +1031,40 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
           className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "medium" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("medium")}
         >
-          <span>Стандартная оценка заместителя</span>
-          <p>Баланс нагрузки, типовые каналы, умеренное время.</p>
-          <div className="dns-assessor-v2-chip-row"><b>40 мин</b><b>{mediumCount} кейсов</b><b>3 канала</b></div>
+          <span>Стандартный</span>
+          <p><strong>Кому подходит:</strong> Основная оценка кандидата.</p>
+          <p><strong>Что проверяем:</strong> Приоритеты, ответственность, коммуникацию и принятие решений.</p>
+          <div className="dns-assessor-v2-chip-row"><b>Средняя нагрузка.</b><b>Около 40 минут.</b></div>
         </button>
         <button
           type="button"
           className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "easy" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("easy")}
         >
-          <span>Первый проход</span>
-          <p>Мягкий сценарий для знакомства с форматом.</p>
-          <div className="dns-assessor-v2-chip-row"><b>20 мин</b><b>{easyCount} кейсов</b></div>
+          <span>Лёгкий</span>
+          <p><strong>Кому подходит:</strong> Первый проход и знакомство с форматом.</p>
+          <p><strong>Что проверяем:</strong> Понимание магазина, базовую реакцию и ориентацию в ситуации.</p>
+          <div className="dns-assessor-v2-chip-row"><b>Низкая нагрузка.</b><b>Около 20 минут.</b></div>
         </button>
         <button
           type="button"
           className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "hard" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("hard")}
         >
-          <span>Сложная смена</span>
-          <p>Проверка при высокой параллельной нагрузке.</p>
-          <div className="dns-assessor-v2-chip-row"><b>{hardSimulationMinutes} мин</b><b>{hardCount} кейсов</b><b>все каналы</b></div>
+          <span>Сложный</span>
+          <p><strong>Кому подходит:</strong> Кандидат с хорошей базой.</p>
+          <p><strong>Что проверяем:</strong> Многозадачность, устойчивость, контроль и работу под давлением.</p>
+          <div className="dns-assessor-v2-chip-row"><b>Высокая нагрузка.</b><b>Около 60 минут.</b></div>
         </button>
         <button
           type="button"
           className={`dns-assessor-v2-choice-card dns-assessor-v2-choice-card--manual ${scenarioConfirmed && manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("medium", true)}
         >
-          <span>Ручная сборка</span>
-          <p>Для методиста: полный контроль кейсов, каналов и метрик.</p>
-          <div className="dns-assessor-v2-chip-row"><b>экспертно</b><b>гибко</b></div>
+          <span>Экспертный</span>
+          <p><strong>Кому подходит:</strong> Методист или опытный оценщик.</p>
+          <p><strong>Что проверяем:</strong> Можно вручную выбрать кейсы, каналы и параметры оценки.</p>
+          <div className="dns-assessor-v2-chip-row"><b>Настраивается вручную.</b><b>Зависит от выбранного состава.</b></div>
         </button>
       </div>
 
