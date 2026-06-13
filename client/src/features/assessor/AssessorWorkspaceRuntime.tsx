@@ -993,24 +993,24 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
           className={setupMode === "recommended" ? "dns-assessor-v2-mode dns-assessor-v2-mode--active" : "dns-assessor-v2-mode"}
           onClick={() => chooseSetupMode("recommended")}
         >
-          Рекомендованный режим
+          Автоподбор
         </button>
         <button
           type="button"
           className={setupMode === "expert" ? "dns-assessor-v2-mode dns-assessor-v2-mode--active" : "dns-assessor-v2-mode"}
           onClick={() => chooseSetupMode("expert")}
         >
-          Экспертный режим
+          Ручная настройка
         </button>
       </div>
       <div className="dns-assessor-v2-mode-explainer">
         <div className={setupMode === "recommended" ? "dns-assessor-v2-mode-note dns-assessor-v2-mode-note--active" : "dns-assessor-v2-mode-note"}>
-          <strong>Рекомендованный</strong>
-          <p>Оценщик выбирает режим оценки, а система сама подбирает кейсы, каналы, время и стартовый профиль.</p>
+          <strong>Автоподбор</strong>
+          <p>Оценщик выбирает режим оценки, а система сама подбирает кейсы, каналы, время и стартовые параметры.</p>
         </div>
         <div className={setupMode === "expert" ? "dns-assessor-v2-mode-note dns-assessor-v2-mode-note--active" : "dns-assessor-v2-mode-note"}>
-          <strong>Экспертный</strong>
-          <p>Открывает ручной выбор кейсов, событий каналов, метрик и тренировочной скорости для методической настройки.</p>
+          <strong>Ручная настройка</strong>
+          <p>Открывает ручной выбор кейсов, событий каналов, метрик и скорости для методической настройки.</p>
         </div>
       </div>
 
