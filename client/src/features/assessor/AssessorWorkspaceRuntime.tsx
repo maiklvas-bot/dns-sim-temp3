@@ -430,7 +430,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       .filter(isSetupReadyToLaunch);
 
     if (launchSetups.length === 0) {
-      setStartError("Подготовьте хотя бы одного участника: ФИО, сценарий, состав и подтверждение каналов.");
+      setStartError("Подготовьте хотя бы одного участника: ФИО, режим оценки, состав и подтверждение каналов.");
       return;
     }
 
@@ -585,12 +585,12 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     : estimatedBaseTime;
   const scenarioName =
     manualSelection
-      ? "Ручная сборка"
+      ? "Экспертный"
       : difficulty === "easy"
-        ? "Первый проход"
+        ? "Лёгкий"
         : difficulty === "hard"
-          ? "Сложная смена"
-          : "Стандартная оценка";
+          ? "Сложный"
+          : "Стандартный";
   const reviewItems = [
     {
       title: "Участник и оценщик указаны",
@@ -598,12 +598,12 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       done: participantReady,
     },
     {
-      title: "Сценарий выбран",
-      detail: scenarioConfirmed ? `${scenarioName}, ${estimatedTimeLimit} минут.` : "Выберите один из сценариев оценки.",
+      title: "Режим выбран",
+      detail: scenarioConfirmed ? `${scenarioName}, ${estimatedTimeLimit} минут.` : "Выберите режим оценки.",
       done: activeSetupValidation.scenarioReady,
     },
     {
-      title: "Состав сценария проверен",
+      title: "Состав оценки проверен",
       detail: compositionReady ? `${activeCaseCount} ситуаций, ${enabledChannelLabels.length} каналов.` : `Проверьте состав: ${firstValidationIssue}.`,
       done: compositionReady,
     },
@@ -710,7 +710,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       return;
     }
     if (!activeSetupValidation.scenarioReady) {
-      setStartError("Выберите сценарий оценки");
+      setStartError("Выберите режим оценки");
       return;
     }
     setStartError(null);
@@ -746,7 +746,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       return;
     }
     if (!validation.scenarioReady) {
-      setStartError("Выберите сценарий оценки.");
+      setStartError("Выберите режим оценки.");
       setActivePanel("scenario");
       return;
     }
@@ -851,7 +851,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   const renderSetupNavigation = () => (
     <div className="dns-assessor-v2-setup-tabs" role="tablist" aria-label="Настройка запуска">
       {([
-        ["scenario", "Сценарий", Target],
+        ["scenario", "Режим", Target],
         ["composition", "Состав", ListChecks],
         ["review", "Проверка", ClipboardCheck],
       ] as const).map(([id, title, Icon]) => (
@@ -980,7 +980,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       </div>
 
       <div className="dns-assessor-v2-note">
-        После заполнения участника активируется раздел сценария. Так оценщик не видит все настройки сразу и не теряется в структуре.
+        После заполнения участника активируется раздел выбора режима. Так оценщик не видит все настройки сразу и не теряется в структуре.
       </div>
     </section>
   );
@@ -1006,7 +1006,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       <div className="dns-assessor-v2-mode-explainer">
         <div className={setupMode === "recommended" ? "dns-assessor-v2-mode-note dns-assessor-v2-mode-note--active" : "dns-assessor-v2-mode-note"}>
           <strong>Рекомендованный</strong>
-          <p>Оценщик выбирает сценарий, а система сама подбирает кейсы, каналы, время и стартовый профиль.</p>
+          <p>Оценщик выбирает режим оценки, а система сама подбирает кейсы, каналы, время и стартовый профиль.</p>
         </div>
         <div className={setupMode === "expert" ? "dns-assessor-v2-mode-note dns-assessor-v2-mode-note--active" : "dns-assessor-v2-mode-note"}>
           <strong>Экспертный</strong>
@@ -1021,7 +1021,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
           <p>Выберите понятный режим нагрузки. Система сама подберёт кейсы, каналы, время и стартовые параметры.</p>
         </div>
         <span className={`dns-assessor-v2-pill ${scenarioConfirmed ? "dns-assessor-v2-pill--ok" : "dns-assessor-v2-pill--warn"}`}>
-          {scenarioConfirmed ? "Сценарий выбран" : "Выберите"}
+          {scenarioConfirmed ? "Режим выбран" : "Выберите"}
         </span>
       </div>
 
@@ -1069,7 +1069,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       </div>
 
       <div className="dns-assessor-v2-note">
-        Раздел “Состав” откроется после выбора сценария. Это сохраняет понятность первого варианта и боковую навигацию второго.
+        Раздел “Состав” откроется после выбора режима оценки. Это сохраняет понятность первого варианта и боковую навигацию второго.
       </div>
     </section>
   );
@@ -1079,7 +1079,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       <div className="dns-assessor-v2-panel-head">
         <div>
           <div className="dns-assessor-v2-kicker">Шаг 3</div>
-          <h2>Состав сценария</h2>
+          <h2>Состав оценки</h2>
           <p>Проверьте кейсы, каналы и стартовое состояние магазина. В рекомендованном режиме достаточно подтвердить состав.</p>
         </div>
         <span className={`dns-assessor-v2-pill ${compositionConfirmed ? "dns-assessor-v2-pill--ok" : ""}`}>
@@ -1088,7 +1088,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       </div>
 
       <div className="dns-assessor-v2-summary-strip">
-        <div><span>Сценарий</span><strong>{scenarioName}</strong></div>
+        <div><span>Режим оценки</span><strong>{scenarioName}</strong></div>
         <div><span>Сложность</span><strong>{DIFFICULTY_INFO[difficulty].label}</strong></div>
         <div><span>Время</span><strong>{estimatedTimeLimit} мин</strong></div>
         <div><span>Каналы</span><strong>{enabledChannelLabels.length}</strong></div>
@@ -1307,7 +1307,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
               <span>{index + 1}</span>
               <div>
                 <strong>{item.name.trim() || `Участник ${index + 1}`}</strong>
-                <p>{getCasesForSetup(item).length} кейсов · {DIFFICULTY_INFO[item.difficulty].label} · {item.manualSelection ? "ручная настройка" : "автосценарий"}</p>
+                <p>{getCasesForSetup(item).length} кейсов · {DIFFICULTY_INFO[item.difficulty].label} · {item.manualSelection ? "ручная настройка" : "автоматический режим"}</p>
               </div>
               <em>{ready ? "готов" : "не готов"}</em>
             </div>
@@ -1316,7 +1316,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       </div>
 
       <div className="dns-assessor-v2-note">
-        Запуск появляется только после подтверждения состава. Это делает подготовку понятной и снижает риск случайно стартовать непроверенный сценарий.
+        Запуск появляется только после подтверждения состава. Это делает подготовку понятной и снижает риск случайно стартовать неподтверждённую оценку.
       </div>
     </section>
   );
@@ -1445,7 +1445,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
 
   const renderPrimaryAction = () => {
     if (activePanel === "participant") {
-      return <Button type="button" className="dns-assessor-v2-primary" onClick={continueFromParticipant} disabled={!participantReady}>Продолжить к сценарию</Button>;
+      return <Button type="button" className="dns-assessor-v2-primary" onClick={continueFromParticipant} disabled={!participantReady}>Продолжить к режиму</Button>;
     }
     if (activePanel === "scenario") {
       return <Button type="button" className="dns-assessor-v2-primary" onClick={continueFromScenario} disabled={!scenarioConfirmed}>Продолжить к составу</Button>;
@@ -1479,7 +1479,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
               <strong>{participantName.trim() || "Новый сотрудник"}</strong>
             </div>
             <div className="dns-assessor-v2-side-field">
-              <span>Сценарий</span>
+              <span>Режим оценки</span>
               <strong>{scenarioName}</strong>
             </div>
             <div className="dns-assessor-v2-side-actions">
@@ -1516,7 +1516,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
             </div>
             <div className="dns-assessor-v2-progress dns-assessor-v2-progress--setup"><span style={{ width: `${Math.round((setupProgress / 4) * 100)}%` }} /></div>
             <div className="dns-assessor-v2-passport-grid">
-              <div><strong>{scenarioName}</strong><span>сценарий</span></div>
+              <div><strong>{scenarioName}</strong><span>режим оценки</span></div>
               <div><strong>{DIFFICULTY_INFO[difficulty].label}</strong><span>сложность</span></div>
               <div><strong>{estimatedTimeLimit} мин</strong><span>время</span></div>
               <div><strong>{activeCaseCount} / {enabledChannelLabels.length}</strong><span>кейсы / каналы</span></div>
