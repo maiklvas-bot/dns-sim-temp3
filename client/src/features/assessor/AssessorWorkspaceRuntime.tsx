@@ -430,7 +430,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       .filter(isSetupReadyToLaunch);
 
     if (launchSetups.length === 0) {
-      setStartError("Подготовьте хотя бы одного участника: ФИО, сценарий, состав и подтверждение каналов.");
+      setStartError("Подготовьте хотя бы одного участника: ФИО, режим оценки, состав и подтверждение каналов.");
       return;
     }
 
@@ -585,12 +585,12 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     : estimatedBaseTime;
   const scenarioName =
     manualSelection
-      ? "Ручная сборка"
+      ? "Экспертный"
       : difficulty === "easy"
-        ? "Первый проход"
+        ? "Лёгкий"
         : difficulty === "hard"
-          ? "Сложная смена"
-          : "Стандартная оценка";
+          ? "Сложный"
+          : "Стандартный";
   const reviewItems = [
     {
       title: "Участник и оценщик указаны",
@@ -598,12 +598,12 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       done: participantReady,
     },
     {
-      title: "Сценарий выбран",
-      detail: scenarioConfirmed ? `${scenarioName}, ${estimatedTimeLimit} минут.` : "Выберите один из сценариев оценки.",
+      title: "Режим выбран",
+      detail: scenarioConfirmed ? `${scenarioName}, ${estimatedTimeLimit} минут.` : "Выберите режим оценки.",
       done: activeSetupValidation.scenarioReady,
     },
     {
-      title: "Состав сценария проверен",
+      title: "Состав оценки проверен",
       detail: compositionReady ? `${activeCaseCount} ситуаций, ${enabledChannelLabels.length} каналов.` : `Проверьте состав: ${firstValidationIssue}.`,
       done: compositionReady,
     },
@@ -710,7 +710,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       return;
     }
     if (!activeSetupValidation.scenarioReady) {
-      setStartError("Выберите сценарий оценки");
+      setStartError("Выберите режим оценки");
       return;
     }
     setStartError(null);
@@ -746,7 +746,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       return;
     }
     if (!validation.scenarioReady) {
-      setStartError("Выберите сценарий оценки.");
+      setStartError("Выберите режим оценки.");
       setActivePanel("scenario");
       return;
     }
@@ -772,7 +772,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     active: boolean;
   }> = [
     { id: "participant", title: "Кандидаты", state: `${visibleParticipantSetups.length}`, icon: Users, active: activePanel === "participant" },
-    { id: "scenario", title: "Настройка запуска", state: `${setupProgress}/4`, icon: Settings2, active: isSetupPanel },
+    { id: "scenario", title: "Настройка оценки", state: `${setupProgress}/4`, icon: Settings2, active: isSetupPanel },
     { id: "sessions", title: "Активные сессии", state: `${monitorSessions.filter((item) => item.status !== "completed").length}`, icon: Activity, active: activePanel === "sessions" },
     { id: "results", title: "Результаты", state: `${completedSessionCount}`, icon: BarChart3, active: activePanel === "results" },
   ];
@@ -851,7 +851,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   const renderSetupNavigation = () => (
     <div className="dns-assessor-v2-setup-tabs" role="tablist" aria-label="Настройка запуска">
       {([
-        ["scenario", "Сценарий", Target],
+        ["scenario", "Режим", Target],
         ["composition", "Состав", ListChecks],
         ["review", "Проверка", ClipboardCheck],
       ] as const).map(([id, title, Icon]) => (
@@ -980,7 +980,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       </div>
 
       <div className="dns-assessor-v2-note">
-        После заполнения участника активируется раздел сценария. Так оценщик не видит все настройки сразу и не теряется в структуре.
+        После заполнения участника активируется раздел выбора режима. Так оценщик не видит все настройки сразу и не теряется в структуре.
       </div>
     </section>
   );
@@ -993,35 +993,35 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
           className={setupMode === "recommended" ? "dns-assessor-v2-mode dns-assessor-v2-mode--active" : "dns-assessor-v2-mode"}
           onClick={() => chooseSetupMode("recommended")}
         >
-          Рекомендованный режим
+          Автоподбор
         </button>
         <button
           type="button"
           className={setupMode === "expert" ? "dns-assessor-v2-mode dns-assessor-v2-mode--active" : "dns-assessor-v2-mode"}
           onClick={() => chooseSetupMode("expert")}
         >
-          Экспертный режим
+          Ручная настройка
         </button>
       </div>
       <div className="dns-assessor-v2-mode-explainer">
         <div className={setupMode === "recommended" ? "dns-assessor-v2-mode-note dns-assessor-v2-mode-note--active" : "dns-assessor-v2-mode-note"}>
-          <strong>Рекомендованный</strong>
-          <p>Оценщик выбирает сценарий, а система сама подбирает кейсы, каналы, время и стартовый профиль.</p>
+          <strong>Автоподбор</strong>
+          <p>Оценщик выбирает режим оценки, а система сама подбирает кейсы, каналы, время и стартовые параметры.</p>
         </div>
         <div className={setupMode === "expert" ? "dns-assessor-v2-mode-note dns-assessor-v2-mode-note--active" : "dns-assessor-v2-mode-note"}>
-          <strong>Экспертный</strong>
-          <p>Открывает ручной выбор кейсов, событий каналов, метрик и тренировочной скорости для методической настройки.</p>
+          <strong>Ручная настройка</strong>
+          <p>Открывает ручной выбор кейсов, событий каналов, метрик и скорости для методической настройки.</p>
         </div>
       </div>
 
       <div className="dns-assessor-v2-panel-head">
         <div>
           <div className="dns-assessor-v2-kicker">Шаг 2</div>
-          <h2>Выберите сценарий оценки</h2>
-          <p>Оценщик выбирает понятный смысл оценки. Система сама собирает сложность, каналы, кейсы и стартовые метрики.</p>
+          <h2>Выберите режим оценки</h2>
+          <p>Выберите понятный режим нагрузки. Система сама подберёт кейсы, каналы, время и стартовые параметры.</p>
         </div>
         <span className={`dns-assessor-v2-pill ${scenarioConfirmed ? "dns-assessor-v2-pill--ok" : "dns-assessor-v2-pill--warn"}`}>
-          {scenarioConfirmed ? "Сценарий выбран" : "Выберите"}
+          {scenarioConfirmed ? "Режим выбран" : "Выберите"}
         </span>
       </div>
 
@@ -1031,41 +1031,45 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
           className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "medium" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("medium")}
         >
-          <span>Стандартная оценка заместителя</span>
-          <p>Баланс нагрузки, типовые каналы, умеренное время.</p>
-          <div className="dns-assessor-v2-chip-row"><b>40 мин</b><b>{mediumCount} кейсов</b><b>3 канала</b></div>
+          <span>Стандартный</span>
+          <p><strong>Кому подходит:</strong> Основная оценка кандидата.</p>
+          <p><strong>Что проверяем:</strong> Приоритеты, ответственность, коммуникацию и принятие решений.</p>
+          <div className="dns-assessor-v2-chip-row"><b>Средняя нагрузка.</b><b>Около 40 минут.</b></div>
         </button>
         <button
           type="button"
           className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "easy" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("easy")}
         >
-          <span>Первый проход</span>
-          <p>Мягкий сценарий для знакомства с форматом.</p>
-          <div className="dns-assessor-v2-chip-row"><b>20 мин</b><b>{easyCount} кейсов</b></div>
+          <span>Лёгкий</span>
+          <p><strong>Кому подходит:</strong> Первый проход и знакомство с форматом.</p>
+          <p><strong>Что проверяем:</strong> Понимание магазина, базовую реакцию и ориентацию в ситуации.</p>
+          <div className="dns-assessor-v2-chip-row"><b>Низкая нагрузка.</b><b>Около 20 минут.</b></div>
         </button>
         <button
           type="button"
           className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "hard" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("hard")}
         >
-          <span>Сложная смена</span>
-          <p>Проверка при высокой параллельной нагрузке.</p>
-          <div className="dns-assessor-v2-chip-row"><b>{hardSimulationMinutes} мин</b><b>{hardCount} кейсов</b><b>все каналы</b></div>
+          <span>Сложный</span>
+          <p><strong>Кому подходит:</strong> Кандидат с хорошей базой.</p>
+          <p><strong>Что проверяем:</strong> Многозадачность, устойчивость, контроль и работу под давлением.</p>
+          <div className="dns-assessor-v2-chip-row"><b>Высокая нагрузка.</b><b>Около 60 минут.</b></div>
         </button>
         <button
           type="button"
           className={`dns-assessor-v2-choice-card dns-assessor-v2-choice-card--manual ${scenarioConfirmed && manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("medium", true)}
         >
-          <span>Ручная сборка</span>
-          <p>Для методиста: полный контроль кейсов, каналов и метрик.</p>
-          <div className="dns-assessor-v2-chip-row"><b>экспертно</b><b>гибко</b></div>
+          <span>Экспертный</span>
+          <p><strong>Кому подходит:</strong> Методист или опытный оценщик.</p>
+          <p><strong>Что проверяем:</strong> Можно вручную выбрать кейсы, каналы и параметры оценки.</p>
+          <div className="dns-assessor-v2-chip-row"><b>Настраивается вручную.</b><b>Зависит от выбранного состава.</b></div>
         </button>
       </div>
 
       <div className="dns-assessor-v2-note">
-        Раздел “Состав” откроется после выбора сценария. Это сохраняет понятность первого варианта и боковую навигацию второго.
+        Раздел “Состав” откроется после выбора режима оценки. Это сохраняет понятность первого варианта и боковую навигацию второго.
       </div>
     </section>
   );
@@ -1075,7 +1079,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       <div className="dns-assessor-v2-panel-head">
         <div>
           <div className="dns-assessor-v2-kicker">Шаг 3</div>
-          <h2>Состав сценария</h2>
+          <h2>Состав оценки</h2>
           <p>Проверьте кейсы, каналы и стартовое состояние магазина. В рекомендованном режиме достаточно подтвердить состав.</p>
         </div>
         <span className={`dns-assessor-v2-pill ${compositionConfirmed ? "dns-assessor-v2-pill--ok" : ""}`}>
@@ -1084,7 +1088,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       </div>
 
       <div className="dns-assessor-v2-summary-strip">
-        <div><span>Сценарий</span><strong>{scenarioName}</strong></div>
+        <div><span>Режим оценки</span><strong>{scenarioName}</strong></div>
         <div><span>Сложность</span><strong>{DIFFICULTY_INFO[difficulty].label}</strong></div>
         <div><span>Время</span><strong>{estimatedTimeLimit} мин</strong></div>
         <div><span>Каналы</span><strong>{enabledChannelLabels.length}</strong></div>
@@ -1303,7 +1307,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
               <span>{index + 1}</span>
               <div>
                 <strong>{item.name.trim() || `Участник ${index + 1}`}</strong>
-                <p>{getCasesForSetup(item).length} кейсов · {DIFFICULTY_INFO[item.difficulty].label} · {item.manualSelection ? "ручная настройка" : "автосценарий"}</p>
+                <p>{getCasesForSetup(item).length} кейсов · {DIFFICULTY_INFO[item.difficulty].label} · {item.manualSelection ? "ручная настройка" : "автоматический режим"}</p>
               </div>
               <em>{ready ? "готов" : "не готов"}</em>
             </div>
@@ -1312,7 +1316,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       </div>
 
       <div className="dns-assessor-v2-note">
-        Запуск появляется только после подтверждения состава. Это делает подготовку понятной и снижает риск случайно стартовать непроверенный сценарий.
+        Запуск появляется только после подтверждения состава. Это делает подготовку понятной и снижает риск случайно стартовать неподтверждённую оценку.
       </div>
     </section>
   );
@@ -1441,7 +1445,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
 
   const renderPrimaryAction = () => {
     if (activePanel === "participant") {
-      return <Button type="button" className="dns-assessor-v2-primary" onClick={continueFromParticipant} disabled={!participantReady}>Продолжить к сценарию</Button>;
+      return <Button type="button" className="dns-assessor-v2-primary" onClick={continueFromParticipant} disabled={!participantReady}>Продолжить к режиму</Button>;
     }
     if (activePanel === "scenario") {
       return <Button type="button" className="dns-assessor-v2-primary" onClick={continueFromScenario} disabled={!scenarioConfirmed}>Продолжить к составу</Button>;
@@ -1475,7 +1479,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
               <strong>{participantName.trim() || "Новый сотрудник"}</strong>
             </div>
             <div className="dns-assessor-v2-side-field">
-              <span>Сценарий</span>
+              <span>Режим оценки</span>
               <strong>{scenarioName}</strong>
             </div>
             <div className="dns-assessor-v2-side-actions">
@@ -1507,24 +1511,29 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         <>
           <section className="dns-assessor-v2-panel dns-assessor-v2-side-card">
             <div className="dns-assessor-v2-side-title-row">
-              <div><span className="dns-assessor-v2-kicker">Готовность запуска</span><h3>{setupProgress === 4 ? "Можно запускать" : "Нужна проверка"}</h3></div>
+              <div><span className="dns-assessor-v2-kicker">Готовность оценки</span><h3>{setupProgress === 4 ? "Можно запускать" : "Нужна проверка"}</h3></div>
               <strong>{Math.round((setupProgress / 4) * 100)}%</strong>
             </div>
             <div className="dns-assessor-v2-progress dns-assessor-v2-progress--setup"><span style={{ width: `${Math.round((setupProgress / 4) * 100)}%` }} /></div>
             <div className="dns-assessor-v2-passport-grid">
-              <div><strong>{scenarioName}</strong><span>сценарий</span></div>
+              <div><strong>{scenarioName}</strong><span>режим оценки</span></div>
               <div><strong>{DIFFICULTY_INFO[difficulty].label}</strong><span>сложность</span></div>
               <div><strong>{estimatedTimeLimit} мин</strong><span>время</span></div>
               <div><strong>{activeCaseCount} / {enabledChannelLabels.length}</strong><span>кейсы / каналы</span></div>
             </div>
           </section>
           <section className="dns-assessor-v2-panel dns-assessor-v2-side-card">
-            <h3>Проверка настройки</h3>
+            <h3>Перед запуском</h3>
             <div className="dns-assessor-v2-validation-list">
-              {reviewItems.map((item) => (
+              {reviewItems.map((item, index) => (
                 <button key={item.title} type="button" onClick={() => setActivePanel(item.title === "Участник" ? "participant" : item.title === "Сценарий" ? "scenario" : item.title === "Состав" ? "composition" : "review")}>
                   {item.done ? <CheckCircle2 className="h-4 w-4" /> : <Info className="h-4 w-4" />}
-                  <span><strong>{item.title}</strong><small>{item.detail}</small></span>
+                  <span><strong>{item.title}</strong><small>{[
+                    "ФИО заполнены.",
+                    "Выбран режим оценки.",
+                    "Кейсы и стартовые параметры проверены.",
+                    "Все включенные каналы содержат события.",
+                  ][index]}</small></span>
                 </button>
               ))}
             </div>

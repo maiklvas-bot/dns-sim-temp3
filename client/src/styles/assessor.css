@@ -915,6 +915,10 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.dns-product-shell .dns-assessor-v2-card-grid--scenarios .dns-assessor-v2-choice-card {
+  min-height: 12.5rem;
+}
+
 .dns-product-shell .dns-assessor-v2-card-grid--compact {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
