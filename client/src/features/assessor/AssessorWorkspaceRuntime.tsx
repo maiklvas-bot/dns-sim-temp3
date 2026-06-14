@@ -772,7 +772,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     active: boolean;
   }> = [
     { id: "participant", title: "Кандидаты", state: `${visibleParticipantSetups.length}`, icon: Users, active: activePanel === "participant" },
-    { id: "scenario", title: "Настройка запуска", state: `${setupProgress}/4`, icon: Settings2, active: isSetupPanel },
+    { id: "scenario", title: "Настройка оценки", state: `${setupProgress}/4`, icon: Settings2, active: isSetupPanel },
     { id: "sessions", title: "Активные сессии", state: `${monitorSessions.filter((item) => item.status !== "completed").length}`, icon: Activity, active: activePanel === "sessions" },
     { id: "results", title: "Результаты", state: `${completedSessionCount}`, icon: BarChart3, active: activePanel === "results" },
   ];
