@@ -22,7 +22,7 @@ export default function DecisionJournal() {
           </SheetTitle>
         </SheetHeader>
 
-        <ScrollArea className="h-[calc(100vh-80px)]">
+        <ScrollArea className="h-[calc(100dvh-80px)]">
           <div className="p-4 space-y-3">
             {decisions.length === 0 && (
               <p className="text-sm text-[#d4e0f3] text-center py-8">

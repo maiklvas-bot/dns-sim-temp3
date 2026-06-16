@@ -9,7 +9,7 @@
   --dns-visual-border: rgba(133, 156, 190, 0.34);
   position: relative;
   isolation: isolate;
-  min-height: 100vh;
+  min-height: 100dvh;
   color: var(--dns-visual-text);
 }
 

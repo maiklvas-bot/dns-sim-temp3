@@ -14,6 +14,7 @@ import { setLiveSimulationRole } from "@/lib/live-session";
 import { ThemeToggle, useDnsTheme } from "@/components/theme-toggle";
 import { BrandVisualBackdrop } from "@/components/brand-access-shell";
 import { SimulationProgressCompact, SimulationProgressRail } from "./layout/SimulationProgressRail";
+import { useIsMobile } from "@/hooks/use-mobile";
 import storeBg from "@assets/store_bg.png";
 
 // Тип иконки из lucide-react
@@ -31,6 +32,7 @@ export default function SimulationPage() {
   const [, navigate] = useLocation();
   const { state, dispatch, isReadOnly, livePresence, liveSessionConfig, liveSocketConnected, liveStatus, mode } = useSimulation();
   const { theme, themeClass, toggleTheme } = useDnsTheme();
+  const isMobile = useIsMobile();
 
   // ─── Mobile tab state ───
   const [activePanel, setActivePanel] = useState<SimulationPanelKey>('signals');
@@ -105,7 +107,7 @@ export default function SimulationPage() {
           };
 
   // ─── Mobile tab configuration ───
-  const useTabbedPanels = isReadOnly;
+  const useTabbedPanels = isReadOnly || isMobile;
   const hiddenPanelClass = useTabbedPanels ? "hidden" : "hidden md:block";
   const panelGridClass = useTabbedPanels
     ? "grid-cols-1"
@@ -125,7 +127,7 @@ export default function SimulationPage() {
 
   return (
     <div
-      className={`dns-product-shell dns-visual-shell dns-visual-shell--simulation ${themeClass} h-screen flex flex-col overflow-hidden relative`}
+      className={`dns-product-shell dns-visual-shell dns-visual-shell--simulation ${themeClass} h-dvh flex flex-col overflow-hidden relative`}
       style={{
         backgroundImage: `url(${storeBg})`,
         backgroundSize: "cover",

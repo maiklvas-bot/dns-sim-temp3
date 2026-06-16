@@ -188,7 +188,7 @@ export default function ResultsPage(props: any) {
 
   if (persistedSessionId != null && persistedResultQuery.isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0d1117] text-white">
+      <div className="min-h-dvh flex items-center justify-center bg-[#0d1117] text-white">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin" style={{ color: DNS_COLORS.primary }} />
           <span className="text-sm text-[#94A3B8]">Загрузка результата...</span>
@@ -199,7 +199,7 @@ export default function ResultsPage(props: any) {
 
   if (persistedSessionId != null && persistedResultQuery.isError) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0d1117] px-4 text-white">
+      <div className="min-h-dvh flex items-center justify-center bg-[#0d1117] px-4 text-white">
         <div className="w-full max-w-md rounded-2xl border border-[#2a3a4e] bg-[#141c2b]/85 p-6 text-center">
           <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-[#FFB300]" />
           <h2 className="text-lg font-semibold">Не удалось загрузить результат</h2>
