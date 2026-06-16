@@ -67,14 +67,22 @@ function formatRevenue(value: number) {
   return `${value}K₽`;
 }
 
+function formatClientRating(value: number) {
+  return value.toLocaleString("ru-RU", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export default function MetricsPanel() {
   const { state } = useSimulation();
   const m = state.metrics;
   const criticalTimers = getActiveTimerSnapshots(state).slice(0, 3);
-  const storePulse = Math.round((m.conversion + m.teamMorale * 10 + Math.max(0, 100 - m.pickupSpeed * 3)) / 3);
+  const clientRatingPct = ((m.nps - 1) / 4) * 100;
+  const storePulse = Math.round((m.conversion + m.teamMorale * 10 + Math.max(0, 100 - m.pickupSpeed * 3) + clientRatingPct) / 4);
 
   const convColor = m.conversion >= 55 ? "#00d4aa" : m.conversion >= 40 ? "#ffc107" : "#ff4444";
-  const npsColor = m.nps >= 7 ? "#00d4aa" : m.nps >= 5 ? "#ffc107" : "#ff4444";
+  const npsColor = m.nps >= 4.2 ? "#00d4aa" : m.nps >= 3.4 ? "#ffc107" : m.nps >= 2.6 ? "#ff9f43" : "#ff4444";
   const speedColor = m.pickupSpeed <= 10 ? "#00d4aa" : m.pickupSpeed <= 18 ? "#ffc107" : m.pickupSpeed <= 28 ? "#ff9f43" : "#ff4444";
   const whColor = m.warehouseLoad <= 55 ? "#00d4aa" : m.warehouseLoad <= 72 ? "#ffc107" : m.warehouseLoad <= 86 ? "#ff9f43" : "#ff4444";
   const moraleColor = m.teamMorale >= 7 ? "#00d4aa" : m.teamMorale >= 4 ? "#ffc107" : "#ff4444";
@@ -87,7 +95,7 @@ export default function MetricsPanel() {
             <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#FF6B00]">Метрики магазина</div>
             <div className="mt-1 text-[12px] text-[#a8bbd6]">Живой срез смены по клиентам, людям и операционке</div>
           </div>
-          <div className="rounded-2xl border border-[#2d4563] bg-[#101826] px-3 py-2 text-right">
+          <div className="flex min-w-[102px] flex-col items-center justify-center rounded-2xl border border-[#2d4563] bg-[#101826] px-3 py-2 text-center">
             <div className="text-[11px] uppercase tracking-[0.14em] text-[#8ea4c2]">Пульс смены</div>
             <div className="text-lg font-bold text-white tabular-nums">{storePulse}%</div>
           </div>
@@ -116,10 +124,10 @@ export default function MetricsPanel() {
         />
         <MetricRow
           icon={<Star className="w-3.5 h-3.5" />}
-          label="NPS клиентов"
-          value={`${m.nps.toFixed(1)}`}
+          label="Клиентская оценка"
+          value={formatClientRating(m.nps)}
           color={npsColor}
-          barPct={m.nps * 10}
+          barPct={clientRatingPct}
         />
         <MetricRow
           icon={<Timer className="w-3.5 h-3.5" />}

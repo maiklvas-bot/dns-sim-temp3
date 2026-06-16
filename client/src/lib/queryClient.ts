@@ -71,8 +71,15 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+  options?: {
+    headers?: Record<string, string>;
+    keepalive?: boolean;
+  },
 ): Promise<Response> {
-  const headers: Record<string, string> = data ? { "Content-Type": "application/json" } : {};
+  const headers: Record<string, string> = {
+    ...(data ? { "Content-Type": "application/json" } : {}),
+    ...options?.headers,
+  };
   const csrfToken = getCsrfToken();
   if (csrfToken && isMutatingMethod(method)) {
     headers["X-CSRF-Token"] = csrfToken;
@@ -83,10 +90,11 @@ export async function apiRequest(
     credentials: "same-origin",
     headers,
     body: data ? JSON.stringify(data) : undefined,
+    keepalive: options?.keepalive,
   });
 
   await throwIfResNotOk(res);
-  if (url === "/api/staff/login") {
+  if (url === "/api/staff/login" || url === "/api/staff/elevate") {
     try {
       const payload = await res.clone().json();
       setCsrfToken(typeof payload?.csrfToken === "string" ? payload.csrfToken : null);
@@ -115,7 +123,11 @@ export const getQueryFn: <T>(options: {
     }
 
     await throwIfResNotOk(res);
-    return await res.json();
+    const payload = await res.json();
+    if (payload?.csrfToken && typeof payload.csrfToken === "string") {
+      setCsrfToken(payload.csrfToken);
+    }
+    return payload;
   };
 
 export const queryClient = new QueryClient({

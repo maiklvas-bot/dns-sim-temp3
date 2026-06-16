@@ -7,8 +7,18 @@ npm ci
 npm run lint
 npm run test
 npm run build
+npx playwright install chromium
+npm run test:browser
 docker compose build app
 ```
+
+If Docker is not installed in the current local environment, write it in the PR as a skipped environment check:
+
+```text
+docker compose build app - not run: docker command not found
+```
+
+The curator or CI must still run the Docker build before merge/release.
 
 Smoke API checks after Docker start:
 
@@ -27,6 +37,10 @@ Manual smoke checks:
 - result page shows scores and competency profile;
 - PDF export opens and contains Cyrillic text correctly;
 - PDF competency radar shows expected line and actual line.
+
+Browser acceptance covers `/`, `/student` and `/staff-login` at `1920x1080`,
+`1366x768` and `390x844`. It verifies navigation, the instruction dialog,
+theme switching, horizontal overflow and browser console errors.
 
 Before production release:
 

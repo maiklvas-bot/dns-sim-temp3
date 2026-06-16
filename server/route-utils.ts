@@ -2,6 +2,8 @@ import fs from "fs";
 import path from "path";
 import { nanoid } from "nanoid";
 import type { Request, Response, NextFunction } from "express";
+import { auditStorage } from "./audit-storage";
+import { ApiError } from "./middleware/error-handler";
 
 const ALLOWED_ASSET_TYPES = new Map<string, { extension: string; kind: "image" | "audio" | "video"; maxBytes: number }>([
   ["image/png", { extension: ".png", kind: "image", maxBytes: 5 * 1024 * 1024 }],
@@ -30,7 +32,25 @@ export function requireStaff(req: Request, res: Response, next: NextFunction) {
 
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   if (!req.session.staff || req.session.staff.role !== "admin") {
-    return res.status(403).json({ message: "Forbidden", code: "ADMIN_REQUIRED" });
+    try {
+      auditStorage.record(req, {
+        area: "security",
+        action: "admin_access_denied",
+        outcome: "failure",
+        summary: "Отклонена попытка доступа к административной функции",
+        entityType: "admin-route",
+        entityId: req.path,
+        metadata: {
+          method: req.method,
+        },
+      });
+    } catch (error) {
+      console.error("Failed to write denied admin access audit event:", error);
+    }
+    return res.status(403).json({
+      message: "Недостаточно прав для этого действия. Войдите под учётной записью администратора.",
+      code: "ADMIN_REQUIRED",
+    });
   }
   next();
 }
@@ -48,14 +68,22 @@ export function saveMediaUpload(params: {
 }) {
   const definition = ALLOWED_ASSET_TYPES.get(params.mimeType);
   if (!definition) {
-    throw new Error("Допустимы PNG, JPEG, WEBP, MP3, WAV, OGG, WEBM, M4A, MP4 и MOV");
+    throw new ApiError(
+      400,
+      "MEDIA_TYPE_NOT_ALLOWED",
+      "Допустимы PNG, JPEG, WEBP, MP3, WAV, OGG, WEBM, M4A, MP4 и MOV",
+    );
   }
 
   const base64 = params.data.includes(",") ? params.data.split(",")[1] : params.data;
   const buffer = Buffer.from(base64, "base64");
   if (buffer.length === 0 || buffer.length > definition.maxBytes) {
     const sizeLabel = definition.kind === "image" ? "5 МБ" : definition.kind === "audio" ? "20 МБ" : "150 МБ";
-    throw new Error(`Размер файла должен быть в диапазоне до ${sizeLabel}`);
+    throw new ApiError(
+      400,
+      "MEDIA_SIZE_INVALID",
+      `Размер файла должен быть в диапазоне до ${sizeLabel}`,
+    );
   }
 
   const uploadDir = ensureUploadDir();
@@ -64,7 +92,7 @@ export function saveMediaUpload(params: {
   const resolvedOutputPath = path.resolve(outputPath);
   const resolvedUploadDir = path.resolve(uploadDir);
   if (!resolvedOutputPath.startsWith(resolvedUploadDir + path.sep)) {
-    throw new Error("Некорректный путь файла");
+    throw new ApiError(400, "MEDIA_PATH_INVALID", "Некорректный путь файла");
   }
 
   fs.writeFileSync(outputPath, buffer);

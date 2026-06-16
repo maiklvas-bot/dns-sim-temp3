@@ -27,6 +27,33 @@ export const evaluatorAccounts = sqliteTable("evaluator_accounts", {
   usernameIdx: uniqueIndex("evaluator_accounts_username_idx").on(table.username),
 }));
 
+export const auditLogs = sqliteTable("audit_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  area: text("area").notNull(),
+  action: text("action").notNull(),
+  outcome: text("outcome").notNull().default("success"),
+  actorId: integer("actor_id"),
+  actorUsername: text("actor_username"),
+  actorDisplayName: text("actor_display_name"),
+  actorRole: text("actor_role"),
+  ipAddress: text("ip_address").notNull(),
+  userAgent: text("user_agent"),
+  entityType: text("entity_type"),
+  entityId: text("entity_id"),
+  summary: text("summary").notNull(),
+  changedFieldsJson: text("changed_fields_json").notNull().default("[]"),
+  beforeJson: text("before_json"),
+  afterJson: text("after_json"),
+  metadataJson: text("metadata_json").notNull().default("{}"),
+}, (table) => ({
+  createdAtIdx: index("audit_logs_created_at_idx").on(table.createdAt),
+  areaIdx: index("audit_logs_area_idx").on(table.area),
+  actionIdx: index("audit_logs_action_idx").on(table.action),
+  actorUsernameIdx: index("audit_logs_actor_username_idx").on(table.actorUsername),
+  ipAddressIdx: index("audit_logs_ip_address_idx").on(table.ipAddress),
+}));
+
 export const participants = sqliteTable("participants", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   externalId: text("external_id"),
@@ -91,7 +118,18 @@ export const caseCycles = sqliteTable("case_cycles", {
   id: text("id").primaryKey(),
   caseId: text("case_id").notNull(),
   cycleNumber: integer("cycle_number").notNull(),
+  title: text("title"),
+  description: text("description"),
+  source: text("source"),
   situation: text("situation").notNull(),
+  zonesAffectedJson: text("zones_affected_json").notNull().default("[]"),
+  timingJson: text("timing_json").notNull().default("{}"),
+  status: text("status").notNull().default("active"),
+  isFinal: integer("is_final", { mode: "boolean" }).notNull().default(false),
+  priority: text("priority").notNull().default("normal"),
+  criticality: text("criticality").notNull().default("normal"),
+  imageAssetId: text("image_asset_id"),
+  audioAssetId: text("audio_asset_id"),
   sortOrder: integer("sort_order").notNull().default(0),
 }, (table) => ({
   caseCycleIdx: uniqueIndex("case_cycles_case_cycle_idx").on(table.caseId, table.cycleNumber),
@@ -128,6 +166,11 @@ export const caseOptions = sqliteTable("case_options", {
   level: integer("level").notNull(),
   text: text("text").notNull(),
   score: integer("score").notNull(),
+  comment: text("comment"),
+  nextCycleId: text("next_cycle_id"),
+  nextDelaySeconds: integer("next_delay_seconds"),
+  nextChannel: text("next_channel"),
+  status: text("status").notNull().default("active"),
   effectQueue: integer("effect_queue").notNull().default(0),
   effectConversion: integer("effect_conversion").notNull().default(0),
   effectMorale: integer("effect_morale").notNull().default(0),
@@ -230,6 +273,7 @@ export const simulationSettings = sqliteTable("simulation_settings", {
 export const simulationSessions = sqliteTable("simulation_sessions", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   participantId: integer("participant_id"),
+  participantTokenHash: text("participant_token_hash"),
   participantName: text("participant_name").notNull(),
   evaluatorAccountId: integer("evaluator_account_id"),
   evaluatorName: text("evaluator_name").notNull().default(""),
@@ -252,7 +296,7 @@ export const simulationSessions = sqliteTable("simulation_sessions", {
 
 export const sessionAnswers = sqliteTable("session_answers", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  sessionId: integer("session_id").notNull(),
+  sessionId: integer("session_id").notNull().references(() => simulationSessions.id, { onDelete: "cascade" }),
   sourceType: text("source_type").notNull(), // main_case | email | messenger | video
   contentId: text("content_id").notNull(),
   caseTitle: text("case_title").notNull(),
@@ -271,7 +315,7 @@ export const sessionAnswers = sqliteTable("session_answers", {
 
 export const sessionResults = sqliteTable("session_results", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  sessionId: integer("session_id").notNull(),
+  sessionId: integer("session_id").notNull().references(() => simulationSessions.id, { onDelete: "cascade" }),
   totalScore: integer("total_score").notNull().default(0),
   averageScore: integer("average_score").notNull().default(0),
   competencyAveragesJson: text("competency_averages_json").notNull().default("{}"),
@@ -286,7 +330,7 @@ export const sessionResults = sqliteTable("session_results", {
 
 export const sessionMetrics = sqliteTable("session_metrics", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  sessionId: integer("session_id").notNull(),
+  sessionId: integer("session_id").notNull().references(() => simulationSessions.id, { onDelete: "cascade" }),
   timestamp: text("timestamp").notNull(),
   queue: integer("queue").notNull().default(20),
   conversion: integer("conversion").notNull().default(50),
@@ -324,6 +368,7 @@ export const staffLoginSchema = z.object({
 
 export type AdminAccount = typeof admins.$inferSelect;
 export type EvaluatorAccount = typeof evaluatorAccounts.$inferSelect;
+export type AuditLog = typeof auditLogs.$inferSelect;
 export type Participant = typeof participants.$inferSelect;
 export type Competency = typeof competencies.$inferSelect;
 export type MediaAsset = typeof mediaAssets.$inferSelect;

@@ -3,8 +3,7 @@ import { EMAIL_CASES } from "../data/email-cases";
 import { useSimulation } from "../context/SimulationContext";
 import { playAudioImmediate } from "../data/audio-map";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Mail, CheckCircle, Clock, Volume2 } from "lucide-react";
-import DeadlineChip from "./deadline-chip";
+import { Mail, CheckCircle, Volume2 } from "lucide-react";
 
 const DEPT_ICONS: Record<string, string> = {
   "Клиентская служба": "👥",
@@ -40,9 +39,6 @@ export default function EmailInbox({
       : selectedId;
   const selected = emails.find(e => e.id === selectedEmailId);
   const unansweredCount = emails.filter(e => !answeredEmailIds.includes(e.id)).length;
-  const selectedDecision = selected
-    ? state.decisions.find((decision) => decision.sourceType === "email" && decision.caseId === selected.id) || null
-    : null;
 
   if (emails.length === 0) {
     return (
@@ -126,20 +122,10 @@ export default function EmailInbox({
                   <span className="px-2 py-0.5 rounded-full text-[9px]" style={{ background: selected.departmentColor + "20", color: selected.departmentColor }}>
                     {selected.department}
                   </span>
-                  <span className="flex items-center gap-1 ml-auto">
-                    <Clock className="w-3 h-3" />
-                    {Math.round((state.emailSignalMeta[selected.id]?.arrivedAt ?? selected.arrivalMinute * 60) / 60)} мин
+                  <span className="ml-auto">
+                    Получено на {Math.round((state.emailSignalMeta[selected.id]?.arrivedAt ?? selected.arrivalMinute * 60) / 60)} мин
                   </span>
                 </div>
-                {state.emailSignalMeta[selected.id]?.deadline && (
-                  <div className="mt-2">
-                    <DeadlineChip
-                      deadline={state.emailSignalMeta[selected.id]?.deadline}
-                      elapsedSeconds={state.elapsedSeconds}
-                      referenceElapsedSeconds={selectedDecision?.timer?.resolvedAtElapsed ?? null}
-                    />
-                  </div>
-                )}
               </div>
 
               {/* Body */}
@@ -164,7 +150,7 @@ export default function EmailInbox({
                     <div className="mt-1 text-xs text-[#cfe3ff]">К письму прикреплена запись. Её можно прослушать отдельно от текста письма.</div>
                   </div>
                   <button
-                    onClick={() => playAudioImmediate(selected.audioUrl!, 0.85)}
+                    onClick={() => playAudioImmediate(selected.audioUrl!, 0.95)}
                     className="inline-flex items-center gap-2 rounded-lg border border-[#4a9eff]/35 bg-[#101a29] px-3 py-2 text-xs font-semibold text-[#8ec5ff] transition-all hover:border-[#4a9eff] hover:text-white"
                   >
                     <Volume2 className="h-3.5 w-3.5" />

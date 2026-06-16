@@ -124,6 +124,28 @@ export class StaffStorage {
     return null;
   }
 
+  async authenticateAdminByPassword(password: string): Promise<StaffPrincipal | null> {
+    if (!password) {
+      return null;
+    }
+
+    const accounts = db.select().from(admins).all();
+    for (const account of accounts) {
+      if (!account.isActive || !(await verifyPassword(password, account.passwordHash))) {
+        continue;
+      }
+
+      return {
+        id: account.id,
+        role: "admin",
+        username: account.username,
+        displayName: account.displayName,
+      };
+    }
+
+    return null;
+  }
+
   private async authenticateAdmin(username: string, password: string): Promise<StaffPrincipal | null> {
     const account = db.select().from(admins).where(eq(admins.username, username)).get();
     if (!account || !account.isActive || !(await verifyPassword(password, account.passwordHash))) {

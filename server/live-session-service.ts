@@ -2,8 +2,10 @@ import { randomUUID } from "crypto";
 import fs from "fs";
 import type { IncomingMessage, Server } from "http";
 import path from "path";
+import type Database from "better-sqlite3";
 import { WebSocketServer, type WebSocket } from "ws";
-import { sqlite } from "./db";
+import { sqlite as defaultSqlite } from "./db";
+import { authorizeLiveSocket, type LiveSocketContext } from "./live-socket-auth";
 import type {
   LiveSimulationConfig,
   LiveSimulationMonitorSummary,
@@ -15,11 +17,6 @@ import type {
 } from "@shared/live-session";
 
 type SocketRole = "assessor" | "student";
-
-interface SocketContext {
-  liveSessionId: string;
-  role: SocketRole;
-}
 
 interface LiveSessionRecord {
   config: LiveSimulationConfig;
@@ -43,6 +40,11 @@ const DEFAULT_SQLITE_PATH = process.env.SQLITE_PATH || path.join(process.cwd(), 
 const LIVE_SESSION_STORE_PATH =
   process.env.LIVE_SESSION_STORE_PATH || path.join(path.dirname(DEFAULT_SQLITE_PATH), "live-sessions.json");
 
+interface LiveSessionServiceOptions {
+  sqlite?: Database.Database;
+  storePath?: string;
+}
+
 function clampNumber(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
@@ -64,14 +66,21 @@ function safeSend(socket: WebSocket, message: LiveSimulationSocketMessage) {
   socket.send(JSON.stringify(message));
 }
 
-class LiveSessionService {
+export class LiveSessionService {
+  private readonly sqlite: Database.Database;
+  private readonly liveSessionStorePath: string;
   private readonly sessions = new Map<string, LiveSessionRecord>();
   private readonly accessCodeToSessionId = new Map<string, string>();
-  private readonly sockets = new Map<WebSocket, SocketContext>();
+  private readonly sockets = new Map<WebSocket, LiveSocketContext>();
   private serverAttached = false;
   private storeLoaded = false;
   private sqliteStoreReady = false;
   private persistTimer: NodeJS.Timeout | null = null;
+
+  constructor(options: LiveSessionServiceOptions = {}) {
+    this.sqlite = options.sqlite || defaultSqlite;
+    this.liveSessionStorePath = options.storePath || LIVE_SESSION_STORE_PATH;
+  }
 
   createSession(
     input: Omit<LiveSimulationConfig, "liveSessionId" | "accessCode" | "createdAt">,
@@ -237,11 +246,8 @@ class LiveSessionService {
       this.broadcast(liveSessionId, { type: "snapshot", payload: session.snapshot });
     }
 
-    if (input.status) {
-      this.setStatus(session, input.status);
-      this.broadcast(liveSessionId, { type: "status", payload: session.status });
-    } else if (input.snapshot?.state && session.status === "waiting") {
-      this.setStatus(session, "running");
+    if (input.snapshot?.state) {
+      this.setStatus(session, this.deriveStatusFromSnapshot(input.snapshot));
       this.broadcast(liveSessionId, { type: "status", payload: session.status });
     }
 
@@ -286,29 +292,44 @@ class LiveSessionService {
     this.restorePersistedSessions();
     this.serverAttached = true;
     const wss = new WebSocketServer({ noServer: true });
+    const authorizedUpgrades = new WeakMap<IncomingMessage, LiveSocketContext>();
 
-    server.on("upgrade", (request, socket, head) => {
+    server.on("upgrade", async (request, socket, head) => {
       const targetUrl = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
       if (targetUrl.pathname !== "/ws/live") {
         return;
       }
 
-      const liveSessionId = targetUrl.searchParams.get("liveSessionId") || "";
-      const roleParam = targetUrl.searchParams.get("role");
-      const role = roleParam === "student" ? "student" : roleParam === "assessor" ? "assessor" : null;
-      if (!liveSessionId || !role || !this.sessions.has(liveSessionId)) {
-        socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+      let authorization;
+      try {
+        authorization = await authorizeLiveSocket(request, (liveSessionId) => this.getSessionById(liveSessionId));
+      } catch (error) {
+        console.error("[live-session] failed to authorize socket upgrade", error);
+        socket.write("HTTP/1.1 500 Internal Server Error\r\nConnection: close\r\n\r\n");
         socket.destroy();
         return;
       }
 
+      if (!authorization.ok) {
+        const reason = authorization.status === 401
+          ? "Unauthorized"
+          : authorization.status === 403
+            ? "Forbidden"
+            : "Not Found";
+        socket.write(`HTTP/1.1 ${authorization.status} ${reason}\r\nConnection: close\r\n\r\n`);
+        socket.destroy();
+        return;
+      }
+
+      authorizedUpgrades.set(request, authorization.context);
       wss.handleUpgrade(request, socket, head, (ws) => {
         wss.emit("connection", ws, request);
       });
     });
 
     wss.on("connection", (socket, request) => {
-      const context = this.resolveSocketContext(request);
+      const context = authorizedUpgrades.get(request);
+      authorizedUpgrades.delete(request);
       if (!context) {
         socket.close();
         return;
@@ -383,13 +404,12 @@ class LiveSessionService {
     switch (message.type) {
       case "snapshot":
         if (context.role !== "student") {
+          safeSend(socket, { type: "error", payload: { message: "Snapshot messages are restricted to students" } });
           return;
         }
         session.snapshot = message.payload;
-        if (Boolean((message.payload?.state as Record<string, any> | undefined)?.isCompleted)) {
-          this.setStatus(session, "completed");
-        } else if (message.payload?.state && session.status === "waiting") {
-          this.setStatus(session, "running");
+        if (message.payload?.state) {
+          this.setStatus(session, this.deriveStatusFromSnapshot(message.payload));
         }
         session.updatedAt = Date.now();
         this.broadcast(context.liveSessionId, { type: "snapshot", payload: session.snapshot });
@@ -400,6 +420,10 @@ class LiveSessionService {
         return;
 
       case "reset":
+        if (context.role !== "assessor") {
+          safeSend(socket, { type: "error", payload: { message: "Reset messages require assessor access" } });
+          return;
+        }
         if (session.status === "completed") {
           return;
         }
@@ -412,6 +436,10 @@ class LiveSessionService {
         return;
 
       case "status":
+        if (context.role !== "assessor") {
+          safeSend(socket, { type: "error", payload: { message: "Status messages require assessor access" } });
+          return;
+        }
         this.setStatus(session, message.payload);
         session.updatedAt = Date.now();
         this.broadcast(context.liveSessionId, { type: "status", payload: session.status });
@@ -421,18 +449,6 @@ class LiveSessionService {
       default:
         return;
     }
-  }
-
-  private resolveSocketContext(request: IncomingMessage): SocketContext | null {
-    const targetUrl = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
-    const liveSessionId = targetUrl.searchParams.get("liveSessionId") || "";
-    const roleParam = targetUrl.searchParams.get("role");
-    const role = roleParam === "student" ? "student" : roleParam === "assessor" ? "assessor" : null;
-    if (!liveSessionId || !role || !this.sessions.has(liveSessionId)) {
-      return null;
-    }
-
-    return { liveSessionId, role };
   }
 
   private setPresence(liveSessionId: string, role: SocketRole, value: boolean) {
@@ -467,7 +483,23 @@ class LiveSessionService {
     }
   }
 
-  private restorePersistedSessions() {
+  private deriveStatusFromSnapshot(snapshot: LiveSimulationSnapshot): LiveSimulationStatus {
+    const state = (snapshot.state || {}) as Record<string, any>;
+    if (state.isCompleted) {
+      return "completed";
+    }
+    if (
+      state.isRunning ||
+      state.isPaused ||
+      Number(state.elapsedSeconds || 0) > 0 ||
+      (Array.isArray(state.decisions) && state.decisions.length > 0)
+    ) {
+      return "running";
+    }
+    return "waiting";
+  }
+
+  restorePersistedSessions() {
     if (this.storeLoaded) {
       return;
     }
@@ -475,12 +507,13 @@ class LiveSessionService {
     this.storeLoaded = true;
     this.ensureSqliteStore();
 
+    let sqliteRows: Array<{ payload: string }> | null = null;
     try {
-      const rows = sqlite
+      sqliteRows = this.sqlite
         .prepare("SELECT payload FROM app_live_sessions")
         .all() as Array<{ payload: string }>;
 
-      rows.forEach((row) => {
+      sqliteRows.forEach((row) => {
         try {
           this.restorePersistedSessionRecord(JSON.parse(row.payload) as LiveSessionRecord);
         } catch (error) {
@@ -491,17 +524,20 @@ class LiveSessionService {
       console.error("[live-session] failed to read sqlite session store", error);
     }
 
-    if (!fs.existsSync(LIVE_SESSION_STORE_PATH)) {
+    if (sqliteRows == null || sqliteRows.length > 0 || !fs.existsSync(this.liveSessionStorePath)) {
       return;
     }
 
     try {
-      const parsed = JSON.parse(fs.readFileSync(LIVE_SESSION_STORE_PATH, "utf8")) as PersistedLiveSessionStore;
+      const parsed = JSON.parse(fs.readFileSync(this.liveSessionStorePath, "utf8")) as PersistedLiveSessionStore;
       if (parsed.version !== 1 || !Array.isArray(parsed.sessions)) {
         return;
       }
 
       parsed.sessions.forEach((session) => this.restorePersistedSessionRecord(session));
+      if (this.persistSessions()) {
+        fs.unlinkSync(this.liveSessionStorePath);
+      }
     } catch (error) {
       console.error("[live-session] failed to restore persisted sessions", error);
     }
@@ -544,7 +580,7 @@ class LiveSessionService {
       return;
     }
 
-    sqlite.exec(`
+    this.sqlite.exec(`
       CREATE TABLE IF NOT EXISTS app_live_sessions (
         live_session_id TEXT PRIMARY KEY,
         payload TEXT NOT NULL,
@@ -566,7 +602,16 @@ class LiveSessionService {
     this.persistTimer.unref?.();
   }
 
-  private persistSessions() {
+  flushPersistence() {
+    if (this.persistTimer) {
+      clearTimeout(this.persistTimer);
+      this.persistTimer = null;
+    }
+
+    this.persistSessions();
+  }
+
+  private persistSessions(): boolean {
     const sessions = Array.from(this.sessions.values())
       .filter((session) => session.status !== "completed")
       .map((session) => ({
@@ -583,9 +628,9 @@ class LiveSessionService {
 
     try {
       this.ensureSqliteStore();
-      const writeSqlite = sqlite.transaction((items: LiveSessionRecord[]) => {
-        sqlite.prepare("DELETE FROM app_live_sessions").run();
-        const insert = sqlite.prepare(`
+      const writeSqlite = this.sqlite.transaction((items: LiveSessionRecord[]) => {
+        this.sqlite.prepare("DELETE FROM app_live_sessions").run();
+        const insert = this.sqlite.prepare(`
           INSERT INTO app_live_sessions (live_session_id, payload, updated_at)
           VALUES (?, ?, ?)
         `);
@@ -594,14 +639,10 @@ class LiveSessionService {
         });
       });
       writeSqlite(sessions);
-
-      fs.mkdirSync(path.dirname(LIVE_SESSION_STORE_PATH), { recursive: true });
-      fs.writeFileSync(
-        LIVE_SESSION_STORE_PATH,
-        JSON.stringify({ version: 1, sessions } satisfies PersistedLiveSessionStore),
-      );
+      return true;
     } catch (error) {
       console.error("[live-session] failed to persist sessions", error);
+      return false;
     }
   }
 

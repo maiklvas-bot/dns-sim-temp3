@@ -28,6 +28,11 @@ export interface CaseOption {
   score: number;
   effects: MetricEffects;
   competency_scores: Record<string, number>;
+  comment?: string | null;
+  nextCycleId?: string | null;
+  nextDelaySeconds?: number | null;
+  nextChannel?: "main_case" | "email" | "messenger" | "video" | null;
+  status?: "active" | "hidden" | "draft";
 }
 
 export interface CycleSignal {
@@ -38,9 +43,22 @@ export interface CycleSignal {
 export interface CaseCycle {
   id: string;
   cycle: number;
+  title?: string | null;
+  description?: string | null;
+  source?: string | null;
   situation: string;
   signal: CycleSignal;
+  zonesAffected?: ZoneType[];
+  timing?: CaseTimingConfig | null;
+  status?: "active" | "draft" | "hidden";
+  isFinal?: boolean;
+  priority?: "normal" | "high" | "critical";
+  criticality?: "normal" | "attention" | "risk";
   options: CaseOption[];
+  imageAssetId?: string | null;
+  imageUrl?: string | null;
+  audioAssetId?: string | null;
+  audioUrl?: string | null;
 }
 
 export interface CaseTrigger {

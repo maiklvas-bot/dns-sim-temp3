@@ -6,6 +6,7 @@ dist/
 
 # Local tooling / wrappers
 .tools/
+.worktrees/
 node.cmd
 npm.cmd
 npx.cmd
@@ -51,3 +52,18 @@ Thumbs.db
 *.bak
 *.old
 build/
+live-sessions.json
+
+# Локальный конфиг агента Claude Code (напарник работает через Codex / AGENTS.md)
+.claude/
+
+# Сгенерированные локальные артефакты (не для общего репозитория)
+/SimCenter-вопросы-проекта.pdf
+/tmp/render-pdf.mjs
+/tmp/simcenter-questions.html
+
+# Архив старого проекта (дашборд «Пульс РРС») — напарнику не нужен
+.business/_archive/
+
+# Примечание: .business/, plans/, retrospectives/ — НАМЕРЕННО в git
+# (общий приватный репозиторий: знания и история нужны обоим агентам)

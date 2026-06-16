@@ -25,6 +25,12 @@ export default function SignalFeed() {
   const pendingSignals = [...activeSignals.filter((signal) => !signal.isExpired)].sort((left, right) => left.arrivedAt - right.arrivedAt);
   const currentSignal = activeSignals.find(s => s.id === currentSignalId && !s.isExpired);
   const channelCounts = getChannelNotificationCounts(state);
+  const visibleChannelCounts = {
+    calls: channelCounts.calls,
+    email: channelCounts.email,
+    messenger: channelCounts.messenger,
+    video: channelCounts.video,
+  };
 
   useEffect(() => {
     if (state.actionPanelSource === "main_case") {
@@ -48,10 +54,10 @@ export default function SignalFeed() {
   }, [state.actionPanelSource]);
 
   const tabs = [
-    { key: "signals" as Tab, label: "Звонки", icon: Phone, count: channelCounts.calls, color: "#FF6B00", enabled: true },
-    { key: "email" as Tab, label: "Почта", icon: Mail, count: channelCounts.email, color: "#4a9eff", enabled: state.enabledChannels.email },
-    { key: "messenger" as Tab, label: "ТёркоГрамм", icon: MessageSquare, count: channelCounts.messenger, color: "#00d4aa", enabled: state.enabledChannels.messenger },
-    { key: "video" as Tab, label: "Видео", icon: Video, count: channelCounts.video, color: "#a78bfa", enabled: state.enabledChannels.video },
+    { key: "signals" as Tab, label: "Звонки", icon: Phone, count: visibleChannelCounts.calls, color: "#FF6B00", enabled: true },
+    { key: "email" as Tab, label: "Почта", icon: Mail, count: visibleChannelCounts.email, color: "#4a9eff", enabled: state.enabledChannels.email },
+    { key: "messenger" as Tab, label: "ТёркоГрамм", icon: MessageSquare, count: visibleChannelCounts.messenger, color: "#00d4aa", enabled: state.enabledChannels.messenger },
+    { key: "video" as Tab, label: "Видео", icon: Video, count: visibleChannelCounts.video, color: "#a78bfa", enabled: state.enabledChannels.video },
   ].filter(t => t.enabled);
 
   // Get case zones for image selection
@@ -60,7 +66,11 @@ export default function SignalFeed() {
     return caseData?.zones_affected || [];
   };
 
-  const getCaseImage = (caseId: string) => {
+  const getCaseImage = (caseId: string, signalImageUrl?: string | null) => {
+    if (signalImageUrl) {
+      return signalImageUrl;
+    }
+
     const caseData = CASES_DATA.find(c => c.id === caseId);
     return caseData?.imageUrl || null;
   };
@@ -73,14 +83,14 @@ export default function SignalFeed() {
   // Replay audio for current signal
   const handleReplayAudio = () => {
     if (currentSignal?.audioUrl) {
-      playAudioImmediate(currentSignal.audioUrl, 0.9);
+      playAudioImmediate(currentSignal.audioUrl, 1);
     }
   };
 
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Tab bar */}
-      <div className="mb-2 flex flex-shrink-0 items-center gap-1 border-b border-[#2a3a4e]/50 pb-2">
+      <div className="mb-3 flex flex-shrink-0 items-center gap-1.5 overflow-x-auto border-b border-[#38506d]/70 pb-2">
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -91,16 +101,16 @@ export default function SignalFeed() {
                 setActiveTab(tab.key);
                 dispatch({ type: "CLEAR_ACTION_PANEL" });
               }}
-              className={`flex items-center gap-1 rounded-lg px-2 py-1 text-[9px] font-medium transition-all ${
-                isActive ? "text-white" : "text-[#555570] hover:text-[#8890a8]"
+              className={`flex min-h-11 flex-shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition-all ${
+                isActive ? "text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)_inset]" : "text-[#d6e2f3] hover:bg-[#213149]/70 hover:text-white"
               }`}
-              style={isActive ? { background: tab.color + "22", color: tab.color } : {}}
+              style={isActive ? { background: tab.color + "22", color: "#f8fbff", borderBottom: `2px solid ${tab.color}` } : {}}
               data-testid={`tab-${tab.key}`}
             >
-              <Icon className="w-3 h-3" />
+              <Icon className="h-4 w-4" />
               <span>{tab.label}</span>
               {tab.count > 0 && (
-                <span className="flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-white" style={{ background: tab.color }}>
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full px-1 text-[10px] font-bold text-white" style={{ background: tab.color }}>
                   {tab.count}
                 </span>
               )}
@@ -121,14 +131,14 @@ export default function SignalFeed() {
               <div className="mb-2 flex-shrink-0 space-y-1">
                 {pendingSignals.map(signal => {
                   const isSelected = signal.id === currentSignalId;
-                  const img = getSignalImage(signal.type, getCaseZones(signal.caseId), signal.title, undefined, getCaseImage(signal.caseId));
+                  const img = getSignalImage(signal.type, getCaseZones(signal.caseId), signal.title, undefined, getCaseImage(signal.caseId, signal.imageUrl));
                   return (
                     <button
                       key={signal.id}
                       onClick={() => {
                         stopCurrentAudio();
                         if (state.enabledChannels.audio && signal.audioUrl) {
-                          playAudioImmediate(signal.audioUrl, 0.9);
+                          playAudioImmediate(signal.audioUrl, 1);
                         }
                         dispatch({ type: "SELECT_SIGNAL", payload: signal.id });
                       }}
@@ -166,7 +176,7 @@ export default function SignalFeed() {
                 <div className="grid h-full min-h-0 md:grid-cols-[168px_minmax(0,1fr)]">
                   <div className="relative min-h-[150px] border-r border-[#233347] bg-[#101826]">
                     <img
-                      src={getSignalImage(currentSignal.type, getCaseZones(currentSignal.caseId), currentSignal.title, undefined, getCaseImage(currentSignal.caseId))}
+                      src={getSignalImage(currentSignal.type, getCaseZones(currentSignal.caseId), currentSignal.title, undefined, getCaseImage(currentSignal.caseId, currentSignal.imageUrl))}
                       alt={currentSignal.title}
                       loading="eager"
                       decoding="async"

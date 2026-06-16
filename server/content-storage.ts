@@ -268,10 +268,25 @@ export class ContentStorage {
           .sort((a, b) => a.cycleNumber - b.cycleNumber)
           .map((cycle) => {
             const signal = caseSignalsRows.find((item) => item.signalRole === "cycle" && item.cycleId === cycle.id);
+            const cycleImage = cycle.imageAssetId ? assetMap.get(cycle.imageAssetId) || null : null;
+            const cycleAudio = cycle.audioAssetId ? assetMap.get(cycle.audioAssetId) || null : null;
             return {
               id: cycle.id,
               cycle: cycle.cycleNumber,
+              title: cycle.title || null,
+              description: cycle.description || null,
+              source: cycle.source || null,
               situation: cycle.situation,
+              zonesAffected: parseJsonArray<SimCase["zones_affected"][number]>(cycle.zonesAffectedJson, []),
+              timing: parseJsonObject<NonNullable<SimCase["timing"]>>(cycle.timingJson, {}),
+              status: (cycle.status as SimCase["cycles"][number]["status"]) || "active",
+              isFinal: cycle.isFinal,
+              priority: (cycle.priority as SimCase["cycles"][number]["priority"]) || "normal",
+              criticality: (cycle.criticality as SimCase["cycles"][number]["criticality"]) || "normal",
+              imageAssetId: cycle.imageAssetId || null,
+              imageUrl: cycleImage?.publicUrl || null,
+              audioAssetId: cycle.audioAssetId || null,
+              audioUrl: cycleAudio?.publicUrl || null,
               signal: {
                 type: (signal?.signalType || "message") as SimCase["cycles"][number]["signal"]["type"],
                 content: signal?.content || "",
@@ -283,6 +298,11 @@ export class ContentStorage {
                   level: option.level,
                   text: option.text,
                   score: option.score,
+                  comment: option.comment || null,
+                  nextCycleId: option.nextCycleId || null,
+                  nextDelaySeconds: option.nextDelaySeconds ?? null,
+                  nextChannel: (option.nextChannel as any) || null,
+                  status: (option.status as any) || "active",
                   effects: {
                     queue: option.effectQueue,
                     conversion: option.effectConversion,
@@ -570,7 +590,18 @@ export class ContentStorage {
           id: cycleId,
           caseId,
           cycleNumber: cycle.cycle,
+          title: cycle.title || null,
+          description: cycle.description || null,
+          source: cycle.source || null,
           situation: cycle.situation,
+          zonesAffectedJson: JSON.stringify(cycle.zonesAffected || []),
+          timingJson: JSON.stringify(cycle.timing || {}),
+          status: cycle.status || "active",
+          isFinal: Boolean(cycle.isFinal),
+          priority: cycle.priority || "normal",
+          criticality: cycle.criticality || "normal",
+          imageAssetId: cycle.imageAssetId || null,
+          audioAssetId: cycle.audioAssetId || null,
           sortOrder: cycle.cycle,
         }).run();
 
@@ -594,6 +625,11 @@ export class ContentStorage {
             level: option.level,
             text: option.text,
             score: option.score,
+            comment: option.comment || null,
+            nextCycleId: option.nextCycleId || null,
+            nextDelaySeconds: option.nextDelaySeconds ?? null,
+            nextChannel: (option.nextChannel as any) || null,
+            status: (option.status as any) || "active",
             effectQueue: option.effects.queue,
             effectConversion: option.effects.conversion,
             effectMorale: option.effects.morale,

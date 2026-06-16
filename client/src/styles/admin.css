@@ -1,0 +1,638 @@
+/* Admin UI review: shared surface rhythm, kept outside Tailwind layers so it can normalize arbitrary utilities. */
+.dns-product-shell {
+  --dns-admin-border: rgba(76, 96, 125, 0.74);
+  --dns-admin-border-soft: rgba(65, 86, 116, 0.64);
+  --dns-admin-radius-panel: 0.5rem;
+  --dns-admin-text-muted: #b8c6dc;
+  --dns-admin-text-soft: #c5d2e6;
+  --dns-admin-text-dim: #a9bad4;
+  font-feature-settings: "kern" 1, "liga" 1, "tnum" 1;
+}
+
+/* Typography polish: metrics and numbered controls use stable tabular figures. */
+.dns-product-shell .tabular-nums,
+.dns-product-shell .dns-brand-mark,
+.dns-product-shell .dns-comparison-avatar,
+.dns-product-shell .dns-comparison-score-cell,
+.dns-product-shell .dns-comparison-metric-value,
+.dns-product-shell .dns-comparison-insight-card-head strong,
+.dns-product-shell .dns-admin-case-order-index,
+.dns-product-shell .dns-assessor-v2-rail-num,
+.dns-product-shell .dns-assessor-v2-participant-num,
+.dns-product-shell .dns-assessor-v2-launch-row > span,
+.dns-product-shell .dns-assessor-v2-launch-result-row strong,
+.dns-product-shell .dns-assessor-v2-summary-strip strong,
+.dns-product-shell .dns-assessor-v2-passport-grid strong,
+.dns-product-shell .dns-assessor-v2-side-field strong,
+.dns-product-shell .dns-assessor-v2-review-num,
+.dns-product-shell .dns-assessor-v2-session-row p {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.dns-product-shell .dns-comparison-avatar,
+.dns-product-shell .dns-admin-case-order-index,
+.dns-product-shell .dns-assessor-v2-rail-num,
+.dns-product-shell .dns-assessor-v2-participant-num,
+.dns-product-shell .dns-assessor-v2-launch-row > span,
+.dns-product-shell .dns-assessor-v2-review-num {
+  line-height: 1;
+}
+
+/* Task 1: neutral borders and panel radii use one visual system. */
+.dns-product-shell .border-\[\#2a3a4e\],
+.dns-product-shell .border-\[\#30445f\],
+.dns-product-shell .border-\[\#31455f\],
+.dns-product-shell .border-\[\#3b4b61\] {
+  border-color: var(--dns-admin-border);
+}
+
+.dns-product-shell .border-\[\#243244\],
+.dns-product-shell .border-\[\#223245\],
+.dns-product-shell .border-\[\#34506f\],
+.dns-product-shell .border-\[\#3f5876\] {
+  border-color: var(--dns-admin-border-soft);
+}
+
+.dns-product-shell .dns-brand-header,
+.dns-product-shell .dns-admin-visual-panel {
+  border-color: var(--dns-admin-border);
+  border-radius: 0.75rem;
+}
+
+.dns-product-shell .rounded-lg,
+.dns-product-shell .rounded-xl,
+.dns-product-shell .rounded-2xl {
+  border-radius: var(--dns-admin-radius-panel);
+}
+
+/* Task 2: secondary text stays calm, but gains contrast on the blue glass surfaces. */
+.dns-product-shell .text-\[\#8890a8\],
+.dns-product-shell .text-\[\#8aa2c4\],
+.dns-product-shell .text-\[\#9aabc6\] {
+  color: var(--dns-admin-text-muted);
+}
+
+.dns-product-shell .text-\[\#9fb0ca\],
+.dns-product-shell .text-\[\#aebbd2\],
+.dns-product-shell .text-\[\#b7c7df\],
+.dns-product-shell .text-\[\#c7d3e7\] {
+  color: var(--dns-admin-text-soft);
+}
+
+.dns-product-shell .text-\[\#70829d\] {
+  color: var(--dns-admin-text-dim);
+}
+
+/* Task 3: the Cases tab uses a denser navigation/editor geometry instead of nested card stacks. */
+.dns-product-shell .dns-admin-cases-layout {
+  align-items: start;
+}
+
+.dns-product-shell .dns-admin-case-nav {
+  align-self: start;
+  gap: 0;
+  max-height: none;
+}
+
+.dns-product-shell .dns-admin-case-nav-header {
+  margin-bottom: 0.875rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid var(--dns-admin-border-soft);
+}
+
+.dns-product-shell .dns-admin-case-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dns-product-shell .dns-admin-case-nav-action {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+
+.dns-product-shell .dns-admin-case-list,
+.dns-product-shell .dns-admin-side-list {
+  display: flex;
+  flex-direction: column;
+  scrollbar-color: rgba(142, 197, 255, 0.52) rgba(12, 21, 34, 0.42);
+}
+
+.dns-product-shell .dns-admin-case-list {
+  gap: 0.55rem;
+  max-height: clamp(19rem, 48vh, 34rem);
+  padding-right: 0.35rem;
+}
+
+.dns-product-shell .dns-admin-case-list::-webkit-scrollbar,
+.dns-product-shell .dns-admin-side-list::-webkit-scrollbar {
+  width: 0.45rem;
+}
+
+.dns-product-shell .dns-admin-case-list::-webkit-scrollbar-track,
+.dns-product-shell .dns-admin-side-list::-webkit-scrollbar-track {
+  background: rgba(12, 21, 34, 0.42);
+  border-color: rgba(76, 96, 125, 0.28);
+}
+
+.dns-product-shell .dns-admin-case-list::-webkit-scrollbar-thumb,
+.dns-product-shell .dns-admin-side-list::-webkit-scrollbar-thumb {
+  background: rgba(142, 197, 255, 0.52);
+  border: 2px solid rgba(12, 21, 34, 0.72);
+}
+
+.dns-product-shell .dns-admin-case-list::-webkit-scrollbar-thumb:hover,
+.dns-product-shell .dns-admin-side-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(142, 197, 255, 0.72);
+}
+
+.dns-product-shell .dns-admin-case-list > * + * {
+  margin-top: 0 !important;
+}
+
+.dns-product-shell .dns-admin-case-list-item {
+  display: grid;
+  grid-template-columns: 1.9rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.72rem;
+  min-height: 4rem;
+  padding: 0.62rem 0.78rem;
+  background: rgba(15, 25, 40, 0.68);
+  box-shadow: none;
+}
+
+.dns-product-shell .dns-admin-case-list-item:hover {
+  border-color: rgba(142, 197, 255, 0.46);
+  background: rgba(22, 35, 54, 0.78);
+}
+
+.dns-product-shell .dns-admin-case-list-item--active {
+  border-color: rgba(255, 107, 0, 0.58) !important;
+  background: rgba(255, 107, 0, 0.1) !important;
+  box-shadow: inset 3px 0 0 rgba(255, 107, 0, 0.9);
+}
+
+.dns-product-shell .dns-admin-case-order-index {
+  display: inline-flex;
+  width: 1.75rem;
+  height: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  align-self: center;
+  border: 1px solid rgba(76, 96, 125, 0.56);
+  border-radius: 999px;
+  color: var(--dns-admin-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dns-product-shell .dns-admin-case-list-item--active .dns-admin-case-order-index {
+  border-color: rgba(255, 107, 0, 0.55);
+  color: #ffb27a;
+  background: rgba(255, 107, 0, 0.1);
+}
+
+.dns-product-shell .dns-admin-case-list-main {
+  display: flex;
+  min-height: 2.35rem;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  align-self: center;
+}
+
+.dns-product-shell .dns-admin-case-list-title {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #f7fbff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.22;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.dns-product-shell .dns-admin-case-list-meta {
+  margin-top: 0.22rem;
+  font-size: 0.68rem;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.dns-product-shell .dns-admin-case-note {
+  max-height: 10rem;
+  overflow-y: auto;
+  margin-top: 0.9rem;
+  padding: 0.85rem;
+  background: rgba(12, 21, 34, 0.58);
+}
+
+.dns-product-shell .dns-admin-case-note p {
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.dns-product-shell .dns-admin-case-workspace,
+.dns-product-shell .dns-admin-case-editor-panel,
+.dns-product-shell .dns-admin-case-impact-panel {
+  align-self: start;
+}
+
+/* Structural-dynamics admin shell: persistent navigation, focused workspace and action rail. */
+.dns-product-shell .dns-admin-dashboard-shell {
+  --dns-admin-scene-accent: #ff6b00;
+  --dns-admin-scene-accent-rgb: 255, 107, 0;
+  --dns-admin-scene-secondary-rgb: 74, 158, 255;
+  display: grid;
+  grid-template-columns: 11.5rem minmax(0, 1fr);
+  align-items: start;
+  gap: 1rem;
+}
+
+.dns-product-shell .dns-admin-dashboard-main {
+  min-width: 0;
+  border-radius: 1rem;
+  background-color: rgba(5, 13, 24, 0.26);
+  background-repeat: no-repeat;
+  background-size: 100% min(42rem, 82vh);
+}
+
+.dns-product-shell .dns-admin-dashboard-shell--cases {
+  --dns-admin-scene-accent: #ff6b00;
+  --dns-admin-scene-accent-rgb: 255, 107, 0;
+  --dns-admin-scene-secondary-rgb: 74, 158, 255;
+}
+
+.dns-product-shell .dns-admin-dashboard-main--cases {
+  background-image:
+    radial-gradient(circle at 9% 7%, rgba(255, 107, 0, 0.16), transparent 24rem),
+    radial-gradient(circle at 92% 17%, rgba(74, 158, 255, 0.1), transparent 19rem),
+    linear-gradient(135deg, rgba(255, 107, 0, 0.035), transparent 46%);
+}
+
+.dns-product-shell .dns-admin-dashboard-shell--channels {
+  --dns-admin-scene-accent: #00d4aa;
+  --dns-admin-scene-accent-rgb: 0, 212, 170;
+  --dns-admin-scene-secondary-rgb: 83, 166, 255;
+}
+
+.dns-product-shell .dns-admin-dashboard-main--channels {
+  background-image:
+    radial-gradient(ellipse at 82% 4%, rgba(0, 212, 170, 0.15), transparent 26rem),
+    linear-gradient(120deg, transparent 36%, rgba(74, 158, 255, 0.07) 66%, transparent 88%),
+    radial-gradient(circle at 16% 24%, rgba(25, 211, 174, 0.07), transparent 17rem);
+}
+
+.dns-product-shell .dns-admin-dashboard-shell--schedule {
+  --dns-admin-scene-accent: #4a9eff;
+  --dns-admin-scene-accent-rgb: 74, 158, 255;
+  --dns-admin-scene-secondary-rgb: 255, 153, 61;
+}
+
+.dns-product-shell .dns-admin-dashboard-main--schedule {
+  background-image:
+    radial-gradient(ellipse at 50% 0, rgba(74, 158, 255, 0.16), transparent 28rem),
+    linear-gradient(165deg, rgba(30, 92, 163, 0.08), transparent 42%),
+    radial-gradient(circle at 91% 30%, rgba(255, 153, 61, 0.07), transparent 15rem);
+}
+
+.dns-product-shell .dns-admin-dashboard-shell--results {
+  --dns-admin-scene-accent: #a78bfa;
+  --dns-admin-scene-accent-rgb: 167, 139, 250;
+  --dns-admin-scene-secondary-rgb: 74, 158, 255;
+}
+
+.dns-product-shell .dns-admin-dashboard-main--results {
+  background-image:
+    radial-gradient(circle at 88% 8%, rgba(167, 139, 250, 0.16), transparent 24rem),
+    radial-gradient(circle at 20% 16%, rgba(74, 158, 255, 0.08), transparent 18rem),
+    linear-gradient(145deg, transparent 42%, rgba(139, 108, 226, 0.055) 74%, transparent);
+}
+
+.dns-product-shell .dns-admin-dashboard-shell--comparison {
+  --dns-admin-scene-accent: #00bfff;
+  --dns-admin-scene-accent-rgb: 0, 191, 255;
+  --dns-admin-scene-secondary-rgb: 0, 212, 170;
+}
+
+.dns-product-shell .dns-admin-dashboard-main--comparison {
+  background-image:
+    linear-gradient(105deg, rgba(0, 191, 255, 0.09), transparent 31%),
+    radial-gradient(ellipse at 72% 5%, rgba(0, 212, 170, 0.14), transparent 25rem),
+    radial-gradient(circle at 7% 35%, rgba(58, 141, 224, 0.07), transparent 18rem);
+}
+
+.dns-product-shell .dns-admin-dashboard-shell--settings {
+  --dns-admin-scene-accent: #ffb300;
+  --dns-admin-scene-accent-rgb: 255, 179, 0;
+  --dns-admin-scene-secondary-rgb: 255, 107, 0;
+}
+
+.dns-product-shell .dns-admin-dashboard-main--settings {
+  background-image:
+    radial-gradient(circle at 92% 7%, rgba(255, 179, 0, 0.15), transparent 23rem),
+    linear-gradient(155deg, rgba(255, 107, 0, 0.065), transparent 38%),
+    radial-gradient(ellipse at 26% 22%, rgba(255, 193, 69, 0.055), transparent 20rem);
+}
+
+.dns-product-shell .dns-admin-structure-nav {
+  position: sticky;
+  top: 1rem;
+  display: flex;
+  max-height: calc(100vh - 2rem);
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 0.75rem;
+  border: 1px solid var(--dns-admin-border);
+  border-radius: 0.75rem;
+  background:
+    radial-gradient(circle at 50% 0, rgba(var(--dns-admin-scene-accent-rgb), 0.13), transparent 11rem),
+    linear-gradient(180deg, rgba(10, 18, 30, 0.94), rgba(7, 15, 26, 0.94));
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.24);
+}
+
+.dns-product-shell .dns-admin-structure-nav-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.25rem 0.35rem 0.8rem;
+  border-bottom: 1px solid var(--dns-admin-border-soft);
+}
+
+.dns-product-shell .dns-admin-structure-nav-head span {
+  color: #ff9b52;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.dns-product-shell .dns-admin-structure-nav-head strong {
+  color: #f7fbff;
+  font-size: 0.92rem;
+}
+
+.dns-product-shell .dns-admin-structure-nav nav {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem 0;
+}
+
+.dns-product-shell .dns-admin-structure-nav-item {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.62rem 0.68rem;
+  border: 1px solid transparent;
+  border-radius: 0.5rem;
+  color: #a9bad4;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-align: left;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.dns-product-shell .dns-admin-structure-nav-item svg {
+  width: 1rem;
+  height: 1rem;
+  flex: 0 0 auto;
+}
+
+.dns-product-shell .dns-admin-structure-nav-item span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dns-product-shell .dns-admin-structure-nav-item:hover,
+.dns-product-shell .dns-admin-structure-nav-item:focus-visible {
+  border-color: rgba(142, 197, 255, 0.38);
+  background: rgba(74, 158, 255, 0.09);
+  color: #f7fbff;
+}
+
+.dns-product-shell .dns-admin-structure-nav-item--active {
+  border-color: rgba(var(--dns-admin-scene-accent-rgb), 0.6);
+  background: rgba(var(--dns-admin-scene-accent-rgb), 0.14);
+  color: #fff;
+  box-shadow: inset 3px 0 0 var(--dns-admin-scene-accent);
+}
+
+.dns-product-shell .dns-admin-structure-nav-footer {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--dns-admin-border-soft);
+}
+
+.dns-product-shell .dns-admin-structure-profile {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+  padding: 0.55rem;
+  border: 1px solid var(--dns-admin-border-soft);
+  border-radius: 0.5rem;
+  background: rgba(18, 29, 46, 0.72);
+}
+
+.dns-product-shell .dns-admin-structure-profile > span {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.45rem;
+  background: #ff6b00;
+  color: white;
+  font-weight: 900;
+}
+
+.dns-product-shell .dns-admin-structure-profile div {
+  display: grid;
+  min-width: 0;
+}
+
+.dns-product-shell .dns-admin-structure-profile strong {
+  overflow: hidden;
+  color: #f7fbff;
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dns-product-shell .dns-admin-structure-profile small {
+  color: #7fffd4;
+  font-size: 0.58rem;
+}
+
+.dns-product-shell .dns-admin-case-control-panel {
+  padding: 0.85rem;
+  border: 1px solid rgba(255, 107, 0, 0.34);
+  border-radius: 0.6rem;
+  background: linear-gradient(145deg, rgba(255, 107, 0, 0.08), rgba(13, 21, 34, 0.82));
+}
+
+.dns-product-shell .dns-admin-case-control-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.dns-product-shell .dns-admin-case-control-head div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.dns-product-shell .dns-admin-case-control-head span,
+.dns-product-shell .dns-admin-case-control-stats span {
+  color: var(--dns-admin-text-muted);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dns-product-shell .dns-admin-case-control-head strong {
+  color: #f7fbff;
+  font-size: 0.88rem;
+}
+
+.dns-product-shell .dns-admin-case-control-head b {
+  color: #ffb27a;
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dns-product-shell .dns-admin-case-progress {
+  height: 0.38rem;
+  overflow: hidden;
+  margin-top: 0.7rem;
+  border-radius: 999px;
+  background: rgba(76, 96, 125, 0.4);
+}
+
+.dns-product-shell .dns-admin-case-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ff6b00, #00d4aa);
+}
+
+.dns-product-shell .dns-admin-case-control-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin-top: 0.75rem;
+}
+
+.dns-product-shell .dns-admin-case-control-stats div {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.5rem;
+  border: 1px solid var(--dns-admin-border-soft);
+  border-radius: 0.45rem;
+  background: rgba(9, 17, 28, 0.58);
+}
+
+.dns-product-shell .dns-admin-case-control-stats strong {
+  color: #f7fbff;
+  font-size: 0.88rem;
+}
+
+.dns-product-shell .dns-admin-case-control-actions {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+}
+
+.dns-product-shell .dns-admin-case-control-actions button {
+  width: 100%;
+  min-width: 0;
+  justify-content: flex-start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dns-product-shell .dns-admin-publish-button {
+  justify-content: center !important;
+  background: #ff6b00 !important;
+  color: #fff !important;
+}
+
+.dns-product-shell .dns-admin-cycle-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.dns-product-shell .dns-admin-cycle-final-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin: 0.85rem 0;
+  padding: 0.75rem;
+  border: 1px solid var(--dns-admin-border-soft);
+  border-radius: 0.5rem;
+  background: rgba(13, 21, 34, 0.66);
+  cursor: pointer;
+}
+
+.dns-product-shell .dns-admin-cycle-final-toggle input {
+  margin-top: 0.2rem;
+  accent-color: #ff6b00;
+}
+
+.dns-product-shell .dns-admin-cycle-final-toggle span {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.dns-product-shell .dns-admin-cycle-final-toggle strong {
+  color: #f7fbff;
+  font-size: 0.78rem;
+}
+
+.dns-product-shell .dns-admin-cycle-final-toggle small {
+  color: var(--dns-admin-text-muted);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}
+
+@media (min-width: 1024px) {
+  .dns-product-shell .dns-admin-cases-layout {
+    grid-template-columns: minmax(20rem, 22rem) minmax(0, 1fr);
+  }
+
+  .dns-product-shell .dns-admin-case-nav {
+    position: sticky;
+    top: 1rem;
+    max-height: calc(100vh - 1.5rem);
+    overflow: hidden;
+  }
+}
+
+@media (min-width: 1536px) {
+  .dns-product-shell .dns-admin-case-workspace {
+    grid-template-columns: minmax(0, 1.618fr) minmax(22rem, 0.618fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .dns-product-shell .dns-admin-case-list-item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+}

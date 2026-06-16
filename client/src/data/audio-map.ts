@@ -128,6 +128,7 @@ let loopingSrc: string | null = null;
 const audioQueue: Array<{ src: string; volume: number }> = [];
 let isPlaying = false;
 let audioUnlocked = false;
+let nonCriticalAudioSuppressed = false;
 
 function normalizeAudioSrc(src: string) {
   try {
@@ -135,6 +136,10 @@ function normalizeAudioSrc(src: string) {
   } catch {
     return src;
   }
+}
+
+function normalizeAudioVolume(volume: number) {
+  return Math.max(0, Math.min(1, volume));
 }
 
 export async function primeAudioPlayback(): Promise<boolean> {
@@ -165,7 +170,7 @@ function playNext() {
   const { src, volume } = audioQueue.shift()!;
   try {
     const audio = new Audio(src);
-    audio.volume = volume;
+    audio.volume = normalizeAudioVolume(volume);
     currentAudio = audio;
     audio.addEventListener("ended", () => {
       currentAudio = null;
@@ -187,17 +192,17 @@ function playNext() {
 
 // Play audio helper — queues instead of overlapping
 export function playAudioFile(src: string, volume = 0.6): void {
-  if (loopingAudio) {
+  if (nonCriticalAudioSuppressed || loopingAudio) {
     return;
   }
-  audioQueue.push({ src, volume });
+  audioQueue.push({ src, volume: normalizeAudioVolume(volume) });
   if (!isPlaying) playNext();
 }
 
 export function playLoopingAudio(src: string, volume = 0.6): HTMLAudioElement | null {
   try {
     if (loopingAudio && loopingSrc === src) {
-      loopingAudio.volume = volume;
+      loopingAudio.volume = normalizeAudioVolume(volume);
       return loopingAudio;
     }
 
@@ -212,7 +217,7 @@ export function playLoopingAudio(src: string, volume = 0.6): HTMLAudioElement | 
 
     const audio = new Audio(src);
     audio.loop = true;
-    audio.volume = volume;
+    audio.volume = normalizeAudioVolume(volume);
     loopingAudio = audio;
     loopingSrc = src;
     audio.play().catch(() => {
@@ -238,7 +243,7 @@ export function stopLoopingAudio(): void {
 }
 
 export function playTwoToneNotification(src: string, volume = 0.55, gapMs = 180): void {
-  if (loopingAudio) {
+  if (nonCriticalAudioSuppressed || loopingAudio) {
     return;
   }
 
@@ -275,10 +280,13 @@ export function isCurrentAudioSource(src: string | null | undefined): boolean {
 
 // Play a file immediately (for replay button — skip queue)
 export function playAudioImmediate(src: string, volume = 0.7): HTMLAudioElement | null {
+  if (nonCriticalAudioSuppressed) {
+    return null;
+  }
   try {
     stopCurrentAudio();
     const audio = new Audio(src);
-    audio.volume = volume;
+    audio.volume = normalizeAudioVolume(volume);
     currentAudio = audio;
     audio.addEventListener("ended", () => { currentAudio = null; isPlaying = false; });
     audio.play().catch(() => {});
@@ -295,3 +303,10 @@ export function speakNarration(text: string): void {
 }
 
 export { audioNotification };
+
+export function setNonCriticalAudioSuppressed(value: boolean): void {
+  nonCriticalAudioSuppressed = value;
+  if (value) {
+    stopCurrentAudio();
+  }
+}

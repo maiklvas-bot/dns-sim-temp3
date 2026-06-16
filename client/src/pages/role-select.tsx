@@ -1,8 +1,16 @@
 import { useLocation } from "wouter";
-import { BookOpen, Shield, Rocket } from "lucide-react";
-import { clearLiveSimulationRole, resetLiveSimulation } from "@/lib/live-session";
-import type { SimulationRuntimeSettings } from "@shared/simulation-content";
-import { getSimulationContentSnapshot, getSimulationSettingsSnapshot, resolveSimulationBriefingHtml } from "@/lib/runtime-content";
+import {
+  BarChart3,
+  BookOpen,
+  Boxes,
+  MessageCircleMore,
+  Rocket,
+  Shield,
+  Sparkles,
+  Target,
+} from "lucide-react";
+
+import { BrandAccessShell, BrandLogo } from "@/components/brand-access-shell";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +19,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import storeBg from "@assets/store_bg.png";
+import { BRAND_ASSETS, hideMissingBrandAsset } from "@/lib/brand-assets";
+import { clearLiveSimulationRole, resetLiveSimulation } from "@/lib/live-session";
+import {
+  getSimulationContentSnapshot,
+  getSimulationSettingsSnapshot,
+  resolveSimulationBriefingHtml,
+} from "@/lib/runtime-content";
+import type { SimulationRuntimeSettings } from "@shared/simulation-content";
 
 export default function RoleSelectPage() {
   const [, navigate] = useLocation();
@@ -29,99 +44,204 @@ export default function RoleSelectPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden"
-      style={{
-        backgroundImage: `url(${storeBg})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a1a2eee] via-[#16213ef0] to-[#1a1a2eee]" />
-
-      <div className="relative z-10 flex w-full max-w-4xl flex-col items-center gap-8 px-4">
-        <div className="mb-4 text-center">
-          <div className="mb-3 flex items-center justify-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#FF6B00]">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-label="DNS Sim">
-                <rect x="3" y="3" width="7" height="7" rx="1" fill="white"/>
-                <rect x="14" y="3" width="7" height="7" rx="1" fill="white" opacity="0.6"/>
-                <rect x="3" y="14" width="7" height="7" rx="1" fill="white" opacity="0.6"/>
-                <rect x="14" y="14" width="7" height="7" rx="1" fill="white" opacity="0.3"/>
-              </svg>
-            </div>
-            <h1 className="text-2xl font-bold tracking-tight text-white">
-              DNS <span className="text-[#FF6B00]">SimCenter</span>
-            </h1>
+    <BrandAccessShell className="dns-home-shell">
+      <main className="dns-home-hero">
+        <header className="dns-home-header">
+          <BrandLogo />
+          <div className="dns-home-header__copy">
+            <h1>DNS SimCenter</h1>
+            <p>Симуляция рабочего дня заместителя управляющего магазином</p>
           </div>
-          <p className="text-sm text-[#a0a0b8]">
-            Симуляция рабочего дня заместителя управляющего магазином
-          </p>
-        </div>
+        </header>
 
-        <div className="grid w-full max-w-xl grid-cols-1 gap-6">
-          <button
-            onClick={handleStudentRoute}
-            className="group relative cursor-pointer rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-8 text-left backdrop-blur-sm transition-all duration-300 hover:border-[#00d4aa]"
-            data-testid="role-participant"
+        <section className="dns-home-stage">
+          <aside
+            className="dns-home-character-zone dns-home-character-zone--left"
+            aria-label="Помощник приветствует участника"
           >
-            <div className="absolute left-0 right-0 top-0 h-[2px] rounded-t-xl bg-gradient-to-r from-transparent via-[#00d4aa] to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-            <div className="flex flex-col items-center gap-4 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-[#00d4aa]/30 bg-[#00d4aa]/10 transition-colors group-hover:bg-[#00d4aa]/20">
-                <Rocket className="h-8 w-8 text-[#00d4aa]" />
-              </div>
+            <div className="dns-home-character-glow" aria-hidden="true" />
+            <img
+              className="dns-home-character dns-home-character--welcome"
+              src={BRAND_ASSETS.heroes.alienWelcome}
+              alt="Дружелюбный помощник DNS указывает на вход в симуляцию"
+              onError={hideMissingBrandAsset}
+            />
+            <article className="dns-home-hud dns-home-hud--left">
+              <span className="dns-home-hud__icon">
+                <Target />
+              </span>
               <div>
-                <h2 className="mb-2 text-xl font-bold tracking-wide text-white">КОСМОНАВТ</h2>
-                <p className="text-sm leading-relaxed text-[#8890a8]">
-                  Вход в симуляцию по коду сессии. Код выдаёт оценщик после настройки сценария.
-                </p>
+                <strong>Практика без риска</strong>
+                <p>Решай рабочие ситуации в безопасной среде.</p>
               </div>
-              <div className="mt-2 rounded-lg border border-[#00d4aa]/30 bg-[#00d4aa]/10 px-5 py-2 text-xs font-medium uppercase tracking-wider text-[#00d4aa] transition-colors group-hover:bg-[#00d4aa]/20">
-                Перейти к вводу кода →
-              </div>
+            </article>
+          </aside>
+
+          <section className="dns-home-entry-card" aria-labelledby="dns-home-role-title">
+            <div className="dns-home-entry-card__edge" aria-hidden="true" />
+            <div className="dns-home-entry-card__orbit" aria-hidden="true">
+              <span>
+                <Rocket />
+              </span>
             </div>
-          </button>
-        </div>
 
-        <button
-          onClick={() => navigate("/staff-login")}
-          className="mt-2 inline-flex items-center gap-2 rounded-lg border border-[#2a3a4e] bg-[#141c2b]/60 px-4 py-2 text-xs text-[#8890a8] transition-all hover:border-[#3a4a5e] hover:text-white"
-        >
-          <Shield className="h-3.5 w-3.5" />
-          Служебный вход
-        </button>
+            <div className="dns-home-entry-card__content">
+              <div className="dns-home-entry-card__eyebrow">
+                <Sparkles />
+                Начать рабочий день
+              </div>
+              <h2 id="dns-home-role-title">КОСМОНАВТ</h2>
+              <p>
+                Вход в симуляцию по коду сессии. Код выдаёт оценщик после настройки сценария.
+              </p>
 
-        <Dialog>
-          <DialogTrigger asChild>
-            <button className="inline-flex items-center gap-2 rounded-lg border border-[#2a3a4e] bg-[#141c2b]/60 px-4 py-2 text-xs text-[#8890a8] transition-all hover:border-[#3a4a5e] hover:text-white">
-              <BookOpen className="h-3.5 w-3.5" />
-              Инструкция
-            </button>
-          </DialogTrigger>
-          <DialogContent className="max-w-3xl border-[#2a3a4e] bg-[#101826] p-0 text-white">
-            <div className="max-h-[80vh] overflow-y-auto custom-scroll p-6">
-              <DialogHeader className="border-b border-[#2a3a4e] pb-4 text-left">
-                <DialogTitle className="flex items-center gap-2 text-xl text-white">
-                  <BookOpen className="h-5 w-5 text-[#00d4aa]" />
-                  Инструкция для космонавта
-                </DialogTitle>
-                <DialogDescription className="text-sm text-[#8890a8]">
-                  Коротко о том, как устроена симуляция, что влияет на результат и что вы увидите на экране.
-                </DialogDescription>
-              </DialogHeader>
+              <button
+                type="button"
+                onClick={handleStudentRoute}
+                className="dns-home-primary-action dns-visual-cta-glow"
+                data-testid="role-participant"
+              >
+                <span className="dns-home-primary-action__icon">
+                  <Rocket />
+                </span>
+                <span>Перейти к вводу кода</span>
+                <span className="dns-home-primary-action__arrow" aria-hidden="true">
+                  →
+                </span>
+              </button>
 
-              <div
-                className="mt-5 space-y-4 text-sm leading-relaxed text-[#c9d2e6] [&_a]:text-[#8ec5ff] [&_a]:underline [&_h1]:mb-3 [&_h1]:text-xl [&_h1]:font-semibold [&_h1]:text-white [&_h2]:mb-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-white [&_h3]:mb-3 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:uppercase [&_h3]:tracking-[0.16em] [&_h3]:text-[#8ec5ff] [&_li+li]:mt-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_section+section]:mt-5 [&_section]:rounded-xl [&_section]:border [&_section]:border-[#2a3a4e] [&_section]:bg-[#141c2b]/70 [&_section]:p-4 [&_ul]:list-disc [&_ul]:pl-5 [&_video]:mt-3 [&_video]:w-full [&_video]:rounded-xl [&_video]:border [&_video]:border-[#31455f] [&_video]:bg-black"
-                dangerouslySetInnerHTML={{ __html: briefingHtml }}
+              <div className="dns-home-secondary-actions">
+                <button
+                  type="button"
+                  onClick={() => navigate("/staff-login")}
+                  className="dns-home-secondary-action"
+                >
+                  <Shield />
+                  Служебный вход
+                </button>
+
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <button type="button" className="dns-home-secondary-action">
+                      <BookOpen />
+                      Инструкция
+                    </button>
+                  </DialogTrigger>
+                  <DialogContent className="dns-access-dialog max-w-3xl border-[#2a3a4e] bg-[#101826] p-0 text-white">
+                    <div className="max-h-[80vh] overflow-y-auto custom-scroll p-6">
+                      <DialogHeader className="border-b border-[#2a3a4e] pb-4 text-left">
+                        <DialogTitle className="flex items-center gap-2 text-xl text-white">
+                          <BookOpen className="h-5 w-5 text-[#FF6B00]" />
+                          Инструкция для космонавта
+                        </DialogTitle>
+                        <DialogDescription className="text-sm text-[#8890a8]">
+                          Коротко о том, как устроена симуляция, что влияет на результат и что вы увидите на экране.
+                        </DialogDescription>
+                      </DialogHeader>
+
+                      {briefingHtml?.trim() ? (
+                        <div
+                          className="mt-5 space-y-4 text-sm leading-relaxed text-[#c9d2e6] [&_a]:text-[#8ec5ff] [&_a]:underline [&_h1]:mb-3 [&_h1]:text-xl [&_h1]:font-semibold [&_h1]:text-white [&_h2]:mb-3 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-white [&_h3]:mb-3 [&_h3]:text-sm [&_h3]:font-semibold [&_h3]:uppercase [&_h3]:tracking-[0.16em] [&_h3]:text-[#8ec5ff] [&_li+li]:mt-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_section+section]:mt-5 [&_section]:rounded-xl [&_section]:border [&_section]:border-[#2a3a4e] [&_section]:bg-[#141c2b]/70 [&_section]:p-4 [&_ul]:list-disc [&_ul]:pl-5 [&_video]:mt-3 [&_video]:w-full [&_video]:rounded-xl [&_video]:border [&_video]:border-[#31455f] [&_video]:bg-black"
+                          dangerouslySetInnerHTML={{ __html: briefingHtml }}
+                        />
+                      ) : (
+                        <div className="mt-5 rounded-xl border border-dashed border-[#2a3a4e] bg-[#141c2b]/60 p-4 text-sm text-[#9aa3bb]">
+                          Инструкция пока не загружена. Обратитесь к оценщику или администратору, чтобы проверить контент симуляции.
+                        </div>
+                      )}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+
+              <p className="dns-home-entry-card__footer">
+                Версия 3.0 <span aria-hidden="true">•</span> Контент и результаты хранятся в БД
+              </p>
+            </div>
+          </section>
+
+          <aside
+            className="dns-home-character-zone dns-home-character-zone--right"
+            aria-label="Помощник анализирует результаты"
+          >
+            <div className="dns-home-character-glow" aria-hidden="true" />
+            <div className="dns-home-analyst-scene">
+              <span className="dns-home-monitor-light" aria-hidden="true" />
+              <img
+                className="dns-home-character dns-home-character--analyst"
+                src={BRAND_ASSETS.heroes.alienAnalyst}
+                alt="Помощник DNS с ноутбуком анализирует решения"
+                onError={hideMissingBrandAsset}
               />
+              <span className="dns-home-keyboard-taps" aria-hidden="true">
+                <i />
+                <i />
+                <i />
+              </span>
             </div>
-          </DialogContent>
-        </Dialog>
+            <article className="dns-home-hud dns-home-hud--right">
+              <span className="dns-home-hud__icon dns-home-hud__icon--blue">
+                <BarChart3 />
+              </span>
+              <div>
+                <strong>Анализ решений</strong>
+                <p>Получай обратную связь и развивай навыки.</p>
+              </div>
+            </article>
+          </aside>
+        </section>
 
-        <p className="mt-2 text-xs text-[#555570]">
-          Версия 3.0 • Контент и результаты хранятся в БД
-        </p>
-      </div>
-    </div>
+        <section className="dns-home-benefits" aria-label="Преимущества симуляции">
+          <article>
+            <span className="dns-home-benefit-icon" tabIndex={0} aria-describedby="dns-benefit-safe">
+              <Target />
+            </span>
+            <div>
+              <strong>Практика без риска</strong>
+              <p>Без последствий для магазина</p>
+            </div>
+            <span id="dns-benefit-safe" className="dns-home-benefit-cloud" role="tooltip">
+              Можно экспериментировать с решениями без последствий для реального магазина. Ошибки становятся материалом для разбора.
+            </span>
+          </article>
+          <article>
+            <span className="dns-home-benefit-icon" tabIndex={0} aria-describedby="dns-benefit-skills">
+              <Sparkles />
+            </span>
+            <div>
+              <strong>Развитие навыков</strong>
+              <p>Решения становятся увереннее</p>
+            </div>
+            <span id="dns-benefit-skills" className="dns-home-benefit-cloud" role="tooltip">
+              Симуляция тренирует планирование, коммуникацию, делегирование и ответственность. Повторные прохождения закрепляют сильные решения.
+            </span>
+          </article>
+          <article>
+            <span className="dns-home-benefit-icon" tabIndex={0} aria-describedby="dns-benefit-scenarios">
+              <Boxes />
+            </span>
+            <div>
+              <strong>Реальные сценарии</strong>
+              <p>Ситуации из рабочего дня</p>
+            </div>
+            <span id="dns-benefit-scenarios" className="dns-home-benefit-cloud" role="tooltip">
+              Кейсы охватывают смену, клиентов, команду и операционные задачи магазина. Ситуации развиваются в зависимости от выбранных действий.
+            </span>
+          </article>
+          <article>
+            <span className="dns-home-benefit-icon" tabIndex={0} aria-describedby="dns-benefit-feedback">
+              <MessageCircleMore />
+            </span>
+            <div>
+              <strong>Обратная связь</strong>
+              <p>Результаты и рекомендации</p>
+            </div>
+            <span id="dns-benefit-feedback" className="dns-home-benefit-cloud" role="tooltip">
+              После прохождения формируется оценка компетенций и рекомендации. Оценщик видит ход решений и может провести предметный разбор.
+            </span>
+          </article>
+        </section>
+      </main>
+    </BrandAccessShell>
   );
 }

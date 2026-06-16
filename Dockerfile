@@ -52,15 +52,19 @@ COPY shared ./shared
 COPY script ./script
 COPY migrations ./migrations
 COPY attached_assets ./attached_assets
+COPY uploads ./uploads
 COPY .env.example ./.env.example
 COPY components.json ./
-COPY data.db ./data.db
 COPY drizzle.config.ts ./
 COPY postcss.config.js ./
 COPY tailwind.config.ts ./
 COPY tsconfig.json ./
 COPY vite.config.ts ./
 COPY docker ./docker
+
+RUN mkdir -p /app/bootstrap \
+    && SQLITE_PATH=/app/bootstrap/data.db npm run db:migrate \
+    && SQLITE_PATH=/app/bootstrap/data.db npm run db:seed-simulation
 
 # Собираем проект (TypeScript → dist/ + Vite client build)
 RUN npm run build \
@@ -111,7 +115,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/attached_assets ./attached_assets
-COPY --from=builder /app/data.db ./bootstrap/data.db
+COPY --from=builder /app/uploads ./uploads
+COPY --from=builder /app/bootstrap/data.db ./bootstrap/data.db
 
 # -----------------------------------------------------------------------------
 # Entrypoint: инициализация БД при первом запуске

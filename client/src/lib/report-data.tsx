@@ -1,36 +1,24 @@
 import type { ReactNode } from "react";
 import { COMPETENCIES } from "@/data/competencies";
-import type { SessionSourceType, SimulationRuntimeSettings } from "@shared/simulation-content";
+import type { SimulationRuntimeSettings } from "@shared/simulation-content";
 import type { SimulationState } from "@/context/SimulationContext";
 import { BarChart3, Brain, Target, Users } from "lucide-react";
-
-const TIME_PROFILE_EVALUATION_COEFFICIENT = {
-  easy: 0.95,
-  medium: 1,
-  hard: 1.08,
-} as const;
+import { calculateSimulationScoreSummary } from "@shared/simulation-scoring";
 
 const EXPECTED_COMPETENCY_LEVEL = 4.0;
 
-function buildExpectedCompetencyScores() {
-  return Object.fromEntries(COMPETENCIES.map((competency) => [competency.id, EXPECTED_COMPETENCY_LEVEL]));
+function normalizeClientRating(value: unknown, fallback = 3.3) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return fallback;
+  }
+
+  const scaled = numeric > 10 ? numeric / 20 : numeric > 5 ? numeric / 2 : numeric;
+  return Math.round(Math.max(1, Math.min(5, scaled)) * 100) / 100;
 }
 
-export function getCaseWeightRatio(
-  caseId: string,
-  sourceType: SessionSourceType,
-  settings: SimulationRuntimeSettings | null | undefined,
-) {
-  if (sourceType !== "main_case") {
-    return 1;
-  }
-
-  const explicitWeight = Number(settings?.caseWeights?.[caseId]);
-  if (!Number.isFinite(explicitWeight)) {
-    return 1;
-  }
-
-  return Math.max(0, Math.min(explicitWeight / 100, 1));
+function buildExpectedCompetencyScores() {
+  return Object.fromEntries(COMPETENCIES.map((competency) => [competency.id, EXPECTED_COMPETENCY_LEVEL]));
 }
 
 export function getVerdict(avgScore: number): { level: string; color: string; description: string } {
@@ -157,58 +145,22 @@ function buildCompetencyRows(source: Record<string, number>) {
   };
 }
 
-function buildCompetencySourceFromDecisions(
-  decisions: any[],
-  runtimeSettings: SimulationRuntimeSettings | null | undefined,
-) {
-  const totals: Record<string, { total: number; count: number }> = {};
-
-  decisions.forEach((decision) => {
-    const weightRatio = getCaseWeightRatio(decision.caseId || decision.contentId || "", decision.sourceType, runtimeSettings);
-    const qualityRatio = Math.max(0.1, Math.min(Number(decision.score || 0) / 5, 1));
-
-    Object.entries(decision.competencyScores || {}).forEach(([competencyId, rawScore]) => {
-      const score = Number(rawScore || 0);
-      if (!Number.isFinite(score) || score <= 0) {
-        return;
-      }
-
-      if (!totals[competencyId]) {
-        totals[competencyId] = { total: 0, count: 0 };
-      }
-
-      totals[competencyId].total += score * weightRatio * qualityRatio;
-      totals[competencyId].count += weightRatio;
-    });
-  });
-
-  return Object.fromEntries(
-    Object.entries(totals)
-      .filter(([, value]) => value.count > 0)
-      .map(([competencyId, value]) => [competencyId, Math.round((value.total / value.count) * 10) / 10]),
-  );
-}
-
 export function buildReportFromState(
   state: SimulationState,
   getCompetencyAverage: (compId: string) => number,
   runtimeSettings: SimulationRuntimeSettings | null | undefined,
 ) {
   const decisions = state.decisions as any[];
-  const timeCoefficient = runtimeSettings?.timeInfluenceEnabled
-    ? TIME_PROFILE_EVALUATION_COEFFICIENT[state.difficulty]
-    : 1;
-  const weightedScoreTotal = decisions.reduce((sum, decision) => (
-    sum + Number(decision.score || 0) * getCaseWeightRatio(decision.caseId, decision.sourceType, runtimeSettings)
-  ), 0);
-  const weightedDecisionCount = decisions.reduce((sum, decision) => (
-    sum + getCaseWeightRatio(decision.caseId, decision.sourceType, runtimeSettings)
-  ), 0);
+  const scoreSummary = calculateSimulationScoreSummary({
+    decisions,
+    difficulty: state.difficulty,
+    settings: runtimeSettings,
+    competencyTotals: state.competencyTotals,
+  });
 
   const directCompetencySource = Object.fromEntries(COMPETENCIES.map((competency) => [competency.id, getCompetencyAverage(competency.id)]));
-  const reconstructedCompetencySource = buildCompetencySourceFromDecisions(decisions, runtimeSettings);
   const hasDirectCompetencies = Object.values(directCompetencySource).some((value) => Number(value) > 0);
-  const competencySource = hasDirectCompetencies ? directCompetencySource : reconstructedCompetencySource;
+  const competencySource = hasDirectCompetencies ? directCompetencySource : scoreSummary.competencyAverages;
   const competencyRows = buildCompetencyRows(competencySource);
   const expectedCompScoresMap = buildExpectedCompetencyScores();
   const totalTime = state.timeLimit * 60 - state.timeRemaining;
@@ -222,10 +174,8 @@ export function buildReportFromState(
     isTestMode: state.isTestMode,
     decisions,
     totalDecisions: decisions.length,
-    totalScore: decisions.length > 0 ? Math.round(weightedScoreTotal * timeCoefficient) : 0,
-    avgScore: weightedDecisionCount > 0
-      ? Math.round((Math.max(0, Math.min((weightedScoreTotal / weightedDecisionCount) * timeCoefficient, 5))) * 10) / 10
-      : 0,
+    totalScore: scoreSummary.totalScore,
+    avgScore: scoreSummary.averageScore,
     totalMinutes: Math.floor(totalTime / 60),
     pauseEntries,
     totalPauseSeconds,
@@ -236,13 +186,14 @@ export function buildReportFromState(
       customersInStore: state.metrics.customersInStore,
       avgCheck: state.metrics.avgCheck,
       conversion: state.metrics.conversion,
-      nps: state.metrics.nps,
+      nps: normalizeClientRating(state.metrics.nps),
       pickupSpeed: state.metrics.pickupSpeed,
       warehouseLoad: state.metrics.warehouseLoad,
       teamMorale: state.metrics.teamMorale,
       dailyRevenue: state.metrics.dailyRevenue,
     },
     retestDate: getRetestDateLabel(),
+    sessionId: state.sessionId || 0,
     expectedCompScoresMap,
     ...competencyRows,
   };
@@ -266,9 +217,17 @@ export function buildReportFromSessionDetails(
   }));
   const persistedCompetencySource = detail?.result?.competencyAverages || {};
   const hasPersistedCompetencies = Object.values(persistedCompetencySource).some((value: any) => Number(value) > 0);
+  const scoringDifficulty = ["easy", "medium", "hard"].includes(session.difficulty)
+    ? session.difficulty as "easy" | "medium" | "hard"
+    : "medium";
+  const fallbackSummary = calculateSimulationScoreSummary({
+    decisions,
+    difficulty: scoringDifficulty,
+    settings: runtimeSettings,
+  });
   const competencySource = hasPersistedCompetencies
     ? persistedCompetencySource
-    : buildCompetencySourceFromDecisions(decisions, runtimeSettings);
+    : fallbackSummary.competencyAverages;
   const competencyRows = buildCompetencyRows(competencySource);
   const expectedCompScoresMap = buildExpectedCompetencyScores();
   const startedAtMs = session.startedAt ? new Date(session.startedAt).getTime() : 0;
@@ -276,16 +235,7 @@ export function buildReportFromSessionDetails(
   const totalMinutes = startedAtMs && completedAtMs ? Math.max(0, Math.round((completedAtMs - startedAtMs) / 60000)) : Number(session.timeLimit || 0);
   const pauseEntries = (detail?.result?.pauses || []).filter((pause: any) => Number(pause.durationSeconds || 0) > 0);
   const totalPauseSeconds = pauseEntries.reduce((sum: number, pause: any) => sum + Number(pause.durationSeconds || 0), 0);
-  const fallbackWeightedScoreTotal = decisions.reduce((sum: number, decision: any) => (
-    sum + Number(decision.score || 0) * getCaseWeightRatio(decision.caseId || decision.contentId || "", decision.sourceType, runtimeSettings)
-  ), 0);
-  const fallbackWeightedCount = decisions.reduce((sum: number, decision: any) => (
-    sum + getCaseWeightRatio(decision.caseId || decision.contentId || "", decision.sourceType, runtimeSettings)
-  ), 0);
-  const fallbackAverageScore = fallbackWeightedCount > 0
-    ? Math.round(Math.max(0, Math.min(fallbackWeightedScoreTotal / fallbackWeightedCount, 5)) * 10) / 10
-    : 0;
-  const averageScore = Number(detail?.result?.averageScore || 0) || fallbackAverageScore;
+  const averageScore = Number(detail?.result?.averageScore || 0) || fallbackSummary.averageScore;
 
   return {
     participantName: session.participantName || "Участник",
@@ -294,7 +244,7 @@ export function buildReportFromSessionDetails(
     isTestMode: Boolean(session.isTestMode),
     decisions,
     totalDecisions: decisions.length,
-    totalScore: Number(detail?.result?.totalScore || 0) || Math.round(fallbackWeightedScoreTotal),
+    totalScore: Number(detail?.result?.totalScore || 0) || fallbackSummary.totalScore,
     avgScore: averageScore,
     totalMinutes,
     pauseEntries,
@@ -302,7 +252,10 @@ export function buildReportFromSessionDetails(
     impactfulDecisions: getImpactfulDecisions(decisions),
     patterns: analyzePatterns(decisions),
     verdict: getVerdict(competencyRows.overallAvg || averageScore),
-    finalMetrics: detail?.result?.finalMetrics || {},
+    finalMetrics: {
+      ...(detail?.result?.finalMetrics || {}),
+      nps: normalizeClientRating(detail?.result?.finalMetrics?.nps),
+    },
     retestDate: getRetestDateLabel(),
     sessionId: Number(session.id || 0),
     technicalStatus: session.technicalStatus || "completed",
@@ -315,6 +268,7 @@ export function buildReportFromSessionDetails(
 
 export function buildPdfPayloadFromReport(report: ReturnType<typeof buildReportFromState> | ReturnType<typeof buildReportFromSessionDetails>) {
   return {
+    sessionId: report.sessionId || undefined,
     participantName: report.participantName,
     assessorName: report.assessorName,
     difficulty: report.difficulty,

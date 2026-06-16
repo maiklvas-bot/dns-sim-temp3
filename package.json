@@ -4,12 +4,15 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "NODE_ENV=development tsx server/index.ts",
+    "dev": "cross-env NODE_ENV=development tsx server/index.ts",
     "build": "tsx script/build.ts",
-    "start": "NODE_ENV=production node dist/index.cjs",
+    "start": "cross-env NODE_ENV=production node dist/index.cjs",
     "check": "tsc",
     "lint": "npm run check",
     "test": "tsx script/ci-smoke.ts",
+    "test:ops": "node script/check-ops-safety.mjs",
+    "test:ui": "node script/check-ui-acceptance.mjs",
+    "test:browser": "node script/browser-acceptance.mjs",
     "release:prune": "tsx script/prune-release.ts",
     "template:generate": "tsx script/generate-case-signal-template.ts",
     "db:push": "drizzle-kit push",
@@ -17,7 +20,10 @@
     "db:seed-simulation": "tsx script/seed-simulation-content.ts",
     "db:merge-main-cases": "tsx script/import-external-main-cases.ts",
     "db:generate-bootstrap": "tsx script/generate-bootstrap-content.ts",
-    "staff:reset": "tsx script/reset-staff-accounts.ts"
+    "staff:reset": "tsx script/reset-staff-accounts.ts",
+    "media:import-local": "tsx script/import-local-media.ts",
+    "media:import": "npm run media:import-local --",
+    "typecheck": "npm run check"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -56,7 +62,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
-    "drizzle-orm": "^0.39.3",
+    "drizzle-orm": "^0.45.2",
     "drizzle-zod": "^0.7.0",
     "embla-carousel-react": "^8.6.0",
     "express": "^5.0.1",
@@ -88,6 +94,7 @@
     "zod-validation-error": "^3.4.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/typography": "^0.5.15",
     "@tailwindcss/vite": "^4.1.18",
     "@types/bcrypt": "^6.0.0",
@@ -102,6 +109,7 @@
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^4.7.0",
     "autoprefixer": "^10.4.20",
+    "cross-env": "^7.0.3",
     "drizzle-kit": "^0.31.8",
     "esbuild": "^0.25.0",
     "postcss": "^8.4.47",

@@ -17,6 +17,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
 
       - name: Use Node.js 20
         uses: actions/setup-node@v4
@@ -35,6 +37,21 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Install browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser acceptance
+        run: npm run test:browser
+
+      - name: Verify Docker data safety
+        run: node script/check-docker-safety.mjs
+
+      - name: Verify backup and restore safety
+        run: npm run test:ops
+
+      - name: Verify UI acceptance contracts
+        run: npm run test:ui
 
       - name: Prepare Docker env
         run: cp .env.example .env

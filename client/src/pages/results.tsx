@@ -14,11 +14,14 @@ import {
   Shield, Calendar, Cpu, HeartHandshake, BarChart2, Sparkles
 } from "lucide-react";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
+import { getPersistedSession } from "@/features/simulation-engine/persistence/session-sync-client";
+import { buildSimulationAccessHeaders } from "@/lib/simulation-session-access";
 import { getSimulationSettingsSnapshot } from "@/lib/runtime-content";
 import { clearLiveSimulationRole, closeRemoteLiveSimulation, getLiveSimulationConfig, resetLiveSimulation } from "@/lib/live-session";
 import type { SimulationRuntimeSettings } from "@shared/simulation-content";
 import { buildPdfPayloadFromReport, buildReportFromSessionDetails, buildReportFromState } from "@/lib/report-data";
 import { DNS_COLORS, DNS_GRADIENTS } from "@/styles/dns-theme";
+import { BrandMark, BrandVisualBackdrop } from "@/components/brand-access-shell";
 import storeBg from "@assets/store_bg.png";
 
 // ============================================================
@@ -29,7 +32,7 @@ function getLearningRecommendation(competencyId: string, score: number): string 
     communication: 'Пройдите курс "Эффективные коммуникации в ритейле", практикуйте активное слушание на ежедневных брифингах',
     leadership: 'Изучите материалы по situational leadership, проведите 1-на-1 с каждым сотрудником раз в неделю',
     decision_making: 'Работайте с матрицей Eisenhower, практикуйте принятие решений под time-boxing',
-    customer_focus: 'Пройдите тренинг "Клиентоориентированность DNS", изучите кейсы NPS-лидеров',
+    customer_focus: 'Пройдите тренинг "Клиентоориентированность DNS", изучите кейсы лидеров клиентской оценки',
     team_management: 'Используйте RACI-матрицу для распределения задач, внедрите систему KPI для команды',
     problem_solving: 'Изучите 5 Whys и Fishbone диаграмму, применяйте на еженедельных разборах',
     time_management: 'Внедрите time-blocking, используйте правило 2 минут для мелких задач',
@@ -194,6 +197,28 @@ export default function ResultsPage(props: any) {
     );
   }
 
+  if (persistedSessionId != null && persistedResultQuery.isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0d1117] px-4 text-white">
+        <div className="w-full max-w-md rounded-2xl border border-[#2a3a4e] bg-[#141c2b]/85 p-6 text-center">
+          <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-[#FFB300]" />
+          <h2 className="text-lg font-semibold">Не удалось загрузить результат</h2>
+          <p className="mt-2 text-sm text-[#94A3B8]">
+            Проверьте соединение и попробуйте снова. Если ошибка повторяется, обратитесь к администратору.
+          </p>
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+            <Button variant="outline" onClick={() => navigate('/evaluator')}>
+              Вернуться к оценщику
+            </Button>
+            <Button onClick={() => persistedResultQuery.refetch()}>
+              Повторить
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleRestart = async () => {
     if (persistedSessionId != null) {
       navigate("/evaluator");
@@ -218,7 +243,9 @@ export default function ResultsPage(props: any) {
     setPdfError(null);
     try {
       const payload = buildPdfPayloadFromReport(report);
-      const response = await apiRequest("POST", "/api/export-pdf", payload);
+      const response = await apiRequest("POST", "/api/export-pdf", payload, {
+        headers: payload.sessionId ? buildSimulationAccessHeaders(payload.sessionId) : {},
+      });
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -246,7 +273,7 @@ export default function ResultsPage(props: any) {
         persistedSessionId != null
           ? (persistedResultQuery.data?.session || null)
           : state.sessionId != null
-            ? await apiRequest("GET", `/api/sessions/${state.sessionId}`).then((response) => response.json())
+            ? await getPersistedSession(state.sessionId)
           : null;
 
       const timerRows = reportDecisions
@@ -303,6 +330,7 @@ export default function ResultsPage(props: any) {
       ];
 
       const response = await apiRequest("POST", "/api/export-xlsx", {
+        sessionId: report.sessionId || undefined,
         sheets: [
           { name: "Результат", rows: summaryRows },
           { name: "Кейсы", rows: detailRows },
@@ -316,6 +344,8 @@ export default function ResultsPage(props: any) {
             }]
             : []),
         ],
+      }, {
+        headers: report.sessionId ? buildSimulationAccessHeaders(report.sessionId) : {},
       });
 
       const blob = await response.blob();
@@ -339,7 +369,7 @@ export default function ResultsPage(props: any) {
 
   return (
     <div
-      className="dns-product-shell relative"
+      className="dns-product-shell dns-visual-shell dns-visual-shell--results relative"
       style={{
         backgroundImage: `url(${storeBg})`,
         backgroundSize: "cover",
@@ -347,6 +377,7 @@ export default function ResultsPage(props: any) {
         backgroundAttachment: "fixed",
       }}
     >
+      <BrandVisualBackdrop variant="results" />
       {/* Градиентный оверлей */}
       <div className="absolute inset-0" style={{ background: DNS_GRADIENTS.dark }} />
       <div className="absolute inset-0 bg-gradient-to-b from-[#0d1421f2] via-[#16213ef5] to-[#0d1421f7]" />
@@ -358,7 +389,7 @@ export default function ResultsPage(props: any) {
         ═══════════════════════════════════════════ */}
         <header className="dns-brand-header">
           <div className="dns-brand-title">
-            <div className="dns-brand-mark">D</div>
+            <BrandMark compact />
             <div>
               <div className="dns-brand-kicker">DNS SimCenter</div>
               <h1 className="dns-brand-heading">{participantName || "Результаты симуляции"}</h1>
@@ -788,7 +819,7 @@ export default function ResultsPage(props: any) {
               ACTIONS
           ═══════════════════════════════════════════ */}
           <div className="flex flex-col items-center gap-3 pb-8">
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="dns-result-action-block">
               <Button
                 onClick={handleRestart}
                 variant="outline"
@@ -867,9 +898,9 @@ export default function ResultsPage(props: any) {
             }, {
               label: "Время", value: `${totalMinutes} мин`,
             }].map((kpi, i) => (
-              <div key={i} className="rounded-lg border border-[#2a3a4e] bg-[#1A2634] p-3 text-center">
-                <div className="text-lg font-bold text-white tabular-nums">{kpi.value}</div>
-                <div className="text-[10px] mt-0.5" style={{ color: DNS_COLORS.textMuted }}>{kpi.label}</div>
+              <div key={i} className="dns-kpi-card text-center">
+                <div className="dns-kpi-card__metric text-lg tabular-nums">{kpi.value}</div>
+                <div className="dns-kpi-card__caption text-[10px]">{kpi.label}</div>
               </div>
             ))}
           </div>
@@ -998,7 +1029,10 @@ export default function ResultsPage(props: any) {
                 { label: "Покупатели в зале", value: finalMetrics.customersInStore },
                 { label: "Средний чек", value: `${finalMetrics.avgCheck}₽` },
                 { label: "Конверсия", value: `${finalMetrics.conversion}%` },
-                { label: "NPS", value: finalMetrics.nps },
+                {
+                  label: "Клиентская оценка",
+                  value: Number(finalMetrics.nps || 3.3).toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+                },
                 { label: "Скорость выдачи", value: `${finalMetrics.pickupSpeed} мин` },
                 { label: "Загрузка склада", value: `${finalMetrics.warehouseLoad}%` },
                 { label: "Настроение команды", value: finalMetrics.teamMorale },
@@ -1061,7 +1095,7 @@ export default function ResultsPage(props: any) {
 
           {/* Actions (preview tab) */}
           <div className="flex flex-col items-center gap-3 pb-8">
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="dns-result-action-block">
               <Button
                 onClick={handleExportPdf}
                 disabled={pdfLoading}

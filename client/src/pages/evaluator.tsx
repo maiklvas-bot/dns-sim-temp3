@@ -19,6 +19,6 @@ export default function EvaluatorPage() {
     return null;
   }
 
-  return <AssessorPage />;
+  return <AssessorPage staffRole={data.role} />;
 }
 
