@@ -22,16 +22,16 @@ export function OptionCard({
   return (
     <button
       onClick={onClick}
-      className={`flex w-full flex-col rounded-xl border border-[#35506f] bg-[#1a283b] p-4 text-left shadow-sm transition-all hover:border-[#FF6B00]/45 hover:bg-[#213249] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]/55 focus-visible:ring-offset-0 active:scale-[0.99] cursor-pointer ${className}`}
+      className={`flex w-full flex-col rounded-xl border border-border bg-card p-4 text-left shadow-sm transition-all hover:border-[#FF6B00]/45 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]/55 focus-visible:ring-offset-0 active:scale-[0.99] cursor-pointer ${className}`}
       data-testid={`option-${idx}`}
       title={option.text}
     >
       <div className="flex items-start gap-3.5">
-        <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-[#47637f] bg-[#141f30] text-[11px] font-bold text-[#9db4cf] flex-shrink-0">
+        <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-background text-[11px] font-bold text-muted-foreground flex-shrink-0">
           {idx + 1}
         </span>
         <p
-          className="text-sm leading-6 text-[#eef3ff] whitespace-pre-wrap break-words"
+          className="text-sm leading-6 text-foreground whitespace-pre-wrap break-words"
         >
           {fitToContent ? option.text : summarizeOptionText(option.text)}
         </p>
@@ -42,13 +42,13 @@ export function OptionCard({
 
 function EmptyPanel() {
   return (
-    <div className="flex h-full items-center justify-center rounded-2xl border border-[#2a3a4e] bg-[linear-gradient(180deg,rgba(20,28,43,0.74),rgba(11,18,29,0.9))] p-6 text-center">
+    <div className="flex h-full items-center justify-center rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(20,28,43,0.74),rgba(11,18,29,0.9))] p-6 text-center">
       <div>
-        <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#9fb4cf]">Панель действий</div>
-        <p className="mt-2 text-sm text-[#c8d0e2]">
+        <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Панель действий</div>
+        <p className="mt-2 text-sm text-foreground">
           Откройте звонок, письмо, сообщение или начните просмотр видеозвонка
         </p>
-        <p className="mt-1 text-[12px] text-[#9fb4cf]">
+        <p className="mt-1 text-[12px] text-muted-foreground">
           После открытия кейса управленческие действия появятся здесь.
         </p>
       </div>
@@ -62,7 +62,7 @@ function ResolvedPanel({ title }: { title: string }) {
       <div>
         <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7ef0da]">Панель действий</div>
         <p className="mt-2 text-sm font-semibold text-[#00d4aa]">{title}</p>
-        <p className="mt-1 text-[12px] text-[#d3e3ee]">
+        <p className="mt-1 text-[12px] text-muted-foreground">
           Ответ уже зафиксирован. Откройте следующий кейс, чтобы продолжить работу.
         </p>
       </div>
@@ -88,9 +88,9 @@ function PanelHeader({
   return (
     <div className="mb-2 flex-shrink-0">
       <div className={`text-[12px] font-semibold uppercase tracking-wider ${accentClass}`}>Панель действий</div>
-      <div className="mt-1 text-sm font-semibold text-white">{title}</div>
-      <div className="mt-1 text-[13px] text-[#d3deee]">{subtitle}</div>
-      <div className="mt-1 text-[12px] text-[#a9bbd4]">{helper}</div>
+      <div className="mt-1 text-sm font-semibold text-foreground">{title}</div>
+      <div className="mt-1 text-[13px] text-foreground">{subtitle}</div>
+      <div className="mt-1 text-[12px] text-muted-foreground">{helper}</div>
       {deadline && (
         <div className="mt-2">
           <DeadlineChip deadline={deadline} elapsedSeconds={elapsedSeconds} />

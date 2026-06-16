@@ -90,7 +90,7 @@ export default function SignalFeed() {
   return (
     <div className="flex flex-col h-full min-h-0">
       {/* Tab bar */}
-      <div className="mb-3 flex flex-shrink-0 items-center gap-1.5 overflow-x-auto border-b border-[#38506d]/70 pb-2">
+      <div className="mb-3 flex flex-shrink-0 items-center gap-1.5 overflow-x-auto border-b border-border pb-2">
         {tabs.map(tab => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.key;
@@ -102,7 +102,7 @@ export default function SignalFeed() {
                 dispatch({ type: "CLEAR_ACTION_PANEL" });
               }}
               className={`flex min-h-11 flex-shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition-all ${
-                isActive ? "text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)_inset]" : "text-[#d6e2f3] hover:bg-[#213149]/70 hover:text-white"
+                isActive ? "text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)_inset]" : "text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
               style={isActive ? { background: tab.color + "22", color: "#f8fbff", borderBottom: `2px solid ${tab.color}` } : {}}
               data-testid={`tab-${tab.key}`}
@@ -143,22 +143,22 @@ export default function SignalFeed() {
                         dispatch({ type: "SELECT_SIGNAL", payload: signal.id });
                       }}
                       className={`w-full text-left rounded-lg border transition-all cursor-pointer overflow-hidden flex items-stretch ${
-                        isSelected ? "border-[#FF6B00] bg-[#FF6B00]/8" : "border-[#2a3a4e] bg-[#141c2b]/60 hover:border-[#3a4a5e]"
+                        isSelected ? "border-[#FF6B00] bg-[#FF6B00]/8" : "border-border bg-card/60 hover:border-border"
                       }`}
                       data-testid={`signal-${signal.id}`}
                     >
                       <div className="w-12 flex-shrink-0"><img src={img} alt="" loading="eager" decoding="async" className="h-full w-full object-cover" style={{ minHeight: 46 }} /></div>
                       <div className="flex-1 p-2 min-w-0">
                         <div className="flex items-center justify-between gap-1">
-                          <span className="text-[10px] font-medium text-[#b8c8de]">{getSignalTypeEmoji(signal.type)} {getSignalTypeLabel(signal.type)}</span>
+                          <span className="text-[10px] font-medium text-muted-foreground">{getSignalTypeEmoji(signal.type)} {getSignalTypeLabel(signal.type)}</span>
                           {signal.deadline ? (
                             <DeadlineChip deadline={signal.deadline} elapsedSeconds={state.elapsedSeconds} compact />
                           ) : !signal.isAcknowledged ? (
                             <span className="flex items-center gap-0.5 text-[10px] font-medium text-[#ff8080]"><AlertTriangle className="w-3 h-3" />новый</span>
                           ) : null}
                         </div>
-                        <div className="truncate text-[12px] font-semibold text-white">{signal.title}</div>
-                        <div className="truncate text-[10px] text-[#97a8c2]">
+                        <div className="truncate text-[12px] font-semibold text-foreground">{signal.title}</div>
+                        <div className="truncate text-[10px] text-muted-foreground">
                           {signal.source}
                           {signal.isAcknowledged && <span className="ml-1 text-[#00d4aa]">• в работе</span>}
                         </div>
@@ -196,9 +196,9 @@ export default function SignalFeed() {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-base">{getSignalTypeEmoji(currentSignal.type)}</span>
-                          <span className="text-[12px] font-medium text-[#ced8ea]">{getSignalTypeLabel(currentSignal.type)}</span>
+                          <span className="text-[12px] font-medium text-muted-foreground">{getSignalTypeLabel(currentSignal.type)}</span>
                         </div>
-                        <div className="mt-1.5 text-[15px] font-bold leading-6 text-white">
+                        <div className="mt-1.5 text-[15px] font-bold leading-6 text-foreground">
                           {currentSignal.title} <span className="text-[13px] text-[#FF9B53]">— Этап {currentSignal.cycle}</span>
                         </div>
                       </div>
@@ -220,14 +220,14 @@ export default function SignalFeed() {
                     )}
                     <ScrollArea className="mt-3 flex-1 min-h-0 pr-2">
                       <div className="space-y-2.5">
-                        <div className="rounded-xl border border-[#2a3a4e] bg-[#121c2b] p-2.5">
-                          <div className="text-[11px] uppercase tracking-[0.16em] text-[#aac0dd]">Ситуация</div>
-                          <p className="mt-1.5 text-[13px] leading-6 text-[#f2f6ff]">{currentSignal.fullSituation}</p>
+                        <div className="rounded-xl border border-border bg-card p-2.5">
+                          <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Ситуация</div>
+                          <p className="mt-1.5 text-[13px] leading-6 text-foreground">{currentSignal.fullSituation}</p>
                         </div>
                         {getCaseDescription(currentSignal.caseId) && (
-                          <div className="rounded-xl border border-[#243448] bg-[#0f1724] p-2.5">
-                            <div className="text-[11px] uppercase tracking-[0.16em] text-[#aac0dd]">Контекст</div>
-                            <p className="mt-1.5 text-[12px] leading-6 text-[#d3deee]">{getCaseDescription(currentSignal.caseId)}</p>
+                          <div className="rounded-xl border border-border bg-background p-2.5">
+                            <div className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">Контекст</div>
+                            <p className="mt-1.5 text-[12px] leading-6 text-foreground">{getCaseDescription(currentSignal.caseId)}</p>
                           </div>
                         )}
                       </div>
@@ -240,9 +240,9 @@ export default function SignalFeed() {
                   <img src={getWaitingSignalImage()} alt="" loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-30" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <Clock className="w-10 h-10 text-[#8ea4c2] mx-auto mb-3" />
-                      <p className="text-sm text-[#dce7f7]">Ожидание сигналов...</p>
-                      <p className="text-xs text-[#9fb4cf] mt-1">Сигналы поступят автоматически</p>
+                      <Clock className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                      <p className="text-sm text-foreground">Ожидание сигналов...</p>
+                      <p className="text-xs text-muted-foreground mt-1">Сигналы поступят автоматически</p>
                     </div>
                   </div>
                 </>
@@ -252,7 +252,7 @@ export default function SignalFeed() {
                   <img src={getWaitingSignalImage()} alt="" loading="eager" decoding="async" className="absolute inset-0 w-full h-full object-cover opacity-40" />
                   <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                      <p className="text-sm text-[#dce7f7]">Выберите сигнал выше</p>
+                      <p className="text-sm text-foreground">Выберите сигнал выше</p>
                     </div>
                   </div>
                 </>
