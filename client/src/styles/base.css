@@ -589,14 +589,14 @@
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  /* Core surfaces — dark charcoal/navy */
-  --background: 230 30% 11%;          /* #1a1a2e */
-  --foreground: 0 0% 88%;             /* #e0e0e0 */
-  --border: 215 25% 18%;              /* subtle dark borders */
+  /* Core surfaces — подогнаны под доминирующие хардкод-hex (миграция нейтралей не сдвигает тёмную тему) */
+  --background: 216 28% 7%;           /* #0d1117 — глубокий фон */
+  --foreground: 210 35% 93%;          /* #e6edf3 — основной текст */
+  --border: 213 30% 24%;              /* #2a3a4e — границы (238 вхождений) */
 
-  --card: 215 35% 14%;                /* #1e2a3a panels */
-  --card-foreground: 0 0% 88%;
-  --card-border: 215 30% 20%;
+  --card: 219 37% 12%;                /* #141c2b — панели (97 вхождений) */
+  --card-foreground: 210 35% 93%;
+  --card-border: 213 30% 24%;         /* #2a3a4e */
 
   --sidebar: 220 40% 12%;
   --sidebar-foreground: 0 0% 90%;
@@ -607,9 +607,9 @@
   --sidebar-accent-foreground: 0 0% 90%;
   --sidebar-ring: 25 100% 50%;
 
-  --popover: 220 35% 13%;
-  --popover-foreground: 0 0% 88%;
-  --popover-border: 215 30% 20%;
+  --popover: 219 37% 12%;             /* #141c2b */
+  --popover-foreground: 210 35% 93%;
+  --popover-border: 213 30% 24%;      /* #2a3a4e */
 
   /* Primary = DNS Orange */
   --primary: 25 100% 50%;             /* #FF6B00 */
@@ -620,7 +620,7 @@
   --secondary-foreground: 0 0% 88%;
 
   --muted: 220 20% 16%;
-  --muted-foreground: 220 10% 55%;
+  --muted-foreground: 225 15% 60%;    /* #8890a8 — приглушённый текст (86 вхождений) */
 
   --accent: 215 30% 18%;
   --accent-foreground: 0 0% 88%;
@@ -628,7 +628,7 @@
   --destructive: 0 72% 55%;           /* #ff4444 */
   --destructive-foreground: 0 0% 100%;
 
-  --input: 215 25% 22%;
+  --input: 213 30% 24%;               /* #2a3a4e */
   --ring: 25 100% 50%;
 
   /* Chart colors */

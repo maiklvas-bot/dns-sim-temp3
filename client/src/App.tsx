@@ -60,7 +60,7 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0d1117] text-white">
+      <div className="min-h-dvh flex items-center justify-center bg-background text-foreground">
         Загрузка симуляции...
       </div>
     );
@@ -68,7 +68,7 @@ function AppContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0d1117] text-white">
+      <div className="min-h-dvh flex items-center justify-center bg-background text-foreground">
         Не удалось загрузить контент симуляции
       </div>
     );
@@ -79,7 +79,7 @@ function AppContent() {
       <Router hook={useHashLocation}>
         <Suspense
           fallback={(
-            <div className="min-h-screen flex items-center justify-center bg-[#0d1117] text-white">
+            <div className="min-h-dvh flex items-center justify-center bg-background text-foreground">
               Открываем экран...
             </div>
           )}
