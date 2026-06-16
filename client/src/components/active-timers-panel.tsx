@@ -35,17 +35,17 @@ export default function ActiveTimersPanel() {
 
   if (activeTimers.length === 0) {
     return (
-      <div className="mt-3 rounded-xl border border-[#2a3a4e] bg-[linear-gradient(180deg,rgba(30,42,58,0.9),rgba(14,21,33,0.94))] p-3">
+      <div className="mt-3 rounded-xl border border-border bg-[linear-gradient(180deg,rgba(30,42,58,0.9),rgba(14,21,33,0.94))] p-3">
         <div className="flex items-start gap-2">
           <Clock3 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#4a9eff]" />
           <div className="min-w-0">
             <div className="text-[12px] font-semibold uppercase leading-4 tracking-[0.12em] text-[#8ec5ff]">Активные таймеры</div>
-            <div className="mt-0.5 text-[11px] leading-4 text-[#b7c8df]">Дедлайны появятся здесь сразу после прихода задач.</div>
+            <div className="mt-0.5 text-[11px] leading-4 text-muted-foreground">Дедлайны появятся здесь сразу после прихода задач.</div>
           </div>
         </div>
-        <div className="mt-3 flex items-center gap-2 rounded-lg border border-[#2a3a4e] bg-[#101826]/72 px-3 py-2">
-          <ShieldAlert className="h-4 w-4 flex-shrink-0 text-[#8ea4c2]" />
-          <div className="min-w-0 text-[11px] leading-4 text-[#c6d0e5]">
+        <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-background/72 px-3 py-2">
+          <ShieldAlert className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+          <div className="min-w-0 text-[11px] leading-4 text-foreground">
             Сейчас нет активных дедлайнов или событие ещё не пришло.
           </div>
         </div>
@@ -54,13 +54,13 @@ export default function ActiveTimersPanel() {
   }
 
   return (
-    <div className="mt-3 flex h-full flex-col rounded-2xl border border-[#2a3a4e] bg-[linear-gradient(180deg,rgba(30,42,58,0.9),rgba(14,21,33,0.94))] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
+    <div className="mt-3 flex h-full flex-col rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(30,42,58,0.9),rgba(14,21,33,0.94))] p-4 shadow-[0_18px_40px_rgba(0,0,0,0.24)]">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <div className="text-sm font-semibold uppercase tracking-wider text-[#8ec5ff]">Активные таймеры</div>
-          <div className="text-[12px] text-[#b7c8df]">Все задачи с ограничением по времени</div>
+          <div className="text-[12px] text-muted-foreground">Все задачи с ограничением по времени</div>
         </div>
-        <div className="rounded-full border border-[#2a3a4e] bg-[#101826] px-2 py-1 text-[11px] text-white shadow-[0_8px_20px_rgba(0,0,0,0.18)]">
+        <div className="rounded-full border border-border bg-background px-2 py-1 text-[11px] text-foreground shadow-[0_8px_20px_rgba(0,0,0,0.18)]">
           {activeTimers.length}
         </div>
       </div>
@@ -86,8 +86,8 @@ export default function ActiveTimersPanel() {
             >
               <div className="mb-2 flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-sm font-semibold text-white">{timer.title}</div>
-                  <div className="mt-0.5 text-[12px] text-[#d0daea]">
+                  <div className="text-sm font-semibold text-foreground">{timer.title}</div>
+                  <div className="mt-0.5 text-[12px] text-foreground">
                     {timer.taskType} • {timer.responsibility || "Без уточнения"}
                   </div>
                 </div>
@@ -96,25 +96,25 @@ export default function ActiveTimersPanel() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-[12px] text-[#b7c8df]">
+              <div className="grid grid-cols-2 gap-2 text-[12px] text-muted-foreground">
                 <div>
                   <div className="mb-0.5">Зона ответственности</div>
-                  <div className="text-white">{timer.zoneLabel || "Общая зона"}</div>
+                  <div className="text-foreground">{timer.zoneLabel || "Общая зона"}</div>
                 </div>
                 <div>
                   <div className="mb-0.5">Осталось времени</div>
-                  <div className="font-mono text-white">
+                  <div className="font-mono text-foreground">
                     {isOverdue ? `+${formatDuration(state.elapsedSeconds - timer.dueAtElapsed)}` : formatDuration(remainingSeconds)}
                   </div>
                 </div>
               </div>
 
               <div className="mt-3">
-                <div className="mb-1 flex items-center justify-between text-[11px] text-[#9fb2cd]">
+                <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
                   <span>Срочность</span>
                   <span>{timer.label}</span>
                 </div>
-                <div className="h-2 rounded-full bg-[#0f1724]">
+                <div className="h-2 rounded-full bg-background">
                   <div
                     className="h-full rounded-full transition-all"
                     style={{ width: `${progress}%`, backgroundColor: tone.accent }}
