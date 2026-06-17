@@ -36,6 +36,7 @@ export function StructuredOptionsEditor({
   cycleOptions?: Array<{ value: string; label: string }>;
   currentCycleId?: string;
 }) {
+  const [openOption, setOpenOption] = useState<number>(0);
   const previewData = useMemo(() => {
     const profile = buildOptionCompetencyProfile(options);
     return competencies
@@ -72,7 +73,9 @@ export function StructuredOptionsEditor({
   };
 
   const addOption = () => {
-    onChange([...(options || []), createEmptyStructuredOption((options?.length || 0) + 1)]);
+    const nextIndex = options?.length || 0;
+    onChange([...(options || []), createEmptyStructuredOption(nextIndex + 1)]);
+    setOpenOption(nextIndex);
   };
 
   const removeOption = (index: number) => {
@@ -91,12 +94,24 @@ export function StructuredOptionsEditor({
       <div className="space-y-3">
         {(options || []).map((option, index) => (
           <div key={`${option.id || "option"}-${index}`} className="dns-admin-option-card rounded-xl border border-[#243244] bg-[#101826]/60 p-3">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="text-sm font-semibold text-white">Вариант {index + 1}</div>
-              <Button type="button" size="sm" variant="outline" className="border-[#ff4444]/30 bg-transparent text-[#ff9999]" onClick={() => removeOption(index)}>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setOpenOption((cur) => (cur === index ? -1 : index))}
+                className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                aria-expanded={openOption === index}
+              >
+                <span className="text-[11px] text-[#8ec5ff]">{openOption === index ? "▾" : "▸"}</span>
+                <span className="shrink-0 text-sm font-semibold text-white">Вариант {index + 1}</span>
+                <span className="shrink-0 rounded-full border border-[#2a3a4e] bg-[#141c2b]/70 px-2 py-0.5 text-[11px] font-semibold text-[#54d28c]">{Number(option.score) || 0}/5</span>
+                <span className="min-w-0 flex-1 truncate text-[11px] text-[#8aa2c4]">{option.text || "Без текста"}</span>
+              </button>
+              <Button type="button" size="sm" variant="outline" className="shrink-0 border-[#ff4444]/30 bg-transparent text-[#ff9999]" onClick={() => removeOption(index)}>
                 Удалить
               </Button>
             </div>
+            {openOption === index && (
+            <div className="mt-3">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-lg border border-[#243244] bg-[#0d1522]/70 px-3 py-2">
                 <div className="text-[10px] uppercase tracking-[0.16em] text-[#70829d]">Позиция варианта</div>
@@ -198,6 +213,8 @@ export function StructuredOptionsEditor({
                 })}
               </div>
             </div>
+            </div>
+            )}
           </div>
         ))}
       </div>
