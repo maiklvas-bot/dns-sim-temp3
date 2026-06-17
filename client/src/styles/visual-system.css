@@ -1136,6 +1136,7 @@ html[data-dns-theme="light"] .dns-access-dialog [class*="bg-[#141c2b"] {
   z-index: 12;
   display: grid;
   justify-items: center;
+  gap: 0.5rem;
   text-align: center;
 }
 
@@ -1154,11 +1155,13 @@ html[data-dns-theme="light"] .dns-access-dialog [class*="bg-[#141c2b"] {
 
 .dns-home-header__copy p {
   max-width: 43rem;
-  margin-top: -0.3rem;
+  margin-top: 0;
+  margin-inline: auto;
   color: #c1ccdc;
-  font-size: clamp(0.76rem, 0.85vw, 0.94rem);
-  font-weight: 550;
-  line-height: 1.45;
+  font-size: clamp(0.8rem, 0.85vw, 0.95rem);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.74);
 }
 

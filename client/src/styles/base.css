@@ -313,7 +313,7 @@
   overflow: hidden;
   color: #ffffff;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.01em;
   line-height: 1.08;
   text-overflow: ellipsis;
@@ -432,7 +432,7 @@
   overflow: hidden;
   color: #fff;
   font-size: 0.8rem;
-  font-weight: 950;
+  font-weight: 800;
   line-height: 1.08;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -457,7 +457,7 @@
   color: var(--zone-accent);
   padding: 0.22rem 0.34rem;
   font-size: 0.54rem;
-  font-weight: 950;
+  font-weight: 800;
   line-height: 1;
   text-transform: uppercase;
 }
@@ -477,7 +477,7 @@
 .dns-store-map-kpi strong {
   color: #fff;
   font-size: 1rem;
-  font-weight: 950;
+  font-weight: 800;
   line-height: 1;
 }
 
@@ -580,9 +580,11 @@
 
 /* DNS Store Dark Theme — Dark charcoal/navy with orange accents */
 :root {
-  /* Флюидный корень: вся rem-система плавно масштабируется под ширину вьюпорта
-     (≈14px на узких → 18px на широких). Закрывает разные разрешения и зум 60–120%. */
-  font-size: clamp(0.875rem, 0.55vw + 0.8rem, 1.125rem);
+  /* Корневой размер: на десктопе ровно 16px (как проектировались плотные макеты —
+     ничего не раздувается), на узких экранах плавно уменьшается. Потолок = 1rem,
+     чтобы rem-система НЕ росла выше базовой и не ломала фиксированные блоки.
+     Реконфигурация под разрешение делается брейкпоинтами/контейнер-квери, а не зумом. */
+  font-size: clamp(0.875rem, 0.45vw + 0.74rem, 1rem);
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
   --opaque-button-border-intensity: 9;
