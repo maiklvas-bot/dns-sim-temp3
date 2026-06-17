@@ -439,15 +439,17 @@
 }
 
 .dns-store-map-card-detail {
-  display: block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
   margin-top: 0.18rem;
   color: var(--zone-text);
   font-size: 0.6rem;
-  font-weight: 800;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: 650;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .dns-store-map-card-badge {
