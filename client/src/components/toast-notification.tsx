@@ -69,17 +69,17 @@ export default function ToastNotifications() {
       {visibleToasts.map(toast => (
         <div
           key={toast.id}
-          className="toast-enter rounded-lg border border-[#FF6B00]/40 bg-[#1e2a3af0] backdrop-blur-md p-3 shadow-xl"
+          className="toast-enter rounded-lg border border-[#FF6B00]/40 bg-card/95 backdrop-blur-md p-3 shadow-xl"
           data-testid={`toast-${toast.id}`}
         >
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-white">{toast.title}</div>
-              <div className="text-xs text-[#8890a8] mt-0.5">{toast.source}</div>
+              <div className="text-sm font-medium text-foreground">{toast.title}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{toast.source}</div>
             </div>
             <button
               onClick={() => dispatch({ type: "DISMISS_TOAST", payload: toast.id })}
-              className="text-[#555570] hover:text-white transition-colors flex-shrink-0"
+              className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
             >
               <X className="w-4 h-4" />
             </button>
@@ -100,7 +100,7 @@ export default function ToastNotifications() {
                 }
                 dispatch({ type: "SNOOZE_SIGNAL", payload: toast.signalId });
               }}
-              className="px-3 py-1.5 rounded border border-[#2a3a4e] text-[#8890a8] text-xs hover:border-[#3a4a5e] hover:text-white transition-colors"
+              className="px-3 py-1.5 rounded border border-border text-muted-foreground text-xs hover:border-border hover:text-foreground transition-colors"
             >
               {toast.sourceType === "main_case" ? "Отложить" : "Скрыть"}
             </button>
