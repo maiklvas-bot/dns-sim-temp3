@@ -453,7 +453,7 @@ function TalkingAvatarPlayer({
             <Play className="w-3.5 h-3.5" fill="white" /> Воспроизвести
           </button>
         ) : isPlaying ? (
-          <button onClick={pausePlay} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#1e2a3a] border border-[#2a3a4e] hover:border-[#FF6B00]/40 text-white text-xs transition-all">
+          <button onClick={pausePlay} className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-border hover:border-[#FF6B00]/40 text-foreground text-xs transition-all">
             <Pause className="w-3.5 h-3.5" /> Пауза
           </button>
         ) : isPaused ? (
@@ -462,24 +462,24 @@ function TalkingAvatarPlayer({
           </button>
         ) : null}
 
-        <button onClick={restart} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#1e2a3a] border border-[#2a3a4e] text-[#8890a8] hover:text-white hover:border-[#3a4a5e] text-xs transition-all">
+        <button onClick={restart} className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground hover:border-border text-xs transition-all">
           <RefreshCw className="w-3.5 h-3.5" /> Сначала
         </button>
 
-        <div className="ml-auto text-[11px] text-[#c8d3e7] tabular-nums">{Math.round(progress)}%</div>
+        <div className="ml-auto text-[11px] text-muted-foreground tabular-nums">{Math.round(progress)}%</div>
       </div>
 
       {showSituation && (
         <div className="flex-shrink-0 mx-0 mb-2 p-3 rounded-xl border border-[#FF6B00]/20 bg-[#FF6B00]/5">
           <div className="mb-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#FFD19B]">Ситуация</div>
-          <p className="text-[13px] text-[#eef3ff] leading-relaxed">{vc.situation}</p>
+          <p className="text-[13px] text-foreground leading-relaxed">{vc.situation}</p>
         </div>
       )}
 
       {!isAnswered && (
-        <div className="flex-shrink-0 rounded-xl border border-[#31455f] bg-[#101a29]/80 px-4 py-3">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#c7cfff]">Панель действий</div>
-          <div className="mt-2 text-[13px] leading-relaxed text-[#e1ebfa]">
+        <div className="flex-shrink-0 rounded-xl border border-border bg-background/80 px-4 py-3">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">Панель действий</div>
+          <div className="mt-2 text-[13px] leading-relaxed text-foreground">
             После старта просмотра варианты решения будут доступны в нижней панели действий.
           </div>
         </div>
@@ -532,9 +532,9 @@ export default function VideoMessages({
   if (videos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full py-12 text-center">
-        <Video className="w-12 h-12 text-[#555570] mb-3" />
-        <p className="text-sm text-[#555570]">Видеосообщений нет</p>
-        <p className="text-xs text-[#3a3a50] mt-1">Видео появятся автоматически</p>
+        <Video className="w-12 h-12 text-muted-foreground mb-3" />
+        <p className="text-sm text-muted-foreground">Видеосообщений нет</p>
+        <p className="text-xs text-muted-foreground mt-1">Видео появятся автоматически</p>
       </div>
     );
   }
@@ -555,10 +555,10 @@ export default function VideoMessages({
                 }}
                 className={`flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs transition-all ${
                   active
-                    ? "border-[#a78bfa] bg-[#a78bfa]/10 text-white"
+                    ? "border-[#a78bfa] bg-[#a78bfa]/10 text-foreground"
                     : answered
                     ? "border-[#00d4aa]/30 bg-[#00d4aa]/5 text-[#00d4aa]"
-                    : "border-[#2a3a4e] bg-[#141c2b]/60 text-[#8890a8] hover:border-[#3a4a5e]"
+                    : "border-border bg-card/60 text-muted-foreground hover:border-border"
                 }`}
               >
                 {answered ? <CheckCircle className="w-3 h-3" /> : <Video className="w-3 h-3" />}
