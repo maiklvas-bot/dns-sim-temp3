@@ -42,6 +42,8 @@ import {
   CalendarClock,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ClipboardCheck,
   Eye,
   FileSpreadsheet,
@@ -69,10 +71,13 @@ import {
   Tooltip as RechartsTooltip,
 } from "recharts";
 import { BRAND_ASSETS } from "@/lib/brand-assets";
+import { FeedbackButton } from "@/components/feedback-dialog";
+import { ProductFooter } from "@/components/product-footer";
 import { autoAssignScheduleTimes, buildScheduleRows, getScheduleSourceLabel, type ScheduleRow } from "./schedule/schedule-utils";
 import { ADMIN_NAV_ICONS, ADMIN_VISUALS } from "./admin-constants";
 import type { AdminChannelTab as ChannelTab, AdminTabKey as TabKey, SystemSoundSettingKey } from "./admin-types";
 import { AdminVisualPanel } from "./components/AdminVisualPanel";
+import { AdminWiki } from "./components/AdminWiki";
 import { AdminWikiDialog } from "./components/AdminWikiDialog";
 import { CompetencyRoleSelector, Field, FieldArea, MultiSelectField, SelectField, SuggestField } from "./components/AdminFields";
 import { CompetencyHorizontalImpactChart, type CompetencyImpactDatum } from "./components/CompetencyHorizontalImpactChart";
@@ -1098,6 +1103,17 @@ function createEmptyChat(order: number): ChatInfo {
 export default function AdminPage() {
   const [, navigate] = useLocation();
   const { theme, themeClass, toggleTheme } = useDnsTheme();
+
+  // Параллакс корпоративного фона: фон (position:fixed) мягко смещается вслед за прокруткой.
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY || document.documentElement.scrollTop || 0;
+      document.documentElement.style.setProperty("--dns-bg-shift", `${Math.min(y * 0.045, 28)}px`);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   const [tab, setTab] = useState<TabKey>("dashboard");
   const [channelTab, setChannelTab] = useState<ChannelTab>("email");
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
@@ -1108,6 +1124,8 @@ export default function AdminPage() {
   const [selectedResultId, setSelectedResultId] = useState<number | null>(null);
   const [selectedWeightCaseId, setSelectedWeightCaseId] = useState<string | null>(null);
   const [selectedCaseCycleIndex, setSelectedCaseCycleIndex] = useState(0);
+  const [caseEditorOpen, setCaseEditorOpen] = useState(false);
+  const [showAdminWiki, setShowAdminWiki] = useState(false);
   const [caseWizardOpen, setCaseWizardOpen] = useState(false);
   const [signalWizardOpen, setSignalWizardOpen] = useState(false);
   const [adminWikiOpen, setAdminWikiOpen] = useState(false);
@@ -1291,9 +1309,12 @@ export default function AdminPage() {
     () => (resultDetailQuery.data?.result?.competencyAverages || {}) as Record<string, number>,
     [resultDetailQuery.data],
   );
+  // Синий («Профиль кейса» / статичная база) = базовый (невзвешенный) профиль ВЫБРАННОГО кейса.
+  // Бирюзовый («Регулируемый вклад») = тот же профиль × регулируемый вес (что настроил пользователь).
+  // При весе 100% они совпадают; снижая вес, пользователь видит, как падает фактический вклад.
   const aggregateBarData = useMemo(
-    () => buildCompetencyBarData(competencies, aggregateCompetencyProfile, selectedCaseProfile, selectedCaseWeight),
-    [competencies, aggregateCompetencyProfile, selectedCaseProfile, selectedCaseWeight],
+    () => buildCompetencyBarData(competencies, selectedCaseProfile, selectedCaseProfile, selectedCaseWeight),
+    [competencies, selectedCaseProfile, selectedCaseWeight],
   );
   const radarChartData = useMemo(
     () => buildCompetencyRadarData(competencies, aggregateCompetencyProfile, factCompetencyProfile),
@@ -1319,7 +1340,8 @@ export default function AdminPage() {
 
   // ─── Обзор кабинета (раздел "dashboard") ─────────────────────
   const overviewMetrics = useMemo(() => {
-    const list = (contentQuery.data?.cases || []) as any[];
+    const data = contentQuery.data;
+    const list = (data?.cases || []) as any[];
     const total = list.length;
     const withCycles = list.filter((item) => (item.cycles?.length || 0) > 0).length;
     const noCycles = total - withCycles;
@@ -1329,8 +1351,12 @@ export default function AdminPage() {
       .filter((value) => value > 0);
     const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
     const readiness = total > 0 ? Math.round((withCycles / total) * 100) : 0;
-    return { total, withCycles, noCycles, completed, avg, readiness };
-  }, [contentQuery.data?.cases, completedResults]);
+    const channelSignals = ((data?.emailCases || []) as any[]).length
+      + ((data?.messengerCases || []) as any[]).length
+      + ((data?.videoCases || []) as any[]).length;
+    const mediaCount = ((data?.assets || []) as any[]).length;
+    return { total, withCycles, noCycles, completed, avg, readiness, channelSignals, mediaCount };
+  }, [contentQuery.data, completedResults]);
 
   const overviewReadinessItems = useMemo(() => {
     const items: { tone: "ok" | "warn" | "err"; title: string; note: string; tab?: TabKey }[] = [];
@@ -1351,6 +1377,17 @@ export default function AdminPage() {
         ? { tone: "ok", title: `Компетенций в профиле: ${competencies.length}`, note: "Профиль НАДО рассчитывается по этим компетенциям" }
         : { tone: "err", title: "Профиль компетенций пуст", note: "Заполните компетенции в настройках", tab: "settings" },
     );
+    items.push(
+      overviewMetrics.channelSignals > 0
+        ? { tone: "ok", title: `Сигналов по каналам: ${overviewMetrics.channelSignals}`, note: "Почта, мессенджер и видео настроены", tab: "channels" }
+        : { tone: "warn", title: "Каналы пока пустые", note: "Добавьте сигналы почты/чата/видео для нагрузки", tab: "channels" },
+    );
+    items.push(
+      overviewMetrics.mediaCount > 0
+        ? { tone: "ok", title: `Медиа загружено: ${overviewMetrics.mediaCount}`, note: "Аудио и видео доступны для кейсов", tab: "cases" }
+        : { tone: "warn", title: "Медиа не загружено", note: "Добавьте аудио/видео, иначе сработают fallback-заглушки", tab: "cases" },
+    );
+    items.push({ tone: "ok", title: `Готовность к запуску: ${overviewMetrics.readiness}%`, note: "Доля кейсов с заполненными циклами" });
     return items;
   }, [overviewMetrics, competencies.length]);
   useEffect(() => {
@@ -2135,14 +2172,14 @@ export default function AdminPage() {
     <div
       className={`dns-product-shell dns-admin-shell dns-visual-shell dns-visual-shell--product ${themeClass} relative`}
       style={{
-        backgroundImage: `url(${theme === "light" ? BRAND_ASSETS.backgrounds.productLight : BRAND_ASSETS.backgrounds.productDark})`,
+        backgroundImage: `url(${theme === "light" ? BRAND_ASSETS.backgrounds.cabinetLight : BRAND_ASSETS.backgrounds.cabinetDark})`,
         backgroundSize: "cover",
-        backgroundPosition: "center top",
+        backgroundPosition: "center",
         backgroundAttachment: "fixed",
       }}
     >
-      <BrandVisualBackdrop variant="product" />
-      <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0d1421c9] via-[#16213ef0] to-[#0d1421f7]" />
+      <BrandVisualBackdrop variant="cabinet" />
+      <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0b101966] via-[#0d142199] to-[#0d1421cc]" />
       <div className="dns-page-frame max-w-[1560px]">
         <header className="dns-brand-header dns-admin-header-surface">
           <div className="dns-brand-title">
@@ -2155,25 +2192,19 @@ export default function AdminPage() {
           </div>
           <div className="dns-header-actions dns-admin-header-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <Button
-              variant="outline"
-              className="border-[#19d3ae]/40 bg-[#19d3ae]/10 text-[#aaf7e7]"
-              onClick={() => setAuditHistoryOpen(true)}
-            >
-              <History className="mr-2 h-4 w-4" />
-              История изменений
+            <Button variant="outline" size="sm" onClick={() => setAuditHistoryOpen(true)}>
+              <History className="mr-1.5 h-4 w-4" />
+              История
             </Button>
-            <Button variant="outline" className="border-[#4a9eff]/45 bg-[#4a9eff]/10 text-[#cfe6ff]" onClick={() => setAdminWikiOpen(true)}>
-              <BookOpen className="mr-2 h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={() => setShowAdminWiki(true)}>
+              <BookOpen className="mr-1.5 h-4 w-4" />
               Wiki
             </Button>
-            <div className="inline-flex items-center rounded-full border border-[#FF6B00]/35 bg-[#FF6B00]/12 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
-              Product UI v4.1
-            </div>
-            <Button variant="outline" className="border-[#2a3a4e] text-[#8890a8] bg-transparent" onClick={() => navigate("/evaluator")}>
+            <FeedbackButton size="sm" />
+            <Button variant="outline" size="sm" onClick={() => navigate("/evaluator")}>
               В оценщик
             </Button>
-            <Button variant="outline" className="border-[#2a3a4e] text-[#8890a8] bg-transparent" onClick={async () => { await apiRequest("POST", "/api/staff/logout"); navigate("/staff-login"); }}>
+            <Button variant="outline" size="sm" onClick={async () => { await apiRequest("POST", "/api/staff/logout"); navigate("/staff-login"); }}>
               Выйти
             </Button>
           </div>
@@ -2193,7 +2224,7 @@ export default function AdminPage() {
                   <button
                     key={item}
                     type="button"
-                    onClick={() => setTab(item)}
+                    onClick={() => { setTab(item); setShowAdminWiki(false); }}
                     className={tab === item ? "dns-admin-structure-nav-item dns-admin-structure-nav-item--active" : "dns-admin-structure-nav-item"}
                     title={itemVisual.label}
                   >
@@ -2204,7 +2235,7 @@ export default function AdminPage() {
               })}
             </nav>
             <div className="dns-admin-structure-nav-footer">
-              <button type="button" className="dns-admin-structure-nav-item" onClick={() => setAdminWikiOpen(true)}>
+              <button type="button" className="dns-admin-structure-nav-item" onClick={() => setShowAdminWiki(true)}>
                 <BookOpen aria-hidden="true" />
                 <span>Wiki</span>
               </button>
@@ -2228,25 +2259,28 @@ export default function AdminPage() {
         <AdminWikiDialog open={adminWikiOpen} onOpenChange={setAdminWikiOpen} tab={tab} />
         <AdminAuditHistory open={auditHistoryOpen} onOpenChange={setAuditHistoryOpen} />
 
+        {showAdminWiki ? (
+          <AdminWiki onBack={() => setShowAdminWiki(false)} />
+        ) : (
+        <>
         {tab !== "dashboard" && <AdminVisualPanel visual={activeAdminVisual} />}
 
         {tab === "dashboard" && (
           <div className="dns-admin-overview flex flex-col gap-5">
             {/* Hero */}
-            <section className="dns-admin-overview-hero relative overflow-hidden rounded-2xl border border-[#2b3a55] p-6 2xl:p-7"
-              style={{ background: "radial-gradient(80% 140% at 88% -10%, rgba(255,107,0,0.22), transparent 60%), radial-gradient(70% 120% at 8% 120%, rgba(0,212,170,0.16), transparent 55%), linear-gradient(120deg, #15203a, #0e1626)" }}>
+            <section className="dns-admin-overview-hero relative overflow-hidden rounded-2xl border border-border p-6 2xl:p-7">
               <div className="relative flex items-center gap-6">
                 <div className="flex-1">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#00d4aa]">Центр управления симуляцией</div>
-                  <h2 className="mt-2 text-2xl 2xl:text-[27px] font-black leading-tight text-white">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#FF6B00]">Центр управления симуляцией</div>
+                  <h2 className="mt-2 text-2xl 2xl:text-[27px] font-black leading-tight text-foreground">
                     Здравствуйте, {staffQuery.data?.displayName || "Администратор"}.
                   </h2>
-                  <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-[#b9c6dc]">
+                  <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-muted-foreground">
                     Базовый профиль компетенций задан. Дальше вы настраиваете кейсы, веса и параметры — и сразу видите, как это меняет оценку.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-3">
                     <Button onClick={() => setTab("cases")} className="bg-[#FF6B00] text-white hover:bg-[#FF6B00]/90">Перейти к кейсам</Button>
-                    <Button variant="outline" className="border-white/16 bg-white/6 text-white hover:bg-white/12" onClick={openCaseWizard}>Создать кейс</Button>
+                    <Button variant="outline" onClick={openCaseWizard}>Создать кейс</Button>
                   </div>
                 </div>
                 <img src={ADMIN_VISUALS.dashboard.primarySrc} alt={ADMIN_VISUALS.dashboard.primaryAlt}
@@ -2272,8 +2306,8 @@ export default function AdminPage() {
             </div>
 
             {/* Row: что проверить + радар */}
-            <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.4fr_1fr] items-start">
-              <section className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-5 backdrop-blur">
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.4fr_1fr] items-stretch">
+              <section className="flex flex-col rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-5 backdrop-blur">
                 <div className="flex items-center gap-2">
                   <ClipboardCheck className="h-4 w-4 text-[#FF6B00]" />
                   <h3 className="text-sm font-black text-white">Что проверить до запуска</h3>
@@ -2303,6 +2337,13 @@ export default function AdminPage() {
                   <h3 className="text-sm font-black text-white">Профиль компетенций</h3>
                   <span className="ml-auto rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-2.5 py-0.5 text-[10px] font-semibold text-[#8aa2c4]">НАДО / ФАКТ</span>
                 </div>
+                <p className="mt-1.5 text-[11.5px] leading-relaxed text-[#8aa2c4]">
+                  <span className="font-semibold text-[#4a9eff]">НАДО</span> — базовый ожидаемый профиль по текущим кейсам (статичен).{" "}
+                  <span className="font-semibold text-[#00d4aa]">ФАКТ</span> —{" "}
+                  {overviewMetrics.completed > 0
+                    ? `средний уровень по ${overviewMetrics.completed} завершённым прохождениям.`
+                    : "появится, когда будут завершённые прохождения."}
+                </p>
                 <div className="mt-2 h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart data={radarChartData} outerRadius="70%">
@@ -2322,7 +2363,8 @@ export default function AdminPage() {
         )}
 
         {tab === "cases" && (
-          <div className="dns-mobile-stack dns-admin-main-grid dns-admin-cases-layout grid gap-5 2xl:gap-6 items-start">
+          <>
+          <div className="dns-admin-cases-list-view">
             <div className="dns-admin-case-nav rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 flex flex-col">
               <div className="dns-admin-case-nav-header flex items-center justify-between mb-3">
                 <div className="text-sm font-semibold text-white">Основные кейсы</div>
@@ -2340,48 +2382,13 @@ export default function AdminPage() {
                 {contentQuery.data.cases.map((item: SimCase, index: number) => (
                   <div key={item.id} className={`dns-admin-case-list-item w-full rounded-lg border px-3 py-2 ${selectedCaseId === item.id ? "dns-admin-case-list-item--active border-[#FF6B00] bg-[#FF6B00]/10" : "border-[#2a3a4e]"}`}>
                     <div className="dns-admin-case-order-index" aria-hidden="true">{index + 1}</div>
-                    <button onClick={() => setSelectedCaseId(item.id)} className="dns-admin-case-list-main w-full text-left">
+                    <button onClick={() => { setSelectedCaseId(item.id); setCaseEditorOpen(true); }} className="dns-admin-case-list-main w-full text-left" title="Открыть редактор кейса">
                       <div className="dns-admin-case-list-title text-sm text-white">{item.title || item.id}</div>
                       <div className="dns-admin-case-list-meta text-xs text-[#8890a8]">{item.id}</div>
                     </button>
                   </div>
                 ))}
               </div>
-              {caseDraft && (
-                <div className="mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">Циклы кейса</div>
-                      <div className="mt-1 text-[11px] text-[#8aa2c4]">{caseDraft.cycles?.length || 0} событий внутри выбранного кейса</div>
-                    </div>
-                    <span className="rounded-full border border-[#2a3a4e] bg-[#141c2b] px-2 py-1 text-[10px] text-[#cbd8ef]">
-                      Вкладка
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {(caseDraft.cycles || []).map((cycle, index) => (
-                      <button
-                        key={`${cycle.id || "cycle"}-${index}`}
-                        type="button"
-                        onClick={() => setSelectedCaseCycleIndex(index)}
-                        className={`w-full rounded-lg border px-3 py-2 text-left transition ${
-                          selectedCaseCycleIndex === index
-                            ? "border-[#4a9eff] bg-[#4a9eff]/12"
-                            : "border-[#2a3a4e] bg-[#0d1522]/70 hover:border-[#3b5878]"
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-white">Цикл {index + 1}</span>
-                          <span className="text-[10px] text-[#8aa2c4]">{(cycle.options || []).length} отв.</span>
-                        </div>
-                        <div className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8aa2c4]">
-                          {cycle.situation || cycle.signal?.content || "Пустой цикл"}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
               <div className="dns-admin-case-note mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">Методическое пояснение</div>
                 <div className="mt-3 space-y-3 text-sm leading-relaxed text-[#cbd8ef]">
@@ -2391,8 +2398,16 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
-            <div className="dns-admin-case-workspace grid gap-5 min-[1900px]:grid-cols-[minmax(920px,1fr),380px] min-[1900px]:gap-6 items-start">
-              <div className="dns-admin-case-editor-panel min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5">
+          </div>
+
+          <Dialog open={caseEditorOpen} onOpenChange={setCaseEditorOpen}>
+            <DialogContent className={`dns-product-shell dns-admin-shell ${themeClass} flex h-[92vh] max-h-[92vh] w-[96vw] max-w-[1500px] flex-col gap-0 overflow-hidden p-0`}>
+              <DialogHeader className="space-y-0.5 border-b border-border px-5 py-3.5 text-left">
+                <DialogTitle className="text-[15px]">Редактор кейса · {caseDraft?.title || caseDraft?.id || "Новый кейс"}</DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">Слева — настройка кейса, справа — влияние на профиль компетенций (меняется в моменте).</DialogDescription>
+              </DialogHeader>
+              <div className="dns-admin-case-workspace grid flex-1 gap-5 overflow-hidden p-5 lg:grid-cols-[minmax(0,1fr),360px]">
+                <div className="dns-admin-case-editor-panel min-w-0 overflow-y-auto rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 custom-scroll">
                 {caseDraft && (
                   <EntityEditor
                     title="Редактор кейса"
@@ -2418,7 +2433,7 @@ export default function AdminPage() {
                   />
                 )}
               </div>
-              <div className="dns-admin-case-impact-panel min-w-0 rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4 min-[1900px]:sticky min-[1900px]:top-4 min-[1900px]:max-h-[calc(100vh-2rem)] min-[1900px]:overflow-y-auto min-[1900px]:overflow-x-hidden min-[1900px]:p-5 min-[1900px]:pr-4 custom-scroll">
+              <div className="dns-admin-case-impact-panel min-w-0 overflow-y-auto rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4 2xl:p-5 custom-scroll">
                 <div className="text-sm font-semibold text-white">Влияние выбранного кейса</div>
                 <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
                   Этот блок фиксирован рядом с редактором и показывает, как текущая настройка кейса влияет на ожидаемый профиль компетенций.
@@ -2522,8 +2537,10 @@ export default function AdminPage() {
                   </div>
                 )}
               </div>
-            </div>
-          </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+          </>
         )}
 
         {tab === "channels" && (
@@ -2536,7 +2553,7 @@ export default function AdminPage() {
               ))}
             </div>
             {channelTab === "email" && (
-              <div className="grid gap-5 xl:grid-cols-[300px,minmax(680px,1fr)] 2xl:grid-cols-[320px,minmax(760px,1fr),380px] 2xl:gap-6">
+              <div className="grid gap-5 xl:grid-cols-[280px,minmax(0,1fr)] 2xl:grid-cols-[300px,minmax(0,1fr),340px] 2xl:gap-6">
                 <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full">
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-sm font-semibold text-white">Письма</div>
@@ -2603,7 +2620,7 @@ export default function AdminPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="grid gap-5 xl:grid-cols-[300px,minmax(680px,1fr)] 2xl:grid-cols-[320px,minmax(760px,1fr),380px] 2xl:gap-6">
+                <div className="grid gap-5 xl:grid-cols-[280px,minmax(0,1fr)] 2xl:grid-cols-[300px,minmax(0,1fr),340px] 2xl:gap-6">
                   <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full">
                     <div className="flex items-center justify-between mb-3">
                       <div className="text-sm font-semibold text-white">Сообщения</div>
@@ -2626,7 +2643,7 @@ export default function AdminPage() {
               </div>
             )}
             {channelTab === "video" && (
-              <div className="grid gap-5 xl:grid-cols-[300px,minmax(680px,1fr)] 2xl:grid-cols-[320px,minmax(760px,1fr),380px] 2xl:gap-6">
+              <div className="grid gap-5 xl:grid-cols-[280px,minmax(0,1fr)] 2xl:grid-cols-[300px,minmax(0,1fr),340px] 2xl:gap-6">
                 <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full">
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-sm font-semibold text-white">Видео</div>
@@ -3234,13 +3251,11 @@ export default function AdminPage() {
                           </div>
                         </div>
 
-                        {insight.leaderNotes.length > 0 && (
-                          <div className="dns-comparison-leader-notes">
-                            {insight.leaderNotes.map((item) => (
-                              <span key={item}>{item}</span>
-                            ))}
-                          </div>
-                        )}
+                        <div className="dns-comparison-leader-notes">
+                          {insight.leaderNotes.map((item) => (
+                            <span key={item}>{item}</span>
+                          ))}
+                        </div>
 
                         <div className="dns-comparison-risk-block">
                           <span>Риски</span>
@@ -3803,8 +3818,11 @@ export default function AdminPage() {
             )}
           </div>
         )}
+        </>
+        )}
           </main>
         </div>
+        <ProductFooter />
       </div>
     </div>
   );
