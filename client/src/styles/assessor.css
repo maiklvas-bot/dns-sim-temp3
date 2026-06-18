@@ -4,6 +4,80 @@
   background: linear-gradient(180deg, rgba(246, 249, 253, 0.55), rgba(236, 242, 249, 0.74), rgba(229, 236, 246, 0.86)) !important;
 }
 
+/* ============================================================
+   GRAVITY UI — кабинет оценщика (scoped на .dns-assessor-shell).
+   light = чистый Gravity (белые поверхности, нейтральные серые),
+   dark  = Gravity-dark (нейтральный charcoal). Спецификсность 3 класса
+   перекрывает базовые .dns-product-shell .dns-assessor-v2-* (2 класса).
+   ============================================================ */
+
+/* — Семантические токены (для shadcn-примитивов и border-border/text-foreground) — */
+.dns-product-shell.dns-assessor-shell.dns-theme-light {
+  --background: 210 20% 98%; --foreground: 0 0% 11%;
+  --card: 0 0% 100%; --card-foreground: 0 0% 11%; --card-border: 220 13% 91%;
+  --popover: 0 0% 100%; --popover-foreground: 0 0% 11%;
+  --muted: 220 14% 96%; --muted-foreground: 0 0% 42%;
+  --secondary: 220 14% 96%; --border: 220 13% 90%; --input: 220 13% 86%;
+  --radius: 0.5rem;
+}
+.dns-product-shell.dns-assessor-shell.dns-theme-dark {
+  --foreground: 0 0% 92%;
+  --card: 220 9% 14%; --card-foreground: 0 0% 92%; --card-border: 0 0% 24%;
+  --popover: 220 9% 14%; --popover-foreground: 0 0% 92%;
+  --muted: 220 8% 18%; --muted-foreground: 0 0% 62%;
+  --secondary: 220 8% 20%; --border: 0 0% 24%; --input: 0 0% 26%; --radius: 0.5rem;
+}
+
+/* — Тёмная: charcoal-поверхности — */
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-rail {
+  background: linear-gradient(180deg, rgba(28, 31, 38, 0.96), rgba(22, 25, 31, 0.96)) !important;
+  border-right-color: rgba(255, 255, 255, 0.08) !important;
+}
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-panel,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-main-panel,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-side-card,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-info-card,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-launch-result,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-candidate-summary {
+  background: rgba(34, 38, 45, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-side-field,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-input,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-check-row,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-chip-row,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-session-row,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-mode-note,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-setup-tabs {
+  background: rgba(0, 0, 0, 0.22) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* — Светлая: белые/нейтральные поверхности — */
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-rail {
+  background: linear-gradient(180deg, #ffffff, #f6f8fb) !important;
+  border-right-color: rgba(0, 0, 0, 0.08) !important;
+}
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-panel,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-main-panel,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-side-card,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-info-card,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-launch-result,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-candidate-summary {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-side-field,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-input,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-check-row,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-chip-row,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-session-row,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-mode-note,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-setup-tabs {
+  background: rgba(0, 0, 0, 0.035) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
 /* Assessor WIKI: separate help surface for setup dependencies and process flow. */
 .dns-product-shell .dns-assessor-wiki-entry {
   display: flex;
