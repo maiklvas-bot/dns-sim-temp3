@@ -766,7 +766,15 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   };
 
   const isSetupPanel = activePanel === "scenario" || activePanel === "composition" || activePanel === "review";
-  const railItems: Array<{
+  // Гид по заполнению: порядок шагов настройки и их готовность.
+  const setupStepReady = setupProgress === 4;
+  const readyByPanel: Partial<Record<AssessorPanel, boolean>> = {
+    participant: participantReady,
+    scenario: setupStepReady,
+  };
+  const fillOrder: AssessorPanel[] = ["participant", "scenario"];
+  const nextToFill = fillOrder.find((id) => !readyByPanel[id]);
+  const baseRailItems: Array<{
     id: AssessorPanel;
     title: string;
     state: string;
@@ -778,6 +786,12 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     { id: "sessions", title: "Активные сессии", state: `${monitorSessions.filter((item) => item.status !== "completed").length}`, icon: Activity, active: activePanel === "sessions" },
     { id: "results", title: "Результаты", state: `${completedSessionCount}`, icon: BarChart3, active: activePanel === "results" },
   ];
+  const railItems = baseRailItems.map((item) => ({
+    ...item,
+    ready: readyByPanel[item.id] === true,
+    // Пульс — у следующего незаполненного шага, если пользователь не находится на нём.
+    pulse: item.id === nextToFill && !item.active,
+  }));
 
   const renderRail = () => (
     <nav className="dns-assessor-v2-rail" aria-label="Разделы меню оценщика">
@@ -791,6 +805,8 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         const className = [
           "dns-assessor-v2-rail-item",
           item.active ? "dns-assessor-v2-rail-item--active" : "",
+          item.ready ? "dns-assessor-v2-rail-item--ready" : "",
+          item.pulse ? "dns-assessor-v2-rail-item--pulse" : "",
         ].filter(Boolean).join(" ");
 
         return (

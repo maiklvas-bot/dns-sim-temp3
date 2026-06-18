@@ -51,7 +51,6 @@
 .dns-assessor-shell.dns-theme-dark .dns-assessor-v2-side-field,
 .dns-assessor-shell.dns-theme-dark .dns-assessor-v2-input,
 .dns-assessor-shell.dns-theme-dark .dns-assessor-v2-check-row,
-.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-chip-row,
 .dns-assessor-shell.dns-theme-dark .dns-assessor-v2-session-row,
 .dns-assessor-shell.dns-theme-dark .dns-assessor-v2-mode-note,
 .dns-assessor-shell.dns-theme-dark .dns-assessor-v2-setup-tabs,
@@ -87,7 +86,6 @@
 .dns-assessor-shell.dns-theme-light .dns-assessor-v2-side-field,
 .dns-assessor-shell.dns-theme-light .dns-assessor-v2-input,
 .dns-assessor-shell.dns-theme-light .dns-assessor-v2-check-row,
-.dns-assessor-shell.dns-theme-light .dns-assessor-v2-chip-row,
 .dns-assessor-shell.dns-theme-light .dns-assessor-v2-session-row,
 .dns-assessor-shell.dns-theme-light .dns-assessor-v2-mode-note,
 .dns-assessor-shell.dns-theme-light .dns-assessor-v2-setup-tabs,
@@ -121,6 +119,51 @@
 }
 .dns-product-shell.dns-assessor-shell .dns-product-footer {
   margin-top: 0;
+}
+
+/* — Ровный вертикальный ритм панели настройки (блоки не «прилипают») — */
+.dns-product-shell.dns-assessor-shell .dns-assessor-v2-main-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.dns-product-shell.dns-assessor-shell .dns-assessor-v2-main-panel > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* — Гид по заполнению: текущее меню (готово) — зелёный неон, следующее — пульс — */
+.dns-product-shell.dns-assessor-shell .dns-assessor-v2-rail-item--ready {
+  border-color: rgba(53, 211, 138, 0.55) !important;
+  box-shadow: 0 0 0 1px rgba(53, 211, 138, 0.35), 0 0 14px rgba(53, 211, 138, 0.22);
+}
+.dns-product-shell.dns-assessor-shell .dns-assessor-v2-rail-item--ready .dns-assessor-v2-rail-count {
+  color: #35d38a;
+}
+.dns-product-shell.dns-assessor-shell .dns-assessor-v2-rail-item--pulse {
+  animation: dns-rail-pulse 1.7s ease-in-out infinite;
+  will-change: transform, box-shadow;
+}
+@keyframes dns-rail-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(94, 177, 255, 0); }
+  50% { transform: scale(1.045); box-shadow: 0 0 0 1px rgba(94, 177, 255, 0.5), 0 0 16px rgba(94, 177, 255, 0.3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dns-product-shell.dns-assessor-shell .dns-assessor-v2-rail-item--pulse {
+    animation: none;
+    box-shadow: 0 0 0 1px rgba(94, 177, 255, 0.5), 0 0 16px rgba(94, 177, 255, 0.3);
+  }
+}
+
+/* — Выбор в группе карточек: выбранная ярче, остальные приглушены — */
+.dns-product-shell.dns-assessor-shell .dns-assessor-v2-card-grid:has(.dns-assessor-v2-choice-card--active) .dns-assessor-v2-choice-card:not(.dns-assessor-v2-choice-card--active) {
+  opacity: 0.5;
+  filter: saturate(0.72);
+  transition: opacity 200ms ease, filter 200ms ease;
+}
+.dns-product-shell.dns-assessor-shell .dns-assessor-v2-card-grid:has(.dns-assessor-v2-choice-card--active) .dns-assessor-v2-choice-card:not(.dns-assessor-v2-choice-card--active):hover {
+  opacity: 0.85;
+  filter: none;
 }
 
 /* Assessor WIKI: separate help surface for setup dependencies and process flow. */
