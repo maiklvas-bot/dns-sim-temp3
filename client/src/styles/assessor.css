@@ -100,9 +100,27 @@
   border-color: rgba(0, 0, 0, 0.1) !important;
 }
 
-/* Меню (рейл) и кабинет тянутся до низа — shell заполняет высоту вьюпорта. */
+/* Кабинет оценщика — app-shell на всю высоту: шапка сверху, центральный блок
+   заполняет всё пространство, футер внизу без зазора (а не min-height-угадайка). */
+.dns-product-shell.dns-assessor-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+.dns-product-shell.dns-assessor-shell .dns-assessor-v2-frame {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
 .dns-product-shell.dns-assessor-shell .dns-assessor-v2-shell {
-  min-height: calc(100vh - 9.5rem) !important;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.dns-product-shell.dns-assessor-shell .dns-product-footer {
+  margin-top: 0;
 }
 
 /* Assessor WIKI: separate help surface for setup dependencies and process flow. */
