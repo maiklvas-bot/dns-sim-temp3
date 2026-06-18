@@ -42,6 +42,7 @@ import {
   CalendarClock,
   CheckCircle2,
   ChevronDown,
+  ClipboardCheck,
   Eye,
   FileSpreadsheet,
   History,
@@ -52,6 +53,7 @@ import {
   Radio,
   Save,
   Settings,
+  Sparkles,
   Trash2,
   Workflow,
   X,
@@ -66,7 +68,7 @@ import {
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
 } from "recharts";
-import storeBg from "@assets/store_bg.png";
+import { BRAND_ASSETS } from "@/lib/brand-assets";
 import { autoAssignScheduleTimes, buildScheduleRows, getScheduleSourceLabel, type ScheduleRow } from "./schedule/schedule-utils";
 import { ADMIN_NAV_ICONS, ADMIN_VISUALS } from "./admin-constants";
 import type { AdminChannelTab as ChannelTab, AdminTabKey as TabKey, SystemSoundSettingKey } from "./admin-types";
@@ -1096,7 +1098,7 @@ function createEmptyChat(order: number): ChatInfo {
 export default function AdminPage() {
   const [, navigate] = useLocation();
   const { theme, themeClass, toggleTheme } = useDnsTheme();
-  const [tab, setTab] = useState<TabKey>("cases");
+  const [tab, setTab] = useState<TabKey>("dashboard");
   const [channelTab, setChannelTab] = useState<ChannelTab>("email");
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
@@ -1314,6 +1316,43 @@ export default function AdminPage() {
     () => new Set(completedResults.map((item) => Number(item.id))),
     [completedResults],
   );
+
+  // ─── Обзор кабинета (раздел "dashboard") ─────────────────────
+  const overviewMetrics = useMemo(() => {
+    const list = (contentQuery.data?.cases || []) as any[];
+    const total = list.length;
+    const withCycles = list.filter((item) => (item.cycles?.length || 0) > 0).length;
+    const noCycles = total - withCycles;
+    const completed = completedResults.length;
+    const scores = completedResults
+      .map((item) => Number(item.report?.overallAvg ?? item.averageScore ?? 0))
+      .filter((value) => value > 0);
+    const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+    const readiness = total > 0 ? Math.round((withCycles / total) * 100) : 0;
+    return { total, withCycles, noCycles, completed, avg, readiness };
+  }, [contentQuery.data?.cases, completedResults]);
+
+  const overviewReadinessItems = useMemo(() => {
+    const items: { tone: "ok" | "warn" | "err"; title: string; note: string; tab?: TabKey }[] = [];
+    if (overviewMetrics.total === 0) {
+      items.push({ tone: "err", title: "Нет ни одного кейса", note: "Создайте первый кейс, чтобы запустить симуляцию", tab: "cases" });
+    } else if (overviewMetrics.noCycles > 0) {
+      items.push({ tone: "warn", title: `Кейсы без циклов: ${overviewMetrics.noCycles}`, note: "Без циклов кейс нельзя пройти — добавьте события", tab: "cases" });
+    } else {
+      items.push({ tone: "ok", title: "У всех кейсов есть циклы", note: `${overviewMetrics.withCycles} из ${overviewMetrics.total}` });
+    }
+    items.push(
+      overviewMetrics.completed > 0
+        ? { tone: "ok", title: `Завершённых прохождений: ${overviewMetrics.completed}`, note: "Есть данные для проверки оценки", tab: "results" }
+        : { tone: "warn", title: "Нет завершённых прохождений", note: "Проведите тестовый прогон, чтобы проверить настройку", tab: "results" },
+    );
+    items.push(
+      competencies.length > 0
+        ? { tone: "ok", title: `Компетенций в профиле: ${competencies.length}`, note: "Профиль НАДО рассчитывается по этим компетенциям" }
+        : { tone: "err", title: "Профиль компетенций пуст", note: "Заполните компетенции в настройках", tab: "settings" },
+    );
+    return items;
+  }, [overviewMetrics, competencies.length]);
   useEffect(() => {
     if (tab !== "comparison") {
       return;
@@ -2094,16 +2133,16 @@ export default function AdminPage() {
 
   return (
     <div
-      className={`dns-product-shell dns-visual-shell dns-visual-shell--product ${themeClass} relative`}
+      className={`dns-product-shell dns-admin-shell dns-visual-shell dns-visual-shell--product ${themeClass} relative`}
       style={{
-        backgroundImage: `url(${storeBg})`,
+        backgroundImage: `url(${theme === "light" ? BRAND_ASSETS.backgrounds.productLight : BRAND_ASSETS.backgrounds.productDark})`,
         backgroundSize: "cover",
-        backgroundPosition: "center",
+        backgroundPosition: "center top",
         backgroundAttachment: "fixed",
       }}
     >
       <BrandVisualBackdrop variant="product" />
-      <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0d1421ef] via-[#16213ef5] to-[#0d1421f7]" />
+      <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0d1421c9] via-[#16213ef0] to-[#0d1421f7]" />
       <div className="dns-page-frame max-w-[1560px]">
         <header className="dns-brand-header dns-admin-header-surface">
           <div className="dns-brand-title">
@@ -2147,7 +2186,7 @@ export default function AdminPage() {
               <strong>Управление</strong>
             </div>
             <nav>
-              {(["cases", "channels", "schedule", "results", "comparison", "settings"] as TabKey[]).map((item) => {
+              {(["dashboard", "cases", "channels", "schedule", "results", "comparison", "settings"] as TabKey[]).map((item) => {
                 const itemVisual = ADMIN_VISUALS[item];
                 const ItemIcon = ADMIN_NAV_ICONS[item];
                 return (
@@ -2189,7 +2228,98 @@ export default function AdminPage() {
         <AdminWikiDialog open={adminWikiOpen} onOpenChange={setAdminWikiOpen} tab={tab} />
         <AdminAuditHistory open={auditHistoryOpen} onOpenChange={setAuditHistoryOpen} />
 
-        <AdminVisualPanel visual={activeAdminVisual} />
+        {tab !== "dashboard" && <AdminVisualPanel visual={activeAdminVisual} />}
+
+        {tab === "dashboard" && (
+          <div className="dns-admin-overview flex flex-col gap-5">
+            {/* Hero */}
+            <section className="dns-admin-overview-hero relative overflow-hidden rounded-2xl border border-[#2b3a55] p-6 2xl:p-7"
+              style={{ background: "radial-gradient(80% 140% at 88% -10%, rgba(255,107,0,0.22), transparent 60%), radial-gradient(70% 120% at 8% 120%, rgba(0,212,170,0.16), transparent 55%), linear-gradient(120deg, #15203a, #0e1626)" }}>
+              <div className="relative flex items-center gap-6">
+                <div className="flex-1">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#00d4aa]">Центр управления симуляцией</div>
+                  <h2 className="mt-2 text-2xl 2xl:text-[27px] font-black leading-tight text-white">
+                    Здравствуйте, {staffQuery.data?.displayName || "Администратор"}.
+                  </h2>
+                  <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-[#b9c6dc]">
+                    Базовый профиль компетенций задан. Дальше вы настраиваете кейсы, веса и параметры — и сразу видите, как это меняет оценку.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <Button onClick={() => setTab("cases")} className="bg-[#FF6B00] text-white hover:bg-[#FF6B00]/90">Перейти к кейсам</Button>
+                    <Button variant="outline" className="border-white/16 bg-white/6 text-white hover:bg-white/12" onClick={openCaseWizard}>Создать кейс</Button>
+                  </div>
+                </div>
+                <img src={ADMIN_VISUALS.dashboard.primarySrc} alt={ADMIN_VISUALS.dashboard.primaryAlt}
+                  className="hidden h-[150px] w-auto select-none object-contain drop-shadow-[0_14px_30px_rgba(0,212,170,0.35)] lg:block" />
+              </div>
+            </section>
+
+            {/* KPI */}
+            <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+              {[
+                { label: "Кейсов в библиотеке", value: String(overviewMetrics.total), accent: "rgba(255,107,0,0.5)", hint: `${overviewMetrics.withCycles} с циклами` },
+                { label: "Завершённых прохождений", value: String(overviewMetrics.completed), accent: "rgba(0,212,170,0.5)", hint: "за всё время" },
+                { label: "Средний балл", value: overviewMetrics.avg > 0 ? overviewMetrics.avg.toFixed(1) : "—", accent: "rgba(74,158,255,0.5)", hint: "по завершённым" },
+                { label: "Готовность кейсов", value: `${overviewMetrics.readiness}%`, accent: "rgba(255,193,7,0.5)", hint: overviewMetrics.noCycles > 0 ? `${overviewMetrics.noCycles} без циклов` : "все с циклами" },
+              ].map((kpi) => (
+                <div key={kpi.label} className="relative overflow-hidden rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-4 backdrop-blur">
+                  <div className="absolute -right-7 -top-7 h-28 w-28 rounded-full opacity-50" style={{ background: `radial-gradient(circle, ${kpi.accent}, transparent 70%)` }} />
+                  <div className="relative text-[11px] font-semibold uppercase tracking-[0.06em] text-[#8890a8]">{kpi.label}</div>
+                  <div className="relative mt-2 text-[30px] font-black leading-none tabular-nums text-white">{kpi.value}</div>
+                  <div className="relative mt-1.5 text-[11px] font-semibold text-[#8aa2c4]">{kpi.hint}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Row: что проверить + радар */}
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.4fr_1fr] items-start">
+              <section className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-5 backdrop-blur">
+                <div className="flex items-center gap-2">
+                  <ClipboardCheck className="h-4 w-4 text-[#FF6B00]" />
+                  <h3 className="text-sm font-black text-white">Что проверить до запуска</h3>
+                  <span className="ml-auto rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-2.5 py-0.5 text-[10px] font-semibold text-[#8aa2c4]">{overviewReadinessItems.length} пунктов</span>
+                </div>
+                <div className="mt-4 flex flex-col gap-2.5">
+                  {overviewReadinessItems.map((it, i) => (
+                    <div key={i} className="flex items-center gap-3 rounded-lg border border-[#243244] bg-[#101826]/55 px-3 py-2.5">
+                      <span className={`flex h-6 w-6 flex-none items-center justify-center rounded-md text-[13px] font-black ${
+                        it.tone === "ok" ? "bg-[#00d4aa]/16 text-[#00d4aa]" : it.tone === "warn" ? "bg-[#ffc107]/16 text-[#ffc107]" : "bg-[#ff4444]/16 text-[#ff4444]"
+                      }`}>{it.tone === "ok" ? "✓" : it.tone === "warn" ? "▲" : "!"}</span>
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-semibold text-white">{it.title}</div>
+                        <div className="text-[11.5px] text-[#8aa2c4]">{it.note}</div>
+                      </div>
+                      {it.tab && (
+                        <button type="button" onClick={() => setTab(it.tab as TabKey)} className="ml-auto flex-none text-[11.5px] font-bold text-[#FF6B00] hover:underline">Открыть →</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-5 backdrop-blur">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-[#00d4aa]" />
+                  <h3 className="text-sm font-black text-white">Профиль компетенций</h3>
+                  <span className="ml-auto rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-2.5 py-0.5 text-[10px] font-semibold text-[#8aa2c4]">НАДО / ФАКТ</span>
+                </div>
+                <div className="mt-2 h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={radarChartData} outerRadius="70%">
+                      <PolarGrid stroke="#273449" />
+                      <PolarAngleAxis dataKey="competency" tick={{ fill: "#a7b7cf", fontSize: 10 }} />
+                      <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fill: "#5e7492", fontSize: 10 }} />
+                      <RechartsTooltip contentStyle={{ background: "#101826", border: "1px solid #2a3a4e", borderRadius: 12 }} labelStyle={{ color: "#fff" }} />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <Radar name="НАДО" dataKey="target" stroke="#4a9eff" fill="#4a9eff" fillOpacity={0.12} strokeWidth={2} />
+                      <Radar name="ФАКТ" dataKey="fact" stroke="#00d4aa" fill="#00d4aa" fillOpacity={0.12} strokeWidth={2} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </section>
+            </div>
+          </div>
+        )}
 
         {tab === "cases" && (
           <div className="dns-mobile-stack dns-admin-main-grid dns-admin-cases-layout grid gap-5 2xl:gap-6 items-start">

@@ -1,4 +1,12 @@
 /* Admin UI review: shared surface rhythm, kept outside Tailwind layers so it can normalize arbitrary utilities. */
+
+/* Корпоративный дашборд-фон должен просвечивать вверху (за шапкой) — оверлей чуть прозрачнее.
+   Scoped строго на .dns-admin-shell, чтобы не задеть кабинет оценщика. Спецификсность 4 класса —
+   гарантированно перекрывает базовое правило .dns-product-shell.dns-theme-light .dns-theme-overlay. */
+.dns-product-shell.dns-admin-shell.dns-theme-light .dns-theme-overlay {
+  background: linear-gradient(180deg, rgba(246, 249, 253, 0.74), rgba(236, 242, 249, 0.93), rgba(229, 236, 246, 0.98)) !important;
+}
+
 .dns-product-shell {
   --dns-admin-border: rgba(76, 96, 125, 0.74);
   --dns-admin-border-soft: rgba(65, 86, 116, 0.64);

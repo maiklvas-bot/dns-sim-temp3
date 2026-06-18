@@ -1,4 +1,4 @@
-import { BarChart3, CalendarClock, LayoutDashboard, Radio, Settings, Workflow } from "lucide-react";
+import { BarChart3, CalendarClock, Gauge, LayoutDashboard, Radio, Settings, Workflow } from "lucide-react";
 import { BRAND_ASSETS } from "@/lib/brand-assets";
 import type { AdminTabKey, AdminVisualIdentity } from "./admin-types";
 
@@ -12,6 +12,15 @@ const ADMIN_BRAND_ASSETS = {
 } as const;
 
 export const ADMIN_VISUALS: Record<AdminTabKey, AdminVisualIdentity> = {
+  dashboard: {
+    label: "Кабинет",
+    title: "Центр управления симуляцией",
+    subtitle: "Обзор готовности: кейсы, прохождения и профиль компетенций в одном месте.",
+    primarySrc: ADMIN_BRAND_ASSETS.supervisor,
+    primaryAlt: "Фирменный персонаж-администратор для обзора кабинета",
+    primaryClassName: "dns-admin-visual-primary--supervisor",
+    tone: "orange",
+  },
   cases: {
     label: "Кейсы",
     title: "Сценарный контент",
@@ -69,6 +78,7 @@ export const ADMIN_VISUALS: Record<AdminTabKey, AdminVisualIdentity> = {
 };
 
 export const ADMIN_NAV_ICONS: Record<AdminTabKey, typeof LayoutDashboard> = {
+  dashboard: Gauge,
   cases: Workflow,
   channels: Radio,
   schedule: CalendarClock,
