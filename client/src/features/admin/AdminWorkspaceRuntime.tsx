@@ -3791,7 +3791,7 @@ export default function AdminPage() {
           onConfirm={confirmSignalWizard}
         />
 
-        {tab !== "results" && tab !== "schedule" && tab !== "comparison" && (
+        {tab !== "dashboard" && tab !== "results" && tab !== "schedule" && tab !== "comparison" && (
           <div className="dns-admin-action-block mt-6 justify-start">
             <Button className="bg-[#FF6B00] hover:bg-[#e06000]" onClick={saveCurrent} disabled={saving || uploading}>
               {saving ? "Сохранение..." : "Сохранить"}
