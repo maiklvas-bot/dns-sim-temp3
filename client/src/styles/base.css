@@ -313,7 +313,7 @@
   overflow: hidden;
   color: #ffffff;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.01em;
   line-height: 1.08;
   text-overflow: ellipsis;
@@ -432,22 +432,24 @@
   overflow: hidden;
   color: #fff;
   font-size: 0.8rem;
-  font-weight: 950;
+  font-weight: 800;
   line-height: 1.08;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .dns-store-map-card-detail {
-  display: block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
   margin-top: 0.18rem;
   color: var(--zone-text);
   font-size: 0.6rem;
-  font-weight: 800;
-  line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: 650;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .dns-store-map-card-badge {
@@ -457,7 +459,7 @@
   color: var(--zone-accent);
   padding: 0.22rem 0.34rem;
   font-size: 0.54rem;
-  font-weight: 950;
+  font-weight: 800;
   line-height: 1;
   text-transform: uppercase;
 }
@@ -477,7 +479,7 @@
 .dns-store-map-kpi strong {
   color: #fff;
   font-size: 1rem;
-  font-weight: 950;
+  font-weight: 800;
   line-height: 1;
 }
 
@@ -580,21 +582,25 @@
 
 /* DNS Store Dark Theme — Dark charcoal/navy with orange accents */
 :root {
-  font-size: 16px;
+  /* Корневой размер: на десктопе ровно 16px (как проектировались плотные макеты —
+     ничего не раздувается), на узких экранах плавно уменьшается. Потолок = 1rem,
+     чтобы rem-система НЕ росла выше базовой и не ломала фиксированные блоки.
+     Реконфигурация под разрешение делается брейкпоинтами/контейнер-квери, а не зумом. */
+  font-size: clamp(0.875rem, 0.45vw + 0.74rem, 1rem);
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
   --opaque-button-border-intensity: 9;
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  /* Core surfaces — dark charcoal/navy */
-  --background: 230 30% 11%;          /* #1a1a2e */
-  --foreground: 0 0% 88%;             /* #e0e0e0 */
-  --border: 215 25% 18%;              /* subtle dark borders */
+  /* Core surfaces — подогнаны под доминирующие хардкод-hex (миграция нейтралей не сдвигает тёмную тему) */
+  --background: 216 28% 7%;           /* #0d1117 — глубокий фон */
+  --foreground: 210 35% 93%;          /* #e6edf3 — основной текст */
+  --border: 213 30% 24%;              /* #2a3a4e — границы (238 вхождений) */
 
-  --card: 215 35% 14%;                /* #1e2a3a panels */
-  --card-foreground: 0 0% 88%;
-  --card-border: 215 30% 20%;
+  --card: 219 37% 12%;                /* #141c2b — панели (97 вхождений) */
+  --card-foreground: 210 35% 93%;
+  --card-border: 213 30% 24%;         /* #2a3a4e */
 
   --sidebar: 220 40% 12%;
   --sidebar-foreground: 0 0% 90%;
@@ -605,9 +611,9 @@
   --sidebar-accent-foreground: 0 0% 90%;
   --sidebar-ring: 25 100% 50%;
 
-  --popover: 220 35% 13%;
-  --popover-foreground: 0 0% 88%;
-  --popover-border: 215 30% 20%;
+  --popover: 219 37% 12%;             /* #141c2b */
+  --popover-foreground: 210 35% 93%;
+  --popover-border: 213 30% 24%;      /* #2a3a4e */
 
   /* Primary = DNS Orange */
   --primary: 25 100% 50%;             /* #FF6B00 */
@@ -618,7 +624,7 @@
   --secondary-foreground: 0 0% 88%;
 
   --muted: 220 20% 16%;
-  --muted-foreground: 220 10% 55%;
+  --muted-foreground: 225 15% 60%;    /* #8890a8 — приглушённый текст (86 вхождений) */
 
   --accent: 215 30% 18%;
   --accent-foreground: 0 0% 88%;
@@ -626,7 +632,7 @@
   --destructive: 0 72% 55%;           /* #ff4444 */
   --destructive-foreground: 0 0% 100%;
 
-  --input: 215 25% 22%;
+  --input: 213 30% 24%;               /* #2a3a4e */
   --ring: 25 100% 50%;
 
   /* Chart colors */
@@ -708,6 +714,32 @@
   --dns-admin-text-muted: #526277;
   --dns-admin-text-soft: #24354a;
   --dns-admin-text-dim: #617086;
+
+  /* Светлый набор семантических токенов (фундамент рефакторинга темы).
+     Компоненты, переведённые на bg-card/text-foreground/border-border и т.п.,
+     автоматически получают светлую тему отсюда. --primary остаётся оранжевым из :root. */
+  --background: 210 40% 98%;
+  --foreground: 213 43% 14%;
+  --border: 214 28% 80%;
+  --card: 0 0% 100%;
+  --card-foreground: 213 43% 14%;
+  --card-border: 214 30% 80%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 213 43% 14%;
+  --popover-border: 214 30% 80%;
+  --secondary: 214 36% 94%;
+  --secondary-foreground: 213 43% 18%;
+  --muted: 214 32% 92%;
+  --muted-foreground: 212 19% 39%;
+  --accent: 214 40% 92%;
+  --accent-foreground: 213 43% 18%;
+  --input: 214 26% 82%;
+  --sidebar: 210 40% 97%;
+  --sidebar-foreground: 213 30% 22%;
+  --sidebar-border: 214 28% 82%;
+  --sidebar-accent: 214 36% 92%;
+  --sidebar-accent-foreground: 213 43% 18%;
+
   color: #142033;
 }
 
@@ -1088,7 +1120,7 @@
 
 @layer components {
   .dns-product-shell {
-    min-height: 100vh;
+    min-height: 100dvh;
     position: relative;
     color: #edf3ff;
     background:
@@ -1599,19 +1631,20 @@
     line-height: 1.45;
   }
 
+  /* Выводы сравнения: секции каждого студента выровнены по строкам (subgrid),
+     чтобы блоки «Риски» и «Вопросы» всегда были на одном уровне у всех. */
   .dns-comparison-insight-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-    grid-auto-rows: 1fr;
-    align-items: stretch;
+    grid-template-rows: repeat(6, auto);
     gap: 0.85rem;
   }
 
   .dns-comparison-insight-card {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-row: span 6;
+    grid-template-rows: subgrid;
     gap: 0.85rem;
-    height: 100%;
     min-width: 0;
     border: 1px solid rgba(42, 58, 78, 0.9);
     border-radius: 0.75rem;
@@ -1859,7 +1892,9 @@
 
   .dns-admin-select {
     padding-right: 2.2rem;
-    white-space: normal;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .dns-admin-textarea {

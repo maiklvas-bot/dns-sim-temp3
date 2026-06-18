@@ -61,7 +61,9 @@ import { AssessorWiki } from "./components/AssessorWiki";
 import { AssessorTooltip as Tooltip } from "./components/AssessorTooltip";
 import { WizardSteps } from "./components/WizardSteps";
 import { useSetupValidation } from "./hooks/useSetupValidation";
-import storeBg from "@assets/store_bg.png";
+import { BRAND_ASSETS } from "@/lib/brand-assets";
+import { FeedbackButton } from "@/components/feedback-dialog";
+import { ProductFooter } from "@/components/product-footer";
 
 // ═══════════════════════════════════════════════════════════
 // Main component
@@ -1560,16 +1562,16 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
 
   return (
     <div
-      className={`dns-product-shell dns-visual-shell dns-visual-shell--product ${themeClass} relative overflow-auto`}
+      className={`dns-product-shell dns-assessor-shell dns-visual-shell dns-visual-shell--product ${themeClass} relative overflow-auto`}
       style={{
-        backgroundImage: `url(${storeBg})`,
+        backgroundImage: `url(${theme === "light" ? BRAND_ASSETS.backgrounds.cabinetLight : BRAND_ASSETS.backgrounds.cabinetDark})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundAttachment: "fixed",
       }}
     >
-      <BrandVisualBackdrop variant="product" />
-      <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0d1421ee] via-[#16213ef2] to-[#0d1421f7]" />
+      <BrandVisualBackdrop variant="cabinet" />
+      <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0b101966] via-[#0d142199] to-[#0d1421cc]" />
 
       <div className="dns-page-frame dns-assessor-v2-frame">
         <header className="dns-brand-header dns-assessor-v2-header">
@@ -1583,6 +1585,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
           </div>
           <div className="dns-header-actions dns-assessor-v2-header-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            <FeedbackButton />
             <button
               onClick={() => navigate("/")}
               className="dns-assessor-v2-header-button"
@@ -1682,6 +1685,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
             {renderSidePanel()}
           </div>
         )}
+        <ProductFooter />
       </div>
     </div>
   );

@@ -11,17 +11,17 @@ export default function ConsequenceModal() {
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg mx-4 rounded-xl border border-[#2a3a4e] bg-[#1e2a3af5] p-5 shadow-2xl">
+      <div className="relative w-full max-w-lg mx-4 rounded-xl border border-border bg-card p-5 shadow-2xl">
         {/* Close button */}
         <button
           onClick={() => dispatch({ type: "DISMISS_CONSEQUENCE" })}
-          className="absolute top-3 right-3 text-[#555570] hover:text-white transition-colors"
+          className="absolute top-3 right-3 text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="text-sm font-semibold text-[#FF6B00] mb-1">Результат решения</div>
-        <p className="text-xs text-[#8890a8] mb-4 line-clamp-2">
+        <p className="text-xs text-muted-foreground mb-4 line-clamp-2">
           {state.lastOptionText}
         </p>
 
@@ -35,13 +35,13 @@ export default function ConsequenceModal() {
                     ? "border-[#00d4aa]/20 bg-[#00d4aa]/5"
                     : c.direction === "down"
                     ? "border-[#ff4444]/20 bg-[#ff4444]/5"
-                    : "border-[#2a3a4e]/30 bg-[#1a1a2e]/30"
+                    : "border-border/30 bg-background/30"
                 }`}
               >
                 <span className="text-lg flex-shrink-0">{c.icon}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-medium text-white">{c.metric}</span>
+                    <span className="text-xs font-medium text-foreground">{c.metric}</span>
                     <span
                       className="text-sm font-bold tabular-nums"
                       style={{
@@ -51,7 +51,7 @@ export default function ConsequenceModal() {
                       {c.displayValue}
                     </span>
                   </div>
-                  <p className="text-xs text-[#8890a8] mt-0.5 leading-relaxed">
+                  <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
                     {c.explanation}
                   </p>
                 </div>
@@ -61,8 +61,8 @@ export default function ConsequenceModal() {
             <div className="flex items-start gap-3 rounded-lg border border-[#4a9eff]/25 bg-[#4a9eff]/8 p-3">
               <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-[#8ec5ff]" />
               <div className="min-w-0">
-                <div className="text-xs font-medium text-white">Решение принято</div>
-                <p className="mt-0.5 text-xs leading-relaxed text-[#b7c8df]">
+                <div className="text-xs font-medium text-foreground">Решение принято</div>
+                <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">
                   Это действие не изменило операционные метрики напрямую, но ответ зафиксирован в журнале и учтен в компетенциях.
                 </p>
               </div>

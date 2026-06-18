@@ -103,6 +103,28 @@ export function EntityEditor({
     <div className="space-y-4">
       <div className="text-sm font-semibold text-white">{title}</div>
       <Field label="Порядок показа" value={entity.sortOrder} onChange={(value) => update({ sortOrder: Number(value) })} />
+      {mode === "case" && (
+        <div className="flex flex-wrap gap-2 rounded-xl border border-[#243244] bg-[#101826]/60 p-2">
+          {([
+            ["details", "Карточка кейса"],
+            ["cycles", "Циклы и медиа"],
+          ] as const).map(([section, label]) => (
+            <button
+              key={section}
+              type="button"
+              onClick={() => setCaseEditorSection(section)}
+              className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
+                caseEditorSection === section
+                  ? "border-[#FF6B00] bg-[#FF6B00]/15 text-white"
+                  : "border-[#2a3a4e] bg-[#0d1522]/70 text-[#9aabc6] hover:border-[#3b5878]"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+      {(mode !== "case" || caseEditorSection === "details") && (
       <div className="rounded-2xl border border-[#FF6B00]/35 bg-gradient-to-br from-[#FF6B00]/14 via-[#1a2537]/88 to-[#101826]/92 p-4 shadow-[0_18px_45px_rgba(255,107,0,0.12)]">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -166,26 +188,6 @@ export function EntityEditor({
           )}
         </div>
       </div>
-      {mode === "case" && (
-        <div className="flex flex-wrap gap-2 rounded-xl border border-[#243244] bg-[#101826]/60 p-2">
-          {([
-            ["details", "Карточка кейса"],
-            ["cycles", "Циклы и медиа"],
-          ] as const).map(([section, label]) => (
-            <button
-              key={section}
-              type="button"
-              onClick={() => setCaseEditorSection(section)}
-              className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
-                caseEditorSection === section
-                  ? "border-[#FF6B00] bg-[#FF6B00]/15 text-white"
-                  : "border-[#2a3a4e] bg-[#0d1522]/70 text-[#9aabc6] hover:border-[#3b5878]"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
       )}
       {mode === "case" && (
         <>

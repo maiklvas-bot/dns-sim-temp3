@@ -1,3 +1,9 @@
+/* Cabinet-фон оценщика (светлый «взрыв» яркий): усиливаем белый оверлей.
+   Scoped на .dns-assessor-shell (спецификсность 4 класса перекрывает базовое правило). */
+.dns-product-shell.dns-assessor-shell.dns-theme-light .dns-theme-overlay {
+  background: linear-gradient(180deg, rgba(246, 249, 253, 0.55), rgba(236, 242, 249, 0.74), rgba(229, 236, 246, 0.86)) !important;
+}
+
 /* Assessor WIKI: separate help surface for setup dependencies and process flow. */
 .dns-product-shell .dns-assessor-wiki-entry {
   display: flex;

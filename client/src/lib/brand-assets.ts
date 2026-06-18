@@ -8,6 +8,8 @@ import productDark from "@/assets/brand/backgrounds/03_background_product_dashbo
 import productLight from "@/assets/brand/backgrounds/04_background_product_dashboard_light.png";
 import simulationDark from "@/assets/brand/backgrounds/05_background_simulation_store_day_dark.png";
 import resultsDark from "@/assets/brand/backgrounds/06_background_results_trophy_dark.png";
+import cabinetDark from "@/assets/brand/backgrounds/09_background_cabinet_dark_nebula.jpg";
+import cabinetLight from "@/assets/brand/backgrounds/10_background_cabinet_light_burst.jpg";
 import logoDark from "@/assets/brand/logos/logo_dns_simcenter_dark.png";
 import logoLight from "@/assets/brand/logos/logo_dns_simcenter_light.png";
 import dnsMarkOrange from "@/assets/brand/logos/logo_dns_mark_orange.png";
@@ -45,6 +47,8 @@ export const BRAND_ASSETS = Object.freeze({
     productLight,
     simulationDark,
     resultsDark,
+    cabinetDark,
+    cabinetLight,
   },
   logos: {
     dnsSimcenterDark: logoDark,

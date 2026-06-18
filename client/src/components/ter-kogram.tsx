@@ -9,7 +9,7 @@ import DeadlineChip from "./deadline-chip";
 function Avatar({ letter, size = "sm" }: { letter: string; size?: "sm" | "md" }) {
   const s = size === "sm" ? "w-8 h-8 text-sm" : "w-10 h-10 text-base";
   return (
-    <div className={`${s} rounded-full bg-[#2a3a4e] flex items-center justify-center font-bold text-white flex-shrink-0`}>
+    <div className={`${s} rounded-full bg-muted flex items-center justify-center font-bold text-foreground flex-shrink-0`}>
       {letter}
     </div>
   );
@@ -83,23 +83,23 @@ export default function TerKogram({
   if (activeChats.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full py-12 text-center">
-        <MessageSquare className="w-10 h-10 text-[#555570] mb-3" />
-        <p className="text-sm text-[#555570]">ТёрКограмм</p>
-        <p className="text-xs text-[#3a3a50] mt-1">Сообщения появятся автоматически</p>
+        <MessageSquare className="w-10 h-10 text-muted-foreground mb-3" />
+        <p className="text-sm text-muted-foreground">ТёрКограмм</p>
+        <p className="text-xs text-muted-foreground mt-1">Сообщения появятся автоматически</p>
       </div>
     );
   }
 
   return (
     <div className="flex h-full min-h-0">
-      <div className="w-[38%] flex-shrink-0 border-r border-[#2a3a4e] flex flex-col min-h-0">
-        <div className="px-3 py-2 border-b border-[#2a3a4e] bg-[#141c2b]/60 flex-shrink-0">
+      <div className="w-[38%] flex-shrink-0 border-r border-border flex flex-col min-h-0">
+        <div className="px-3 py-2 border-b border-border bg-card/60 flex-shrink-0">
           <div className="text-[10px] uppercase tracking-wider text-[#00d4aa] font-semibold">
             ТёрКограмм
           </div>
         </div>
         <ScrollArea className="flex-1 min-h-0">
-          <div className="divide-y divide-[#2a3a4e]/40">
+          <div className="divide-y divide-border/40">
             {activeChats.map((chat) => {
               const lastMsg = chatLastMessages[chat.id];
               const unread = chatUnreadCounts[chat.id] || 0;
@@ -118,13 +118,13 @@ export default function TerKogram({
                     dispatch({ type: "CLEAR_ACTION_PANEL" });
                   }}
                   className={`w-full text-left p-3 transition-all flex items-start gap-2 ${
-                    isSelected ? "bg-[#00d4aa]/8 border-l-2 border-l-[#00d4aa]" : "hover:bg-[#1e2a3a]/60 border-l-2 border-l-transparent"
+                    isSelected ? "bg-[#00d4aa]/8 border-l-2 border-l-[#00d4aa]" : "hover:bg-accent/60 border-l-2 border-l-transparent"
                   }`}
                 >
                   <Avatar letter={chat.avatar} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1">
-                      <span className={`text-xs truncate ${unread > 0 ? "text-white font-medium" : "text-[#8890a8]"}`}>
+                      <span className={`text-xs truncate ${unread > 0 ? "text-foreground font-medium" : "text-muted-foreground"}`}>
                         {chat.name}
                       </span>
                       {unread > 0 && (
@@ -134,10 +134,10 @@ export default function TerKogram({
                       )}
                     </div>
                     {!chat.isGroup && chat.role && (
-                      <div className="text-[10px] text-[#7f8da6] truncate">{chat.role}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">{chat.role}</div>
                     )}
                     {lastMsg && (
-                      <div className="text-[10px] text-[#8b9bb6] truncate mt-0.5">{lastMsg.message.slice(0, 45)}...</div>
+                      <div className="text-[10px] text-muted-foreground truncate mt-0.5">{lastMsg.message.slice(0, 45)}...</div>
                     )}
                   </div>
                 </button>
@@ -149,20 +149,20 @@ export default function TerKogram({
 
       <div className="flex-1 flex flex-col min-h-0 min-w-0">
         {!selectedChat ? (
-          <div className="flex items-center justify-center h-full text-[#555570] text-sm">
+          <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
             Выберите чат
           </div>
         ) : (
           <>
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-[#2a3a4e] bg-[#141c2b]/60 flex-shrink-0">
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-card/60 flex-shrink-0">
               <Avatar letter={selectedChat.avatar} size="sm" />
               <div>
-                <div className="text-xs text-white font-medium">{selectedChat.name}</div>
+                <div className="text-xs text-foreground font-medium">{selectedChat.name}</div>
                 {!selectedChat.isGroup && selectedChat.role && (
-                  <div className="text-[10px] text-[#8b9bb6]">{selectedChat.role}</div>
+                  <div className="text-[10px] text-muted-foreground">{selectedChat.role}</div>
                 )}
                 {selectedChat.isGroup && selectedChat.members && (
-                  <div className="text-[10px] text-[#8b9bb6]">{selectedChat.members.join(", ")}</div>
+                  <div className="text-[10px] text-muted-foreground">{selectedChat.members.join(", ")}</div>
                 )}
               </div>
             </div>
@@ -187,14 +187,14 @@ export default function TerKogram({
                       className={`w-full rounded-xl border p-3 text-left transition-all ${
                         isFocused
                           ? "border-[#00d4aa]/60 bg-[#00d4aa]/8 shadow-[0_0_0_1px_rgba(0,212,170,0.15)]"
-                          : "border-[#223246] bg-[#141c2b]/35 hover:border-[#35506f] hover:bg-[#172233]/70"
+                          : "border-border bg-card/35 hover:border-border hover:bg-accent/70"
                       }`}
                     >
                       <div className="flex items-start gap-2">
                         <Avatar letter={message.senderAvatar} size="sm" />
                         <div className="min-w-0 flex-1">
                           <div className="mb-1 flex items-center gap-2">
-                            <span className="text-[11px] font-medium text-white">{message.senderName}</span>
+                            <span className="text-[11px] font-medium text-foreground">{message.senderName}</span>
                             {!isAnswered && !isOpened && (
                               <span className="rounded-full bg-[#00d4aa]/16 px-2 py-0.5 text-[9px] font-semibold text-[#00d4aa]">
                                 Требует открытия
@@ -247,9 +247,9 @@ export default function TerKogram({
                                 compact
                               />
                             ) : (
-                              <span className="text-[10px] text-[#5d6884]">Без таймера</span>
+                              <span className="text-[10px] text-muted-foreground">Без таймера</span>
                             )}
-                            <span className="text-[10px] text-[#77809b]">
+                            <span className="text-[10px] text-muted-foreground">
                               {isAnswered
                                 ? "Ответ выбран"
                                 : isOpened
@@ -269,7 +269,7 @@ export default function TerKogram({
                               <span className="rounded-full bg-[#4a9eff]/16 px-2 py-0.5 text-[9px] font-semibold text-[#8ec5ff]">
                                 Ответ студента
                               </span>
-                              <span className="text-[11px] font-medium text-white">{participantDisplayName}</span>
+                              <span className="text-[11px] font-medium text-foreground">{participantDisplayName}</span>
                             </div>
                             <div className="rounded-xl border border-[#4a9eff]/35 bg-[#dbeeff] p-3">
                               <p className="text-[13px] font-medium leading-6 text-[#102033]">{studentDecision.optionText}</p>
