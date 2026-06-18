@@ -7,6 +7,34 @@
   background: linear-gradient(180deg, rgba(246, 249, 253, 0.74), rgba(236, 242, 249, 0.93), rgba(229, 236, 246, 0.98)) !important;
 }
 
+/* Реселл, слой 2: «стекло» крупных поверхностей админа — frosted backdrop-blur.
+   Scoped строго на .dns-admin-shell, чтобы кабинет оценщика остался прежним.
+   Прозрачность повышаем только в тёмной теме (светлую тему не трогаем). */
+.dns-admin-shell .dns-admin-structure-nav,
+.dns-admin-shell .dns-admin-case-nav,
+.dns-admin-shell .dns-admin-visual-panel {
+  backdrop-filter: blur(16px) saturate(112%);
+  -webkit-backdrop-filter: blur(16px) saturate(112%);
+}
+.dns-admin-shell.dns-theme-dark .dns-admin-structure-nav {
+  background:
+    radial-gradient(circle at 50% 0, rgba(var(--dns-admin-scene-accent-rgb), 0.14), transparent 11rem),
+    linear-gradient(180deg, rgba(10, 18, 30, 0.74), rgba(7, 15, 26, 0.78));
+}
+.dns-admin-shell.dns-theme-dark .dns-admin-case-nav {
+  background: rgba(20, 28, 43, 0.6) !important;
+}
+
+/* Типографика: крупные заголовки админа — плотнее трекинг, стабильные цифры в метриках. */
+.dns-admin-shell .dns-brand-heading,
+.dns-admin-shell .dns-admin-visual-title {
+  letter-spacing: -0.012em;
+}
+.dns-admin-shell .tabular-nums,
+.dns-admin-shell [class*="text-["] {
+  font-feature-settings: "tnum" 1, "kern" 1;
+}
+
 .dns-product-shell {
   --dns-admin-border: rgba(76, 96, 125, 0.74);
   --dns-admin-border-soft: rgba(65, 86, 116, 0.64);
