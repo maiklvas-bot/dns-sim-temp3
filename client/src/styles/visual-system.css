@@ -122,6 +122,42 @@
   mix-blend-mode: screen;
 }
 
+/* Cabinet-вариант (новые фоны кабинетов админа/оценщика):
+   показываем фон ярче и чётче (cover/center, без зума/блюра), без сетки и шума.
+   Читаемость контента обеспечивает .dns-theme-overlay поверх (настроен в шеллах). */
+.dns-visual-backdrop--cabinet .dns-visual-backdrop__grid,
+.dns-visual-backdrop--cabinet .dns-visual-backdrop__noise {
+  display: none;
+}
+/* Фиксируем backdrop по вьюпорту: на длинных (скроллящихся) разделах absolute+cover
+   растягивал картинку на всю высоту прокрутки и зумил её. fixed = всегда корректный
+   масштаб + фон стоит на месте под контентом. Параллакс добавляется через --dns-bg-shift. */
+.dns-visual-backdrop--cabinet {
+  position: fixed;
+  inset: 0;
+  will-change: transform;
+}
+.dns-visual-backdrop--cabinet .dns-visual-backdrop__image {
+  filter: saturate(1);
+  transform: translate3d(0, calc(var(--dns-bg-shift, 0px) * -1), 0) scale(1.06);
+  transition: transform 120ms linear;
+  animation: none;
+  object-fit: cover;
+  object-position: center;
+}
+/* Непрозрачность строго по картинке+теме, чтобы не стекать обе:
+   тёмная тема → нейбула (dark), светлая → взрыв (light). */
+.dns-visual-backdrop--cabinet .dns-visual-backdrop__image--dark { opacity: 0.92; }
+.dns-visual-backdrop--cabinet .dns-visual-backdrop__image--light { opacity: 0; }
+.dns-theme-light .dns-visual-backdrop--cabinet .dns-visual-backdrop__image--dark { opacity: 0; }
+.dns-theme-light .dns-visual-backdrop--cabinet .dns-visual-backdrop__image--light { opacity: 0.95; }
+.dns-visual-backdrop--cabinet .dns-visual-backdrop__gradient {
+  background: radial-gradient(circle at 50% 42%, rgba(6, 12, 22, 0) 0%, rgba(6, 12, 22, 0.18) 64%, rgba(5, 10, 19, 0.55) 100%);
+}
+.dns-theme-light .dns-visual-backdrop--cabinet .dns-visual-backdrop__gradient {
+  background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0) 0%, rgba(246, 248, 252, 0.22) 64%, rgba(235, 241, 249, 0.5) 100%);
+}
+
 .dns-visual-logo {
   position: relative;
   display: inline-grid;
