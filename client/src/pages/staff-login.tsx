@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandAccessShell, BrandMiniHeader } from "@/components/brand-access-shell";
+import { ProductFooter } from "@/components/product-footer";
 import { getStaffBrandHero, hideMissingBrandAsset } from "@/lib/brand-assets";
 
 export default function StaffLoginPage() {
@@ -166,6 +167,7 @@ export default function StaffLoginPage() {
           </form>
         </div>
       </main>
+      <ProductFooter className="fixed inset-x-0 bottom-0" version="" />
     </BrandAccessShell>
   );
 }

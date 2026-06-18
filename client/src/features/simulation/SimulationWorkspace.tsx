@@ -13,6 +13,7 @@ import { Timer, Calendar, User, FileText, StopCircle, FlaskConical, PauseCircle,
 import { setLiveSimulationRole } from "@/lib/live-session";
 import { ThemeToggle, useDnsTheme } from "@/components/theme-toggle";
 import { BrandVisualBackdrop } from "@/components/brand-access-shell";
+import { ProductFooter } from "@/components/product-footer";
 import { SimulationProgressCompact, SimulationProgressRail } from "./layout/SimulationProgressRail";
 import { useIsMobile } from "@/hooks/use-mobile";
 import storeBg from "@assets/store_bg.png";
@@ -517,6 +518,7 @@ export default function SimulationPage() {
           </div>
         )}
       </div>
+      <ProductFooter className="absolute inset-x-0 bottom-0 mt-0 py-1.5" version="" />
     </div>
   );
 }
