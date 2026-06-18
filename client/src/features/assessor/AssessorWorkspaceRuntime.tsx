@@ -851,16 +851,18 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         {monitorRailItems.map(renderRailItem)}
       </div>
       <div className="dns-assessor-v2-rail-footer">
+        <div className="dns-assessor-v2-rail-profile">
+          <span>{(staffPrincipalQuery.data?.displayName || "О").slice(0, 1).toUpperCase()}</span>
+          <div><strong>{staffPrincipalQuery.data?.displayName || "Оценщик"}</strong><small>Кабинет оценщика</small></div>
+        </div>
         <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={() => setShowWiki(true)} title="База знаний">
           <BookOpen className="h-4 w-4" /><span>Wiki</span>
         </button>
-        <div className="dns-assessor-v2-rail-profile">
-          <span>{(staffPrincipalQuery.data?.displayName || "О").slice(0, 1).toUpperCase()}</span>
-          <div><strong>{staffPrincipalQuery.data?.displayName || "Оценщик"}</strong><small>{staffRole === "admin" ? "Администратор" : "Оценщик"}</small></div>
-        </div>
-        <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={handleAdminAccess} title="В администратора">
-          <ShieldCheck className="h-4 w-4" /><span>Администратор</span>
-        </button>
+        {staffRole === "admin" && (
+          <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={handleAdminAccess} title="Перейти в кабинет администратора">
+            <ShieldCheck className="h-4 w-4" /><span>В администратора</span>
+          </button>
+        )}
         <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={handleLogout} title="Выйти">
           <LogOut className="h-4 w-4" /><span>Выйти</span>
         </button>

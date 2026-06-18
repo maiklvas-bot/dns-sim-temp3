@@ -1350,7 +1350,7 @@
 
 .dns-product-shell .dns-assessor-v2-participant-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 0.55rem;
 }
 
@@ -1888,7 +1888,9 @@
   padding: 0.82rem;
 }
 
-@media (max-width: 1279px) {
+/* Свернутый (только иконки) рейл — лишь на действительно узких экранах,
+   чтобы при обычном масштабировании десктопа (110–125%) компоновка не «прыгала». */
+@media (max-width: 1023px) {
   .dns-product-shell .dns-admin-dashboard-shell {
     grid-template-columns: 4.25rem minmax(0, 1fr);
   }
