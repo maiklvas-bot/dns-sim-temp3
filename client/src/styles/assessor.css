@@ -38,7 +38,13 @@
 .dns-assessor-shell.dns-theme-dark .dns-assessor-v2-side-card,
 .dns-assessor-shell.dns-theme-dark .dns-assessor-v2-info-card,
 .dns-assessor-shell.dns-theme-dark .dns-assessor-v2-launch-result,
-.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-candidate-summary {
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-candidate-summary,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-choice-card,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-note,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-participant-card,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-channel-card,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-customizer,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-mode {
   background: rgba(34, 38, 45, 0.9) !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
 }
@@ -48,7 +54,12 @@
 .dns-assessor-shell.dns-theme-dark .dns-assessor-v2-chip-row,
 .dns-assessor-shell.dns-theme-dark .dns-assessor-v2-session-row,
 .dns-assessor-shell.dns-theme-dark .dns-assessor-v2-mode-note,
-.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-setup-tabs {
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-setup-tabs,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-secondary,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-customizer-button,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-pill,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-toggle-line,
+.dns-assessor-shell.dns-theme-dark .dns-assessor-v2-launch-result-row {
   background: rgba(0, 0, 0, 0.22) !important;
   border-color: rgba(255, 255, 255, 0.1) !important;
 }
@@ -63,7 +74,13 @@
 .dns-assessor-shell.dns-theme-light .dns-assessor-v2-side-card,
 .dns-assessor-shell.dns-theme-light .dns-assessor-v2-info-card,
 .dns-assessor-shell.dns-theme-light .dns-assessor-v2-launch-result,
-.dns-assessor-shell.dns-theme-light .dns-assessor-v2-candidate-summary {
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-candidate-summary,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-choice-card,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-note,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-participant-card,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-channel-card,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-customizer,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-mode {
   background: #ffffff !important;
   border-color: rgba(0, 0, 0, 0.1) !important;
 }
@@ -73,9 +90,19 @@
 .dns-assessor-shell.dns-theme-light .dns-assessor-v2-chip-row,
 .dns-assessor-shell.dns-theme-light .dns-assessor-v2-session-row,
 .dns-assessor-shell.dns-theme-light .dns-assessor-v2-mode-note,
-.dns-assessor-shell.dns-theme-light .dns-assessor-v2-setup-tabs {
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-setup-tabs,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-secondary,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-customizer-button,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-pill,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-toggle-line,
+.dns-assessor-shell.dns-theme-light .dns-assessor-v2-launch-result-row {
   background: rgba(0, 0, 0, 0.035) !important;
   border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Меню (рейл) и кабинет тянутся до низа — shell заполняет высоту вьюпорта. */
+.dns-product-shell.dns-assessor-shell .dns-assessor-v2-shell {
+  min-height: calc(100vh - 9.5rem) !important;
 }
 
 /* Assessor WIKI: separate help surface for setup dependencies and process flow. */
