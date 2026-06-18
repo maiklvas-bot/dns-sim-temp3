@@ -102,44 +102,42 @@ export function StructuredCyclesEditor({
     <div className="dns-admin-cycles-panel rounded-xl border border-[#2a3a4e] bg-[#141c2b]/35 p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
-          <div className="text-sm font-semibold text-white">Циклы кейса</div>
-          <div className="mt-1 text-[11px] text-[#8890a8]">Каждый цикл, сигнал и варианты ответа редактируются отдельными полями.</div>
+          <div className="flex items-center gap-2">
+            <div className="text-sm font-semibold text-white">Структура кейса</div>
+            <span className="rounded-full border border-[#2a3a4e] bg-[#101826] px-2 py-0.5 text-[10px] font-semibold text-[#8aa2c4]">
+              {normalizedCycles.length <= 1 ? "Простой · 1 сценарий" : `С циклами · ${normalizedCycles.length}`}
+            </span>
+          </div>
+          <div className="mt-1 text-[11px] text-[#8890a8]">
+            {normalizedCycles.length <= 1
+              ? "Простой кейс: один сценарий-ответ без ветвления. Кнопка «+ Цикл» превратит его в кейс с циклами."
+              : "Кейс с циклами: каждый цикл — отдельное окно. Переключайтесь степпером выше — структура видна целиком."}
+          </div>
         </div>
-        <Button type="button" size="sm" className="shrink-0 whitespace-nowrap" onClick={addCycle}>Добавить цикл</Button>
       </div>
 
-      <div className="dns-admin-cycles-grid">
-        <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
-          <div className="mb-2 text-xs font-semibold uppercase tracking-[0.16em] text-[#8ec5ff]">Циклы выбранного кейса</div>
-          <div className="space-y-2">
-            {normalizedCycles.map((cycle, index) => (
-              <button
-                key={`${cycle.id || "cycle"}-${index}`}
-                type="button"
-                onClick={() => setSelectedCycleIndex(index)}
-                className={`w-full rounded-lg border px-3 py-2 text-left transition ${
-                  index === selectedCycleIndex
-                    ? "border-[#FF6B00] bg-[#FF6B00]/12"
-                    : "border-[#2a3a4e] bg-[#0d1522]/75 hover:border-[#3b5878]"
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-semibold text-white">{cycle.title || `Цикл ${index + 1}`}</span>
-                  <span className="rounded-full border border-[#2a3a4e] bg-[#101826] px-2 py-0.5 text-[10px] text-[#8aa2c4]">
-                    {(cycle.options || []).length} отв.
-                  </span>
-                </div>
-                <div className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8aa2c4]">
-                  {cycle.situation || cycle.signal?.content || "Пустой цикл"}
-                </div>
-              </button>
-            ))}
-          </div>
-          <Button type="button" size="sm" className="mt-3 w-full" onClick={addCycle}>
-            Добавить цикл
-          </Button>
+      {/* Номера циклов — на левой грани (вертикальный рейл), деталь цикла — справа. */}
+      <div className="flex gap-3">
+        <div className="dns-admin-cycle-rail flex flex-none flex-col gap-1.5">
+          {normalizedCycles.map((cycle, index) => (
+            <button
+              key={`${cycle.id || "cycle"}-${index}`}
+              type="button"
+              onClick={() => setSelectedCycleIndex(index)}
+              title={`${cycle.title || `Цикл ${index + 1}`} · ${(cycle.options || []).length} отв.`}
+              className={`flex h-10 w-10 flex-none items-center justify-center rounded-lg border text-sm font-bold transition ${
+                index === selectedCycleIndex
+                  ? "border-[#FF6B00] bg-[#FF6B00] text-white shadow-[0_6px_16px_rgba(255,107,0,0.3)]"
+                  : "border-[#2a3a4e] bg-[#0d1522]/75 text-[#9aabc6] hover:border-[#3b5878]"
+              }`}
+            >
+              {index + 1}
+            </button>
+          ))}
+          <Button type="button" size="icon" variant="outline" className="h-10 w-10 border-dashed border-[#FF6B00]/45 bg-transparent text-[#ffb27a]" onClick={addCycle} title="Добавить цикл">+</Button>
         </div>
 
+        <div className="min-w-0 flex-1">
         {selectedCycle && (
           <div className="dns-admin-cycle-detail rounded-xl border border-[#243244] bg-[#101826]/60 p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -233,6 +231,7 @@ export function StructuredCyclesEditor({
             />
           </div>
         )}
+        </div>
       </div>
     </div>
   );

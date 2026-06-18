@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Pause, Play, Trash2 } from "lucide-react";
+import { useDnsTheme } from "@/components/theme-toggle";
 import { CompetencyRoleSelector, Field, FieldArea, MultiSelectField, SelectField, SuggestField } from "../components/AdminFields";
 import { CompetencyHorizontalImpactChart } from "../components/CompetencyHorizontalImpactChart";
 import type { AdminChannelTab as ChannelTab } from "../admin-types";
@@ -43,6 +44,7 @@ export function CaseCreationWizard({
   onDraftChange: (draft: SimCase) => void;
   onConfirm: () => void | Promise<void>;
 }) {
+  const { themeClass } = useDnsTheme();
   const wizardSteps = [
     {
       title: "Контекст кейса",
@@ -73,15 +75,15 @@ export function CaseCreationWizard({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl border-[#2a3a4e] bg-[#101826] text-white">
-        <DialogHeader>
-          <DialogTitle className="text-white">Мастер создания нового кейса</DialogTitle>
-          <DialogDescription className="text-[#8aa2c4]">
+      <DialogContent className={`dns-product-shell dns-admin-shell ${themeClass} flex max-h-[90vh] max-w-4xl flex-col gap-0 overflow-hidden p-0`}>
+        <DialogHeader className="space-y-1.5 px-6 pt-6 pb-3 text-left">
+          <DialogTitle>Мастер создания нового кейса</DialogTitle>
+          <DialogDescription className="text-muted-foreground">
             Служебные поля вроде `ID` и внутренних кодов будут сгенерированы автоматически. После завершения мастер откроет кейс в полном редакторе для детальной настройки.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 lg:grid-cols-[240px,1fr]">
+        <div className="grid flex-1 gap-4 overflow-y-auto px-6 py-4 lg:grid-cols-[240px,1fr]">
           <div className="space-y-2 rounded-xl border border-[#243244] bg-[#141c2b]/45 p-4">
             {wizardSteps.map((wizardStep, index) => (
               <button
@@ -221,24 +223,23 @@ export function CaseCreationWizard({
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="border-t border-border bg-muted/30 px-6 py-4">
           <div className="flex w-full items-center justify-between gap-3">
             <Button
               type="button"
               variant="outline"
-              className="border-[#2a3a4e] bg-transparent text-[#8890a8]"
               onClick={() => onStepChange(Math.max(step - 1, 0))}
               disabled={step === 0}
             >
               Назад
             </Button>
-            <div className="text-xs text-[#8890a8]">Шаг {step + 1} из {wizardSteps.length}</div>
+            <div className="text-xs text-muted-foreground">Шаг {step + 1} из {wizardSteps.length}</div>
             {step < wizardSteps.length - 1 ? (
-              <Button type="button" className="bg-[#4a9eff] text-white hover:bg-[#3d8be0]" onClick={() => onStepChange(step + 1)}>
+              <Button type="button" className="bg-[#FF6B00] text-white hover:bg-[#FF6B00]/90" onClick={() => onStepChange(step + 1)}>
                 Далее
               </Button>
             ) : (
-              <Button type="button" className="bg-[#FF6B00] hover:bg-[#e06000]" onClick={onConfirm}>
+              <Button type="button" className="bg-[#FF6B00] text-white hover:bg-[#e06000]" onClick={onConfirm}>
                 Создать и сохранить
               </Button>
             )}
