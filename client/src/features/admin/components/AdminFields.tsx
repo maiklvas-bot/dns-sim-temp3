@@ -1,5 +1,6 @@
 import { useId } from "react";
 import type { CompetencyDefinition } from "@shared/simulation-content";
+import { competencyCategoryLabel } from "@/data/competencies";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -51,11 +52,11 @@ export function MultiSelectField({ label, values, onChange, options }: {
   return (
     <div>
       <Label className="mb-1.5 block text-xs text-[#8890a8]">{label}</Label>
-      <div className="flex flex-wrap gap-2 rounded-xl border border-[#2a3a4e] bg-[#141c2b]/45 p-3">
+      <div className="flex flex-wrap gap-2 rounded-xl bg-black/15 p-2.5">
         {options.map((option) => {
           const active = values.includes(option.value);
           return (
-            <button key={option.value} type="button" onClick={() => toggleValue(option.value)} className={`rounded-full border px-3 py-1.5 text-xs transition-all ${active ? "border-[#4a9eff] bg-[#4a9eff]/15 text-white" : "border-[#2a3a4e] bg-[#101826]/60 text-[#9aabc6]"}`}>
+            <button key={option.value} type="button" onClick={() => toggleValue(option.value)} className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${active ? "bg-[#4a9eff] text-white" : "bg-white/5 text-[#9aabc6] hover:bg-white/10"}`}>
               {option.label}
             </button>
           );
@@ -93,7 +94,7 @@ export function CompetencyRoleSelector({ label = "Компетенции кей�
             return (
               <div key={competency.id} className="rounded-lg border border-[#243244] bg-[#101826]/70 p-2">
                 <div className="mb-2 flex min-w-0 items-start justify-between gap-2">
-                  <div className="min-w-0"><div className="truncate text-xs font-semibold text-white">{competency.name}</div><div className="text-[10px] uppercase tracking-[0.14em] text-[#70829d]">{competency.category}</div></div>
+                  <div className="min-w-0"><div className="truncate text-xs font-semibold text-white">{competency.name}</div><div className="text-[10px] uppercase tracking-[0.14em] text-[#70829d]">{competencyCategoryLabel(competency.category)}</div></div>
                   <span className={`shrink-0 rounded-full border px-2 py-1 text-[10px] font-semibold ${role === "primary" ? "border-[#4a9eff]/50 bg-[#4a9eff]/15 text-[#b7d9ff]" : role === "secondary" ? "border-[#00d4aa]/45 bg-[#00d4aa]/12 text-[#8ff5de]" : "border-[#2a3a4e] bg-[#0d1522] text-[#7f91ad]"}`}>{role === "primary" ? "Первичная" : role === "secondary" ? "Вторичная" : "Не выбрана"}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-1">

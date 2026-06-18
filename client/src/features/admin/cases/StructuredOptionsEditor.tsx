@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Pause, Play, Trash2 } from "lucide-react";
 import { CompetencyRoleSelector, Field, FieldArea, MultiSelectField, SelectField, SuggestField } from "../components/AdminFields";
 import { CompetencyHorizontalImpactChart } from "../components/CompetencyHorizontalImpactChart";
+import { competencyCategoryLabel } from "@/data/competencies";
 import type { AdminChannelTab as ChannelTab } from "../admin-types";
 import {
   buildCompetencyAliasMap,
@@ -195,7 +196,7 @@ export function StructuredOptionsEditor({
                       <div className="mb-2 flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <div className="truncate text-xs font-medium text-white">{competency.name}</div>
-                          <div className="text-[10px] uppercase tracking-[0.16em] text-[#70829d]">{competency.category}</div>
+                          <div className="text-[10px] uppercase tracking-[0.16em] text-[#70829d]">{competencyCategoryLabel(competency.category)}</div>
                         </div>
                         <div className="rounded-full border border-[#2a3a4e] bg-[#141c2b]/70 px-2 py-1 text-xs font-semibold text-white">
                           {scoreValue}
