@@ -845,9 +845,9 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       <div className="dns-assessor-v2-rail-nav">
         {setupRailItems.map(renderRailItem)}
       </div>
-      {/* Мониторинг и отчётность — отделены от шагов запуска */}
-      <div className="dns-assessor-v2-rail-group-label">Мониторинг</div>
-      <div className="dns-assessor-v2-rail-nav">
+      {/* Мониторинг и отчётность — отделены и сдвинуты ниже */}
+      <div className="dns-assessor-v2-rail-group-label dns-assessor-v2-rail-group-label--monitor">Мониторинг</div>
+      <div className="dns-assessor-v2-rail-nav dns-assessor-v2-rail-nav--monitor">
         {monitorRailItems.map(renderRailItem)}
       </div>
       <div className="dns-assessor-v2-rail-footer">
