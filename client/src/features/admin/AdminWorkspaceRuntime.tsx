@@ -39,6 +39,7 @@ import {
   ArrowUp,
   BarChart3,
   BookOpen,
+  FileText,
   CalendarClock,
   CheckCircle2,
   ChevronDown,
@@ -2196,10 +2197,6 @@ export default function AdminPage() {
               <History className="mr-1.5 h-4 w-4" />
               История
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setShowAdminWiki(true)}>
-              <BookOpen className="mr-1.5 h-4 w-4" />
-              Wiki
-            </Button>
             <FeedbackButton size="sm" />
             <Button variant="outline" size="sm" onClick={() => navigate("/evaluator")}>
               В оценщик
@@ -2860,7 +2857,8 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div className="dns-admin-action-block">
-                      <Button size="sm" variant="outline" className="border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={exportSelectedResultPdf} disabled={pdfLoading || !selectedResultReport}>
+                      <Button size="sm" variant="outline" className="border-[#4a9eff]/45 bg-[#4a9eff]/12 text-[#d7e7ff] hover:bg-[#4a9eff]/20 hover:text-white" onClick={exportSelectedResultPdf} disabled={pdfLoading || !selectedResultReport}>
+                        <FileText className="mr-2 h-4 w-4" />
                         {pdfLoading ? "PDF..." : "Скачать PDF"}
                       </Button>
                       <Button

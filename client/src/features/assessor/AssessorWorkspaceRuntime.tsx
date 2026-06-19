@@ -33,8 +33,21 @@ import {
   MousePointerClick, ListChecks, Settings2, Target, GitBranch,
   ArrowUpRight, ArrowDownRight, SlidersHorizontal, ClipboardCheck, Map,
   Activity, Gauge, Copy, ShieldCheck,
-  LogOut, Save,
+  LogOut, Save, HeartPulse,
 } from "lucide-react";
+
+// Иконка «активные сессии» — сердечный ритм (мягкая пульсация).
+function SessionsHeartIcon({ className }: { className?: string }) {
+  return <HeartPulse className={`dns-assessor-v2-rail-heart ${className ?? ""}`} />;
+}
+// Иконка «результаты» — прыгающие красные/зелёные столбики (анимированный график).
+function ResultsBarsIcon({ className }: { className?: string }) {
+  return (
+    <span className={`dns-assessor-v2-rail-bars ${className ?? ""}`} aria-hidden="true">
+      <i /><i /><i /><i />
+    </span>
+  );
+}
 import { primeAudioPlayback } from "@/data/audio-map";
 import {
   createRemoteLiveSimulation,
@@ -766,7 +779,17 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   };
 
   const isSetupPanel = activePanel === "scenario" || activePanel === "composition" || activePanel === "review";
-  const railItems: Array<{
+  // Гид по заполнению: порядок шагов настройки и их готовность.
+  // «Настройка оценки» завершена, только когда состав подтверждён И всё готово к запуску
+  // (гид ведёт пользователя через под-шаги, а не загорается раньше времени).
+  const setupStepReady = compositionConfirmed && activeSetupValidation.readyToLaunch;
+  const readyByPanel: Partial<Record<AssessorPanel, boolean>> = {
+    participant: participantReady,
+    scenario: setupStepReady,
+  };
+  const fillOrder: AssessorPanel[] = ["participant", "scenario"];
+  const nextToFill = fillOrder.find((id) => !readyByPanel[id]);
+  const baseRailItems: Array<{
     id: AssessorPanel;
     title: string;
     state: string;
@@ -775,9 +798,41 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   }> = [
     { id: "participant", title: "Кандидаты", state: `${visibleParticipantSetups.length}`, icon: Users, active: activePanel === "participant" },
     { id: "scenario", title: "Настройка оценки", state: `${setupProgress}/4`, icon: Settings2, active: isSetupPanel },
-    { id: "sessions", title: "Активные сессии", state: `${monitorSessions.filter((item) => item.status !== "completed").length}`, icon: Activity, active: activePanel === "sessions" },
-    { id: "results", title: "Результаты", state: `${completedSessionCount}`, icon: BarChart3, active: activePanel === "results" },
+    { id: "sessions", title: "Активные сессии", state: `${monitorSessions.filter((item) => item.status !== "completed").length}`, icon: SessionsHeartIcon, active: activePanel === "sessions" },
+    { id: "results", title: "Результаты", state: `${completedSessionCount}`, icon: ResultsBarsIcon, active: activePanel === "results" },
   ];
+  const railItems = baseRailItems.map((item) => ({
+    ...item,
+    ready: readyByPanel[item.id] === true,
+    // Пульс — у следующего незаполненного шага, если пользователь не находится на нём.
+    pulse: item.id === nextToFill && !item.active,
+  }));
+
+  const renderRailItem = (item: (typeof railItems)[number]) => {
+    const Icon = item.icon;
+    const className = [
+      "dns-assessor-v2-rail-item",
+      item.active ? "dns-assessor-v2-rail-item--active" : "",
+      item.ready ? "dns-assessor-v2-rail-item--ready" : "",
+      item.pulse ? "dns-assessor-v2-rail-item--pulse" : "",
+    ].filter(Boolean).join(" ");
+    return (
+      <button
+        key={item.id}
+        type="button"
+        className={className}
+        onClick={() => openPanel(item.id)}
+        aria-current={item.active ? "page" : undefined}
+      >
+        <Icon className="dns-assessor-v2-rail-icon" />
+        <span className="dns-assessor-v2-rail-title">{item.title}</span>
+        <span className="dns-assessor-v2-rail-count">{item.state}</span>
+      </button>
+    );
+  };
+
+  const setupRailItems = railItems.filter((item) => item.id === "participant" || item.id === "scenario");
+  const monitorRailItems = railItems.filter((item) => item.id === "sessions" || item.id === "results");
 
   const renderRail = () => (
     <nav className="dns-assessor-v2-rail" aria-label="Разделы меню оценщика">
@@ -785,42 +840,29 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         <span>D</span>
         <div><strong>DNS SIM</strong><small>Кабинет оценщика</small></div>
       </div>
+      {/* Шаги запуска: заполнить и подтвердить два блока */}
+      <div className="dns-assessor-v2-rail-group-label">Запуск симуляции</div>
       <div className="dns-assessor-v2-rail-nav">
-      {railItems.map((item) => {
-        const Icon = item.icon;
-        const className = [
-          "dns-assessor-v2-rail-item",
-          item.active ? "dns-assessor-v2-rail-item--active" : "",
-        ].filter(Boolean).join(" ");
-
-        return (
-          <button
-            key={item.id}
-            type="button"
-            className={className}
-            onClick={() => openPanel(item.id)}
-            aria-current={item.active ? "page" : undefined}
-          >
-            <Icon className="dns-assessor-v2-rail-icon" />
-            <span className="dns-assessor-v2-rail-title">{item.title}</span>
-            <span className="dns-assessor-v2-rail-count">{item.state}</span>
-          </button>
-        );
-      })}
-      <button type="button" className="dns-assessor-v2-rail-item" onClick={() => setShowWiki(true)}>
-        <BookOpen className="dns-assessor-v2-rail-icon" />
-        <span className="dns-assessor-v2-rail-title">Wiki</span>
-        <ArrowRight className="dns-assessor-v2-rail-arrow" />
-      </button>
+        {setupRailItems.map(renderRailItem)}
+      </div>
+      {/* Мониторинг и отчётность — отделены от шагов запуска */}
+      <div className="dns-assessor-v2-rail-group-label">Мониторинг</div>
+      <div className="dns-assessor-v2-rail-nav">
+        {monitorRailItems.map(renderRailItem)}
       </div>
       <div className="dns-assessor-v2-rail-footer">
         <div className="dns-assessor-v2-rail-profile">
           <span>{(staffPrincipalQuery.data?.displayName || "О").slice(0, 1).toUpperCase()}</span>
-          <div><strong>{staffPrincipalQuery.data?.displayName || "Оценщик"}</strong><small>{staffRole === "admin" ? "Администратор" : "Оценщик"}</small></div>
+          <div><strong>{staffPrincipalQuery.data?.displayName || "Оценщик"}</strong><small>Кабинет оценщика</small></div>
         </div>
-        <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={handleAdminAccess} title="В администратора">
-          <ShieldCheck className="h-4 w-4" /><span>Администратор</span>
+        <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={() => setShowWiki(true)} title="База знаний">
+          <BookOpen className="h-4 w-4" /><span>Wiki</span>
         </button>
+        {staffRole === "admin" && (
+          <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={handleAdminAccess} title="Перейти в кабинет администратора">
+            <ShieldCheck className="h-4 w-4" /><span>В администратора</span>
+          </button>
+        )}
         <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={handleLogout} title="Выйти">
           <LogOut className="h-4 w-4" /><span>Выйти</span>
         </button>
@@ -850,19 +892,38 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     );
   };
 
-  const renderSetupNavigation = () => (
-    <div className="dns-assessor-v2-setup-tabs" role="tablist" aria-label="Настройка запуска">
-      {([
-        ["scenario", "Режим", Target],
-        ["composition", "Состав", ListChecks],
-        ["review", "Проверка", ClipboardCheck],
-      ] as const).map(([id, title, Icon]) => (
-        <button key={id} type="button" className={activePanel === id ? "dns-assessor-v2-setup-tab dns-assessor-v2-setup-tab--active" : "dns-assessor-v2-setup-tab"} onClick={() => setActivePanel(id)}>
-          <Icon className="h-4 w-4" />{title}
-        </button>
-      ))}
-    </div>
-  );
+  const renderSetupNavigation = () => {
+    // Готовность под-шагов настройки и подсказка «куда дальше».
+    const tabReady: Record<"scenario" | "composition" | "review", boolean> = {
+      scenario: scenarioConfirmed,
+      composition: compositionConfirmed,
+      review: compositionConfirmed && activeSetupValidation.readyToLaunch,
+    };
+    const tabOrder: Array<"scenario" | "composition" | "review"> = ["scenario", "composition", "review"];
+    const nextTab = tabOrder.find((id) => !tabReady[id]);
+    return (
+      <div className="dns-assessor-v2-setup-tabs" role="tablist" aria-label="Настройка запуска">
+        {([
+          ["scenario", "Режим", Target],
+          ["composition", "Состав", ListChecks],
+          ["review", "Проверка", ClipboardCheck],
+        ] as const).map(([id, title, Icon]) => {
+          const className = [
+            "dns-assessor-v2-setup-tab",
+            activePanel === id ? "dns-assessor-v2-setup-tab--active" : "",
+            tabReady[id] ? "dns-assessor-v2-setup-tab--ready" : "",
+            id === nextTab && activePanel !== id ? "dns-assessor-v2-setup-tab--pulse" : "",
+          ].filter(Boolean).join(" ");
+          return (
+            <button key={id} type="button" className={className} onClick={() => setActivePanel(id)}>
+              <Icon className="h-4 w-4" />{title}
+              {tabReady[id] && <CheckCircle2 className="dns-assessor-v2-setup-tab-check h-3.5 w-3.5" />}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   const renderParticipantPanel = () => (
     <section className="dns-assessor-v2-panel dns-assessor-v2-main-panel">
