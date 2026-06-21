@@ -2885,3 +2885,90 @@
   background: rgba(255, 107, 0, 0.14) !important;
   color: #142033 !important;
 }
+
+/* ============================================================
+   WIKI администратора — редизайн в стиле iOS 16 (тема-зависимый).
+   Scoped на .dns-admin-wiki: кабинет оценщика не затрагивается.
+   ============================================================ */
+.dns-admin-wiki {
+  font-family: -apple-system, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
+}
+/* Крупный, спокойный заголовок-герой */
+.dns-admin-wiki .dns-assessor-wiki-hero h2 {
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.dns-admin-wiki .dns-assessor-wiki-kicker {
+  letter-spacing: 0.08em;
+}
+/* Карточки — мягкая тень, крупнее радиус, без тяжёлого blur */
+.dns-admin-wiki .dns-assessor-wiki-card,
+.dns-admin-wiki .dns-assessor-wiki-hero,
+.dns-admin-wiki .dns-assessor-wiki-note,
+.dns-admin-wiki .dns-assessor-wiki-process {
+  border-radius: 1.1rem;
+  backdrop-filter: none;
+}
+.dns-admin-wiki .dns-assessor-wiki-summary > div,
+.dns-admin-wiki .dns-assessor-wiki-back {
+  border-radius: 0.85rem;
+}
+
+/* — Светлая тема: белые сгруппированные iOS-листы — */
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-hero,
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-note,
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-process,
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-card {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(20, 34, 56, 0.06), 0 8px 24px rgba(20, 34, 56, 0.05);
+}
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-hero h2,
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-card-head h3,
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-note h3 {
+  color: #1c1c1e !important;
+}
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-hero p,
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-card-summary,
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-note p,
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-columns li {
+  color: rgba(60, 60, 67, 0.74) !important;
+}
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-card-head p {
+  color: rgba(60, 60, 67, 0.55) !important;
+}
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-summary > div {
+  background: #f2f2f7 !important;
+  border-color: rgba(0, 0, 0, 0.06) !important;
+  color: #1c1c1e !important;
+}
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-back {
+  background: #f2f2f7 !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  color: #007aff !important;
+}
+.dns-theme-light .dns-admin-wiki .dns-assessor-wiki-columns h4 {
+  color: #c2410c !important;
+}
+
+/* — Тёмная тема: чистый charcoal вместо навипо — */
+.dns-theme-dark .dns-admin-wiki .dns-assessor-wiki-hero,
+.dns-theme-dark .dns-admin-wiki .dns-assessor-wiki-note,
+.dns-theme-dark .dns-admin-wiki .dns-assessor-wiki-process,
+.dns-theme-dark .dns-admin-wiki .dns-assessor-wiki-card {
+  background: rgba(34, 38, 45, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.28);
+}
+.dns-theme-dark .dns-admin-wiki .dns-assessor-wiki-summary > div,
+.dns-theme-dark .dns-admin-wiki .dns-assessor-wiki-back {
+  background: rgba(0, 0, 0, 0.24) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Мини-мокапы как «встроенные скриншоты»: ровная рамка/радиус в обеих темах */
+.dns-admin-wiki .dns-admin-wiki-shot {
+  border-radius: 0.7rem;
+  overflow: hidden;
+}
