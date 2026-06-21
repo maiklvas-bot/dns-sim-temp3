@@ -39,14 +39,35 @@ function getTransport(): Transporter | null {
   const secure = String(process.env.FEEDBACK_SMTP_SECURE || "").toLowerCase() === "true" || port === 465;
   const user = process.env.FEEDBACK_SMTP_USER;
   const pass = process.env.FEEDBACK_SMTP_PASS;
+  // On-prem Exchange часто имеет внутренний (self-signed/корпоративный CA) TLS-сертификат —
+  // тогда нужно отключить строгую проверку: FEEDBACK_SMTP_TLS_REJECT_UNAUTHORIZED=false.
+  const rejectUnauthorized = String(process.env.FEEDBACK_SMTP_TLS_REJECT_UNAUTHORIZED ?? "true").toLowerCase() !== "false";
+  // Принудительный STARTTLS на 587 (Exchange submission), если сервер не отдаёт TLS сам.
+  const requireTLS = String(process.env.FEEDBACK_SMTP_REQUIRE_TLS ?? "").toLowerCase() === "true";
 
   cachedTransport = nodemailer.createTransport({
     host,
     port,
     secure,
+    requireTLS: requireTLS || undefined,
     auth: user && pass ? { user, pass } : undefined,
+    tls: { rejectUnauthorized },
   });
   return cachedTransport;
+}
+
+/** Проверка соединения с почтовым сервером (для диагностики Exchange/SMTP без отправки письма). */
+export async function verifyFeedbackTransport(): Promise<{ ok: boolean; error?: string }> {
+  const transport = getTransport();
+  if (!transport) {
+    return { ok: false, error: "NOT_CONFIGURED" };
+  }
+  try {
+    await transport.verify();
+    return { ok: true };
+  } catch (error: any) {
+    return { ok: false, error: error?.message || String(error) };
+  }
 }
 
 export interface FeedbackPayload {

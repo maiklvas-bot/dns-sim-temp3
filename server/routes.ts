@@ -29,7 +29,7 @@ import {
   loginRateLimiter,
   recordFailedLogin,
 } from "./middleware/rate-limiter";
-import { FeedbackMailNotConfiguredError, sendFeedbackMail } from "./mail";
+import { FeedbackMailNotConfiguredError, isFeedbackMailConfigured, sendFeedbackMail, verifyFeedbackTransport } from "./mail";
 import { generateCsrfToken, getCsrfToken } from "./middleware/csrf";
 import { internalApiError } from "./middleware/error-handler";
 import {
@@ -526,6 +526,21 @@ export async function registerRoutes(
         });
         res.status(502).json({ message: "Не удалось отправить сообщение. Попробуйте позже.", code: "MAIL_SEND_FAILED" });
       }
+    }),
+  );
+
+  // Диагностика почты (только админ): проверка соединения с Exchange/SMTP без отправки письма.
+  app.get(
+    "/api/feedback/diagnostics",
+    requireAdmin,
+    asyncHandler(async (_req, res) => {
+      const configured = isFeedbackMailConfigured();
+      if (!configured) {
+        res.json({ configured: false, ok: false, error: "SMTP/Exchange не настроен (нет FEEDBACK_SMTP_HOST + FEEDBACK_FROM)." });
+        return;
+      }
+      const result = await verifyFeedbackTransport();
+      res.json({ configured: true, ...result });
     }),
   );
 
