@@ -98,6 +98,14 @@ export const staffElevationBodySchema = z.object({
   password: passwordSchema,
 }).strict();
 
+/** Форма обратной связи (категория, сообщение, опц. контакт + контекст экрана). */
+export const feedbackBodySchema = z.object({
+  category: z.string().trim().min(1).max(80),
+  message: z.string().trim().min(5, "Сообщение слишком короткое").max(4000),
+  contact: z.string().trim().max(200).optional(),
+  url: z.string().trim().max(300).optional(),
+}).strict();
+
 /**
  * Схема для создания симуляционной сессии.
  * Валидация всех полей с ограничениями диапазонов.
