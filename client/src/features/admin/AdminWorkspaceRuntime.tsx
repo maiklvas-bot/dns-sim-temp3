@@ -3637,15 +3637,17 @@ export default function AdminPage() {
             <div className="space-y-4 xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:self-start xl:overflow-y-auto xl:overflow-x-hidden xl:pr-2 custom-scroll">
               <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-sm font-semibold text-white">Влияние выбранного кейса</div>
                     <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
                       График показывает статичный профиль симуляции по контенту и регулируемый вклад кейса, который вы сейчас настраиваете.
                     </div>
                   </div>
                   {selectedWeightCase && (
-                    <div className="rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-3 py-1 text-[11px] text-[#dbe2f0]">
-                      {selectedWeightCase.id} • {selectedCaseWeight}%
+                    <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-3 py-1.5 text-[11px] font-semibold text-[#dbe2f0]">
+                      <span className="font-mono tracking-[0.06em] text-[#8ec5ff]">{selectedWeightCase.id}</span>
+                      <span className="text-[#4a607e]">·</span>
+                      <span>{selectedCaseWeight}%</span>
                     </div>
                   )}
                 </div>
