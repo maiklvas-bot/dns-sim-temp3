@@ -684,6 +684,166 @@
   --destructive-border: hsl(var(--destructive));
 }
 
+/* Авторская планка продукта — читаемый цвет вне зависимости от темы/контекста:
+   светлый по умолчанию (тёмные фоны: авторизация, симуляция, тёмная тема),
+   тёмный — внутри светлой темы. Не зависит от токена muted-foreground. */
+.dns-product-footer-text {
+  color: rgba(226, 234, 247, 0.72);
+}
+.dns-theme-light .dns-product-footer-text {
+  color: rgba(40, 52, 72, 0.74);
+}
+
+/* ===== «Служебный вход» в стиле iOS 16 (по референсу Figma) ===== */
+.dns-ios-login-wrap {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+.dns-ios-login {
+  width: 100%;
+  max-width: 25rem;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 30px 70px rgba(6, 12, 24, 0.45), 0 2px 10px rgba(6, 12, 24, 0.2);
+  padding: 1.5rem 1.4rem 1.6rem;
+  font-family: -apple-system, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
+  color: #1c1c1e;
+}
+.dns-ios-login__brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.dns-ios-login__mascot {
+  height: 3.6rem;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.18));
+}
+.dns-ios-login__title {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #1c1c1e;
+}
+.dns-ios-login__subtitle {
+  margin: 0.2rem 0 1.1rem;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  color: rgba(60, 60, 67, 0.6);
+}
+/* Сегмент-контрол (iOS) */
+.dns-ios-segmented {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 2px;
+  border-radius: 0.7rem;
+  background: rgba(118, 118, 128, 0.12);
+  margin-bottom: 1.05rem;
+}
+.dns-ios-segmented__thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  border-radius: 0.56rem;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 1px rgba(0, 0, 0, 0.04);
+  transition: transform 240ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.dns-ios-segmented__thumb[data-role="admin"] {
+  transform: translateX(100%);
+}
+.dns-ios-segmented__seg {
+  position: relative;
+  z-index: 1;
+  padding: 0.5rem;
+  border: 0;
+  background: transparent;
+  color: rgba(60, 60, 67, 0.7);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+.dns-ios-segmented__seg[aria-selected="true"] {
+  color: #1c1c1e;
+}
+/* Сгруппированные поля (iOS inset) */
+.dns-ios-field-group {
+  border-radius: 0.85rem;
+  background: #f2f2f7;
+  overflow: hidden;
+  transition: box-shadow 160ms ease;
+}
+.dns-ios-field-group:focus-within {
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.2);
+}
+.dns-ios-field__input {
+  width: 100%;
+  padding: 0.92rem 1rem;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #1c1c1e;
+  font-size: 1.05rem;
+}
+.dns-ios-field__input::placeholder {
+  color: rgba(60, 60, 67, 0.5);
+}
+.dns-ios-field-sep {
+  height: 1px;
+  margin-left: 1rem;
+  background: rgba(60, 60, 67, 0.16);
+}
+.dns-ios-error {
+  margin-top: 0.7rem;
+  border-radius: 0.7rem;
+  background: rgba(255, 59, 48, 0.1);
+  color: #d70015;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 0.6rem 0.85rem;
+}
+.dns-ios-primary {
+  width: 100%;
+  margin-top: 1.1rem;
+  padding: 0.92rem;
+  border: 0;
+  border-radius: 0.85rem;
+  background: #ff6b00;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms ease, transform 120ms ease;
+}
+.dns-ios-primary:hover { background: #ec6200; }
+.dns-ios-primary:active { transform: scale(0.985); }
+.dns-ios-primary:disabled { opacity: 0.55; cursor: default; }
+.dns-ios-ghost {
+  width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.6rem;
+  border: 0;
+  background: transparent;
+  color: #007aff;
+  font-size: 0.98rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dns-ios-ghost:disabled { opacity: 0.5; cursor: default; }
+
 /* Theme switcher */
 .dns-theme-toggle {
   display: inline-flex;

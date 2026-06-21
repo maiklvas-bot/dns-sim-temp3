@@ -713,6 +713,19 @@
   font-size: 0.58rem;
 }
 
+/* Светлая тема: профиль рейла администратора — читаемые тёмные тексты
+   (раньше белый strong и аквамарин small сливались со светлым фоном). */
+.dns-admin-shell.dns-theme-light .dns-admin-structure-profile {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+.dns-admin-shell.dns-theme-light .dns-admin-structure-profile strong {
+  color: #1a2433;
+}
+.dns-admin-shell.dns-theme-light .dns-admin-structure-profile small {
+  color: #11774a;
+}
+
 .dns-product-shell .dns-admin-case-control-panel {
   padding: 0.85rem;
   border: 1px solid rgba(255, 107, 0, 0.34);
@@ -873,3 +886,243 @@
     grid-template-columns: auto minmax(0, 1fr);
   }
 }
+
+/* ============================================================
+   Цветовая градация редактора кейса (iOS-grouped depth):
+   группы — утопленный фон, карточки — приподнятые с акцентом,
+   под-поля — снова утоплены. Чёткая вложенность вместо «всё плоское».
+   ============================================================ */
+
+/* — Светлая тема — */
+.dns-admin-shell.dns-theme-light .dns-admin-options-card,
+.dns-admin-shell.dns-theme-light .dns-admin-cycle-detail {
+  background: #eceef3 !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+.dns-admin-shell.dns-theme-light .dns-admin-option-card {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.09) !important;
+  border-left: 3px solid var(--dns-admin-scene-accent, #ff6b00) !important;
+  box-shadow: 0 2px 8px rgba(20, 34, 56, 0.07);
+}
+.dns-admin-shell.dns-theme-light .dns-admin-option-routing-grid,
+.dns-admin-shell.dns-theme-light .dns-admin-store-effects-grid,
+.dns-admin-shell.dns-theme-light .dns-admin-cycle-meta-grid {
+  background: #f4f5f8;
+  border-radius: 0.6rem;
+  padding: 0.7rem;
+}
+
+/* — Тёмная тема — */
+.dns-admin-shell.dns-theme-dark .dns-admin-options-card,
+.dns-admin-shell.dns-theme-dark .dns-admin-cycle-detail {
+  background: rgba(0, 0, 0, 0.24) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.dns-admin-shell.dns-theme-dark .dns-admin-option-card {
+  background: rgba(255, 255, 255, 0.055) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  border-left: 3px solid var(--dns-admin-scene-accent, #ff6b00) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+}
+.dns-admin-shell.dns-theme-dark .dns-admin-option-routing-grid,
+.dns-admin-shell.dns-theme-dark .dns-admin-store-effects-grid,
+.dns-admin-shell.dns-theme-dark .dns-admin-cycle-meta-grid {
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 0.6rem;
+  padding: 0.7rem;
+}
+
+/* Номер варианта — акцентный бейдж, чтобы карточки читались как список шагов */
+.dns-admin-shell .dns-admin-option-card > div:first-child {
+  align-items: center;
+}
+
+/* ============================================================
+   Схема путей кейса (дерево/BPMN предпросмотра) — отдельное окно.
+   ============================================================ */
+.dns-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.dns-flow-empty {
+  border: 1px dashed var(--dns-admin-border, rgba(255, 255, 255, 0.16));
+  border-radius: 0.85rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  opacity: 0.75;
+}
+.dns-flow-terminal {
+  display: inline-flex;
+  align-self: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+.dns-flow-terminal--start {
+  background: rgba(74, 158, 255, 0.16);
+  color: #4a9eff;
+  border: 1px solid rgba(74, 158, 255, 0.45);
+}
+.dns-flow-terminal--finish {
+  margin-top: 0.4rem;
+  background: rgba(0, 184, 148, 0.16);
+  color: #00a884;
+  border: 1px solid rgba(0, 184, 148, 0.45);
+}
+.dns-flow-cycle {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr);
+}
+.dns-flow-rail {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.dns-flow-rail::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--dns-admin-border, rgba(120, 140, 170, 0.3));
+}
+.dns-flow-rail-dot {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.9rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.82rem;
+  color: #fff;
+  background: var(--dns-admin-scene-accent, #ff6b00);
+  box-shadow: 0 0 0 4px rgba(var(--dns-admin-scene-accent-rgb, 255, 107, 0), 0.18);
+}
+.dns-flow-cycle-body {
+  min-width: 0;
+  padding: 0.85rem 0 1.15rem 0.4rem;
+}
+.dns-flow-node {
+  border-radius: 0.85rem;
+  border: 1px solid var(--dns-admin-border, rgba(120, 140, 170, 0.28));
+  padding: 0.7rem 0.9rem;
+}
+.dns-flow-node-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dns-flow-node-badge {
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+.dns-flow-prio {
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+}
+.dns-flow-prio[data-p="critical"] { background: rgba(255, 68, 68, 0.16); color: #ff7a7a; }
+.dns-flow-prio[data-p="high"] { background: rgba(255, 179, 0, 0.18); color: #d99400; }
+.dns-flow-prio[data-p="final"] { background: rgba(0, 184, 148, 0.16); color: #00a884; }
+.dns-flow-node-signal {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+.dns-flow-gateway {
+  margin: 0.5rem 0 0.5rem 0.4rem;
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.55;
+}
+.dns-flow-options {
+  display: grid;
+  gap: 0.5rem;
+}
+.dns-flow-noopt {
+  font-size: 0.78rem;
+  opacity: 0.6;
+  padding: 0.5rem 0.2rem;
+}
+.dns-flow-option {
+  --t: 120, 140, 170;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: start;
+  border: 1px solid rgba(var(--t), 0.4);
+  border-left-width: 3px;
+  border-radius: 0.7rem;
+  padding: 0.6rem 0.75rem;
+}
+.dns-flow-option[data-tone="pos"] { --t: 0, 184, 148; }
+.dns-flow-option[data-tone="neg"] { --t: 255, 68, 68; }
+.dns-flow-option[data-tone="neutral"] { --t: 217, 148, 0; }
+.dns-flow-letter {
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 0.4rem;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+  font-size: 0.74rem;
+  color: #fff;
+  background: rgb(var(--t));
+}
+.dns-flow-option-text {
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+.dns-flow-option-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.dns-flow-score {
+  font-weight: 900;
+  color: rgb(var(--t));
+}
+.dns-flow-target {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  opacity: 0.85;
+}
+.dns-flow-target[data-terminal="true"] { color: #00a884; opacity: 1; }
+.dns-flow-delay {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  opacity: 0.7;
+}
+
+/* — Тёмная тема — */
+.dns-admin-shell.dns-theme-dark .dns-flow-node { background: rgba(255, 255, 255, 0.05); }
+.dns-admin-shell.dns-theme-dark .dns-flow-option { background: rgba(255, 255, 255, 0.03); }
+.dns-admin-shell.dns-theme-dark .dns-flow { color: #e6edf3; }
+/* — Светлая тема — */
+.dns-admin-shell.dns-theme-light .dns-flow { color: #1c1c1e; }
+.dns-admin-shell.dns-theme-light .dns-flow-node { background: #f2f2f7; }
+.dns-admin-shell.dns-theme-light .dns-flow-option { background: #ffffff; box-shadow: 0 1px 4px rgba(20, 34, 56, 0.06); }
+.dns-admin-shell.dns-theme-light .dns-flow-rail::before { background: rgba(0, 0, 0, 0.12); }
+.dns-admin-shell.dns-theme-light .dns-flow-node { border-color: rgba(0, 0, 0, 0.08); }

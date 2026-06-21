@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { BrandAccessShell, BrandLogo } from "@/components/brand-access-shell";
+import { ProductFooter } from "@/components/product-footer";
 import {
   Dialog,
   DialogContent,
@@ -241,6 +242,8 @@ export default function RoleSelectPage() {
             </span>
           </article>
         </section>
+
+        <ProductFooter version="" />
       </main>
     </BrandAccessShell>
   );

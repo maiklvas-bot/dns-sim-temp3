@@ -48,6 +48,20 @@ function ResultsBarsIcon({ className }: { className?: string }) {
     </span>
   );
 }
+
+// Грейс-период административной сессии: после подтверждения админ-доступом
+// возврат в кабинет администратора без повторного пароля доступен 10 минут.
+const ADMIN_GRACE_MS = 10 * 60 * 1000;
+const ADMIN_CONFIRM_KEY = "dns-admin-confirmed-at";
+function markAdminConfirmed() {
+  try { localStorage.setItem(ADMIN_CONFIRM_KEY, String(Date.now())); } catch { /* нет доступа к storage */ }
+}
+function isAdminSessionFresh() {
+  try {
+    const ts = Number(localStorage.getItem(ADMIN_CONFIRM_KEY) || 0);
+    return Number.isFinite(ts) && ts > 0 && Date.now() - ts < ADMIN_GRACE_MS;
+  } catch { return false; }
+}
 import { primeAudioPlayback } from "@/data/audio-map";
 import {
   createRemoteLiveSimulation,
@@ -168,11 +182,14 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   };
 
   const handleAdminAccess = () => {
-    if (staffRole === "admin") {
+    // Свежая админ-сессия (вход/подтверждение < 10 мин назад) — переход без пароля.
+    if (staffRole === "admin" && isAdminSessionFresh()) {
+      markAdminConfirmed();
       navigate("/admin");
       return;
     }
 
+    // Иначе (оценщик ИЛИ админ с истёкшим грейсом) — требуем пароль администратора.
     setAdminPassword("");
     setAdminAccessError("");
     setAdminAccessOpen(true);
@@ -195,6 +212,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       const response = await apiRequest("POST", "/api/staff/elevate", { password: adminPassword });
       const principal = await response.json();
       queryClient.setQueryData(["/api/staff/me"], principal);
+      markAdminConfirmed();
       setAdminAccessOpen(false);
       navigate("/admin");
     } catch (error: any) {
@@ -845,9 +863,9 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       <div className="dns-assessor-v2-rail-nav">
         {setupRailItems.map(renderRailItem)}
       </div>
-      {/* Мониторинг и отчётность — отделены от шагов запуска */}
-      <div className="dns-assessor-v2-rail-group-label">Мониторинг</div>
-      <div className="dns-assessor-v2-rail-nav">
+      {/* Мониторинг и отчётность — отделены и сдвинуты ниже */}
+      <div className="dns-assessor-v2-rail-group-label dns-assessor-v2-rail-group-label--monitor">Мониторинг</div>
+      <div className="dns-assessor-v2-rail-nav dns-assessor-v2-rail-nav--monitor">
         {monitorRailItems.map(renderRailItem)}
       </div>
       <div className="dns-assessor-v2-rail-footer">
@@ -858,11 +876,9 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={() => setShowWiki(true)} title="База знаний">
           <BookOpen className="h-4 w-4" /><span>Wiki</span>
         </button>
-        {staffRole === "admin" && (
-          <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={handleAdminAccess} title="Перейти в кабинет администратора">
-            <ShieldCheck className="h-4 w-4" /><span>В администратора</span>
-          </button>
-        )}
+        <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={handleAdminAccess} title="Перейти в кабинет администратора (нужен пароль администратора)">
+          <ShieldCheck className="h-4 w-4" /><span>В администратора</span>
+        </button>
         <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={handleLogout} title="Выйти">
           <LogOut className="h-4 w-4" /><span>Выйти</span>
         </button>

@@ -79,6 +79,7 @@ import { ADMIN_NAV_ICONS, ADMIN_VISUALS } from "./admin-constants";
 import type { AdminChannelTab as ChannelTab, AdminTabKey as TabKey, SystemSoundSettingKey } from "./admin-types";
 import { AdminVisualPanel } from "./components/AdminVisualPanel";
 import { AdminWiki } from "./components/AdminWiki";
+import { CaseFlowDiagram } from "./components/CaseFlowDiagram";
 import { AdminWikiDialog } from "./components/AdminWikiDialog";
 import { CompetencyRoleSelector, Field, FieldArea, MultiSelectField, SelectField, SuggestField } from "./components/AdminFields";
 import { CompetencyHorizontalImpactChart, type CompetencyImpactDatum } from "./components/CompetencyHorizontalImpactChart";
@@ -1126,6 +1127,7 @@ export default function AdminPage() {
   const [selectedWeightCaseId, setSelectedWeightCaseId] = useState<string | null>(null);
   const [selectedCaseCycleIndex, setSelectedCaseCycleIndex] = useState(0);
   const [caseEditorOpen, setCaseEditorOpen] = useState(false);
+  const [flowPreviewOpen, setFlowPreviewOpen] = useState(false);
   const [showAdminWiki, setShowAdminWiki] = useState(false);
   const [caseWizardOpen, setCaseWizardOpen] = useState(false);
   const [signalWizardOpen, setSignalWizardOpen] = useState(false);
@@ -2341,13 +2343,13 @@ export default function AdminPage() {
                     ? `средний уровень по ${overviewMetrics.completed} завершённым прохождениям.`
                     : "появится, когда будут завершённые прохождения."}
                 </p>
-                <div className="mt-2 h-[300px]">
+                <div className="mt-2 h-[360px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={radarChartData} outerRadius="70%">
-                      <PolarGrid stroke="#273449" />
-                      <PolarAngleAxis dataKey="competency" tick={{ fill: "#a7b7cf", fontSize: 10 }} />
-                      <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fill: "#5e7492", fontSize: 10 }} />
-                      <RechartsTooltip contentStyle={{ background: "#101826", border: "1px solid #2a3a4e", borderRadius: 12 }} labelStyle={{ color: "#fff" }} />
+                    <RadarChart data={radarChartData} outerRadius="84%" margin={{ top: 18, right: 26, bottom: 18, left: 26 }}>
+                      <PolarGrid stroke={theme === "light" ? "#d3dae6" : "#273449"} />
+                      <PolarAngleAxis dataKey="competency" tick={{ fill: theme === "light" ? "#33425a" : "#a7b7cf", fontSize: 11 }} />
+                      <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fill: theme === "light" ? "#6b7a90" : "#5e7492", fontSize: 10 }} />
+                      <RechartsTooltip contentStyle={{ background: theme === "light" ? "#ffffff" : "#101826", border: "1px solid #2a3a4e", borderRadius: 12 }} labelStyle={{ color: theme === "light" ? "#1a2433" : "#fff" }} />
                       <Legend wrapperStyle={{ fontSize: 12 }} />
                       <Radar name="НАДО" dataKey="target" stroke="#4a9eff" fill="#4a9eff" fillOpacity={0.12} strokeWidth={2} />
                       <Radar name="ФАКТ" dataKey="fact" stroke="#00d4aa" fill="#00d4aa" fillOpacity={0.12} strokeWidth={2} />
@@ -2510,9 +2512,9 @@ export default function AdminPage() {
                           <Save className="mr-2 h-4 w-4" />
                           {saving ? "Сохраняем..." : "Сохранить"}
                         </Button>
-                        <Button type="button" variant="outline" onClick={focusCaseLogicPreview}>
+                        <Button type="button" variant="outline" onClick={() => setFlowPreviewOpen(true)}>
                           <Eye className="mr-2 h-4 w-4" />
-                          Предпросмотр
+                          Схема путей
                         </Button>
                         <Button type="button" variant="outline" onClick={focusCaseLogicPreview}>
                           {caseSetupIssues.length === 0 ? <CheckCircle2 className="mr-2 h-4 w-4" /> : <AlertTriangle className="mr-2 h-4 w-4" />}
@@ -2534,6 +2536,18 @@ export default function AdminPage() {
                   </div>
                 )}
               </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={flowPreviewOpen} onOpenChange={setFlowPreviewOpen}>
+            <DialogContent className={`dns-product-shell dns-admin-shell ${themeClass} flex h-[90vh] max-h-[90vh] w-[92vw] max-w-[860px] flex-col gap-0 overflow-hidden p-0`}>
+              <DialogHeader className="space-y-0.5 border-b border-border px-5 py-3.5 text-left">
+                <DialogTitle className="text-[15px]">Схема путей · {caseDraft?.title || caseDraft?.id || "Кейс"}</DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">Дерево ответов: что произойдёт при каждом выборе студента и куда ведёт переход по циклам.</DialogDescription>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto px-5 py-5 custom-scroll">
+                <CaseFlowDiagram caseItem={caseDraft} />
               </div>
             </DialogContent>
           </Dialog>
@@ -2903,15 +2917,15 @@ export default function AdminPage() {
                           : "Без результата"}
                       </div>
                     </div>
-                    <div className="mt-4 h-[340px]">
+                    <div className="mt-4 h-[380px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart data={radarChartData} outerRadius="72%">
-                          <PolarGrid stroke="#273449" />
-                          <PolarAngleAxis dataKey="competency" tick={{ fill: "#a7b7cf", fontSize: 10 }} />
-                          <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fill: "#5e7492", fontSize: 10 }} />
+                        <RadarChart data={radarChartData} outerRadius="84%" margin={{ top: 18, right: 28, bottom: 18, left: 28 }}>
+                          <PolarGrid stroke={theme === "light" ? "#d3dae6" : "#273449"} />
+                          <PolarAngleAxis dataKey="competency" tick={{ fill: theme === "light" ? "#33425a" : "#a7b7cf", fontSize: 11 }} />
+                          <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fill: theme === "light" ? "#6b7a90" : "#5e7492", fontSize: 10 }} />
                           <RechartsTooltip
-                            contentStyle={{ background: "#101826", border: "1px solid #2a3a4e", borderRadius: 12 }}
-                            labelStyle={{ color: "#fff" }}
+                            contentStyle={{ background: theme === "light" ? "#ffffff" : "#101826", border: "1px solid #2a3a4e", borderRadius: 12 }}
+                            labelStyle={{ color: theme === "light" ? "#1a2433" : "#fff" }}
                           />
                           <Legend wrapperStyle={{ fontSize: 12 }} />
                           <Radar name="НАДО" dataKey="target" stroke="#4a9eff" fill="#4a9eff" fillOpacity={0.12} strokeWidth={2} />
@@ -3637,15 +3651,17 @@ export default function AdminPage() {
             <div className="space-y-4 xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:self-start xl:overflow-y-auto xl:overflow-x-hidden xl:pr-2 custom-scroll">
               <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div>
+                  <div className="min-w-0">
                     <div className="text-sm font-semibold text-white">Влияние выбранного кейса</div>
                     <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
                       График показывает статичный профиль симуляции по контенту и регулируемый вклад кейса, который вы сейчас настраиваете.
                     </div>
                   </div>
                   {selectedWeightCase && (
-                    <div className="rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-3 py-1 text-[11px] text-[#dbe2f0]">
-                      {selectedWeightCase.id} • {selectedCaseWeight}%
+                    <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-3 py-1.5 text-[11px] font-semibold text-[#dbe2f0]">
+                      <span className="font-mono tracking-[0.06em] text-[#8ec5ff]">{selectedWeightCase.id}</span>
+                      <span className="text-[#4a607e]">·</span>
+                      <span>{selectedCaseWeight}%</span>
                     </div>
                   )}
                 </div>

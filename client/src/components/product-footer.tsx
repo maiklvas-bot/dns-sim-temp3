@@ -17,7 +17,7 @@ export function ProductFooter({
 }) {
   return (
     <div className={cn("dns-product-footer relative z-10 mt-6 flex items-center justify-center px-4 py-3", className)}>
-      <span className="text-center text-[11px] leading-none text-muted-foreground/70">
+      <span className="dns-product-footer-text text-center text-[11px] font-medium leading-none">
         Developed by MV &amp; Alo72.&nbsp;&nbsp;Copyright © 2026 DNS Retail LLC. All rights reserved.
       </span>
       {version ? (
