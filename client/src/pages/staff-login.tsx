@@ -48,6 +48,10 @@ export default function StaffLoginPage() {
       const response = await apiRequest("POST", "/api/staff/login", { role, username: trimmedUsername, password });
       const principal = await response.json();
       queryClient.setQueryData(["/api/staff/me"], principal);
+      // Отмечаем подтверждение админ-доступа (грейс 10 минут для возврата из оценщика без пароля).
+      if (principal.role === "admin") {
+        try { localStorage.setItem("dns-admin-confirmed-at", String(Date.now())); } catch { /* нет storage */ }
+      }
       navigate(principal.role === "admin" ? "/admin" : "/evaluator");
     } catch (err: any) {
       setError(err.message || "Не удалось войти");

@@ -392,7 +392,11 @@ export async function registerRoutes(
     validateBody(staffElevationBodySchema),
     asyncHandler(async (req, res) => {
       const evaluatorActor = req.session.staff || null;
-      if (req.session.staff?.role !== "evaluator") {
+      // Подтверждение администратора доступно из сессии оценщика (повышение роли) ИЛИ
+      // из админ-сессии (повторное подтверждение пароля после истечения грейс-периода).
+      // В обоих случаях требуется верный пароль администратора (ниже).
+      const sessionRole = req.session.staff?.role;
+      if (sessionRole !== "evaluator" && sessionRole !== "admin") {
         recordAudit(req, {
           area: "security",
           action: "role_elevation_denied",
@@ -403,8 +407,8 @@ export async function registerRoutes(
           summary: "Отклонена попытка перехода в меню администратора",
         });
         res.status(403).json({
-          message: "Повышение роли доступно только из меню оценщика.",
-          code: "EVALUATOR_REQUIRED",
+          message: "Подтверждение администратора доступно только авторизованному персоналу.",
+          code: "STAFF_REQUIRED",
         });
         return;
       }
