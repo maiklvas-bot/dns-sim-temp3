@@ -79,6 +79,7 @@ import { ADMIN_NAV_ICONS, ADMIN_VISUALS } from "./admin-constants";
 import type { AdminChannelTab as ChannelTab, AdminTabKey as TabKey, SystemSoundSettingKey } from "./admin-types";
 import { AdminVisualPanel } from "./components/AdminVisualPanel";
 import { AdminWiki } from "./components/AdminWiki";
+import { CaseFlowDiagram } from "./components/CaseFlowDiagram";
 import { AdminWikiDialog } from "./components/AdminWikiDialog";
 import { CompetencyRoleSelector, Field, FieldArea, MultiSelectField, SelectField, SuggestField } from "./components/AdminFields";
 import { CompetencyHorizontalImpactChart, type CompetencyImpactDatum } from "./components/CompetencyHorizontalImpactChart";
@@ -1126,6 +1127,7 @@ export default function AdminPage() {
   const [selectedWeightCaseId, setSelectedWeightCaseId] = useState<string | null>(null);
   const [selectedCaseCycleIndex, setSelectedCaseCycleIndex] = useState(0);
   const [caseEditorOpen, setCaseEditorOpen] = useState(false);
+  const [flowPreviewOpen, setFlowPreviewOpen] = useState(false);
   const [showAdminWiki, setShowAdminWiki] = useState(false);
   const [caseWizardOpen, setCaseWizardOpen] = useState(false);
   const [signalWizardOpen, setSignalWizardOpen] = useState(false);
@@ -2510,9 +2512,9 @@ export default function AdminPage() {
                           <Save className="mr-2 h-4 w-4" />
                           {saving ? "Сохраняем..." : "Сохранить"}
                         </Button>
-                        <Button type="button" variant="outline" onClick={focusCaseLogicPreview}>
+                        <Button type="button" variant="outline" onClick={() => setFlowPreviewOpen(true)}>
                           <Eye className="mr-2 h-4 w-4" />
-                          Предпросмотр
+                          Схема путей
                         </Button>
                         <Button type="button" variant="outline" onClick={focusCaseLogicPreview}>
                           {caseSetupIssues.length === 0 ? <CheckCircle2 className="mr-2 h-4 w-4" /> : <AlertTriangle className="mr-2 h-4 w-4" />}
@@ -2534,6 +2536,18 @@ export default function AdminPage() {
                   </div>
                 )}
               </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={flowPreviewOpen} onOpenChange={setFlowPreviewOpen}>
+            <DialogContent className={`dns-product-shell dns-admin-shell ${themeClass} flex h-[90vh] max-h-[90vh] w-[92vw] max-w-[860px] flex-col gap-0 overflow-hidden p-0`}>
+              <DialogHeader className="space-y-0.5 border-b border-border px-5 py-3.5 text-left">
+                <DialogTitle className="text-[15px]">Схема путей · {caseDraft?.title || caseDraft?.id || "Кейс"}</DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">Дерево ответов: что произойдёт при каждом выборе студента и куда ведёт переход по циклам.</DialogDescription>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto px-5 py-5 custom-scroll">
+                <CaseFlowDiagram caseItem={caseDraft} />
               </div>
             </DialogContent>
           </Dialog>
