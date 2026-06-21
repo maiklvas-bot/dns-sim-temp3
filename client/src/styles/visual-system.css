@@ -1255,15 +1255,15 @@ html[data-dns-theme="light"] .dns-access-dialog [class*="bg-[#141c2b"] {
 .dns-home-character--welcome {
   right: -1rem;
   width: auto;
-  height: clamp(26rem, 56svh, 39rem);
+  height: clamp(23rem, 50svh, 35rem);
 }
 
 .dns-home-analyst-scene {
   position: absolute;
   z-index: 2;
   bottom: -0.75rem;
-  left: -0.5rem;
-  width: clamp(26rem, 33vw, 40rem);
+  left: -1.5rem;
+  width: clamp(22rem, 27vw, 33rem);
   aspect-ratio: 1303 / 1251;
   animation: dns-visual-float 7s ease-in-out -3.5s infinite;
 }
@@ -1332,9 +1332,9 @@ html[data-dns-theme="light"] .dns-access-dialog [class*="bg-[#141c2b"] {
 .dns-home-hud {
   position: absolute;
   z-index: 4;
-  top: 8%;
+  top: 2%;
   display: grid;
-  width: min(14rem, 72%);
+  width: min(13rem, 70%);
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.7rem;
   align-items: start;
@@ -1353,11 +1353,11 @@ html[data-dns-theme="light"] .dns-access-dialog [class*="bg-[#141c2b"] {
 }
 
 .dns-home-hud--left {
-  left: 0;
+  left: -1rem;
 }
 
 .dns-home-hud--right {
-  right: -0.65rem;
+  right: -1rem;
 }
 
 .dns-home-hud__icon {
