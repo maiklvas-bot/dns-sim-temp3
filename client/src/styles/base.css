@@ -589,6 +589,16 @@
   font-size: clamp(0.875rem, 0.45vw + 0.74rem, 1rem);
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
+}
+
+/* Авторская планка продукта — читаемый цвет вне зависимости от темы/контекста:
+   светлый по умолчанию (тёмные фоны: авторизация, симуляция, тёмная тема),
+   тёмный — внутри светлой темы. Не зависит от токена muted-foreground. */
+.dns-product-footer-text {
+  color: rgba(226, 234, 247, 0.72);
+}
+.dns-theme-light .dns-product-footer-text {
+  color: rgba(40, 52, 72, 0.74);
   --opaque-button-border-intensity: 9;
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);

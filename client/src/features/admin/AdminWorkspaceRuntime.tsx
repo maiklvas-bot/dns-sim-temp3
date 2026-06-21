@@ -2341,13 +2341,13 @@ export default function AdminPage() {
                     ? `средний уровень по ${overviewMetrics.completed} завершённым прохождениям.`
                     : "появится, когда будут завершённые прохождения."}
                 </p>
-                <div className="mt-2 h-[300px]">
+                <div className="mt-2 h-[360px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={radarChartData} outerRadius="70%">
-                      <PolarGrid stroke="#273449" />
-                      <PolarAngleAxis dataKey="competency" tick={{ fill: "#a7b7cf", fontSize: 10 }} />
-                      <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fill: "#5e7492", fontSize: 10 }} />
-                      <RechartsTooltip contentStyle={{ background: "#101826", border: "1px solid #2a3a4e", borderRadius: 12 }} labelStyle={{ color: "#fff" }} />
+                    <RadarChart data={radarChartData} outerRadius="84%" margin={{ top: 18, right: 26, bottom: 18, left: 26 }}>
+                      <PolarGrid stroke={theme === "light" ? "#d3dae6" : "#273449"} />
+                      <PolarAngleAxis dataKey="competency" tick={{ fill: theme === "light" ? "#33425a" : "#a7b7cf", fontSize: 11 }} />
+                      <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fill: theme === "light" ? "#6b7a90" : "#5e7492", fontSize: 10 }} />
+                      <RechartsTooltip contentStyle={{ background: theme === "light" ? "#ffffff" : "#101826", border: "1px solid #2a3a4e", borderRadius: 12 }} labelStyle={{ color: theme === "light" ? "#1a2433" : "#fff" }} />
                       <Legend wrapperStyle={{ fontSize: 12 }} />
                       <Radar name="НАДО" dataKey="target" stroke="#4a9eff" fill="#4a9eff" fillOpacity={0.12} strokeWidth={2} />
                       <Radar name="ФАКТ" dataKey="fact" stroke="#00d4aa" fill="#00d4aa" fillOpacity={0.12} strokeWidth={2} />
@@ -2903,15 +2903,15 @@ export default function AdminPage() {
                           : "Без результата"}
                       </div>
                     </div>
-                    <div className="mt-4 h-[340px]">
+                    <div className="mt-4 h-[380px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart data={radarChartData} outerRadius="72%">
-                          <PolarGrid stroke="#273449" />
-                          <PolarAngleAxis dataKey="competency" tick={{ fill: "#a7b7cf", fontSize: 10 }} />
-                          <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fill: "#5e7492", fontSize: 10 }} />
+                        <RadarChart data={radarChartData} outerRadius="84%" margin={{ top: 18, right: 28, bottom: 18, left: 28 }}>
+                          <PolarGrid stroke={theme === "light" ? "#d3dae6" : "#273449"} />
+                          <PolarAngleAxis dataKey="competency" tick={{ fill: theme === "light" ? "#33425a" : "#a7b7cf", fontSize: 11 }} />
+                          <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fill: theme === "light" ? "#6b7a90" : "#5e7492", fontSize: 10 }} />
                           <RechartsTooltip
-                            contentStyle={{ background: "#101826", border: "1px solid #2a3a4e", borderRadius: 12 }}
-                            labelStyle={{ color: "#fff" }}
+                            contentStyle={{ background: theme === "light" ? "#ffffff" : "#101826", border: "1px solid #2a3a4e", borderRadius: 12 }}
+                            labelStyle={{ color: theme === "light" ? "#1a2433" : "#fff" }}
                           />
                           <Legend wrapperStyle={{ fontSize: 12 }} />
                           <Radar name="НАДО" dataKey="target" stroke="#4a9eff" fill="#4a9eff" fillOpacity={0.12} strokeWidth={2} />

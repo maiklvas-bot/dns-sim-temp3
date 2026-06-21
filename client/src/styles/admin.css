@@ -713,6 +713,19 @@
   font-size: 0.58rem;
 }
 
+/* Светлая тема: профиль рейла администратора — читаемые тёмные тексты
+   (раньше белый strong и аквамарин small сливались со светлым фоном). */
+.dns-admin-shell.dns-theme-light .dns-admin-structure-profile {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+.dns-admin-shell.dns-theme-light .dns-admin-structure-profile strong {
+  color: #1a2433;
+}
+.dns-admin-shell.dns-theme-light .dns-admin-structure-profile small {
+  color: #11774a;
+}
+
 .dns-product-shell .dns-admin-case-control-panel {
   padding: 0.85rem;
   border: 1px solid rgba(255, 107, 0, 0.34);
