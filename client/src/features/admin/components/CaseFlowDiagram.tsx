@@ -44,7 +44,7 @@ export function CaseFlowDiagram({ caseItem }: { caseItem: SimCase | null | undef
   return (
     <div className="dns-flow">
       <div className="dns-flow-terminal dns-flow-terminal--start">
-        <Play className="h-4 w-4" />
+        <Play className="h-4 w-4" aria-hidden="true" />
         <span>Старт · {caseItem.title || "Кейс"}</span>
       </div>
 
@@ -87,12 +87,12 @@ export function CaseFlowDiagram({ caseItem }: { caseItem: SimCase | null | undef
                         <div className="dns-flow-option-meta">
                           <span className="dns-flow-score">{option.score > 0 ? `+${option.score}` : option.score}</span>
                           <span className="dns-flow-target" data-terminal={target.terminal}>
-                            <CornerDownRight className="h-3 w-3" />
+                            <CornerDownRight className="h-3 w-3" aria-hidden="true" />
                             {target.label}
                           </span>
                           {Number(option.nextDelaySeconds) > 0 && (
                             <span className="dns-flow-delay">
-                              <Clock className="h-3 w-3" />
+                              <Clock className="h-3 w-3" aria-hidden="true" />
                               {option.nextDelaySeconds}с
                             </span>
                           )}
@@ -108,7 +108,7 @@ export function CaseFlowDiagram({ caseItem }: { caseItem: SimCase | null | undef
       })}
 
       <div className="dns-flow-terminal dns-flow-terminal--finish">
-        <Flag className="h-4 w-4" />
+        <Flag className="h-4 w-4" aria-hidden="true" />
         <span>Финал кейса · итоговая оценка компетенций</span>
       </div>
     </div>
