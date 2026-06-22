@@ -22,12 +22,14 @@ import { auditStorage, type AuditRecordInput } from "./audit-storage";
 import { requireAdmin, requireStaff, saveMediaUpload } from "./route-utils";
 import {
   adminRateLimiter,
+  apiRateLimiter,
   clearFailedAttempts,
   heavyOperationRateLimiter,
   loginFailedAttemptLimiter,
   loginRateLimiter,
   recordFailedLogin,
 } from "./middleware/rate-limiter";
+import { FeedbackMailNotConfiguredError, isFeedbackMailConfigured, sendFeedbackMail, verifyFeedbackTransport } from "./mail";
 import { generateCsrfToken, getCsrfToken } from "./middleware/csrf";
 import { internalApiError } from "./middleware/error-handler";
 import {
@@ -44,6 +46,7 @@ import {
   editableSimCaseSchema,
   editableVideoCaseSchema,
   excelExportSchema,
+  feedbackBodySchema,
   joinLiveSessionSchema,
   listResultsQuerySchema,
   liveRecoverSessionParamSchema,
@@ -466,6 +469,80 @@ export async function registerRoutes(
     }
     res.json({ ...req.session.staff, csrfToken: getCsrfToken(req) });
   });
+
+  // Обратная связь разработчику: письмо двум скрытым получателям (адреса в env/коде, в UI не видны).
+  app.post(
+    "/api/feedback",
+    apiRateLimiter,
+    validateBody(feedbackBodySchema),
+    asyncHandler(async (req, res) => {
+      const body = req.validatedBody as z.infer<typeof feedbackBodySchema>;
+      const actor = req.session.staff || null;
+      try {
+        const { recipients } = await sendFeedbackMail({
+          category: body.category,
+          message: body.message,
+          contact: body.contact,
+          meta: {
+            role: actor?.role ?? null,
+            url: body.url ?? null,
+            userAgent: req.get("user-agent") ?? null,
+          },
+        });
+        recordAudit(req, {
+          area: "system",
+          action: "feedback_sent",
+          outcome: "success",
+          actor,
+          entityType: "feedback",
+          entityId: null,
+          summary: `Отправлена обратная связь: ${body.category}`,
+          metadata: { recipients: recipients.length, hasContact: Boolean(body.contact) },
+        });
+        res.json({ ok: true });
+      } catch (error) {
+        if (error instanceof FeedbackMailNotConfiguredError) {
+          recordAudit(req, {
+            area: "system",
+            action: "feedback_not_configured",
+            outcome: "failure",
+            actor,
+            entityType: "feedback",
+            entityId: null,
+            summary: "Попытка отправки ОС: почта не настроена",
+          });
+          res.status(503).json({ message: "Отправка обратной связи пока не настроена. Сообщите администратору.", code: "MAIL_NOT_CONFIGURED" });
+          return;
+        }
+        console.error("Feedback mail failed:", error);
+        recordAudit(req, {
+          area: "system",
+          action: "feedback_failed",
+          outcome: "failure",
+          actor,
+          entityType: "feedback",
+          entityId: null,
+          summary: "Не удалось отправить обратную связь (ошибка SMTP)",
+        });
+        res.status(502).json({ message: "Не удалось отправить сообщение. Попробуйте позже.", code: "MAIL_SEND_FAILED" });
+      }
+    }),
+  );
+
+  // Диагностика почты (только админ): проверка соединения с Exchange/SMTP без отправки письма.
+  app.get(
+    "/api/feedback/diagnostics",
+    requireAdmin,
+    asyncHandler(async (_req, res) => {
+      const configured = isFeedbackMailConfigured();
+      if (!configured) {
+        res.json({ configured: false, ok: false, error: "SMTP/Exchange не настроен (нет FEEDBACK_SMTP_HOST + FEEDBACK_FROM)." });
+        return;
+      }
+      const result = await verifyFeedbackTransport();
+      res.json({ configured: true, ...result });
+    }),
+  );
 
   app.post("/api/sessions", validateBody(createSimulationSessionSchema), (req, res, next) => {
     try {
