@@ -5,7 +5,7 @@ export type AssessorSetupMode = "recommended" | "expert";
 export type AssessorDifficulty = "easy" | "medium" | "hard";
 export type AssessorChannels = { audio: boolean; email: boolean; messenger: boolean; video: boolean };
 export type AssessorChannelItemIds = { email: string[]; messenger: string[]; video: string[] };
-export type AssessorSimulationRoleId = "participant" | "deputy-manager" | "manager";
+export type AssessorSimulationRoleId = "participant" | "deputy-manager" | "manager" | "regional-deputy";
 
 export interface AssessorParticipantConfig {
   id: string;
