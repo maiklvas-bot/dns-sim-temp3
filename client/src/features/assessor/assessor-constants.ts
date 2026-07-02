@@ -77,9 +77,9 @@ export const SIMULATION_ROLE_CARDS: ReadonlyArray<{
   {
     id: "regional-deputy",
     title: "ЗРД",
-    description: "Заместитель регионального директора — в разработке",
+    description: "Стратегическая симуляция управления регионом (solo против ИИ)",
     participantRole: "Заместитель регионального директора",
-    available: false,
+    available: true,
   },
 ];
 

@@ -3,7 +3,7 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 export const API_BASE = "__PORT_5000__".startsWith("__") ? "" : "__PORT_5000__";
 const CSRF_STORAGE_KEY = "dns-simcenter.csrfToken";
 
-function getCsrfToken() {
+export function getCsrfToken() {
   if (typeof window === "undefined") {
     return null;
   }
