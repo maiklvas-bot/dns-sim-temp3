@@ -74,6 +74,13 @@ export const SIMULATION_ROLE_CARDS: ReadonlyArray<{
     participantRole: "Управляющий",
     available: false,
   },
+  {
+    id: "regional-deputy",
+    title: "ЗРД",
+    description: "Стратегическая симуляция управления регионом (solo против ИИ)",
+    participantRole: "Заместитель регионального директора",
+    available: true,
+  },
 ];
 
 export const TIME_PROFILE_RATIO: Record<AssessorDifficulty, number> = {

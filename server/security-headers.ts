@@ -9,5 +9,7 @@ export function buildContentSecurityPolicyDirectives(environment = process.env.N
     imgSrc: ["'self'", "data:", "blob:"],
     mediaSrc: ["'self'", "data:", "blob:"],
     connectSrc: ["'self'", "ws:", "wss:"],
+    // 3D/WebGL-библиотеки (three/drei) создают web-воркеры из blob — разрешаем same-origin + blob.
+    workerSrc: ["'self'", "blob:"],
   };
 }

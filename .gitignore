@@ -46,6 +46,9 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Claude local settings (машинно-специфичные пути к Obsidian-vault)
+.claude/settings.local.json
+
 # Temp / archive files
 *.tmp
 *.temp
@@ -53,3 +56,7 @@ Thumbs.db
 *.old
 build/
 live-sessions.json
+
+# Рабочие/эфемерные артефакты (скрипты Playwright, дампы страниц MCP)
+/tmp/
+/.playwright-mcp/

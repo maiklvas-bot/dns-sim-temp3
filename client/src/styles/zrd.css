@@ -1,0 +1,812 @@
+/* ЗРД — стиль настольной карточной игры (Фаза 4). Совместим с темами проекта (dark/light).
+   Поверхность стола, карты-проекты, треки «терраформинга» показателей, фазовые пипсы. */
+
+.zrd-root {
+  --zrd-table-1: #16203a;
+  --zrd-table-2: #0f1830;
+  --zrd-felt: rgba(255, 107, 0, 0.05);
+  --zrd-surface: rgba(20, 28, 43, 0.72);
+  --zrd-surface-2: rgba(30, 42, 58, 0.9);
+  --zrd-border: rgba(86, 104, 132, 0.45);
+  --zrd-border-strong: rgba(120, 140, 170, 0.6);
+  --zrd-text: #e8edf6;
+  --zrd-text-dim: #97a3ba;
+  min-height: 100dvh;
+  color: var(--zrd-text);
+  background:
+    radial-gradient(1200px 700px at 50% -10%, var(--zrd-felt), transparent 60%),
+    linear-gradient(160deg, var(--zrd-table-1), var(--zrd-table-2));
+}
+
+.dns-theme-light .zrd-root,
+.dns-theme-light.zrd-root {
+  --zrd-table-1: #eef1f6;
+  --zrd-table-2: #e2e7ef;
+  --zrd-felt: rgba(255, 107, 0, 0.06);
+  --zrd-surface: rgba(255, 255, 255, 0.92);
+  --zrd-surface-2: #ffffff;
+  --zrd-border: rgba(160, 174, 196, 0.7);
+  --zrd-border-strong: rgba(120, 138, 165, 0.8);
+  --zrd-text: #1d2a3d;
+  --zrd-text-dim: #56657c;
+}
+
+.zrd-panel {
+  background: var(--zrd-surface);
+  border: 1px solid var(--zrd-border);
+  border-radius: 14px;
+  backdrop-filter: blur(8px);
+}
+
+/* ── Карта-проект ──────────────────────────────────────────────────────── */
+.zrd-card {
+  position: relative;
+  width: 158px;
+  min-height: 210px;
+  border-radius: 14px;
+  background: var(--zrd-surface-2);
+  border: 1px solid var(--zrd-border);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+.zrd-card:hover:not(:disabled) {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.38);
+  border-color: var(--zrd-border-strong);
+}
+.zrd-card:focus-visible {
+  outline: 2px solid #FF6B00;
+  outline-offset: 2px;
+}
+.zrd-card:disabled,
+.zrd-card[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+  filter: grayscale(0.35);
+}
+.zrd-card__band {
+  height: 6px;
+  width: 100%;
+  flex-shrink: 0;
+}
+.zrd-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px 6px;
+}
+.zrd-card__cat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+.zrd-card__title {
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--zrd-text);
+}
+.zrd-card__cost {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--zrd-text-dim);
+  white-space: nowrap;
+}
+.zrd-card__body { padding: 4px 12px 10px; display: flex; flex-direction: column; gap: 6px; }
+.zrd-card__chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: auto; }
+.zrd-chip {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.zrd-chip--pos { background: rgba(46, 196, 182, 0.16); color: #2ec4b6; border-color: rgba(46, 196, 182, 0.3); }
+.zrd-chip--neg { background: rgba(232, 90, 90, 0.16); color: #e85a5a; border-color: rgba(232, 90, 90, 0.3); }
+.zrd-card__cond {
+  font-size: 10px;
+  color: var(--zrd-text-dim);
+  padding: 0 12px 10px;
+}
+
+/* ── Чип ресурса ───────────────────────────────────────────────────────── */
+.zrd-res {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--zrd-surface-2);
+  border: 1px solid var(--zrd-border);
+  min-width: 0;
+}
+.zrd-res__icon { display: inline-flex; flex-shrink: 0; }
+.zrd-res__val { font-weight: 800; font-size: 18px; line-height: 1; color: var(--zrd-text); }
+.zrd-res__prod { font-size: 11px; color: var(--zrd-text-dim); font-weight: 600; }
+.zrd-res__label { font-size: 10px; color: var(--zrd-text-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ── Трек показателя (терраформинг) ────────────────────────────────────── */
+.zrd-track { display: flex; flex-direction: column; gap: 6px; }
+.zrd-track__bar {
+  position: relative;
+  height: 14px;
+  border-radius: 999px;
+  background: rgba(127, 140, 165, 0.18);
+  overflow: hidden;
+  border: 1px solid var(--zrd-border);
+}
+.zrd-track__fill { height: 100%; border-radius: 999px; transition: width 320ms ease; }
+.zrd-track__target {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 2px;
+  background: var(--zrd-text);
+  opacity: 0.65;
+}
+.zrd-track__target::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  left: -3px;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--zrd-text);
+  opacity: 0.7;
+}
+
+/* ── Игровое поле региона ──────────────────────────────────────────────── */
+.zrd-board-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; }
+.zrd-board-cell {
+  aspect-ratio: 1;
+  border-radius: 7px;
+  border: 1px solid var(--zrd-border);
+  background: rgba(127, 140, 165, 0.08);
+  transition: background 300ms ease, border-color 300ms ease, transform 300ms ease;
+}
+.zrd-board-cell--on {
+  background: linear-gradient(135deg, rgba(91, 155, 213, 0.85), rgba(46, 196, 182, 0.7));
+  border-color: rgba(91, 155, 213, 0.9);
+}
+
+/* ── Фазовые пипсы ─────────────────────────────────────────────────────── */
+.zrd-phase-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--zrd-text-dim);
+  border: 1px solid transparent;
+}
+.zrd-phase-step--active {
+  color: #FF6B00;
+  background: rgba(255, 107, 0, 0.12);
+  border-color: rgba(255, 107, 0, 0.4);
+}
+.zrd-phase-step--done { color: #2ec4b6; }
+
+.zrd-quarter-pip {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid var(--zrd-border-strong);
+  background: transparent;
+}
+.zrd-quarter-pip--active { background: #FF6B00; border-color: #FF6B00; }
+.zrd-quarter-pip--done { background: var(--zrd-border-strong); }
+
+/* ── Вариант события (равная форма — §8a) ──────────────────────────────── */
+.zrd-option {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--zrd-border);
+  background: var(--zrd-surface-2);
+  text-align: left;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+  min-height: 96px;
+}
+.zrd-option:hover:not(:disabled) { transform: translateY(-3px); border-color: #FF6B00; box-shadow: 0 10px 22px rgba(0, 0, 0, 0.3); }
+.zrd-option:focus-visible { outline: 2px solid #FF6B00; outline-offset: 2px; }
+.zrd-option:disabled { opacity: 0.45; cursor: not-allowed; }
+
+@media (prefers-reduced-motion: reduce) {
+  .zrd-card, .zrd-option, .zrd-board-cell, .zrd-track__fill { transition: none; }
+  .zrd-card:hover:not(:disabled), .zrd-option:hover:not(:disabled) { transform: none; }
+}
+
+/* ── Board-view (макет: 4 РРС, колоды, KPI) ─────────────────────────────── */
+.zrd-region-tile {
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid var(--zrd-border);
+  background:
+    radial-gradient(120% 120% at 30% 0%, rgba(255,255,255,0.06), transparent 55%),
+    linear-gradient(160deg, rgba(40,54,74,0.92), rgba(20,28,43,0.96));
+  overflow: hidden;
+  min-height: 190px;
+  padding: 12px 14px;
+}
+.dns-theme-light .zrd-region-tile {
+  background:
+    radial-gradient(120% 120% at 30% 0%, rgba(255,255,255,0.85), transparent 55%),
+    linear-gradient(160deg, #f3f6fb, #e7edf5);
+}
+.zrd-region-tile__banner {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 12px; border-radius: 999px;
+  font-size: 13px; font-weight: 800; color: #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+.zrd-region-tile__mascot {
+  position: absolute; right: 8px; bottom: 0; height: 120px; width: auto;
+  filter: drop-shadow(0 8px 14px rgba(0,0,0,0.45));
+  pointer-events: none; user-select: none;
+}
+.zrd-region-tile__city {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12.5px; font-weight: 600; color: var(--zrd-text);
+}
+.zrd-region-tile__city--head { font-weight: 800; }
+
+/* Колода-стопка */
+.zrd-deck-pile {
+  position: relative; border-radius: 14px; padding: 12px;
+  border: 1px solid var(--zrd-border); background: var(--zrd-surface-2);
+  cursor: pointer; transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.zrd-deck-pile:hover { transform: translateY(-3px); box-shadow: 0 12px 24px rgba(0,0,0,0.3); }
+.zrd-deck-pile__count {
+  position: absolute; top: 10px; right: 10px;
+  min-width: 22px; height: 22px; padding: 0 6px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 999px; font-size: 12px; font-weight: 800; color: #fff;
+}
+.zrd-deck-pile__stack { height: 30px; position: relative; margin-top: 8px; }
+.zrd-deck-pile__card {
+  position: absolute; top: 0; height: 30px; width: 46px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+
+/* Сегментный метр (KPI / ресурс) */
+.zrd-seg { display: flex; gap: 3px; }
+.zrd-seg__cell { flex: 1; height: 8px; border-radius: 2px; background: rgba(127,140,165,0.22); }
+
+/* Дельта */
+.zrd-delta { font-size: 11px; font-weight: 800; }
+.zrd-delta--up { color: #2ec4b6; }
+.zrd-delta--down { color: #e85a5a; }
+
+/* ── Canva-панели в коде: tech-рамка нижнего ряда ──────────────────────── */
+.zrd-frame {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  container-type: size; /* размеры контента считаем от высоты панели (cqh) — стабильно на FullHD/2K/4K */
+  background: linear-gradient(180deg, #17181c 0%, #0b0c0f 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 107, 0, 0.35);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 0 0 1.5px rgba(255, 107, 0, 0.85);
+  overflow: hidden;
+}
+.dns-theme-light .zrd-frame {
+  background: linear-gradient(180deg, #1a1b1f 0%, #0e0f12 100%); /* блок всегда тёмный (как в макете) */
+}
+.zrd-frame__head {
+  flex-shrink: 0;
+  text-align: center;
+  font-weight: 700;
+  font-size: clamp(11px, 4.3cqh, 15px);
+  letter-spacing: 0.03em;
+  color: #ffffff;
+  text-transform: uppercase;
+  padding: clamp(4px, 2.4cqh, 9px) 5cqw;
+  border-bottom: 1px solid rgba(255, 107, 0, 0.25);
+}
+.zrd-frame__head em { font-style: normal; font-weight: 600; color: #9aa3b2; }
+.zrd-frame__body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 4px 14px; }
+
+.zrd-stat-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  padding: 0 2px;
+  cursor: default;
+  transition: background 140ms ease;
+}
+.zrd-stat-row + .zrd-stat-row { border-top: 1px solid rgba(255, 255, 255, 0.07); }
+.zrd-stat-row:hover { background: rgba(255, 107, 0, 0.06); }
+.zrd-stat-ico {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: clamp(18px, 8.2cqh, 28px); height: clamp(18px, 8.2cqh, 28px);
+  border-radius: 7px;
+  border: 1.5px solid rgba(255, 107, 0, 0.6);
+  background: rgba(255, 107, 0, 0.1);
+  color: #FF6B00;
+}
+.zrd-stat-ico svg { width: 56%; height: 56%; }
+.zrd-stat-label { font-size: clamp(10px, 4.1cqh, 14px); font-weight: 500; color: #dfe5ef; }
+.zrd-stat-val { margin-left: auto; font-size: clamp(12px, 4.9cqh, 17px); font-weight: 700; color: #ffffff; }
+
+/* ── #9-4 Доступные действия — кликабельные строки ─────────────────────── */
+.zrd-act-row {
+  display: flex; align-items: center; gap: 10px; flex: 1; min-height: 0;
+  width: 100%; padding: 0 4px; border-radius: 8px; text-align: left;
+  background: transparent; cursor: pointer;
+  transition: background 140ms ease, opacity 140ms ease;
+}
+.zrd-act-row + .zrd-act-row { border-top: 1px solid rgba(255, 255, 255, 0.07); }
+.zrd-act-row:hover:not(:disabled) { background: rgba(255, 107, 0, 0.08); }
+.zrd-act-row:disabled { opacity: 0.42; cursor: not-allowed; }
+.zrd-act-row:focus-visible { outline: 2px solid #FF6B00; outline-offset: -2px; }
+.zrd-act-ico {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: clamp(18px, 8.2cqh, 28px); height: clamp(18px, 8.2cqh, 28px);
+  border-radius: 7px; color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+.zrd-act-ico svg { width: 56%; height: 56%; }
+.zrd-act-label { font-size: clamp(10px, 4.1cqh, 14px); font-weight: 500; color: #dfe5ef; }
+.zrd-act-cost { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; }
+.zrd-ap-badge {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: clamp(14px, 6.4cqh, 23px); height: clamp(14px, 6.4cqh, 23px);
+  border-radius: 50%; border: 1.5px solid rgba(255, 107, 0, 0.7);
+  background: rgba(255, 107, 0, 0.14); color: #FF6B00;
+}
+.zrd-ap-badge svg { width: 58%; height: 58%; }
+.zrd-ap-num { font-size: clamp(12px, 4.9cqh, 17px); font-weight: 700; color: #ffffff; min-width: 11px; text-align: center; }
+
+/* ── #9-3 «Проекты (активные)» ─────────────────────────────────────────── */
+.zrd-head-sub { text-transform: none; font-weight: 600; font-size: 0.72em; color: #aeb6c4; margin-left: 0.3em; }
+.zrd-proj-row {
+  display: flex; align-items: center; gap: 10px; flex: 1; min-height: 0;
+  padding: 0 2px; cursor: default; transition: background 140ms ease;
+}
+.zrd-proj-row + .zrd-proj-row { border-top: 1px solid rgba(255, 255, 255, 0.07); }
+.zrd-proj-row:hover { background: rgba(255, 107, 0, 0.06); }
+.zrd-proj-ico {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: clamp(18px, 8.2cqh, 28px); height: clamp(18px, 8.2cqh, 28px);
+  border-radius: 7px; color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+.zrd-proj-ico svg { width: 56%; height: 56%; }
+.zrd-proj-name {
+  font-size: clamp(10px, 4.1cqh, 14px); font-weight: 500; color: #e7ecf4;
+  line-height: 1.12; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.zrd-proj-badge {
+  margin-left: auto; flex-shrink: 0; white-space: nowrap;
+  font-size: clamp(9px, 3.8cqh, 13px); font-weight: 700; letter-spacing: 0.03em;
+  padding: clamp(2px, 0.9cqh, 5px) clamp(6px, 1.6cqw, 11px);
+  border-radius: 6px; text-transform: uppercase;
+}
+.zrd-proj-badge--work { color: #FF9A3D; border: 1.5px solid #FF6B00; background: rgba(255, 107, 0, 0.10); }
+.zrd-proj-badge--delay { color: #ffffff; border: 1.5px solid #e5484d; background: rgba(170, 28, 33, 0.55); }
+.zrd-proj-badge--plan { color: #aeb6c4; border: 1.5px solid rgba(255, 255, 255, 0.28); background: rgba(255, 255, 255, 0.04); }
+
+/* ── #9-2 «Ресурсы» ─────────────────────────────────────────────────────── */
+.zrd-res-row {
+  display: flex; align-items: center; gap: 10px; flex: 1; min-height: 0;
+  padding: 0 2px; cursor: default; transition: background 140ms ease;
+}
+.zrd-res-row + .zrd-res-row { border-top: 1px solid rgba(255, 255, 255, 0.07); }
+.zrd-res-row:hover { background: rgba(255, 107, 0, 0.06); }
+.zrd-res-ico {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: clamp(18px, 8.2cqh, 28px); height: clamp(18px, 8.2cqh, 28px);
+  border-radius: 7px; color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+}
+.zrd-res-ico svg { width: 56%; height: 56%; }
+.zrd-res-label {
+  font-size: clamp(10px, 4.1cqh, 14px); font-weight: 600; color: #e7ecf4;
+  text-transform: uppercase; letter-spacing: 0.01em;
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.zrd-res-bar { margin-left: auto; flex-shrink: 0; display: inline-flex; align-items: center; gap: clamp(2px, 0.6cqw, 4px); }
+.zrd-res-cell {
+  width: clamp(9px, 3.4cqh, 15px); height: clamp(9px, 3.4cqh, 15px);
+  border-radius: 3px; border: 1.5px solid rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.04);
+}
+.zrd-res-val {
+  flex-shrink: 0; width: clamp(20px, 7cqw, 34px); text-align: right;
+  font-size: clamp(12px, 4.9cqh, 17px); font-weight: 700; color: #ffffff;
+}
+
+/* ── #9-1 «Действия» (меню-глаголы) ─────────────────────────────────────── */
+.zrd-verb-ico {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: clamp(18px, 8.2cqh, 28px); height: clamp(18px, 8.2cqh, 28px); color: #FF6B00;
+}
+.zrd-verb-ico svg { width: 82%; height: 82%; }
+.zrd-verb-chev {
+  margin-left: auto; flex-shrink: 0;
+  width: clamp(13px, 5.2cqh, 20px); height: clamp(13px, 5.2cqh, 20px); color: #8a93a6;
+}
+.zrd-act-row:hover:not(:disabled) .zrd-verb-chev { color: #FF6B00; }
+
+/* ── Верхний-левый модуль «Событие раунда» (по макету, плоский стиль борда) ── */
+.zrd-topstrip { display: flex; align-items: stretch; justify-content: flex-start; gap: 12px; height: 100%; min-height: 0; }
+
+/* Событие — один блок, контент по центру (занимает свой слот в верхнем ряду) */
+.zrd-event { width: 100%; height: 100%; }
+.zrd-event__body {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+  padding: clamp(4px, 6cqh, 12px) 18px; gap: clamp(2px, 2.5cqh, 6px); overflow: hidden;
+}
+.zrd-event__title { font-size: clamp(15px, 15cqh, 24px); font-weight: 800; line-height: 1.04; color: #ffffff; }
+.zrd-event__desc { font-size: clamp(10px, 8.5cqh, 13px); color: #aeb6c4; line-height: 1.14; }
+.zrd-event__impact-head { margin-top: clamp(2px, 3cqh, 8px); font-size: clamp(10px, 8.5cqh, 13px); font-weight: 700; color: #FF8C1A; text-transform: uppercase; letter-spacing: 0.03em; }
+.zrd-event__impact { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 5px 0; padding-top: clamp(2px, 3cqh, 6px); }
+.zrd-evt-chip { display: inline-flex; align-items: center; gap: 7px; font-size: clamp(10px, 8.5cqh, 14px); font-weight: 600; color: #dfe5ef; padding: 0 clamp(9px, 1vw, 16px); }
+.zrd-evt-chip + .zrd-evt-chip { border-left: 1px dashed rgba(255, 255, 255, 0.22); }
+.zrd-evt-dot { display: inline-flex; align-items: center; justify-content: center; width: clamp(18px, 15cqh, 27px); height: clamp(18px, 15cqh, 27px); border-radius: 50%; color: #fff; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+.zrd-evt-dot svg { width: 62%; height: 62%; }
+.zrd-evt-dot.is-good { background: #57a800; }
+.zrd-evt-dot.is-warn { background: #E0701A; }
+.zrd-evt-dot.is-info { background: #2E78C7; }
+
+/* Раунд + дата/время */
+.zrd-round { display: flex; flex-direction: column; align-items: stretch; gap: 6px; width: clamp(120px, 10vw, 168px); flex-shrink: 0; }
+.zrd-round__plate {
+  flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  border-radius: 14px; border: 1px solid rgba(255,107,0,0.6);
+  background: linear-gradient(180deg, #C85E12 0%, #8f3f0c 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(255,150,60,0.55), 0 8px 20px rgba(0,0,0,0.45);
+}
+.zrd-round__label { font-size: clamp(10px, 0.85vw, 13px); font-weight: 700; letter-spacing: 0.1em; color: #ffe4cf; text-transform: uppercase; }
+.zrd-round__dt { flex-shrink: 0; text-align: center; font-size: clamp(10px, 0.8vw, 12px); font-weight: 600; color: #aeb6c4; }
+
+/* Бейдж раунда в шапке: часы/дата + оранжевая плашка с перекидным календарём */
+.zrd-round-badge { display: flex; align-items: center; gap: 10px; }
+.zrd-round-badge__dt { font-size: 12px; font-weight: 600; color: var(--zrd-text-dim); white-space: nowrap; }
+.zrd-round-badge__pill {
+  display: flex; align-items: center; gap: 8px; padding: 4px 14px; border-radius: 10px;
+  border: 1px solid rgba(255, 107, 0, 0.6); background: linear-gradient(180deg, #C85E12 0%, #8f3f0c 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 150, 60, 0.5), 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+.zrd-round-badge__label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #ffe4cf; }
+.zrd-round-badge .zrd-round__page { font-size: 21px; }
+
+/* Перекидной календарь раунда (общие стили страниц/анимации) */
+.zrd-round__val { position: relative; display: grid; place-items: center; perspective: 340px; line-height: 1; }
+.zrd-round__page {
+  grid-area: 1 / 1; font-size: clamp(24px, 2.7vw, 42px); font-weight: 800; color: #ffffff; line-height: 1;
+  transform-origin: top center; backface-visibility: hidden; will-change: transform, opacity;
+}
+@keyframes zrdRoundIn { 0% { transform: rotateX(-95deg); opacity: 0; } 55% { opacity: 1; } 100% { transform: rotateX(0deg); opacity: 1; } }
+@keyframes zrdRoundOut { 0% { transform: rotateX(0deg); opacity: 1; } 100% { transform: rotateX(90deg); opacity: 0; } }
+.zrd-round__page--in { animation: zrdRoundIn 560ms cubic-bezier(.2, .75, .3, 1); }
+.zrd-round__page--out { animation: zrdRoundOut 420ms ease-in forwards; }
+@media (prefers-reduced-motion: reduce) { .zrd-round__page--in, .zrd-round__page--out { animation: none; } .zrd-round__page--out { display: none; } }
+
+/* ── Панель «Миссия игры» (справа, плоский стиль борда) ── */
+.zrd-mission { height: 100%; }
+.zrd-mission__sub {
+  flex-shrink: 0; text-align: center; padding: 4px 12px 5px; line-height: 1.12;
+  font-size: clamp(10px, 0.82cqw, 13px); color: #aeb6c4;
+  border-bottom: 1px solid rgba(255, 107, 0, 0.18);
+}
+/* 2 колонки по 5 KPI (column-major: 1-й столбец — первые 5, 2-й — следующие 5) */
+.zrd-mission__list { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(5, 1fr); grid-auto-flow: column; column-gap: 16px; padding: 2px 12px 5px; }
+.zrd-mkpi { display: flex; align-items: center; gap: 6px; min-height: 0; padding: 0 2px; }
+.zrd-mkpi__check { display: inline-flex; flex-shrink: 0; width: clamp(12px, 3.6cqh, 16px); color: #FF8C1A; }
+.zrd-mkpi__check svg { width: 100%; height: 100%; }
+.zrd-mkpi__label { font-size: clamp(10px, 3.4cqh, 13px); color: #dfe5ef; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; min-width: 0; }
+.zrd-mkpi__bar { margin-left: auto; flex-shrink: 0; display: inline-flex; gap: 2px; }
+.zrd-mkpi__cell { width: clamp(5px, 0.9cqw, 9px); height: clamp(8px, 3.2cqh, 13px); border-radius: 2px; background: rgba(255, 255, 255, 0.08); }
+.zrd-mkpi__bar--g .zrd-mkpi__cell.is-on { background: #57a800; }
+.zrd-mkpi__bar--b .zrd-mkpi__cell.is-on { background: #2E78C7; }
+.zrd-mkpi__val { flex-shrink: 0; width: clamp(28px, 2.4vw, 38px); text-align: right; font-size: clamp(10px, 3.4cqh, 13px); font-weight: 700; color: #ffffff; }
+.zrd-mkpi__ico { display: inline-flex; flex-shrink: 0; width: clamp(14px, 4cqh, 19px); }
+.zrd-mkpi__ico svg { width: 100%; height: 100%; }
+
+/* ── Замыкающий блок «Чёрный лебедь» (риск-событие, по макету DAHOQZK8EeY), верхний ряд справа ── */
+.zrd-swan { width: 100%; height: 100%; }
+.zrd-swan__body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: clamp(3px, 3cqh, 8px) clamp(8px, 4cqw, 14px); gap: clamp(2px, 2cqh, 6px); }
+.zrd-swan__title { flex-shrink: 0; text-align: center; font-size: clamp(12px, 9cqh, 18px); font-weight: 800; color: #FF6B00; line-height: 1.05; }
+.zrd-swan__rows { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.zrd-swan__row { display: flex; align-items: center; gap: clamp(5px, 2cqw, 10px); flex: 1; min-height: 0; padding: 0 2px; }
+.zrd-swan__row + .zrd-swan__row { border-top: 1px solid rgba(255, 255, 255, 0.07); }
+.zrd-swan__ico {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: clamp(16px, 7cqh, 24px); height: clamp(16px, 7cqh, 24px);
+  border-radius: 6px; border: 1.5px solid rgba(255, 107, 0, 0.6); background: rgba(255, 107, 0, 0.1); color: #FF6B00;
+}
+.zrd-swan__ico svg { width: 56%; height: 56%; }
+.zrd-swan__label { font-size: clamp(9px, 3.6cqh, 13px); font-weight: 500; color: #dfe5ef; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.zrd-swan__val { margin-left: auto; flex-shrink: 0; font-size: clamp(11px, 4.4cqh, 16px); font-weight: 700; white-space: nowrap; }
+.zrd-swan__val.is-bad { color: #ff5a4d; }
+.zrd-swan__val.is-accent { color: #FF8C1A; }
+/* блок кликабелен/наводим — подсказываем это подсветкой канта */
+.zrd-swan { cursor: help; transition: border-color 140ms ease, box-shadow 140ms ease; }
+.zrd-swan:hover, .zrd-swan:focus-visible {
+  outline: none;
+  border-color: rgba(255, 107, 0, 0.7);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 0 0 1.5px rgba(255, 140, 26, 1), 0 0 22px -6px rgba(255, 120, 24, 0.7);
+}
+
+/* Всплывающее окно «Чёрный лебедь» (HoverCard, портал в body — не обрезается рамкой борда) */
+.zrd-swan-pop {
+  overflow: hidden;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 107, 0, 0.55);
+  background: linear-gradient(180deg, #17181c 0%, #0b0c0f 100%);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.62), inset 0 0 0 1.5px rgba(255, 107, 0, 0.6);
+  color: #dfe5ef;
+}
+.zrd-swan-pop__head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  font-size: 14px; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; color: #ffffff;
+  border-bottom: 1px solid rgba(255, 107, 0, 0.3);
+  background: linear-gradient(180deg, rgba(255, 107, 0, 0.14) 0%, rgba(255, 107, 0, 0) 100%);
+}
+.zrd-swan-pop__head-ico { width: 17px; height: 17px; color: #FF6B00; flex-shrink: 0; }
+.zrd-swan-pop__inner { padding: 12px 14px 14px; }
+.zrd-swan-pop__def { font-size: 12.5px; line-height: 1.4; color: #b9c1cf; margin: 0; }
+.zrd-swan-pop__now {
+  display: flex; flex-direction: column; gap: 1px;
+  margin: 11px 0 6px; padding: 8px 11px;
+  border-radius: 9px; border: 1px solid rgba(255, 107, 0, 0.3); background: rgba(255, 107, 0, 0.08);
+}
+.zrd-swan-pop__now-lbl { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #FF8C1A; }
+.zrd-swan-pop__now-val { font-size: 15px; font-weight: 800; color: #ffffff; line-height: 1.1; }
+.zrd-swan-pop__desc { font-size: 12px; line-height: 1.38; color: #aeb6c4; margin: 0 0 11px; }
+.zrd-swan-pop__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.zrd-swan-pop__item { display: flex; align-items: flex-start; gap: 9px; }
+.zrd-swan-pop__item-ico {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+  width: 24px; height: 24px; border-radius: 7px;
+  border: 1.5px solid rgba(255, 107, 0, 0.55); background: rgba(255, 107, 0, 0.1); color: #FF6B00;
+}
+.zrd-swan-pop__item-ico svg { width: 55%; height: 55%; }
+.zrd-swan-pop__item-main { flex: 1; min-width: 0; }
+.zrd-swan-pop__item-top { display: flex; align-items: baseline; gap: 8px; }
+.zrd-swan-pop__item-label { font-size: 12.5px; font-weight: 600; color: #e7ecf4; }
+.zrd-swan-pop__item-val { margin-left: auto; font-size: 13px; font-weight: 800; white-space: nowrap; }
+.zrd-swan-pop__item-val.is-bad { color: #ff5a4d; }
+.zrd-swan-pop__item-val.is-accent { color: #FF8C1A; }
+.zrd-swan-pop__item-hint { display: block; font-size: 11px; line-height: 1.32; color: #9aa3b2; margin-top: 1px; }
+
+/* Пульсация кромки, когда «чёрный лебедь» сработал (active). Свечение почти целиком inset +
+   мягкая красная рамка — держится внутри своих границ, не задевает соседние блоки (зазор 8px). */
+@keyframes zrdSwanPulse {
+  0%, 100% {
+    border-color: rgba(255, 107, 0, 0.45);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 0 0 1.5px rgba(255, 107, 0, 0.6), inset 0 0 10px rgba(229, 72, 77, 0.25), 0 0 5px -2px rgba(229, 72, 77, 0.3);
+  }
+  50% {
+    border-color: rgba(240, 60, 62, 0.95);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 0 0 1.6px rgba(240, 60, 62, 0.95), inset 0 0 20px rgba(240, 60, 62, 0.55), 0 0 6px -2px rgba(240, 60, 62, 0.55);
+  }
+}
+.zrd-swan.is-active { animation: zrdSwanPulse 1.9s ease-in-out infinite; }
+/* при наведении/фокусе пульсация уступает hover-подсветке (ниже) */
+.zrd-swan.is-active:hover, .zrd-swan.is-active:focus-visible { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .zrd-swan.is-active { animation: none; border-color: rgba(240, 60, 62, 0.8); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55), inset 0 0 0 1.6px rgba(240, 60, 62, 0.8); }
+}
+
+/* ── Подробная карточка РРС (HoverCard, портал в body). Кант/акценты — в цвет РРС (--acc) ── */
+.zrd-terr-pop {
+  overflow: hidden; border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--acc) 60%, transparent);
+  background: linear-gradient(180deg, #16171c 0%, #0b0c0f 100%);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.62), inset 0 0 0 1.5px color-mix(in srgb, var(--acc) 55%, transparent);
+  color: #dfe5ef;
+}
+.zrd-terr-pop__head {
+  display: flex; align-items: center; gap: 9px; padding: 9px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--acc) 30%, transparent);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--acc) 16%, transparent) 0%, transparent 100%);
+}
+.zrd-terr-pop__ico {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 28px; height: 28px; border-radius: 8px; color: var(--acc);
+  border: 1.5px solid color-mix(in srgb, var(--acc) 60%, transparent);
+  background: color-mix(in srgb, var(--acc) 16%, transparent);
+}
+.zrd-terr-pop__ico svg { width: 60%; height: 60%; }
+.zrd-terr-pop__ico.is-human { color: #ffffff; background: var(--acc); border-color: color-mix(in srgb, var(--acc) 80%, #ffffff); box-shadow: 0 0 12px -3px var(--acc); }
+.zrd-terr-pop__name { font-size: 14px; font-weight: 800; color: #ffffff; }
+.zrd-terr-pop__tag { margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: color-mix(in srgb, var(--acc) 55%, #cfd6e2); }
+.zrd-terr-pop__inner { padding: 11px 13px 13px; }
+.zrd-terr-pop__sect { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: color-mix(in srgb, var(--acc) 70%, #cfd6e2); margin: 0 0 4px; }
+.zrd-terr-pop__sect:not(:first-child) { margin-top: 12px; padding-top: 11px; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+.zrd-terr-pop__mtype { font-size: 14px; font-weight: 800; color: #ffffff; }
+.zrd-terr-pop__lvl { margin-left: 6px; font-size: 12px; font-weight: 600; color: #9aa3b2; }
+.zrd-terr-pop__mdesc { font-size: 12px; line-height: 1.36; color: #aeb6c4; margin-top: 2px; }
+.zrd-terr-pop__chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.zrd-terr-pop__chip {
+  font-size: 10.5px; font-weight: 600; color: #eef2f8;
+  padding: 2px 7px; border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--acc) 40%, transparent);
+  background: color-mix(in srgb, var(--acc) 12%, transparent);
+}
+.zrd-terr-pop__feature { font-size: 12px; line-height: 1.4; color: #b9c1cf; }
+.zrd-terr-pop__kpis { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 3px 14px; }
+.zrd-terr-pop__kpirow { display: flex; align-items: baseline; gap: 6px; }
+.zrd-terr-pop__kpilabel { flex: 1 1 auto; min-width: 0; font-size: 11.5px; color: #cfd6e2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zrd-terr-pop__kpival { flex-shrink: 0; font-size: 12.5px; font-weight: 800; color: #ffffff; }
+.zrd-terr-pop__kpidelta { flex-shrink: 0; width: 30px; text-align: right; font-size: 11px; font-weight: 700; }
+.zrd-terr-pop__kpidelta.is-up { color: #57d976; }
+.zrd-terr-pop__kpidelta.is-down { color: #ff7a7a; }
+.zrd-terr-pop__kpidelta.is-flat { color: #9aa3b2; }
+
+/* ── Колода сброса — светящаяся оранжевая кнопка (референс DAHNebr3cXQ), в нижнем ряду справа ── */
+.zrd-discard {
+  position: relative; z-index: 5; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  height: 100%; aspect-ratio: 5 / 4; padding: 0 10px; cursor: pointer;
+  border-radius: 18px; border: 3px solid #23262d;
+  background:
+    radial-gradient(ellipse at 50% 34%, #ff9326 0%, #ec6c10 42%, #b0480a 74%, #7c3406 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 186, 92, 0.85),
+    inset 0 14px 30px rgba(255, 224, 168, 0.4),
+    inset 0 -16px 32px rgba(90, 30, 0, 0.55),
+    0 0 34px -6px rgba(255, 120, 24, 0.75),
+    0 10px 24px rgba(0, 0, 0, 0.6);
+  transition: box-shadow 150ms ease, transform 110ms ease, filter 150ms ease;
+}
+.zrd-discard:hover { filter: brightness(1.08); box-shadow: inset 0 0 0 2px rgba(255, 200, 120, 0.95), inset 0 14px 30px rgba(255, 224, 168, 0.5), inset 0 -16px 32px rgba(90, 30, 0, 0.5), 0 0 44px -4px rgba(255, 140, 40, 0.9), 0 10px 24px rgba(0, 0, 0, 0.6); }
+.zrd-discard:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px rgba(255, 186, 92, 0.85), inset 0 8px 22px rgba(120, 40, 0, 0.6), 0 0 26px -8px rgba(255, 120, 24, 0.7), 0 4px 12px rgba(0, 0, 0, 0.6); }
+.zrd-discard:focus-visible { outline: 2px solid #ffb45c; outline-offset: 3px; }
+/* глянцевый блик сверху */
+.zrd-discard__gloss { position: absolute; inset: 5px 5px auto 5px; height: 42%; border-radius: 16px 16px 40% 40%; background: linear-gradient(180deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.08) 55%, transparent 100%); pointer-events: none; }
+/* угловые болты */
+.zrd-discard__bolt { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #ffd9a0, #d9670c 70%); box-shadow: 0 0 5px rgba(0,0,0,0.5); }
+.zrd-discard__bolt--tl { top: 8px; left: 8px; } .zrd-discard__bolt--tr { top: 8px; right: 8px; }
+.zrd-discard__bolt--bl { bottom: 8px; left: 8px; } .zrd-discard__bolt--br { bottom: 8px; right: 8px; }
+.zrd-discard__label { position: relative; text-align: center; line-height: 1.18; font-size: clamp(12px, 2.2vh, 20px); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #fff7ef; text-shadow: 0 0 8px rgba(255, 230, 190, 0.9), 0 1px 2px rgba(90, 30, 0, 0.6); }
+
+/* ── Нижняя зона: 4 территории (РРС) в ОДИН горизонтальный ряд, стиль «KPI региона», у каждой свой цвет ── */
+.zrd-territories { display: flex; flex-direction: row; gap: 8px; height: 100%; min-height: 0; }
+.zrd-terr {
+  --acc: #EC4899;
+  flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; text-align: left;
+  border-radius: 12px; padding: 0; cursor: pointer; overflow: hidden;
+  background: linear-gradient(180deg, #14161b 0%, #0c0d11 100%);
+  border: 1px solid color-mix(in srgb, var(--acc) 45%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acc) 22%, transparent);
+  transition: box-shadow 160ms ease, border-color 160ms ease;
+}
+.zrd-terr:hover { border-color: color-mix(in srgb, var(--acc) 70%, transparent); }
+.zrd-terr.is-active { border-color: var(--acc); box-shadow: inset 0 0 0 1.5px var(--acc), 0 0 22px -6px var(--acc); }
+.zrd-terr:focus-visible { outline: 2px solid var(--acc); outline-offset: -2px; }
+
+.zrd-terr__head { flex-shrink: 0; display: flex; align-items: center; gap: 7px; padding: 4px 10px; border-bottom: 1px solid color-mix(in srgb, var(--acc) 22%, transparent); }
+.zrd-terr__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 8px var(--acc); flex-shrink: 0; }
+.zrd-terr__name { font-size: clamp(10px, 0.85vw, 14px); font-weight: 800; letter-spacing: 0.02em; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Значок управленца в шапке РРС (человек = живой игрок, робот = ИИ), в цвет РРС — на месте бывшего тега «KPI региона» */
+.zrd-terr__who {
+  margin-left: auto; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: clamp(18px, 1.35vw, 24px); height: clamp(18px, 1.35vw, 24px); border-radius: 6px;
+  color: var(--acc);
+  border: 1.5px solid color-mix(in srgb, var(--acc) 60%, transparent);
+  background: color-mix(in srgb, var(--acc) 16%, transparent);
+}
+.zrd-terr__who svg { width: 62%; height: 62%; }
+.zrd-terr__who.is-human { color: #ffffff; background: var(--acc); border-color: color-mix(in srgb, var(--acc) 80%, #ffffff); box-shadow: 0 0 10px -2px var(--acc); }
+
+/* 6 KPI — компактным вертикальным столбиком внутри блока территории (влезают в высоту одной панели) */
+.zrd-terr__kpis { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+.zrd-terr__kpi { flex: 1 1 0; min-height: 0; display: flex; align-items: center; gap: 8px; padding: 0 10px; }
+.zrd-terr__kpi + .zrd-terr__kpi { border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.zrd-terr__label { flex: 1 1 auto; min-width: 0; font-size: clamp(8px, 0.66vw, 12px); font-weight: 600; color: color-mix(in srgb, var(--acc) 45%, #cfd6e2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zrd-terr__value { flex-shrink: 0; width: clamp(34px, 2.5vw, 46px); text-align: right; font-size: clamp(12px, 0.95vw, 18px); font-weight: 800; line-height: 1; color: #ffffff; }
+.zrd-terr__bar { flex-shrink: 0; display: inline-flex; gap: 2px; }
+.zrd-terr__cell { width: clamp(4px, 0.34vw, 7px); height: clamp(7px, 0.6vw, 12px); border-radius: 2px; background: rgba(255, 255, 255, 0.09); }
+.zrd-terr__cell.is-on { background: var(--acc); }
+.zrd-terr__delta { flex-shrink: 0; width: clamp(26px, 1.9vw, 36px); text-align: right; font-size: clamp(9px, 0.7vw, 12px); font-weight: 800; }
+.zrd-terr__delta.is-up { color: #57d976; }
+.zrd-terr__delta.is-down { color: #ff7a7a; }
+.zrd-terr__delta.is-flat { color: #9aa3b2; }
+
+/* ── Колоды слева (board): универсальная дека (оригинальная стопка + веер карт) ── */
+/* --zrd-card-h — высота карт в РАСКРЫТОМ веере (крупные, читаемые).
+   --zrd-pile-h — высота СВЁРНУТОЙ стопки-обложки (может быть меньше; в колонке авто-масштаб). */
+.zrd-deck { --acc: #2ec27e; --card-aspect: 186 / 432; --zrd-card-h: clamp(120px, 15vh, 158px); --zrd-pile-h: var(--zrd-card-h); position: relative; display: inline-flex; align-items: flex-end; }
+
+/* Колонка колод справа: стопки друг под другом, ДЕЛЯТ высоту поровну (flex:1) — 6 колод влезают при любой высоте окна.
+   Колода = карта: высота карт веера = высоте стопки (обе = высоте слота колонки). */
+/* Ширина колонки задаётся явно (высота одной стопки × аспект), иначе flex-shrink:0 берёт натуральную ширину картинки-стопки (290px) и слева появляется пустая полоса.
+   Высота стопки ≈ (высота полотна − 5 зазоров) / 6; полотно ≈ 100vh − шапка/паддинги (~120px). */
+.zrd-deck-col-r { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; height: 100%; min-height: 0; width: calc((100vh - 120px) / 6 * 290 / 414); }
+.zrd-deck-col-r .zrd-deck { flex: 1 1 0; min-height: 0; width: 100%; align-items: stretch; }
+.zrd-deck-col-r .zrd-deck__pile { height: 100%; width: 100%; }
+.zrd-deck-col-r .zrd-deck__card { height: 100%; }
+
+/* Стопка — ОРИГИНАЛЬНАЯ картинка листа, вписана в форму карты (тот же размер, что карты) */
+.zrd-deck__pile {
+  position: relative; z-index: 20; flex-shrink: 0; cursor: pointer; padding: 0; background: none; border: none;
+  height: var(--zrd-pile-h); aspect-ratio: var(--card-aspect); border-radius: 12px; overflow: hidden;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.55); transition: transform 160ms ease;
+}
+.zrd-deck__pile::before, .zrd-deck__pile::after {
+  content: ""; position: absolute; inset: 0; border-radius: 12px; z-index: -1;
+  background: #0a0e0c; border: 1.4px solid rgba(255, 255, 255, 0.14);
+}
+.zrd-deck__pile::before { transform: translate(5px, -5px); opacity: 0.55; }
+.zrd-deck__pile::after { transform: translate(9px, -9px); opacity: 0.3; }
+.zrd-deck__pile:hover { transform: translateY(-3px); }
+.zrd-deck__pile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Веер: свёрнуто — спрятан за стопкой; клик → карты выезжают ВЛЕВО в ОДИН ряд на уровне своей колоды.
+   Каждая колода на своей высоте → несколько открытых вееров не наезжают друг на друга. */
+.zrd-deck__fan {
+  position: absolute; right: 100%; top: 0; bottom: 0; margin-right: 12px; z-index: 40;
+  display: flex; flex-direction: row-reverse; align-items: center; justify-content: flex-start;
+  gap: 8px; white-space: nowrap;
+  opacity: 0; transform: translateX(26px); pointer-events: none;
+  transition: opacity 200ms ease, transform 280ms cubic-bezier(.2, .7, .3, 1);
+}
+.zrd-deck.is-open .zrd-deck__fan { opacity: 1; transform: translateX(0); pointer-events: auto; }
+.zrd-deck__card {
+  position: relative; flex-shrink: 0; cursor: pointer; background: none; border: none; padding: 0;
+  height: var(--zrd-card-h); transition: transform 160ms ease;
+}
+.zrd-deck__card:hover { transform: translateY(-12px); z-index: 50; }
+.zrd-deck__card:focus-visible { outline: none; }
+
+/* Лицо карты: арт + плашка показателей по нижней границе (не перекрывает основной визуал) */
+.zrd-cardface { position: relative; display: block; height: 100%; aspect-ratio: var(--card-aspect); container-type: size; }
+.zrd-cardface img {
+  width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 10px;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.55));
+}
+/* Условия карты-задачи — в нижнем чёрном поле карты (арт уже чёрный, градиент не нужен) */
+.zrd-card-stats {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 34%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5%;
+  padding: 0 7%; pointer-events: none;
+}
+.zrd-card-stat {
+  font-weight: 800; font-size: clamp(9px, 4.6cqh, 17px); line-height: 1.15; white-space: nowrap;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+.zrd-card-stat.is-good { color: #74f0a0; }
+.zrd-card-stat.is-bad { color: #ff8080; }
+
+.zrd-deck__overlay {
+  position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center;
+  background: rgba(6, 12, 10, 0.62); backdrop-filter: blur(3px);
+}
+.zrd-deck__preview { display: flex; flex-direction: column; align-items: center; gap: 14px; animation: zrdCardIn 190ms ease; }
+.zrd-deck__preview-card { height: min(72vh, 580px); }
+.zrd-deck__preview-card .zrd-cardface img { border-radius: 16px; box-shadow: 0 22px 60px rgba(0, 0, 0, 0.6); }
+.zrd-deck__preview.is-playing { animation: zrdCardPlay 340ms cubic-bezier(.4, 0, .8, .4) forwards; }
+.zrd-deck__actions { display: flex; gap: 10px; }
+.zrd-deck__play {
+  color: #06210f; font-weight: 800; border: none; border-radius: 10px;
+  padding: 10px 24px; cursor: pointer; font-size: 15px; transition: filter 140ms ease;
+}
+.zrd-deck__play:hover:not(:disabled) { filter: brightness(1.08); }
+.zrd-deck__play:disabled { opacity: 0.45; cursor: not-allowed; }
+.zrd-deck__close {
+  background: rgba(255, 255, 255, 0.08); color: #cdd5e0; border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px; padding: 10px 18px; cursor: pointer; font-size: 15px;
+}
+@keyframes zrdCardIn { from { opacity: 0; transform: scale(0.9) translateY(22px); } to { opacity: 1; transform: none; } }
+@keyframes zrdCardPlay { to { opacity: 0; transform: translateY(42vh) scale(0.38) rotate(-4deg); } }

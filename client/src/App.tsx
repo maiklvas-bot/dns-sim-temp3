@@ -18,6 +18,7 @@ const ResultsPage = lazy(() => import("@/pages/results"));
 const StaffLoginPage = lazy(() => import("@/pages/staff-login"));
 const AdminPage = lazy(() => import("@/pages/admin"));
 const EvaluatorPage = lazy(() => import("@/pages/evaluator"));
+const ZrdPage = lazy(() => import("@/pages/zrd"));
 
 function AppRouter() {
   return (
@@ -29,6 +30,7 @@ function AppRouter() {
       <Route path="/evaluator" component={EvaluatorPage} />
       <Route path="/admin" component={AdminPage} />
       <Route path="/simulation" component={SimulationPage} />
+      <Route path="/zrd" component={ZrdPage} />
       <Route path="/results/:sessionId" component={ResultsPage} />
       <Route path="/results" component={ResultsPage} />
       <Route component={NotFound} />

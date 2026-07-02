@@ -550,6 +550,34 @@ export const sessionIdParamSchema = z.object({
 });
 
 // =============================================================================
+// Симуляция ЗРД (Фаза 3)
+// =============================================================================
+
+export const createZrdSessionSchema = z.object({
+  participantName: nameSchema.optional().default("Участник"),
+  assessorName: z.string().max(100).optional().default(""),
+  difficulty: z.number().int().min(1).max(5).optional().default(3),
+  region: z.string().max(60).nullable().optional().default(null),
+  seed: z.number().int().min(0).max(2147483647).optional(),
+  quarters: z.number().int().min(1).max(8).optional().default(4),
+});
+
+const zrdStrategySchema = z.enum(["service", "expansion", "efficiency"]);
+const zrdStandardActionSchema = z.enum(["open_basic", "hire", "promo", "improve_service", "improve_logistics"]);
+const zrdOptionIdSchema = z.string().regex(/^[a-z_]+$/, "Некорректный id варианта").max(40);
+
+/** Намерение хода (TurnIntent) — дискриминированное объединение по полю kind. */
+export const zrdIntentSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("declareStrategy"), strategy: zrdStrategySchema }),
+  z.object({ kind: z.literal("keepCards"), cardIds: z.array(idStringSchema).max(4) }),
+  z.object({ kind: z.literal("playCard"), cardId: idStringSchema }),
+  z.object({ kind: z.literal("standard"), action: zrdStandardActionSchema }),
+  z.object({ kind: z.literal("viewData") }),
+  z.object({ kind: z.literal("eventChoice"), optionId: zrdOptionIdSchema }),
+  z.object({ kind: z.literal("pass") }),
+]);
+
+// =============================================================================
 // Middleware-фабрики
 // =============================================================================
 

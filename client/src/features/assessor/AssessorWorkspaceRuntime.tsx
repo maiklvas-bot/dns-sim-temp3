@@ -457,6 +457,11 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   };
 
   const handleStart = async () => {
+    // ЗРД — отдельный поток: открываем лобби ЗРД (оценщик авторизован → создание сессии работает).
+    if (simulationRole === "regional-deputy") {
+      navigate("/zrd");
+      return;
+    }
     const savedActive = saveActiveParticipantSetup();
     const launchSetups = participantSetups
       .map((item) => (item.id === activeParticipantId ? savedActive : item))
@@ -1626,9 +1631,9 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
               <button type="button" className="dns-assessor-v2-secondary" onClick={validateCurrentSetup}>
                 <ClipboardCheck className="h-4 w-4" />Проверить
               </button>
-              <Button type="button" className="dns-assessor-v2-primary" onClick={handleStart} disabled={readyParticipantSetups.length === 0 || isStarting} data-testid="button-start">
+              <Button type="button" className="dns-assessor-v2-primary" onClick={handleStart} disabled={(simulationRole !== "regional-deputy" && readyParticipantSetups.length === 0) || isStarting} data-testid="button-start">
                 <Play className="mr-2 h-4 w-4" />
-                {isStarting ? "Запускаем..." : "Запустить симуляцию"}
+                {isStarting ? "Запускаем..." : simulationRole === "regional-deputy" ? "Запустить ЗРД" : "Запустить симуляцию"}
               </Button>
             </div>
           </section>
