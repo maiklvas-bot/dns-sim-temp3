@@ -18,6 +18,9 @@ import {
   toPublicSimulationSession,
 } from "./simulation-session-access";
 import { staffStorage } from "./staff-storage";
+import { zrdStorage } from "./zrd-storage";
+import { zrdService } from "./zrd-service";
+import type { TurnIntent, Difficulty } from "@shared/zrd/types";
 import { auditStorage, type AuditRecordInput } from "./audit-storage";
 import { requireAdmin, requireStaff, saveMediaUpload } from "./route-utils";
 import {
@@ -40,6 +43,8 @@ import {
   adminSettingsSchema,
   createLiveSessionSchema,
   createSimulationSessionSchema,
+  createZrdSessionSchema,
+  zrdIntentSchema,
   editableChatSchema,
   editableEmailCaseSchema,
   editableMessengerCaseSchema,
@@ -598,6 +603,110 @@ export async function registerRoutes(
       res.json(toPublicSimulationSession(req.simulationSession!));
     },
   );
+
+  // ── Симуляция ЗРД (Фаза 3): solo против AI, серверно-авторитетно ──────────
+  // Доступ к партии: персонал (создание/наблюдение) ИЛИ игрок по токену (x-zrd-token).
+  function requireZrdAccess(req: Request, res: Response, next: NextFunction) {
+    const id = Number(getSingleParam(req.params.id));
+    const session = zrdStorage.getSession(id);
+    if (!session) {
+      return res.status(404).json({ message: "Сессия не найдена", code: "ZRD_SESSION_NOT_FOUND" });
+    }
+    const isStaff = Boolean(req.session.staff);
+    const token = req.header("x-zrd-token") || "";
+    const tokenOk = Boolean(token) && Boolean(session.participantTokenHash)
+      && hashSimulationSessionToken(token) === session.participantTokenHash;
+    if (!isStaff && !tokenOk) {
+      return res.status(403).json({ message: "Нет доступа к сессии", code: "ZRD_ACCESS_DENIED" });
+    }
+    next();
+  }
+
+  app.post("/api/zrd/sessions", requireStaff, validateBody(createZrdSessionSchema), (req, res, next) => {
+    try {
+      const body = req.validatedBody as z.infer<typeof createZrdSessionSchema>;
+      const staff = req.session.staff;
+      const game = zrdService.createGame({
+        participantName: body.participantName,
+        evaluatorName: body.assessorName || staff?.displayName || "",
+        evaluatorAccountId: staff?.role === "evaluator" ? staff.id : null,
+        difficulty: body.difficulty as Difficulty,
+        region: body.region,
+        seed: body.seed,
+        quarters: body.quarters,
+      });
+      recordAudit(req, {
+        area: staff?.role === "admin" ? "admin" : "evaluator",
+        action: "zrd_session_created",
+        entityType: "zrd-session",
+        entityId: game.session.id,
+        summary: `Создана ЗРД-партия (сложность ${game.session.difficulty}) для ${game.session.participantName}`,
+      });
+      res.json({
+        id: game.session.id,
+        participantName: game.session.participantName,
+        difficulty: game.session.difficulty,
+        region: game.session.region,
+        quarters: game.session.quarters,
+        status: game.session.status,
+        accessCode: game.accessCode,
+        sessionToken: game.token,
+        state: game.state,
+      });
+    } catch (error) {
+      next(internalApiError("ZRD_SESSION_CREATE_FAILED", "Не удалось создать ЗРД-партию.", error));
+    }
+  });
+
+  app.get("/api/zrd/sessions/:id", validateParams(sessionIdParamSchema), requireZrdAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const data = zrdService.getPublicSession(id);
+      if (!data) {
+        return res.status(404).json({ message: "Сессия не найдена", code: "ZRD_SESSION_NOT_FOUND" });
+      }
+      res.json(data);
+    } catch (error) {
+      next(internalApiError("ZRD_SESSION_FETCH_FAILED", "Не удалось получить ЗРД-партию.", error));
+    }
+  });
+
+  app.post("/api/zrd/sessions/:id/intent", validateParams(sessionIdParamSchema), requireZrdAccess, validateBody(zrdIntentSchema), (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const intent = req.validatedBody as TurnIntent;
+      const result = zrdService.applyPlayerIntent(id, intent);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Ход отклонён", code: "ZRD_INTENT_REJECTED", error: result.error });
+      }
+      res.json({ state: result.state, finalized: result.finalized, result: result.result ?? null });
+    } catch (error) {
+      next(internalApiError("ZRD_INTENT_FAILED", "Не удалось применить ход.", error));
+    }
+  });
+
+  app.post("/api/zrd/sessions/:id/finish", validateParams(sessionIdParamSchema), requireZrdAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const data = zrdService.getPublicSession(id);
+      if (!data) {
+        return res.status(404).json({ message: "Сессия не найдена", code: "ZRD_SESSION_NOT_FOUND" });
+      }
+      if (data.status !== "completed") {
+        return res.status(409).json({ message: "Партия ещё не завершена", code: "ZRD_NOT_ENDED" });
+      }
+      recordAudit(req, {
+        area: "evaluator",
+        action: "zrd_session_finished",
+        entityType: "zrd-session",
+        entityId: id,
+        summary: `ЗРД-партия завершена (ТР ${data.result?.tr ?? "?"})`,
+      });
+      res.json(data);
+    } catch (error) {
+      next(internalApiError("ZRD_FINISH_FAILED", "Не удалось завершить партию.", error));
+    }
+  });
 
   app.patch("/api/sessions/:id", validateParams(sessionIdParamSchema), requireSessionAccess, validateBody(patchSessionSchema), (req, res) => {
     const { id } = req.validatedParams as { id: string };

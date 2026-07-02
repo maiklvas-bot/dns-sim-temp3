@@ -341,6 +341,75 @@ export const sessionMetrics = sqliteTable("session_metrics", {
   sessionIdx: index("session_metrics_session_idx").on(table.sessionId),
 }));
 
+// ── Симуляция ЗРД (Фаза 3) ───────────────────────────────────────────────
+// Серверно-авторитетное состояние партии хранится целиком в state_json (ZrdState).
+export const zrdSessions = sqliteTable("zrd_sessions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  participantName: text("participant_name").notNull().default("Участник"),
+  participantTokenHash: text("participant_token_hash"),
+  evaluatorAccountId: integer("evaluator_account_id"),
+  evaluatorName: text("evaluator_name").notNull().default(""),
+  difficulty: integer("difficulty").notNull().default(3),
+  region: text("region"),
+  seed: integer("seed").notNull().default(0),
+  quarters: integer("quarters").notNull().default(4),
+  opponent: text("opponent").notNull().default("ai"),
+  accessCode: text("access_code"),
+  stateJson: text("state_json").notNull().default("{}"),
+  status: text("status").notNull().default("in_progress"), // in_progress | completed
+  startedAt: text("started_at").notNull(),
+  completedAt: text("completed_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  statusIdx: index("zrd_sessions_status_idx").on(table.status),
+  createdIdx: index("zrd_sessions_created_idx").on(table.createdAt),
+  accessCodeIdx: index("zrd_sessions_access_code_idx").on(table.accessCode),
+}));
+
+export const zrdTurns = sqliteTable("zrd_turns", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sessionId: integer("session_id").notNull().references(() => zrdSessions.id, { onDelete: "cascade" }),
+  seq: integer("seq").notNull(),
+  quarter: integer("quarter").notNull(),
+  intentJson: text("intent_json").notNull().default("{}"),
+  logType: text("log_type").notNull().default(""),
+  detail: text("detail").notNull().default(""),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  sessionIdx: index("zrd_turns_session_idx").on(table.sessionId),
+}));
+
+export const zrdResults = sqliteTable("zrd_results", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sessionId: integer("session_id").notNull().references(() => zrdSessions.id, { onDelete: "cascade" }),
+  tr: integer("tr").notNull().default(0),
+  aiTr: integer("ai_tr").notNull().default(0),
+  winner: text("winner").notNull().default("player"), // player | ai | draw
+  finalMetricsJson: text("final_metrics_json").notNull().default("{}"),
+  competenciesJson: text("competencies_json").notNull().default("{}"),
+  outcomeJson: text("outcome_json").notNull().default("{}"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  sessionIdx: uniqueIndex("zrd_results_session_idx").on(table.sessionId),
+}));
+
+export const insertZrdSessionSchema = createInsertSchema(zrdSessions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertZrdTurnSchema = createInsertSchema(zrdTurns).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertZrdResultSchema = createInsertSchema(zrdResults).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertSimulationSessionSchema = createInsertSchema(simulationSessions).omit({
   id: true,
   createdAt: true,
@@ -393,3 +462,10 @@ export type InsertSessionAnswer = z.infer<typeof insertSessionAnswerSchema>;
 export type InsertSessionMetrics = z.infer<typeof insertSessionMetricsSchema>;
 export type InsertSessionResult = z.infer<typeof insertSessionResultSchema>;
 export type StaffLoginPayload = z.infer<typeof staffLoginSchema>;
+
+export type ZrdSessionRow = typeof zrdSessions.$inferSelect;
+export type ZrdTurnRow = typeof zrdTurns.$inferSelect;
+export type ZrdResultRow = typeof zrdResults.$inferSelect;
+export type InsertZrdSession = z.infer<typeof insertZrdSessionSchema>;
+export type InsertZrdTurn = z.infer<typeof insertZrdTurnSchema>;
+export type InsertZrdResult = z.infer<typeof insertZrdResultSchema>;
