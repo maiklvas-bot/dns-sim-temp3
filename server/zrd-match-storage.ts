@@ -63,6 +63,10 @@ export class ZrdMatchStorage {
     return db.select().from(zrdMatchSeats).where(eq(zrdMatchSeats.accessCode, accessCode)).get();
   }
 
+  updateSeatTokenHash(seatId: number, tokenHash: string) {
+    return db.update(zrdMatchSeats).set({ tokenHash }).where(eq(zrdMatchSeats.id, seatId)).returning().get();
+  }
+
   addTurn(input: InsertZrdMatchTurn) {
     return db.insert(zrdMatchTurns).values({ ...input, createdAt: new Date().toISOString() }).returning().get();
   }
