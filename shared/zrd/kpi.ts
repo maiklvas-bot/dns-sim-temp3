@@ -16,7 +16,10 @@ export const KPI_LABEL: Record<KpiId, string> = {
   staffing: "Персонал",
 };
 
-export function computeKpi(seat: SeatState): Record<KpiId, number> {
+/** структурный минимум для расчёта (SeatState или его клиентская проекция без deck/log) */
+export type KpiInput = Pick<SeatState, "resources" | "metrics" | "incomeMonthly" | "activeProjects" | "resourceProd">;
+
+export function computeKpi(seat: KpiInput): Record<KpiId, number> {
   const r = seat.resources;
   return {
     sales_growth: clamp100(seat.metrics.sales * 5),

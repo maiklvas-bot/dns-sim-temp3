@@ -1,82 +1,108 @@
 import { useState } from "react";
-import { Play, Info } from "lucide-react";
-import type { Difficulty } from "@shared/zrd/types";
-import { DIFFICULTY_CONFIGS } from "@shared/zrd/content";
-import { ZRD_RRS, getRrsById } from "@shared/zrd/regions";
-import type { CreateZrdInput } from "../../zrd-api";
+import { Play, Info, KeyRound } from "lucide-react";
+import { RRS_IDS } from "@shared/zrd/match-types";
+import { createZrdMatch, joinZrdMatch } from "../../zrd-match-api";
 
-const LEVELS: Difficulty[] = [1, 2, 3, 4, 5];
+interface Props {
+  onJoinCode: (code: string) => void;
+  onAdoptSeat: (matchId: number, seatIdx: number, token: string) => void;
+  loading: boolean;
+  error: string | null;
+}
 
-export function ZrdLobby({ onStart, loading, error }: { onStart: (input: CreateZrdInput) => void; loading: boolean; error: string | null }) {
-  const [name, setName] = useState("Игрок");
-  const [difficulty, setDifficulty] = useState<Difficulty>(3);
-  const [rrsId, setRrsId] = useState(ZRD_RRS[0].id);
-  const cfg = DIFFICULTY_CONFIGS[difficulty];
+/**
+ * Лобби матча: вход по коду места (выдаёт оценщик) — основной путь.
+ * Демо-матч (1 человек + 3 ИИ) — быстрый старт для сотрудников (нужен вход staff).
+ */
+export function ZrdLobby({ onJoinCode, onAdoptSeat, loading, error }: Props) {
+  const [code, setCode] = useState("");
+  const [demoBusy, setDemoBusy] = useState(false);
+  const [demoError, setDemoError] = useState<string | null>(null);
+
+  const startDemo = async () => {
+    setDemoBusy(true); setDemoError(null);
+    try {
+      const created = await createZrdMatch({
+        scenario: "conquest",
+        difficulty: 3,
+        winMode: "year",
+        missionMode: "auto",
+        swanFrequency: "standard",
+        minutesPerTick: 6,
+        seats: RRS_IDS.map((rrsId, i) => (i === 0
+          ? { rrsId, controller: "human" as const, participantName: "Демо-игрок" }
+          : { rrsId, controller: "ai" as const, aiLevel: 3 as const })),
+      });
+      const humanSeat = created.seats.find((s) => s.controllerKind === "human");
+      if (!humanSeat?.accessCode) throw new Error("Код места не получен");
+      const joined = await joinZrdMatch(humanSeat.accessCode);
+      onAdoptSeat(joined.matchId, joined.seatIdx, joined.token);
+    } catch (e) {
+      setDemoError(e instanceof Error ? e.message : "Не удалось создать демо-матч (нужен вход сотрудника)");
+    } finally {
+      setDemoBusy(false);
+    }
+  };
 
   return (
     <div className="zrd-panel mx-auto max-w-lg p-6">
       <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "#FF6B00" }}>Симуляция ЗРД</div>
       <h1 className="mb-1 text-2xl font-extrabold" style={{ color: "var(--zrd-text)" }}>Покорение новых территорий</h1>
       <p className="mb-5 text-sm" style={{ color: "var(--zrd-text-dim)" }}>
-        Развейте торговый регион за 4 квартала: открывайте точки, вкладывайтесь в команду и технологии,
-        реагируйте на кризисы. Соперник — компьютер.
+        Матч 4 РРС Дивизиона Урал: 4 квартала × 3 месячных такта. За столом — люди и ИИ-управленцы;
+        миссии, чёрные лебеди и личные колоды карт. Настраивает и запускает оценщик.
       </p>
 
-      <label className="mb-1 block text-xs font-bold uppercase tracking-wide" style={{ color: "var(--zrd-text-dim)" }} htmlFor="zrd-name">Имя игрока</label>
-      <input id="zrd-name" value={name} onChange={(e) => setName(e.target.value)} className="mb-4 w-full rounded-lg border px-3 py-2 text-sm" style={{ borderColor: "var(--zrd-border)", background: "var(--zrd-surface-2)", color: "var(--zrd-text)" }} />
-
-      <div className="mb-1 text-xs font-bold uppercase tracking-wide" style={{ color: "var(--zrd-text-dim)" }}>Сложность</div>
-      <div className="mb-2 flex gap-2" role="group" aria-label="Уровень сложности">
-        {LEVELS.map((l) => (
-          <button
-            key={l}
-            type="button"
-            onClick={() => setDifficulty(l)}
-            aria-pressed={difficulty === l}
-            className="flex-1 rounded-lg border py-2 text-sm font-bold transition-colors"
-            style={difficulty === l
-              ? { borderColor: "#FF6B00", background: "rgba(255,107,0,0.14)", color: "#FF6B00", cursor: "pointer" }
-              : { borderColor: "var(--zrd-border)", color: "var(--zrd-text)", cursor: "pointer" }}
-          >
-            {l}
-          </button>
-        ))}
+      <label className="mb-1 block text-xs font-bold uppercase tracking-wide" style={{ color: "var(--zrd-text-dim)" }} htmlFor="zrd-code">
+        Код входа (выдаёт оценщик)
+      </label>
+      <div className="mb-3 flex gap-2">
+        <input
+          id="zrd-code"
+          value={code}
+          onChange={(e) => setCode(e.target.value.toUpperCase())}
+          maxLength={6}
+          placeholder="AB23CD"
+          className="flex-1 rounded-lg border px-3 py-2 text-lg font-extrabold tracking-[0.25em]"
+          style={{ borderColor: "var(--zrd-border)", background: "var(--zrd-surface-2)", color: "var(--zrd-text)" }}
+        />
+        <button
+          type="button"
+          onClick={() => onJoinCode(code.trim())}
+          disabled={loading || code.trim().length !== 6}
+          className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white transition-opacity disabled:opacity-50"
+          style={{ background: "#FF6B00", cursor: loading ? "wait" : "pointer" }}
+        >
+          <KeyRound className="h-4 w-4" aria-hidden /> {loading ? "Входим…" : "Войти"}
+        </button>
       </div>
-      <p className="mb-4 text-[12px]" style={{ color: "var(--zrd-text-dim)" }}>
-        Старт капитала {cfg.startResources.capital}, доход {cfg.startProd.capital}/кв, {cfg.actionsPerQuarter} действия/квартал,
-        наказание событий ×{cfg.penaltyMultiplier}.
-      </p>
 
-      <label className="mb-1 block text-xs font-bold uppercase tracking-wide" style={{ color: "var(--zrd-text-dim)" }} htmlFor="zrd-region">РРС (Дивизион Урал)</label>
-      <select
-        id="zrd-region"
-        value={rrsId}
-        onChange={(e) => setRrsId(e.target.value)}
-        className="mb-5 w-full rounded-lg border px-3 py-2 text-sm"
-        style={{ borderColor: "var(--zrd-border)", background: "var(--zrd-surface-2)", color: "var(--zrd-text)", cursor: "pointer" }}
-      >
-        {ZRD_RRS.map((r) => (
-          <option key={r.id} value={r.id}>{r.name} · рекоменд. сложность {r.difficultyHint}</option>
-        ))}
-      </select>
-
-      {error && (
-        <div className="mb-3 rounded-lg px-3 py-2 text-sm" style={{ background: "rgba(232,90,90,0.14)", color: "#e85a5a" }}>{error}</div>
+      {(error || demoError) && (
+        <div className="mb-3 rounded-lg px-3 py-2 text-sm" style={{ background: "rgba(232,90,90,0.14)", color: "#e85a5a" }}>
+          {error || demoError}
+        </div>
       )}
+
+      <div className="my-4 flex items-center gap-2 text-[11px] uppercase tracking-wide" style={{ color: "var(--zrd-text-dim)" }}>
+        <span className="h-px flex-1" style={{ background: "var(--zrd-border)" }} />
+        или
+        <span className="h-px flex-1" style={{ background: "var(--zrd-border)" }} />
+      </div>
 
       <button
         type="button"
-        onClick={() => onStart({ participantName: name, difficulty, region: getRrsById(rrsId)?.name ?? null, quarters: 4 })}
-        disabled={loading}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-lg py-3 text-base font-bold text-white transition-opacity disabled:opacity-60"
-        style={{ background: "#FF6B00", cursor: loading ? "wait" : "pointer" }}
+        onClick={startDemo}
+        disabled={demoBusy}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-lg border py-3 text-base font-bold transition-opacity disabled:opacity-60"
+        style={{ borderColor: "var(--zrd-border)", color: "var(--zrd-text)", cursor: demoBusy ? "wait" : "pointer" }}
       >
-        <Play className="h-5 w-5" aria-hidden /> {loading ? "Создаём партию…" : "Начать партию"}
+        <Play className="h-5 w-5" aria-hidden /> {demoBusy ? "Создаём демо-матч…" : "Демо-матч: я против 3 ИИ"}
       </button>
 
       <div className="mt-4 flex items-start gap-2 text-[12px]" style={{ color: "var(--zrd-text-dim)" }}>
         <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden />
-        <span>Обычно партию настраивает оценщик и выдаёт ссылку для входа. Этот экран — быстрый старт для входа и демонстрации (требуется вход сотрудника).</span>
+        <span>Боевые партии настраивает оценщик в своём кабинете (карточка «ЗРД») и раздаёт коды/ссылки.
+        Демо-матч доступен сотрудникам после служебного входа.</span>
       </div>
     </div>
   );

@@ -1,38 +1,40 @@
 import { CalendarCheck, Building2, TrendingUp, Users, Star, ChevronRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { PublicZrdState } from "@shared/zrd/engine";
+import type { DeckId, ZrdSeatView } from "@shared/zrd/match-types";
+import { handOfDeck } from "../../zrd-match-board";
 import { ZrdTip } from "./ZrdTip";
 
-/** Глаголы-категории → колода движка (ZRD_DECKS): infra/it=logistics, marketing/strategic=projects, hr=staff. */
-const VERBS: { label: string; icon: LucideIcon; deckId: string; desc: string }[] = [
+/** Глаголы-категории → личные колоды матча. «Анализировать» дополнительно сигналит viewData (скоринг аналитики). */
+const VERBS: { label: string; icon: LucideIcon; deckId: DeckId; analytics?: boolean; desc: string }[] = [
   { label: "Планировать",   icon: CalendarCheck, deckId: "projects",
-    desc: "Стратегические проекты: открыть колоду планирования (выход в новые районы, e-commerce, ассортимент)." },
+    desc: "Стратегические проекты РРС: открытия, переезды, склады, раскрытие потенциала." },
   { label: "Строить",       icon: Building2,     deckId: "logistics",
-    desc: "Инфраструктура: открыть колоду логистики (магазины, гипермаркеты, склады и хабы)." },
-  { label: "Развивать",     icon: TrendingUp,    deckId: "projects",
-    desc: "Маркетинг и рост: открыть колоду проектов (рекламные кампании, продвижение, расширение)." },
+    desc: "Логистика: поставки, склады, транспорт, доставка до клиента." },
+  { label: "Развивать",     icon: TrendingUp,    deckId: "promo",
+    desc: "Продвижение: реклама, акции, брендинг, программы лояльности." },
   { label: "Управлять",     icon: Users,         deckId: "staff",
-    desc: "Персонал: открыть колоду сотрудников (найм, обучение, наставничество, мотивация)." },
-  { label: "Анализировать", icon: Star,          deckId: "logistics",
-    desc: "IT и данные: открыть колоду логистики/IT (CRM, BI-аналитика, автоматизация склада)." },
+    desc: "Сотрудники: найм, обучение, наставничество, удержание команды." },
+  { label: "Анализировать", icon: Star,          deckId: "goods", analytics: true,
+    desc: "Товар и данные: ассортимент, закупка, цены, инвентаризация. Открытие фиксируется как работа с данными." },
 ];
 
-/** #9-1 «Действия» — меню действий-глаголов; открывает колоду карт по категории. */
-export function ZrdPanelActions({ state, onOpenDeck }: { state: PublicZrdState; onOpenDeck: (deckId: string) => void }) {
-  const canOpen = state.phase === "action" || state.phase === "research";
+/** «Действия» — меню глаголов; открывает свою колоду карт соответствующего направления. */
+export function ZrdPanelActions({ view, onOpenDeck, onViewData }: { view: ZrdSeatView; onOpenDeck: (deckId: DeckId) => void; onViewData: () => void }) {
+  const canOpen = !view.matchEnded;
   return (
     <div className="zrd-frame h-full">
       <div className="zrd-frame__head">Действия</div>
       <div className="zrd-frame__body">
         {VERBS.map((v) => {
           const Icon = v.icon;
+          const inHand = handOfDeck(view.you, v.deckId).length;
           return (
-            <ZrdTip key={v.label} title={v.label} value="Открывает колоду карт" desc={v.desc}>
+            <ZrdTip key={v.label} title={v.label} value={`Карт в руке: ${inHand}`} desc={v.desc}>
               <button
                 type="button"
                 className="zrd-act-row"
                 disabled={!canOpen}
-                onClick={() => onOpenDeck(v.deckId)}
+                onClick={() => { if (v.analytics) onViewData(); onOpenDeck(v.deckId); }}
               >
                 <span className="zrd-verb-ico"><Icon aria-hidden /></span>
                 <span className="zrd-act-label">{v.label}</span>
