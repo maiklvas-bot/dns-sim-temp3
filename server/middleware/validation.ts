@@ -632,6 +632,20 @@ export const zrdMatchPauseSchema = z.object({
   paused: z.boolean(),
 });
 
+/** Секции инструкции /zrd/manual, к которым админ может добавлять дополнения. */
+export const ZRD_MANUAL_SECTION_IDS = [
+  "about", "roles", "goal", "flow", "turnmap", "interface", "cards",
+  "events", "scenarios", "competencies", "results", "learning", "admin",
+] as const;
+
+export const zrdManualSectionParamSchema = z.object({
+  sectionId: z.enum(ZRD_MANUAL_SECTION_IDS),
+});
+
+export const zrdManualNoteBodySchema = z.object({
+  bodyMd: z.string().max(8000),
+});
+
 // =============================================================================
 // Middleware-фабрики
 // =============================================================================

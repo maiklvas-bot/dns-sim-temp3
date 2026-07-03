@@ -201,9 +201,15 @@
 
 ## 12. Администратору: где менять
 
+**Дополнения к инструкции — прямо на странице `/#/zrd/manual`:** войдите как администратор,
+под каждой секцией появится блок «Дополнение администратора» с кнопкой «Добавить/Редактировать».
+Поддерживается мини-markdown (`## заголовок`, `**жирный**`, списки `- `); пустой текст удаляет
+дополнение. Правки сохраняются в БД (`zrd_manual_notes`), видны всем сразу и попадают в аудит-журнал.
+
 | Что | Где |
 |---|---|
-| Эта инструкция | `docs/zrd-wiki/16-instrukciya-igry.md` + экран `client/src/features/zrd/manual/ZrdManualPage.tsx` |
+| Дополнения к секциям инструкции | прямо на `/#/zrd/manual` (режим администратора) |
+| Базовый текст инструкции | `docs/zrd-wiki/16-instrukciya-igry.md` + экран `client/src/features/zrd/manual/ZrdManualPage.tsx` |
 | Карты (300) | `shared/zrd/content-decks.ts` |
 | Лебеди (14) | `shared/zrd/content-swans.ts` |
 | Миссии/сценарии | `shared/zrd/content-missions.ts` · `content-scenarios.ts` |

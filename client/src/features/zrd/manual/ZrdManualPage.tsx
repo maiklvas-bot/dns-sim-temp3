@@ -5,12 +5,15 @@
  * Текстовый первоисточник для правок администратора: docs/zrd-wiki/16-instrukciya-igry.md.
  */
 import "@/styles/zrd.css";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode, CSSProperties } from "react";
 import { useLocation } from "wouter";
 import {
   ArrowLeft, BookOpen, Users, Bot, CircleOff, Crown, Layers, Target, AlertTriangle,
   Swords, Map, GraduationCap, ClipboardList, Compass, Timer, Shield, BarChart3, Printer,
+  Pencil, Save, X, Loader2,
 } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 import { useDnsTheme } from "@/components/theme-toggle";
 import { SCENARIOS, SCENARIO_IDS } from "@shared/zrd/content-scenarios";
 import { MISSION_CATALOG } from "@shared/zrd/content-missions";
@@ -38,7 +41,112 @@ function Section({ id, icon, kicker, title, children }: { id: string; icon: Reac
         </div>
       </div>
       {children}
+      <AdminNote sectionId={id} />
     </section>
+  );
+}
+
+// ── дополнения администратора (живут в БД, видят все, правит админ) ─────────
+interface ManualNote { sectionId: string; bodyMd: string; updatedBy: string; updatedAt: string }
+interface NotesCtx {
+  notes: Record<string, ManualNote>;
+  isAdmin: boolean;
+  save: (sectionId: string, bodyMd: string) => Promise<void>;
+}
+const ManualNotesContext = createContext<NotesCtx>({ notes: {}, isAdmin: false, save: async () => {} });
+
+/** Безопасный мини-markdown: ##/### заголовки, **жирный**, списки «- », абзацы. Без HTML-инъекций (React-ноды). */
+function MiniMarkdown({ text }: { text: string }) {
+  const bold = (line: string, key: number): ReactNode => {
+    const parts = line.split(/\*\*(.+?)\*\*/g);
+    return (
+      <span key={key}>
+        {parts.map((p, i) => (i % 2 === 1 ? <b key={i} style={{ color: "var(--zrd-text)" }}>{p}</b> : p))}
+      </span>
+    );
+  };
+  const lines = text.replace(/\r\n/g, "\n").split("\n");
+  const out: ReactNode[] = [];
+  let list: ReactNode[] = [];
+  const flushList = () => {
+    if (list.length) {
+      out.push(<ul key={`ul-${out.length}`} style={{ margin: "4px 0", paddingLeft: 18, color: "var(--zrd-text-dim)", fontSize: 13.5, lineHeight: 1.55 }}>{list}</ul>);
+      list = [];
+    }
+  };
+  lines.forEach((line, i) => {
+    const t = line.trim();
+    if (t.startsWith("- ")) { list.push(<li key={i}>{bold(t.slice(2), i)}</li>); return; }
+    flushList();
+    if (!t) return;
+    if (t.startsWith("### ")) { out.push(<div key={i} style={{ color: "var(--zrd-text)", fontWeight: 700, fontSize: 13.5, marginTop: 6 }}>{bold(t.slice(4), i)}</div>); return; }
+    if (t.startsWith("## ")) { out.push(<div key={i} style={{ color: "var(--zrd-text)", fontWeight: 800, fontSize: 15, marginTop: 8 }}>{bold(t.slice(3), i)}</div>); return; }
+    out.push(<p key={i} style={{ ...S.p, margin: "4px 0" }}>{bold(t, i)}</p>);
+  });
+  flushList();
+  return <>{out}</>;
+}
+
+/** Блок «Дополнение администратора» под секцией: просмотр для всех, инлайн-правка для админа. */
+function AdminNote({ sectionId }: { sectionId: string }) {
+  const { notes, isAdmin, save } = useContext(ManualNotesContext);
+  const note = notes[sectionId];
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  if (!note && !isAdmin) return null;
+
+  const startEdit = () => { setDraft(note?.bodyMd ?? ""); setErr(null); setEditing(true); };
+  const submit = async () => {
+    setBusy(true); setErr(null);
+    try { await save(sectionId, draft); setEditing(false); }
+    catch (e) { setErr(e instanceof Error ? e.message : "Не удалось сохранить"); }
+    finally { setBusy(false); }
+  };
+
+  return (
+    <div style={{ marginTop: 14, border: "1px dashed rgba(255,107,0,0.45)", borderRadius: 12, padding: "10px 14px", background: "rgba(255,107,0,0.05)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ ...S.kicker, fontSize: 10 }}>Дополнение администратора</span>
+        {note && <span style={{ fontSize: 10, color: "var(--zrd-text-dim)" }}>· {note.updatedBy} · {note.updatedAt.slice(0, 10)}</span>}
+        {isAdmin && !editing && (
+          <button type="button" onClick={startEdit}
+            style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center", gap: 4, border: "1px solid var(--zrd-border)", borderRadius: 7, padding: "3px 8px", fontSize: 11.5, fontWeight: 600, color: "var(--zrd-text-dim)", background: "transparent", cursor: "pointer" }}>
+            <Pencil size={12} aria-hidden /> {note ? "Редактировать" : "Добавить"}
+          </button>
+        )}
+      </div>
+      {!editing && note && <div style={{ marginTop: 4 }}><MiniMarkdown text={note.bodyMd} /></div>}
+      {!editing && !note && isAdmin && (
+        <p style={{ ...S.p, margin: "4px 0", fontStyle: "italic" }}>Пусто. Нажмите «Добавить», чтобы дописать правила/уточнения к этой секции — увидят все игроки и оценщики.</p>
+      )}
+      {editing && (
+        <div style={{ marginTop: 8 }}>
+          <textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            rows={6}
+            maxLength={8000}
+            aria-label={`Дополнение к секции ${sectionId}`}
+            placeholder={"Markdown: ## заголовок, **жирный**, списки через «- ». Пустой текст удаляет дополнение."}
+            style={{ width: "100%", borderRadius: 10, border: "1px solid var(--zrd-border)", background: "var(--zrd-surface-2)", color: "var(--zrd-text)", fontSize: 13, lineHeight: 1.5, padding: 10, resize: "vertical" }}
+          />
+          {err && <div style={{ color: "#e85a5a", fontSize: 12, marginTop: 4 }}>{err}</div>}
+          <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+            <button type="button" onClick={submit} disabled={busy}
+              style={{ display: "inline-flex", alignItems: "center", gap: 5, borderRadius: 8, border: "none", padding: "6px 12px", fontSize: 12.5, fontWeight: 700, color: "#fff", background: "#FF6B00", cursor: busy ? "wait" : "pointer" }}>
+              {busy ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <Save size={13} aria-hidden />} Сохранить
+            </button>
+            <button type="button" onClick={() => setEditing(false)} disabled={busy}
+              style={{ display: "inline-flex", alignItems: "center", gap: 5, borderRadius: 8, border: "1px solid var(--zrd-border)", padding: "6px 12px", fontSize: 12.5, fontWeight: 600, color: "var(--zrd-text-dim)", background: "transparent", cursor: "pointer" }}>
+              <X size={13} aria-hidden /> Отмена
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -104,6 +212,33 @@ const SWAN_FREQ_TEXT = "выкл 0% · редко 10% · стандарт 22% ·
 export default function ZrdManualPage() {
   const { themeClass } = useDnsTheme();
   const [, navigate] = useLocation();
+  const [notes, setNotes] = useState<Record<string, ManualNote>>({});
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    // дополнения — публичные; роль admin включает режим правки
+    void fetch("/api/zrd/manual-notes", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : { notes: [] }))
+      .then((data: { notes: ManualNote[] }) => {
+        setNotes(Object.fromEntries((data.notes ?? []).map((n) => [n.sectionId, n])));
+      })
+      .catch(() => { /* оффлайн — просто без дополнений */ });
+    void fetch("/api/staff/me", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((me: { role?: string } | null) => setIsAdmin(me?.role === "admin"))
+      .catch(() => setIsAdmin(false));
+  }, []);
+
+  const saveNote = async (sectionId: string, bodyMd: string) => {
+    const res = await apiRequest("PUT", `/api/zrd/manual-notes/${sectionId}`, { bodyMd });
+    const data = (await res.json()) as { note: ManualNote | null };
+    setNotes((prev) => {
+      const next = { ...prev };
+      if (data.note) next[sectionId] = data.note;
+      else delete next[sectionId];
+      return next;
+    });
+  };
 
   const nav: { id: string; label: string }[] = [
     { id: "about", label: "Об игре" },
@@ -122,6 +257,7 @@ export default function ZrdManualPage() {
   ];
 
   return (
+    <ManualNotesContext.Provider value={{ notes, isAdmin, save: saveNote }}>
     <div className={themeClass}>
       <div className="zrd-root" style={{ minHeight: "100dvh", overflowY: "auto" }}>
         {/* Шапка */}
@@ -494,9 +630,11 @@ export default function ZrdManualPage() {
 
           <footer style={{ textAlign: "center", color: "var(--zrd-text-dim)", fontSize: 11, padding: "8px 0 20px" }}>
             Институт ЗРД · инструкция v2 «Мультистол» · DNS SimCenter
+            {isAdmin && " · режим администратора: дополнения к секциям редактируются на месте"}
           </footer>
         </main>
       </div>
     </div>
+    </ManualNotesContext.Provider>
   );
 }

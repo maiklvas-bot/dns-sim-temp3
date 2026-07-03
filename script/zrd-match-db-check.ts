@@ -22,9 +22,15 @@ runMigrations(sqlite);
 
 const tables = sqlite.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as { name: string }[];
 const names = new Set(tables.map((t) => t.name));
-for (const t of ["zrd_matches", "zrd_match_seats", "zrd_match_turns", "zrd_match_results"]) {
+for (const t of ["zrd_matches", "zrd_match_seats", "zrd_match_turns", "zrd_match_results", "zrd_manual_notes"]) {
   check(`таблица ${t} создана`, names.has(t));
 }
+
+// 0010: дополнения инструкции — уникальность секции
+sqlite.prepare("INSERT INTO zrd_manual_notes (section_id, body_md, updated_by) VALUES ('goal', 'текст', 'админ')").run();
+let noteDupBlocked = false;
+try { sqlite.prepare("INSERT INTO zrd_manual_notes (section_id, body_md) VALUES ('goal', 'дубль')").run(); } catch { noteDupBlocked = true; }
+check("дубль секции инструкции отклонён (unique)", noteDupBlocked);
 
 // insert матча + 4 мест
 const now = new Date().toISOString();

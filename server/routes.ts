@@ -21,6 +21,7 @@ import { staffStorage } from "./staff-storage";
 import { zrdStorage } from "./zrd-storage";
 import { zrdService } from "./zrd-service";
 import { zrdMatchService } from "./zrd-match-service";
+import { zrdManualStorage } from "./zrd-manual-storage";
 import type { TurnIntent, Difficulty } from "@shared/zrd/types";
 import type { SeatIntent as ZrdSeatIntent } from "@shared/zrd/match-types";
 import { auditStorage, type AuditRecordInput } from "./audit-storage";
@@ -53,6 +54,8 @@ import {
   zrdMatchIntentSchema,
   zrdMatchSwanSchema,
   zrdMatchPauseSchema,
+  zrdManualSectionParamSchema,
+  zrdManualNoteBodySchema,
   editableChatSchema,
   editableEmailCaseSchema,
   editableMessengerCaseSchema,
@@ -868,6 +871,35 @@ export async function registerRoutes(
       res.json({ ok: true });
     } catch (error) {
       next(internalApiError("ZRD_MATCH_PAUSE_FAILED", "Не удалось переключить паузу.", error));
+    }
+  });
+
+  // ── ЗРД: дополнения администратора к инструкции /zrd/manual ──────────────
+  app.get("/api/zrd/manual-notes", (_req, res, next) => {
+    try {
+      const notes = zrdManualStorage.listNotes();
+      res.json({ notes: notes.map((n) => ({ sectionId: n.sectionId, bodyMd: n.bodyMd, updatedBy: n.updatedBy, updatedAt: n.updatedAt })) });
+    } catch (error) {
+      next(internalApiError("ZRD_MANUAL_FETCH_FAILED", "Не удалось загрузить дополнения инструкции.", error));
+    }
+  });
+
+  app.put("/api/zrd/manual-notes/:sectionId", requireAdmin, validateParams(zrdManualSectionParamSchema), validateBody(zrdManualNoteBodySchema), (req, res, next) => {
+    try {
+      const { sectionId } = req.validatedParams as { sectionId: string };
+      const { bodyMd } = req.validatedBody as z.infer<typeof zrdManualNoteBodySchema>;
+      const staff = req.session.staff;
+      const saved = zrdManualStorage.upsertNote(sectionId, bodyMd, staff?.displayName || staff?.username || "admin");
+      recordAudit(req, {
+        area: "admin",
+        action: "zrd_manual_note_updated",
+        entityType: "zrd-manual",
+        entityId: sectionId,
+        summary: saved ? `Обновлено дополнение инструкции ЗРД: секция ${sectionId}` : `Удалено дополнение инструкции ЗРД: секция ${sectionId}`,
+      });
+      res.json({ ok: true, note: saved ? { sectionId: saved.sectionId, bodyMd: saved.bodyMd, updatedBy: saved.updatedBy, updatedAt: saved.updatedAt } : null });
+    } catch (error) {
+      next(internalApiError("ZRD_MANUAL_SAVE_FAILED", "Не удалось сохранить дополнение инструкции.", error));
     }
   });
 

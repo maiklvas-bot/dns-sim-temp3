@@ -460,6 +460,19 @@ export const zrdMatchResults = sqliteTable("zrd_match_results", {
   matchSeatIdx: uniqueIndex("zrd_match_results_match_seat_idx").on(table.matchId, table.seatIdx),
 }));
 
+// ── ЗРД: правки инструкции администратором (дополнения к секциям /zrd/manual) ─
+export const zrdManualNotes = sqliteTable("zrd_manual_notes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sectionId: text("section_id").notNull(),
+  bodyMd: text("body_md").notNull().default(""),
+  updatedBy: text("updated_by").notNull().default(""),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  sectionIdx: uniqueIndex("zrd_manual_notes_section_idx").on(table.sectionId),
+}));
+export type ZrdManualNoteRow = typeof zrdManualNotes.$inferSelect;
+
 export const insertZrdMatchSchema = createInsertSchema(zrdMatches).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertZrdMatchSeatSchema = createInsertSchema(zrdMatchSeats).omit({ id: true, createdAt: true });
 export const insertZrdMatchTurnSchema = createInsertSchema(zrdMatchTurns).omit({ id: true, createdAt: true });
