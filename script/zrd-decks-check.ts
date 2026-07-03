@@ -5,6 +5,8 @@
  */
 import { MATCH_DECK_CARDS, DECK_ANCHORS, getMatchCard } from "../shared/zrd/content-decks";
 import { BLACK_SWANS, SWAN_TICK_PROBABILITY, getSwan } from "../shared/zrd/content-swans";
+import { MISSION_CATALOG } from "../shared/zrd/content-missions";
+import { SCENARIOS, SCENARIO_IDS } from "../shared/zrd/content-scenarios";
 import { DECK_IDS } from "../shared/zrd/match-types";
 import type { DeckId } from "../shared/zrd/match-types";
 
@@ -77,6 +79,24 @@ check("частоты: off=0 и по возрастанию", SWAN_TICK_PROBABIL
   && SWAN_TICK_PROBABILITY.rare < SWAN_TICK_PROBABILITY.standard
   && SWAN_TICK_PROBABILITY.standard < SWAN_TICK_PROBABILITY.storm);
 check("getSwan находит лебедя", getSwan(BLACK_SWANS[0].id)?.id === BLACK_SWANS[0].id);
+
+console.log("── Миссии и сценарии ──");
+check("10 миссий в каталоге", MISSION_CATALOG.length === 10, `получено ${MISSION_CATALOG.length}`);
+const missionIds = new Set(MISSION_CATALOG.map((m) => m.id));
+check("id миссий уникальны", missionIds.size === MISSION_CATALOG.length);
+for (const m of MISSION_CATALOG) {
+  const asc = m.quarterTargets.every((t, i) => i === 0 || t > m.quarterTargets[i - 1]);
+  check(`${m.id}: цели растут по кварталам`, asc);
+  check(`${m.id}: цели в 0..100`, m.quarterTargets.every((t) => t > 0 && t <= 100));
+}
+check("4 сценария", SCENARIO_IDS.length === 4 && SCENARIO_IDS.every((id) => SCENARIOS[id]?.id === id));
+for (const id of SCENARIO_IDS) {
+  const sc = SCENARIOS[id];
+  check(`${id}: missionIds ⊂ каталога`, sc.missionIds.every((m) => missionIds.has(m)));
+  check(`${id}: keyMissionId ∈ missionIds`, sc.missionIds.includes(sc.keyMissionId));
+  check(`${id}: deckWeights для всех 6 колод`, DECK_IDS.every((d) => (sc.deckWeights[d] ?? 0) > 0 || sc.deckWeights[d] === 0)
+    && Object.keys(sc.deckWeights).length === 6);
+}
 
 if (failures > 0) { console.error(`\n${failures} проверок провалено`); process.exit(1); }
 console.log("\nВсе проверки контента пройдены.");
