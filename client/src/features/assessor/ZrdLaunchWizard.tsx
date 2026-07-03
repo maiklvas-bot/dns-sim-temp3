@@ -114,7 +114,10 @@ export function ZrdLaunchWizard({ onClose }: { onClose: () => void }) {
           </span>
           <div className="leading-tight">
             <div className="text-base font-extrabold text-white">Запуск матча ЗРД</div>
-            <div className="text-xs text-white/50">Институт ЗРД · Покорение новых территорий · 4 квартала (12 месячных тактов)</div>
+            <div className="text-xs text-white/50">
+              Институт ЗРД · Покорение новых территорий · 4 квартала (12 месячных тактов) ·{" "}
+              <a href="/#/zrd/manual" target="_blank" rel="noreferrer" style={{ color: "#FF6B00", textDecoration: "underline" }}>инструкция к игре</a>
+            </div>
           </div>
           <button type="button" onClick={onClose} aria-label="Закрыть" className="ml-auto rounded-lg border p-1.5 text-white/60" style={{ borderColor: "rgba(255,255,255,0.12)", cursor: "pointer" }}>
             <X className="h-4 w-4" aria-hidden />

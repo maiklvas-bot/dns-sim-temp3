@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Play, Info, KeyRound } from "lucide-react";
+import { useLocation } from "wouter";
+import { Play, Info, KeyRound, BookOpen } from "lucide-react";
 import { RRS_IDS } from "@shared/zrd/match-types";
 import { createZrdMatch, joinZrdMatch } from "../../zrd-match-api";
 
@@ -15,6 +16,7 @@ interface Props {
  * Демо-матч (1 человек + 3 ИИ) — быстрый старт для сотрудников (нужен вход staff).
  */
 export function ZrdLobby({ onJoinCode, onAdoptSeat, loading, error }: Props) {
+  const [, navigate] = useLocation();
   const [code, setCode] = useState("");
   const [demoBusy, setDemoBusy] = useState(false);
   const [demoError, setDemoError] = useState<string | null>(null);
@@ -97,6 +99,15 @@ export function ZrdLobby({ onJoinCode, onAdoptSeat, loading, error }: Props) {
         style={{ borderColor: "var(--zrd-border)", color: "var(--zrd-text)", cursor: demoBusy ? "wait" : "pointer" }}
       >
         <Play className="h-5 w-5" aria-hidden /> {demoBusy ? "Создаём демо-матч…" : "Демо-матч: я против 3 ИИ"}
+      </button>
+
+      <button
+        type="button"
+        onClick={() => navigate("/zrd/manual")}
+        className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-bold"
+        style={{ borderColor: "rgba(255,107,0,0.4)", color: "#FF6B00", cursor: "pointer" }}
+      >
+        <BookOpen className="h-4 w-4" aria-hidden /> Инструкция к игре (правила, интерфейс, компетенции)
       </button>
 
       <div className="mt-4 flex items-start gap-2 text-[12px]" style={{ color: "var(--zrd-text-dim)" }}>

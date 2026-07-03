@@ -1,7 +1,7 @@
 import "@/styles/zrd.css";
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowLeft, AlertCircle, Layers, PauseCircle } from "lucide-react";
+import { ArrowLeft, AlertCircle, Layers, PauseCircle, BookOpen } from "lucide-react";
 import { useDnsTheme } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 import type { StandardAction, EventCard } from "@shared/zrd/types";
@@ -65,7 +65,16 @@ export default function ZrdGameWorkspace() {
               <div className="text-[11px]" style={{ color: "var(--zrd-text-dim)" }}>Покорение новых территорий</div>
             </div>
           </div>
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate("/zrd/manual")}
+              className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-sm font-semibold"
+              style={{ borderColor: "var(--zrd-border)", color: "var(--zrd-text-dim)", cursor: "pointer" }}
+              title="Инструкция к игре"
+            >
+              <BookOpen className="h-4 w-4" aria-hidden /> Инструкция
+            </button>
             {view && !showResults && (
               <ZrdRoundBadge quarter={view.quarter} tick={view.tick} deadlineAt={match.deadlineAt} paused={match.paused} />
             )}
