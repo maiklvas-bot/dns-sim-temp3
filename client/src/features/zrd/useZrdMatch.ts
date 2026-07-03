@@ -28,6 +28,14 @@ function saveStored(s: StoredSeat | null) {
   } catch { /* ignore */ }
 }
 
+/**
+ * Сохранить место, полученное вне борда (вход по коду с первого экрана /student):
+ * useZrdMatch подхватит его из sessionStorage при открытии /#/zrd.
+ */
+export function storeZrdSeat(matchId: number, seatIdx: number, token: string): void {
+  saveStored({ matchId, seatIdx, token });
+}
+
 /** Извлекает id+код места из URL: `/?id=1&seat=AB23CD#/zrd` или `#/zrd?id=1&seat=AB23CD`. */
 function readUrlJoin(): { matchId: number; code: string } | null {
   const search = window.location.search.startsWith("?") ? window.location.search.slice(1) : "";
