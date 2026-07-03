@@ -7,6 +7,7 @@ import {
   initMatch, applySeatIntent, resolveTickIfReady, toSeatView, toObserverView,
 } from "../shared/zrd/match-engine";
 import { getMatchCard } from "../shared/zrd/content-decks";
+import { playFullMatch } from "../shared/zrd/match-run";
 import type { MatchConfig, MatchState, SeatIntent } from "../shared/zrd/match-types";
 import { RRS_IDS, TICKS_TOTAL } from "../shared/zrd/match-types";
 
@@ -142,6 +143,39 @@ if (ev.seats[0].pendingEvent) {
   check("eventChoice разрешает ход", chosen.ok);
 } else {
   check("дилемма появилась на квартальном рубеже", false, `tick=${ev.tick}`);
+}
+
+console.log("── ИИ уровней 1–5 ──");
+function aiConfig(seed: number, level1: 1 | 5): MatchConfig {
+  return {
+    ...baseConfig(seed),
+    seats: [
+      { rrsId: RRS_IDS[0], controller: { kind: "ai", level: level1 } },
+      { rrsId: RRS_IDS[1], controller: { kind: "ai", level: 3 } },
+      { rrsId: RRS_IDS[2], controller: { kind: "ai", level: 3 } },
+      { rrsId: RRS_IDS[3], controller: { kind: "ai", level: 3 } },
+    ],
+  };
+}
+{
+  const d1 = playFullMatch(aiConfig(100, 5));
+  const d2 = playFullMatch(aiConfig(100, 5));
+  check("playFullMatch детерминирован", JSON.stringify(d1) === JSON.stringify(d2));
+
+  const SEEDS = Array.from({ length: 20 }, (_, i) => 1000 + i * 17);
+  const avgTr = (level: 1 | 5): number => {
+    let sum = 0;
+    for (const seed of SEEDS) {
+      const end = playFullMatch(aiConfig(seed, level));
+      sum += end.outcomes?.[0].tr ?? 0;
+    }
+    return sum / SEEDS.length;
+  };
+  const tr5 = avgTr(5);
+  const tr1 = avgTr(1);
+  console.log(`  avg ТР: уровень 5 = ${tr5.toFixed(1)}, уровень 1 = ${tr1.toFixed(1)}`);
+  check("уровень 5 сильнее уровня 1 (≥15%)", tr5 >= tr1 * 1.15, `5:${tr5.toFixed(1)} vs 1:${tr1.toFixed(1)}`);
+  check("матчи ИИ завершаются", playFullMatch(aiConfig(555, 5)).ended);
 }
 
 if (failures > 0) { console.error(`\n${failures} проверок провалено`); process.exit(1); }
