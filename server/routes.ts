@@ -20,7 +20,9 @@ import {
 import { staffStorage } from "./staff-storage";
 import { zrdStorage } from "./zrd-storage";
 import { zrdService } from "./zrd-service";
+import { zrdMatchService } from "./zrd-match-service";
 import type { TurnIntent, Difficulty } from "@shared/zrd/types";
+import type { SeatIntent as ZrdSeatIntent } from "@shared/zrd/match-types";
 import { auditStorage, type AuditRecordInput } from "./audit-storage";
 import { requireAdmin, requireStaff, saveMediaUpload } from "./route-utils";
 import {
@@ -45,6 +47,12 @@ import {
   createSimulationSessionSchema,
   createZrdSessionSchema,
   zrdIntentSchema,
+  createZrdMatchSchema,
+  joinZrdMatchSchema,
+  zrdMatchSeatQuerySchema,
+  zrdMatchIntentSchema,
+  zrdMatchSwanSchema,
+  zrdMatchPauseSchema,
   editableChatSchema,
   editableEmailCaseSchema,
   editableMessengerCaseSchema,
@@ -705,6 +713,161 @@ export async function registerRoutes(
       res.json(data);
     } catch (error) {
       next(internalApiError("ZRD_FINISH_FAILED", "Не удалось завершить партию.", error));
+    }
+  });
+
+  // ── ЗРД v2: матч на 4 места (мультистол) ────────────────────────────────
+  // Доступ: персонал (создание/наблюдение/лебеди/пауза) ИЛИ игрок по seat-токену
+  // (заголовок x-zrd-seat-token + номер места). Вход игрока — по коду места.
+  function requireZrdMatchSeatAccess(req: Request, res: Response, next: NextFunction) {
+    const id = Number(getSingleParam(req.params.id));
+    if (req.session.staff) return next();
+    const seatIdx = Number(
+      (req.validatedQuery as { seat?: string } | undefined)?.seat
+      ?? (req.validatedBody as { seatIdx?: number } | undefined)?.seatIdx,
+    );
+    const token = req.header("x-zrd-seat-token") || "";
+    if (!Number.isInteger(seatIdx) || seatIdx < 0 || seatIdx > 3 || !zrdMatchService.verifySeatToken(id, seatIdx, token)) {
+      return res.status(403).json({ message: "Нет доступа к матчу", code: "ZRD_MATCH_ACCESS_DENIED" });
+    }
+    next();
+  }
+
+  app.post("/api/zrd/match", requireStaff, validateBody(createZrdMatchSchema), (req, res, next) => {
+    try {
+      const body = req.validatedBody as z.infer<typeof createZrdMatchSchema>;
+      const staff = req.session.staff;
+      const created = zrdMatchService.createMatch({
+        evaluatorName: staff?.displayName || "",
+        evaluatorAccountId: staff?.role === "evaluator" ? staff.id : null,
+        scenario: body.scenario,
+        difficulty: body.difficulty as Difficulty,
+        winMode: body.winMode,
+        missionMode: body.missionMode,
+        missionIds: body.missionIds,
+        keyMissionId: body.keyMissionId,
+        swanFrequency: body.swanFrequency,
+        minutesPerTick: body.minutesPerTick,
+        seed: body.seed,
+        seats: body.seats.map((s) => ({
+          rrsId: s.rrsId,
+          controller: s.controller,
+          participantName: s.participantName,
+          aiLevel: s.aiLevel as 1 | 2 | 3 | 4 | 5 | undefined,
+        })),
+      });
+      recordAudit(req, {
+        area: staff?.role === "admin" ? "admin" : "evaluator",
+        action: "zrd_match_created",
+        entityType: "zrd-match",
+        entityId: created.match.id,
+        summary: `Создан ЗРД-матч (${body.scenario}, сложность ${body.difficulty})`,
+      });
+      res.json({ id: created.match.id, seats: created.seats });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_CREATE_FAILED", "Не удалось создать матч.", error));
+    }
+  });
+
+  app.post("/api/zrd/match/join", validateBody(joinZrdMatchSchema), (req, res, next) => {
+    try {
+      const { code } = req.validatedBody as z.infer<typeof joinZrdMatchSchema>;
+      const joined = zrdMatchService.joinSeat(code);
+      if (!joined) {
+        return res.status(404).json({ message: "Код не найден", code: "ZRD_MATCH_CODE_NOT_FOUND" });
+      }
+      res.json(joined);
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_JOIN_FAILED", "Не удалось войти в матч.", error));
+    }
+  });
+
+  app.get("/api/zrd/match/:id/seat", validateParams(sessionIdParamSchema), validateQuery(zrdMatchSeatQuerySchema), requireZrdMatchSeatAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const seatIdx = Number((req.validatedQuery as { seat: string }).seat);
+      const data = zrdMatchService.getSeatView(id, seatIdx);
+      if (!data) {
+        return res.status(404).json({ message: "Матч не найден", code: "ZRD_MATCH_NOT_FOUND" });
+      }
+      res.json(data);
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_SEAT_FAILED", "Не удалось получить состояние места.", error));
+    }
+  });
+
+  app.get("/api/zrd/match/:id/version", validateParams(sessionIdParamSchema), validateQuery(zrdMatchSeatQuerySchema), requireZrdMatchSeatAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const data = zrdMatchService.getVersion(id);
+      if (!data) {
+        return res.status(404).json({ message: "Матч не найден", code: "ZRD_MATCH_NOT_FOUND" });
+      }
+      res.json(data);
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_VERSION_FAILED", "Не удалось получить версию матча.", error));
+    }
+  });
+
+  app.post("/api/zrd/match/:id/intent", validateParams(sessionIdParamSchema), validateBody(zrdMatchIntentSchema), requireZrdMatchSeatAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const { seatIdx, intent } = req.validatedBody as z.infer<typeof zrdMatchIntentSchema>;
+      const result = zrdMatchService.applyIntent(id, seatIdx, intent as ZrdSeatIntent);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Ход отклонён", code: "ZRD_MATCH_INTENT_REJECTED", error: result.error });
+      }
+      res.json({ view: result.view, version: result.version, ended: result.ended });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_INTENT_FAILED", "Не удалось применить ход.", error));
+    }
+  });
+
+  app.get("/api/zrd/match/:id/observer", validateParams(sessionIdParamSchema), requireStaff, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const data = zrdMatchService.getObserverView(id);
+      if (!data) {
+        return res.status(404).json({ message: "Матч не найден", code: "ZRD_MATCH_NOT_FOUND" });
+      }
+      res.json(data);
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_OBSERVER_FAILED", "Не удалось получить наблюдение.", error));
+    }
+  });
+
+  app.post("/api/zrd/match/:id/swan", validateParams(sessionIdParamSchema), requireStaff, validateBody(zrdMatchSwanSchema), (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const { swanId, target } = req.validatedBody as z.infer<typeof zrdMatchSwanSchema>;
+      const result = zrdMatchService.triggerSwan(id, swanId, target);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Лебедь не запущен", code: "ZRD_MATCH_SWAN_REJECTED", error: result.error });
+      }
+      recordAudit(req, {
+        area: "evaluator",
+        action: "zrd_match_swan_triggered",
+        entityType: "zrd-match",
+        entityId: id,
+        summary: `Ручной чёрный лебедь: ${swanId} → ${target}`,
+      });
+      res.json({ ok: true });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_SWAN_FAILED", "Не удалось запустить лебедя.", error));
+    }
+  });
+
+  app.post("/api/zrd/match/:id/pause", validateParams(sessionIdParamSchema), requireStaff, validateBody(zrdMatchPauseSchema), (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const { paused } = req.validatedBody as z.infer<typeof zrdMatchPauseSchema>;
+      const result = zrdMatchService.setPaused(id, paused);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Пауза не переключена", code: "ZRD_MATCH_PAUSE_REJECTED", error: result.error });
+      }
+      res.json({ ok: true });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_PAUSE_FAILED", "Не удалось переключить паузу.", error));
     }
   });
 

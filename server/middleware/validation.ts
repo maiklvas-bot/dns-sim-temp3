@@ -578,6 +578,61 @@ export const zrdIntentSchema = z.discriminatedUnion("kind", [
 ]);
 
 // =============================================================================
+// ЗРД v2 — матч на 4 места (мультистол)
+// =============================================================================
+
+const zrdRrsIdSchema = z.enum(["ekb", "chel", "tmn", "perm"]);
+const zrdCardIdSchema = z.string().regex(/^[a-z0-9_]+$/, "Некорректный id карты").max(60);
+
+export const createZrdMatchSchema = z.object({
+  scenario: z.enum(["conquest", "crisis", "race", "efficiency"]),
+  difficulty: z.number().int().min(1).max(5).optional().default(3),
+  winMode: z.enum(["year", "race"]).optional().default("year"),
+  missionMode: z.enum(["auto", "manual"]).optional().default("auto"),
+  missionIds: z.array(z.string().regex(/^m_[a-z_]+$/).max(40)).max(6).optional(),
+  keyMissionId: z.string().regex(/^m_[a-z_]+$/).max(40).optional(),
+  swanFrequency: z.enum(["off", "rare", "standard", "storm"]).optional().default("standard"),
+  minutesPerTick: z.number().int().min(2).max(15).optional().default(6),
+  seed: z.number().int().min(0).max(2147483647).optional(),
+  seats: z.array(z.object({
+    rrsId: zrdRrsIdSchema,
+    controller: z.enum(["human", "ai", "off"]),
+    participantName: z.string().max(60).optional(),
+    aiLevel: z.number().int().min(1).max(5).optional(),
+  })).length(4),
+});
+
+export const joinZrdMatchSchema = z.object({
+  code: z.string().regex(/^[A-Za-z0-9]{6}$/, "Код — 6 символов"),
+});
+
+export const zrdMatchSeatQuerySchema = z.object({
+  seat: z.string().regex(/^[0-3]$/, "Место — 0..3"),
+});
+
+/** Намерение места матча (SeatIntent) */
+export const zrdMatchIntentSchema = z.object({
+  seatIdx: z.number().int().min(0).max(3),
+  intent: z.discriminatedUnion("kind", [
+    z.object({ kind: z.literal("playCard"), cardId: zrdCardIdSchema }),
+    z.object({ kind: z.literal("standard"), action: zrdStandardActionSchema }),
+    z.object({ kind: z.literal("eventChoice"), optionId: zrdOptionIdSchema }),
+    z.object({ kind: z.literal("swanChoice"), swanId: zrdOptionIdSchema, optionId: zrdOptionIdSchema }),
+    z.object({ kind: z.literal("viewData") }),
+    z.object({ kind: z.literal("pass") }),
+  ]),
+});
+
+export const zrdMatchSwanSchema = z.object({
+  swanId: z.string().regex(/^[a-z_]+$/).max(40),
+  target: z.union([zrdRrsIdSchema, z.literal("all")]),
+});
+
+export const zrdMatchPauseSchema = z.object({
+  paused: z.boolean(),
+});
+
+// =============================================================================
 // Middleware-фабрики
 // =============================================================================
 
