@@ -4,6 +4,7 @@
  * Расширяется секциями лебедей/миссий/сценариев (задачи 1.3–1.4 плана).
  */
 import { MATCH_DECK_CARDS, DECK_ANCHORS, getMatchCard } from "../shared/zrd/content-decks";
+import { BLACK_SWANS, SWAN_TICK_PROBABILITY, getSwan } from "../shared/zrd/content-swans";
 import { DECK_IDS } from "../shared/zrd/match-types";
 import type { DeckId } from "../shared/zrd/match-types";
 
@@ -53,5 +54,29 @@ check("названия внутри колоды уникальны", titles.si
 check("getMatchCard находит карту", getMatchCard(MATCH_DECK_CARDS[0].id)?.id === MATCH_DECK_CARDS[0].id);
 check("getMatchCard: неизвестный id → undefined", getMatchCard("nope") === undefined);
 
+console.log("── Чёрные лебеди ──");
+check("14 лебедей", BLACK_SWANS.length === 14, `получено ${BLACK_SWANS.length}`);
+const swanIds = new Set(BLACK_SWANS.map((s) => s.id));
+check("id лебедей уникальны", swanIds.size === BLACK_SWANS.length);
+for (const s of BLACK_SWANS) {
+  check(`${s.id}: ≥2 опций`, s.options.length >= 2);
+  const free = s.options.filter((o) => {
+    const sum = Object.values(o.cost ?? {}).reduce((a, v) => a + (v ?? 0), 0);
+    return sum === 0;
+  });
+  check(`${s.id}: есть бесплатная опция`, free.length >= 1);
+  check(`${s.id}: durationWeeks > 0`, s.durationWeeks > 0);
+  const optIds = new Set(s.options.map((o) => o.id));
+  check(`${s.id}: id опций уникальны`, optIds.size === s.options.length);
+  const hasPenalty = Boolean(s.tickPenalty.metrics || s.tickPenalty.resources);
+  check(`${s.id}: есть штраф за такт`, hasPenalty);
+}
+const scopes = new Set(BLACK_SWANS.map((s) => s.scope));
+check("есть и local, и global", scopes.has("local") && scopes.has("global"));
+check("частоты: off=0 и по возрастанию", SWAN_TICK_PROBABILITY.off === 0
+  && SWAN_TICK_PROBABILITY.rare < SWAN_TICK_PROBABILITY.standard
+  && SWAN_TICK_PROBABILITY.standard < SWAN_TICK_PROBABILITY.storm);
+check("getSwan находит лебедя", getSwan(BLACK_SWANS[0].id)?.id === BLACK_SWANS[0].id);
+
 if (failures > 0) { console.error(`\n${failures} проверок провалено`); process.exit(1); }
-console.log("\nВсе проверки колод пройдены.");
+console.log("\nВсе проверки контента пройдены.");
