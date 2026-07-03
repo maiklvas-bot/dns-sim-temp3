@@ -85,6 +85,7 @@ import type {
 } from "./assessor-types";
 import { cloneChannelItemIds, cloneMetrics, createAssessorParticipantId, createDefaultParticipantSetup } from "./assessor-utils";
 import { AssessorWiki } from "./components/AssessorWiki";
+import { ZrdLaunchWizard } from "./ZrdLaunchWizard";
 import { AssessorTooltip as Tooltip } from "./components/AssessorTooltip";
 import { WizardSteps } from "./components/WizardSteps";
 import { useSetupValidation } from "./hooks/useSetupValidation";
@@ -112,6 +113,8 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
 
   // ── Wizard state ──
   const [wizardStep, setWizardStep] = useState(1);
+  // ЗРД v2: мастер запуска матча (4 РРС, люди+ИИ) — открывается кнопкой «Запустить ЗРД»
+  const [zrdWizardOpen, setZrdWizardOpen] = useState(false);
 
   // ── Basic fields ──
   const [assessorName, setAssessorName] = useState("");
@@ -457,9 +460,9 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   };
 
   const handleStart = async () => {
-    // ЗРД — отдельный поток: открываем лобби ЗРД (оценщик авторизован → создание сессии работает).
+    // ЗРД — отдельный поток: мастер запуска матча (сценарий, состав стола, миссии, лебеди, темп).
     if (simulationRole === "regional-deputy") {
-      navigate("/zrd");
+      setZrdWizardOpen(true);
       return;
     }
     const savedActive = saveActiveParticipantSetup();
@@ -1767,6 +1770,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
             {renderSidePanel()}
           </div>
         )}
+        {zrdWizardOpen && <ZrdLaunchWizard onClose={() => setZrdWizardOpen(false)} />}
         <ProductFooter />
       </div>
     </div>

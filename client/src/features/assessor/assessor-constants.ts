@@ -77,7 +77,7 @@ export const SIMULATION_ROLE_CARDS: ReadonlyArray<{
   {
     id: "regional-deputy",
     title: "ЗРД",
-    description: "Стратегическая симуляция управления регионом (solo против ИИ)",
+    description: "Стратегический матч 4 РРС: люди и ИИ-управленцы, миссии, чёрные лебеди",
     participantRole: "Заместитель регионального директора",
     available: true,
   },
