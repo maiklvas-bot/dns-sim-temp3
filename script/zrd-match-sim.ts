@@ -8,6 +8,8 @@ import {
 } from "../shared/zrd/match-engine";
 import { getMatchCard } from "../shared/zrd/content-decks";
 import { playFullMatch } from "../shared/zrd/match-run";
+import { computeSeatCompetencies } from "../shared/zrd/match-scoring";
+import { SCENARIOS, SCENARIO_IDS } from "../shared/zrd/content-scenarios";
 import type { MatchConfig, MatchState, SeatIntent } from "../shared/zrd/match-types";
 import { RRS_IDS, TICKS_TOTAL } from "../shared/zrd/match-types";
 
@@ -176,6 +178,64 @@ function aiConfig(seed: number, level1: 1 | 5): MatchConfig {
   console.log(`  avg ТР: уровень 5 = ${tr5.toFixed(1)}, уровень 1 = ${tr1.toFixed(1)}`);
   check("уровень 5 сильнее уровня 1 (≥15%)", tr5 >= tr1 * 1.15, `5:${tr5.toFixed(1)} vs 1:${tr1.toFixed(1)}`);
   check("матчи ИИ завершаются", playFullMatch(aiConfig(555, 5)).ended);
+}
+
+console.log("── Скоринг per-seat ──");
+{
+  const SEEDS = Array.from({ length: 10 }, (_, i) => 3000 + i * 31);
+  const avgScore = (level: 1 | 5): number => {
+    let sum = 0; let n = 0;
+    for (const seed of SEEDS) {
+      const cfg = aiConfig(seed, level);
+      const end = playFullMatch(cfg);
+      const scores = computeSeatCompetencies(end.seats[0], cfg);
+      const vals = Object.values(scores);
+      check(`скоринг seed=${seed} ур.${level}: 12 компетенций в 0..5`,
+        vals.length === 12 && vals.every((v) => v >= 0 && v <= 5));
+      sum += vals.reduce((a, v) => a + v, 0) / vals.length; n++;
+    }
+    return sum / n;
+  };
+  const s5 = avgScore(5);
+  const s1 = avgScore(1);
+  console.log(`  средний балл: уровень 5 = ${s5.toFixed(2)}, уровень 1 = ${s1.toFixed(2)}`);
+  check("скоринг различает силу игры (ур.5 > ур.1)", s5 > s1 + 0.25, `${s5.toFixed(2)} vs ${s1.toFixed(2)}`);
+  check("средний балл сильной игры в разумной зоне (2.5..4.6)", s5 >= 2.5 && s5 <= 4.6, s5.toFixed(2));
+}
+
+console.log("── Баланс: сценарии × сложности × места ──");
+{
+  const SEEDS = Array.from({ length: 15 }, (_, i) => 7000 + i * 13);
+  for (const scenario of SCENARIO_IDS) {
+    for (const difficulty of [1, 3, 5] as const) {
+      const trBySeat = [0, 0, 0, 0];
+      let maxTick = 0;
+      for (const seed of SEEDS) {
+        const sc = SCENARIOS[scenario];
+        const cfg: MatchConfig = {
+          ...baseConfig(seed),
+          scenario,
+          difficulty,
+          winMode: sc.winModeDefault,
+          missionIds: sc.missionIds,
+          keyMissionId: sc.keyMissionId,
+          swanFrequency: sc.swanFrequencyDefault,
+          seats: RRS_IDS.map((rrsId) => ({ rrsId, controller: { kind: "ai" as const, level: 5 as const } })),
+        };
+        const end = playFullMatch(cfg);
+        if (!end.ended) { check(`${scenario}/d${difficulty} seed=${seed}: матч завершился`, false); continue; }
+        maxTick = Math.max(maxTick, end.tick);
+        end.outcomes?.forEach((o, i) => { trBySeat[i] += o.tr; });
+      }
+      const avgs = trBySeat.map((t) => t / SEEDS.length);
+      const mn = Math.min(...avgs);
+      const mx = Math.max(...avgs);
+      const spread = mn > 0 ? (mx - mn) / mn : 1;
+      console.log(`  ${scenario}/d${difficulty}: avg ТР по местам [${avgs.map((a) => a.toFixed(1)).join(", ")}], разброс ${(spread * 100).toFixed(0)}%, тиков ≤ ${maxTick}`);
+      check(`${scenario}/d${difficulty}: нет доминирующего места (<25%)`, spread < 0.25, `${(spread * 100).toFixed(0)}%`);
+      check(`${scenario}/d${difficulty}: партия ≤ 12 тактов`, maxTick <= TICKS_TOTAL);
+    }
+  }
 }
 
 if (failures > 0) { console.error(`\n${failures} проверок провалено`); process.exit(1); }
