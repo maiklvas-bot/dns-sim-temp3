@@ -16,11 +16,9 @@ import { computeKpi } from "@shared/zrd/kpi";
 import { MASCOT_VISUAL } from "../../zrd-mascots";
 import islandQ1 from "@/assets/brand/zrd/map/island-q1.png";
 import islandQ2 from "@/assets/brand/zrd/map/island-q2.png";
+import islandQ3 from "@/assets/brand/zrd/map/island-q3.png";
 
 // ── геометрия: аффинная гекс-решётка, калибруется по каждому арту (2000×1126) ─
-const VIEW_W = 2000;
-const VIEW_H = 1126;
-
 interface Axial { q: number; r: number }
 interface Pt { x: number; y: number }
 const cellKey = (c: Axial) => `${c.q},${c.r}`;
@@ -32,6 +30,8 @@ interface IslandConfig {
   row: Pt;
   inBounds: (x: number, y: number) => boolean;
   exclude: Set<string>;
+  /** кроп пустых полей арта (viewBox) — острова смыкаются в единый район без зазоров */
+  crop: { x: number; y: number; w: number; h: number };
 }
 
 const Q1_CONFIG: IslandConfig = {
@@ -45,6 +45,7 @@ const Q1_CONFIG: IslandConfig = {
     && !(x < 560 && y < 430) && !(x > 1560 && y < 340)
     && !(x > 1700 && y > 780) && !(x < 400 && y > 780),
   exclude: new Set(["1,-3", "3,-2", "4,-1"]),
+  crop: { x: 130, y: 120, w: 1790, h: 880 },
 };
 
 const Q2_CONFIG: IslandConfig = {
@@ -58,13 +59,27 @@ const Q2_CONFIG: IslandConfig = {
     && !(x < 420 && y < 320) && !(x > 1610 && y < 345)
     && !(x > 1660 && y > 850) && !(x < 340 && y > 830),
   exclude: new Set(["1,-3", "2,-3", "3,-2"]),
+  crop: { x: 80, y: 100, w: 1870, h: 930 },
 };
 
-/** четверти 3–4 временно переиспользуют готовые арты (свои карты — когда появятся) */
+const Q3_CONFIG: IslandConfig = {
+  // Тюмень: 19 крупных кварталов (ТЭЦ, стадион, вокзал, карьер; столица — деловой центр)
+  art: islandQ3,
+  origin: { x: 855, y: 445 },
+  col: { x: 152, y: 222 },
+  row: { x: -152, y: 222 },
+  inBounds: (x, y) =>
+    x >= 180 && x <= 1760 && y >= 110 && y <= 1060
+    && !(x < 260 && y < 330) && !(x < 430 && y > 760) && !(x > 1660 && y > 760),
+  exclude: new Set([]),
+  crop: { x: 160, y: 90, w: 1620, h: 990 },
+};
+
+/** четверть 4 временно переиспользует арт №2 (своя карта — когда появится) */
 const ISLAND_CONFIGS: Record<RrsId, IslandConfig> = {
   ekb: Q1_CONFIG,
   chel: Q2_CONFIG,
-  tmn: Q1_CONFIG,
+  tmn: Q3_CONFIG,
   perm: Q2_CONFIG,
 };
 const QUARTER_NO: Record<RrsId, number> = { ekb: 1, chel: 2, tmn: 3, perm: 4 };
@@ -176,16 +191,17 @@ function IslandQuarter({ data, interactive }: { data: QuarterData; interactive: 
   const mc = center(cfg, mascot);
 
   return (
-    <div style={{ position: "relative", minWidth: 0, minHeight: 0, borderRadius: 10, overflow: "hidden", border: `1px solid ${data.isYou ? "rgba(255,107,0,0.55)" : "rgba(140,160,190,0.18)"}`, background: "#0d0f14", opacity: off ? 0.55 : 1 }}>
+    <div style={{ position: "relative", minWidth: 0, minHeight: 0, overflow: "hidden", background: "#0d0f14", opacity: off ? 0.55 : 1, boxShadow: data.isYou ? "inset 0 0 0 2px rgba(255,107,0,0.6)" : "none" }}>
       <svg
-        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+        viewBox={`${cfg.crop.x} ${cfg.crop.y} ${cfg.crop.w} ${cfg.crop.h}`}
+        preserveAspectRatio="xMidYMid meet"
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", filter: off ? "grayscale(0.85)" : undefined }}
         role={interactive ? "application" : "img"}
         aria-label={interactive
           ? `Ваша территория ${RRS_LABEL[data.rrsId]}: клик по соседней клетке — шаг маскота`
           : `Территория ${RRS_LABEL[data.rrsId]} (${off ? "не задействована" : data.name})`}
       >
-        <image href={cfg.art} x={0} y={0} width={VIEW_W} height={VIEW_H} preserveAspectRatio="xMidYMid meet" />
+        <image href={cfg.art} x={0} y={0} width={2000} height={1126} preserveAspectRatio="xMidYMid meet" />
 
         {island.map((c) => {
           const key = cellKey(c);
@@ -285,7 +301,8 @@ export function ZrdIslandMap({ view }: { view: ZrdSeatView }) {
   });
 
   return (
-    <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr", gap: 6, padding: 6 }}>
+    // единый район из 4 регионов: карты смыкаются без зазоров (границы — только тонкие линии)
+    <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr", gap: 1, background: "rgba(140,160,190,0.15)" }}>
       {quarters.map((q) => (
         <IslandQuarter key={q.rrsId} data={q} interactive={q.isYou} />
       ))}
