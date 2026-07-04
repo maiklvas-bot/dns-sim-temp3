@@ -6,6 +6,7 @@ import { useDnsTheme } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 import type { StandardAction, EventCard } from "@shared/zrd/types";
 import type { DeckId } from "@shared/zrd/match-types";
+import { RRS_LABEL } from "@shared/zrd/match-types";
 import { getSwan } from "@shared/zrd/content-swans";
 import { useZrdMatch } from "./useZrdMatch";
 import { ZrdLobby } from "./components/organisms/ZrdLobby";
@@ -65,6 +66,17 @@ export default function ZrdGameWorkspace() {
               <div className="text-[11px]" style={{ color: "var(--zrd-text-dim)" }}>Покорение новых территорий</div>
             </div>
           </div>
+          {/* Кто проходит симуляцию: имя участника + его РРС */}
+          {view && view.you.controller.kind === "human" && (
+            <div className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5"
+              style={{ borderColor: "rgba(255,107,0,0.4)", background: "rgba(255,107,0,0.08)" }}>
+              <span className="h-2 w-2 rounded-full" style={{ background: "#FF6B00" }} aria-hidden />
+              <span className="leading-tight">
+                <span className="block text-sm font-extrabold" style={{ color: "var(--zrd-text)" }}>{view.you.controller.name}</span>
+                <span className="block text-[10px] uppercase tracking-wide" style={{ color: "var(--zrd-text-dim)" }}>{RRS_LABEL[view.you.rrsId]}</span>
+              </span>
+            </div>
+          )}
           <div className="ml-auto flex items-center gap-2">
             <button
               type="button"

@@ -19,9 +19,9 @@ function zero(): Record<CompetencyKey, number> {
 
 /** ожидаемые максимумы raw-сигналов (откалибровано по дампу tmp/zrd-raw-debug: ИИ-5 ≈ 3.2, ИИ-1 ≈ 2.6) */
 const EXPECTED_MAX: Record<CompetencyKey, number> = {
-  planning: 6, goal_setting: 3, decision_making: 7, analytical: 3,
-  flexibility: 4.5, communication: 3.5, result_orientation: 4.5, team_motivation: 3.5,
-  critical_thinking: 5.5, initiative: 4, conflict_management: 2.5, strategic_vision: 6,
+  planning: 7, goal_setting: 3, decision_making: 8.5, analytical: 3,
+  flexibility: 5.5, communication: 4, result_orientation: 4.5, team_motivation: 4,
+  critical_thinking: 5.5, initiative: 4.5, conflict_management: 3, strategic_vision: 7,
 };
 
 function normalize(raw: Record<CompetencyKey, number>): CompetencyScores {
@@ -68,9 +68,9 @@ export function computeSeatRaw(seat: SeatState, config: MatchConfig): Record<Com
         if (def && opt) {
           raw.initiative += 0.4;
           const fit = (opt.fitsWhen ?? []).some((t) => (e.ctxTags ?? []).includes(t));
-          raw.flexibility += fit ? 1.5 : 0.5;
-          raw.decision_making += fit ? 1 : 0.2;
-          if (opt.weak) { raw.flexibility -= 0.5; weakChoices++; } else if (fit) goodChoices++;
+          raw.flexibility += fit ? 2 : 0.4;
+          raw.decision_making += fit ? 1.3 : 0.2;
+          if (opt.weak) { raw.flexibility -= 0.7; weakChoices++; } else if (fit) goodChoices++;
         }
       } else {
         // квартальная дилемма (словарь соло-событий)
@@ -79,8 +79,8 @@ export function computeSeatRaw(seat: SeatState, config: MatchConfig): Record<Com
         if (ev && opt) {
           const fit = (opt.fitsWhen ?? []).some((t) => (e.ctxTags ?? []).includes(t));
           if (fit) goodChoices++; else if (opt.weak) weakChoices++;
-          for (const comp of ev.competencies) raw[comp] += fit ? 2 : opt.weak ? -0.5 : 0.5;
-          raw.decision_making += fit ? 1 : opt.weak ? -0.5 : 0.2;
+          for (const comp of ev.competencies) raw[comp] += fit ? 2.4 : opt.weak ? -0.7 : 0.5;
+          raw.decision_making += fit ? 1.3 : opt.weak ? -0.7 : 0.2;
         }
       }
     }

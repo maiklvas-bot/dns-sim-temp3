@@ -21,6 +21,8 @@ import { computeKpi } from "./kpi";
 export const INCOME_MONTHLY: Record<Difficulty, number> = { 1: 6, 2: 5, 3: 4, 4: 4, 5: 3 };
 export const ACTIONS_PER_TICK: Record<Difficulty, number> = { 1: 2, 2: 2, 3: 2, 4: 1, 5: 1 };
 export const DRAW_PER_TICK: Record<Difficulty, number> = { 1: 3, 2: 3, 3: 2, 4: 2, 5: 2 };
+/** стартовая рука первого месяца (включает добор такта 1): игрок сразу видит карты всех направлений */
+export const START_HAND: Record<Difficulty, number> = { 1: 8, 2: 7, 3: 6, 4: 5, 5: 4 };
 
 // ── seeded RNG (mulberry32) ────────────────────────────────────────────────
 function nextRng(state: number): { value: number; state: number } {
@@ -186,6 +188,11 @@ export function initMatch(config: MatchConfig): MatchState {
     rng: evSh.seed,
     ended: false,
   };
+  // стартовая рука: добираем разницу до START_HAND, остальное доложит beginTick такта 1
+  const startExtra = Math.max(0, START_HAND[config.difficulty] - DRAW_PER_TICK[config.difficulty]);
+  for (const seat of state.seats) {
+    if (isActive(seat) && startExtra > 0) drawCards(state, seat, startExtra);
+  }
   beginTick(state);
   return state;
 }
