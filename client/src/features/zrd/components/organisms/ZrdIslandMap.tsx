@@ -17,6 +17,8 @@ import { MASCOT_VISUAL } from "../../zrd-mascots";
 import islandQ1 from "@/assets/brand/zrd/map/island-q1.png";
 import islandQ2 from "@/assets/brand/zrd/map/island-q2.png";
 import islandQ3 from "@/assets/brand/zrd/map/island-q3.png";
+import islandQ4 from "@/assets/brand/zrd/map/island-q4.png";
+import islandQ5 from "@/assets/brand/zrd/map/island-q5.png";
 
 // ── геометрия: аффинная гекс-решётка, калибруется по каждому арту (2000×1126) ─
 interface Axial { q: number; r: number }
@@ -25,6 +27,9 @@ const cellKey = (c: Axial) => `${c.q},${c.r}`;
 
 interface IslandConfig {
   art: string;
+  /** размер файла арта (не у всех 2000×1126) */
+  artW: number;
+  artH: number;
   origin: Pt;
   col: Pt;
   row: Pt;
@@ -37,6 +42,7 @@ interface IslandConfig {
 const Q1_CONFIG: IslandConfig = {
   // Екатеринбург: лесной остров с реками (столица — тайл с белым храмом)
   art: islandQ1,
+  artW: 2000, artH: 1126,
   origin: { x: 800, y: 460 },
   col: { x: 181, y: 88 },
   row: { x: -181, y: 104 },
@@ -51,6 +57,7 @@ const Q1_CONFIG: IslandConfig = {
 const Q2_CONFIG: IslandConfig = {
   // Челябинск: промышленный мегаполис (столица — деловой центр)
   art: islandQ2,
+  artW: 2000, artH: 1126,
   origin: { x: 930, y: 460 },
   col: { x: 181, y: 88 },
   row: { x: -181, y: 104 },
@@ -63,8 +70,9 @@ const Q2_CONFIG: IslandConfig = {
 };
 
 const Q3_CONFIG: IslandConfig = {
-  // Тюмень: 19 крупных кварталов (ТЭЦ, стадион, вокзал, карьер; столица — деловой центр)
+  // 19 крупных кварталов: ТЭЦ, стадион, вокзал, карьер (столица — деловой центр)
   art: islandQ3,
+  artW: 2000, artH: 1126,
   origin: { x: 855, y: 445 },
   col: { x: 152, y: 222 },
   row: { x: -152, y: 222 },
@@ -75,13 +83,45 @@ const Q3_CONFIG: IslandConfig = {
   crop: { x: 160, y: 90, w: 1620, h: 990 },
 };
 
-/** четверть 4 временно переиспользует арт №2 (своя карта — когда появится) */
-const ISLAND_CONFIGS: Record<RrsId, IslandConfig> = {
-  ekb: Q1_CONFIG,
-  chel: Q2_CONFIG,
-  tmn: Q3_CONFIG,
-  perm: Q2_CONFIG,
+const Q4_CONFIG: IslandConfig = {
+  // Даунтаун у воды: небоскрёбы, реки с мостами, ТЭЦ, ветряных нет (столица — небоскрёбный центр)
+  art: islandQ4,
+  artW: 2000, artH: 1333,
+  origin: { x: 1010, y: 590 },
+  col: { x: 155, y: 220 },
+  row: { x: -155, y: 220 },
+  inBounds: (x, y) =>
+    x >= 130 && x <= 1910 && y >= 60 && y <= 1240
+    && !(x < 540 && y < 250) && !(x > 1470 && y < 250)
+    && !(x < 400 && y > 850) && !(x > 1620 && y > 900),
+  exclude: new Set([]),
+  crop: { x: 120, y: 50, w: 1800, h: 1210 },
 };
+
+const Q5_CONFIG: IslandConfig = {
+  // Пригород: аэропорт, ферма, карьеры, очистные (столица — городок с площадью)
+  art: islandQ5,
+  artW: 2000, artH: 1333,
+  origin: { x: 860, y: 580 },
+  col: { x: 155, y: 220 },
+  row: { x: -155, y: 220 },
+  inBounds: (x, y) =>
+    x >= 140 && x <= 1660 && y >= 170 && y <= 1140
+    && !(x < 420 && y < 300) && !(x > 1330 && y < 250)
+    && !(x < 300 && y > 900),
+  exclude: new Set([]),
+  crop: { x: 30, y: 60, w: 1750, h: 1220 }, // правый/нижний край арта белый — срезан клипом
+};
+
+/** раскладка четвертей: верх-лево ЕКБ, верх-право ЧЕЛ, низ-лево ТМН, низ-право ПРМ.
+ *  Q2 (мегаполис) — в запасе. */
+const ISLAND_CONFIGS: Record<RrsId, IslandConfig> = {
+  ekb: Q3_CONFIG,
+  chel: Q4_CONFIG,
+  tmn: Q1_CONFIG,
+  perm: Q5_CONFIG,
+};
+void Q2_CONFIG; // арт в резерве
 const QUARTER_NO: Record<RrsId, number> = { ekb: 1, chel: 2, tmn: 3, perm: 4 };
 const RRS_SHORT: Record<RrsId, string> = { ekb: "Екатеринбург", chel: "Челябинск", tmn: "Тюмень", perm: "Пермь" };
 
@@ -201,7 +241,14 @@ function IslandQuarter({ data, interactive }: { data: QuarterData; interactive: 
           ? `Ваша территория ${RRS_LABEL[data.rrsId]}: клик по соседней клетке — шаг маскота`
           : `Территория ${RRS_LABEL[data.rrsId]} (${off ? "не задействована" : data.name})`}
       >
-        <image href={cfg.art} x={0} y={0} width={2000} height={1126} preserveAspectRatio="xMidYMid meet" />
+        {/* жёсткий клип по кропу: содержимое за viewBox иначе дорисовывается в letterbox-зоны */}
+        <defs>
+          <clipPath id={`zrd-crop-${data.rrsId}`}>
+            <rect x={cfg.crop.x} y={cfg.crop.y} width={cfg.crop.w} height={cfg.crop.h} />
+          </clipPath>
+        </defs>
+        <g clipPath={`url(#zrd-crop-${data.rrsId})`}>
+        <image href={cfg.art} x={0} y={0} width={cfg.artW} height={cfg.artH} preserveAspectRatio="xMidYMid meet" />
 
         {island.map((c) => {
           const key = cellKey(c);
@@ -264,6 +311,7 @@ function IslandQuarter({ data, interactive }: { data: QuarterData; interactive: 
             </g>
           </>
         )}
+        </g>
       </svg>
 
       {/* плашка четверти */}
