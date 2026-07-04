@@ -32,8 +32,9 @@ export function ZrdBoardBuild({ view, openDeck, onToggleDeck, onStandard, onPlay
   const canPass = !view.matchEnded && !view.you.passed && !view.you.pendingEvent;
   return (
     <TooltipProvider delayDuration={150} skipDelayDuration={300}>
-    {/* min-h: ниже этой высоты борд не сжимается — родитель уходит в скролл (защита от «уплывания») */}
-    <div className="flex h-full min-h-[680px] gap-2">
+    {/* min-h: ниже этой высоты борд не сжимается — родитель уходит в скролл (защита от «уплывания»).
+        640 подобрано под FullHD с масштабом Windows 125% (CSS-вьюпорт ~1493×730). */}
+    <div className="flex h-full min-h-[640px] gap-2">
       {/* Левый край — 5 панелей вертикально, на ВСЮ высоту полотна (делят высоту поровну) */}
       <div className="flex w-[248px] flex-shrink-0 flex-col gap-2 min-h-0 py-1 pl-1">
         <div className="min-h-0 flex-1 overflow-hidden"><ZrdPanelRegionStats view={view} /></div>
@@ -45,7 +46,7 @@ export function ZrdBoardBuild({ view, openDeck, onToggleDeck, onStandard, onPlay
 
       {/* Центр: сверху «Миссия» + «Событие раунда» + «Чёрный лебедь»; ниже — карта 4 РРС (слот под арт) */}
       <div className="flex min-w-0 flex-1 flex-col gap-2 py-1">
-        <div className="flex shrink-0 gap-2" style={{ height: "calc((100% - 32px) / 5)", minHeight: 128 }}>
+        <div className="flex shrink-0 gap-2" style={{ height: "calc((100% - 32px) / 5)", minHeight: 120 }}>
           <div className="min-w-0 flex-1 overflow-hidden"><ZrdMissionPanel view={view} /></div>
           <div className="min-w-0 flex-1 overflow-hidden"><ZrdTopStrip view={view} onOpenEvent={onOpenEvent} /></div>
           <div className="shrink-0 overflow-hidden" style={{ aspectRatio: "5 / 4", height: "100%" }}>
@@ -68,7 +69,7 @@ export function ZrdBoardBuild({ view, openDeck, onToggleDeck, onStandard, onPlay
           </button>
         </div>
         {/* Нижняя полоса: 4 РРС + колода сброса */}
-        <div className="flex shrink-0 gap-2" style={{ height: "calc((100% - 32px) / 5)", minHeight: 128 }}>
+        <div className="flex shrink-0 gap-2" style={{ height: "calc((100% - 32px) / 5)", minHeight: 120 }}>
           <div className="min-w-0 flex-1 overflow-hidden"><ZrdTerritories view={view} /></div>
           <ZrdDiscard view={view} />
         </div>
