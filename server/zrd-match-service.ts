@@ -7,7 +7,7 @@
 import type { CompetencyScores, Difficulty } from "@shared/zrd/types";
 import type {
   MatchConfig, MatchState, SeatIntent, SeatSetup, RrsId, ScenarioId, WinMode, MissionMode,
-  SwanFrequency, AiLevel,
+  SwanFrequency, AiLevel, MascotId,
 } from "@shared/zrd/match-types";
 import { RRS_IDS } from "@shared/zrd/match-types";
 import {
@@ -25,6 +25,7 @@ export interface CreateZrdMatchSeatInput {
   controller: "human" | "ai" | "off";
   participantName?: string;
   aiLevel?: AiLevel;
+  mascotId?: MascotId;
 }
 
 export interface CreateZrdMatchInput {
@@ -111,6 +112,7 @@ export const zrdMatchService = {
         : s.controller === "ai"
           ? { kind: "ai", level: (s.aiLevel ?? 3) as AiLevel }
           : { kind: "off" },
+      mascotId: s.mascotId,
     }));
     if (!seats.some((s) => s.controller.kind !== "off")) throw new Error("MATCH_NEEDS_ACTIVE_SEAT");
 

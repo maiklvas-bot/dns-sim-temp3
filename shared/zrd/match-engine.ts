@@ -10,7 +10,7 @@ import type {
   MatchConfig, MatchState, SeatState, SeatIntent, SeatIntentResult, ActiveSwan, DeckId,
   ZrdSeatView, ZrdObserverView, ZrdSeatPublicSummary, MissionProgressView, RrsId, MatchCardDef, SeatOutcome, KpiId,
 } from "./match-types";
-import { DECK_IDS, RRS_LABEL, TICKS_TOTAL, WEEKS_PER_TICK, quarterOfTick, monthOfQuarter, isQuarterEnd } from "./match-types";
+import { DECK_IDS, RRS_LABEL, MASCOT_IDS, TICKS_TOTAL, WEEKS_PER_TICK, quarterOfTick, monthOfQuarter, isQuarterEnd } from "./match-types";
 import { MATCH_DECK_CARDS, getMatchCard } from "./content-decks";
 import { BLACK_SWANS, SWAN_TICK_PROBABILITY, getSwan } from "./content-swans";
 import { getMission } from "./content-missions";
@@ -142,7 +142,7 @@ export function initMatch(config: MatchConfig): MatchState {
   const scenario = SCENARIOS[config.scenario];
   let seed = config.seed >>> 0;
 
-  const seats: SeatState[] = config.seats.map((setup) => {
+  const seats: SeatState[] = config.seats.map((setup, seatIdx) => {
     const active = setup.controller.kind !== "off";
     const resources = active ? { ...diff.startResources } : emptyResources();
     const metrics = active ? { ...diff.startMetrics } : emptyMetrics();
@@ -156,6 +156,7 @@ export function initMatch(config: MatchConfig): MatchState {
     return {
       rrsId: setup.rrsId,
       controller: setup.controller,
+      mascotId: setup.mascotId ?? MASCOT_IDS[seatIdx % MASCOT_IDS.length],
       resources,
       incomeMonthly: active ? INCOME_MONTHLY[config.difficulty] : 0,
       resourceProd: active ? { ...diff.startProd } : emptyResources(),
@@ -504,6 +505,7 @@ function publicSummary(seat: SeatState, idx: number): ZrdSeatPublicSummary {
     seatIdx: idx,
     rrsId: seat.rrsId,
     controllerKind: seat.controller.kind,
+    mascotId: seat.mascotId,
     name: seat.controller.kind === "off" ? RRS_LABEL[seat.rrsId] : seatName(seat),
     metrics: { ...seat.metrics },
     kpi: computeKpi(seat),

@@ -5,7 +5,7 @@
  */
 import { apiRequest, getCsrfToken } from "@/lib/queryClient";
 import type {
-  RrsId, ScenarioId, WinMode, MissionMode, SwanFrequency, AiLevel,
+  RrsId, ScenarioId, WinMode, MissionMode, SwanFrequency, AiLevel, MascotId,
   SeatIntent, ZrdSeatView, ZrdObserverView, ActiveSwan,
 } from "@shared/zrd/match-types";
 import type { Difficulty, CompetencyScores } from "@shared/zrd/types";
@@ -15,6 +15,7 @@ export interface CreateMatchSeatInput {
   controller: "human" | "ai" | "off";
   participantName?: string;
   aiLevel?: AiLevel;
+  mascotId?: MascotId;
 }
 
 export interface CreateMatchInput {

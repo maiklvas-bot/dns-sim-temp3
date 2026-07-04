@@ -599,6 +599,7 @@ export const createZrdMatchSchema = z.object({
     controller: z.enum(["human", "ai", "off"]),
     participantName: z.string().max(60).optional(),
     aiLevel: z.number().int().min(1).max(5).optional(),
+    mascotId: z.enum(["strateg", "media", "dispatcher", "captain"]).optional(),
   })).length(4),
 });
 

@@ -9,8 +9,9 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Difficulty } from "@shared/zrd/types";
-import type { RrsId, ScenarioId, WinMode, MissionMode, SwanFrequency, AiLevel } from "@shared/zrd/match-types";
-import { RRS_IDS, RRS_LABEL } from "@shared/zrd/match-types";
+import type { RrsId, ScenarioId, WinMode, MissionMode, SwanFrequency, AiLevel, MascotId } from "@shared/zrd/match-types";
+import { RRS_IDS, RRS_LABEL, MASCOT_IDS } from "@shared/zrd/match-types";
+import { MASCOT_VISUAL } from "../zrd/zrd-mascots";
 import { SCENARIOS, SCENARIO_IDS } from "@shared/zrd/content-scenarios";
 import { MISSION_CATALOG } from "@shared/zrd/content-missions";
 import { BLACK_SWANS } from "@shared/zrd/content-swans";
@@ -21,7 +22,7 @@ import {
 } from "../zrd/zrd-match-api";
 
 type SeatMode = "human" | "ai" | "off";
-interface SeatDraft { rrsId: RrsId; mode: SeatMode; name: string; aiLevel: AiLevel }
+interface SeatDraft { rrsId: RrsId; mode: SeatMode; name: string; aiLevel: AiLevel; mascotId: MascotId }
 
 const SWAN_FREQ_LABEL: Record<SwanFrequency, string> = {
   off: "Выключены",
@@ -44,7 +45,7 @@ export function ZrdLaunchWizard({ onClose }: { onClose: () => void }) {
   const [swanFrequency, setSwanFrequency] = useState<SwanFrequency>("standard");
   const [minutesPerTick, setMinutesPerTick] = useState(6);
   const [seats, setSeats] = useState<SeatDraft[]>(
-    RRS_IDS.map((rrsId, i) => ({ rrsId, mode: i === 0 ? "human" : "ai", name: "", aiLevel: 3 as AiLevel })),
+    RRS_IDS.map((rrsId, i) => ({ rrsId, mode: i === 0 ? "human" : "ai", name: "", aiLevel: 3 as AiLevel, mascotId: MASCOT_IDS[i % MASCOT_IDS.length] })),
   );
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,6 +96,7 @@ export function ZrdLaunchWizard({ onClose }: { onClose: () => void }) {
           controller: s.mode,
           participantName: s.mode === "human" ? s.name.trim() : undefined,
           aiLevel: s.mode === "ai" ? s.aiLevel : undefined,
+          mascotId: s.mascotId,
         })),
       });
       setCreated(result);
@@ -197,14 +199,40 @@ export function ZrdLaunchWizard({ onClose }: { onClose: () => void }) {
                       ))}
                     </div>
                     {seat.mode === "human" && (
-                      <input
-                        value={seat.name}
-                        onChange={(e) => updateSeat(i, { name: e.target.value })}
-                        placeholder="Имя участника"
-                        aria-label={`Имя участника ${RRS_LABEL[seat.rrsId]}`}
-                        className="min-w-[160px] flex-1 rounded-lg border px-2.5 py-1.5 text-sm text-white"
-                        style={{ borderColor: "rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.04)" }}
-                      />
+                      <>
+                        <input
+                          value={seat.name}
+                          onChange={(e) => updateSeat(i, { name: e.target.value })}
+                          placeholder="Имя участника"
+                          aria-label={`Имя участника ${RRS_LABEL[seat.rrsId]}`}
+                          className="min-w-[140px] flex-1 rounded-lg border px-2.5 py-1.5 text-sm text-white"
+                          style={{ borderColor: "rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.04)" }}
+                        />
+                        {/* выбор фигурки: кем играть на карте территории */}
+                        <div className="flex items-center gap-1" role="group" aria-label={`Маскот ${RRS_LABEL[seat.rrsId]}`}>
+                          {MASCOT_IDS.map((mid) => {
+                            const m = MASCOT_VISUAL[mid];
+                            const active = seat.mascotId === mid;
+                            return (
+                              <button key={mid} type="button" onClick={() => updateSeat(i, { mascotId: mid })}
+                                aria-pressed={active}
+                                title={`${m.name} — ${m.style}`}
+                                className="rounded-full p-0.5 transition-transform"
+                                style={{
+                                  border: `2px solid ${active ? m.accent : "rgba(255,255,255,0.15)"}`,
+                                  transform: active ? "scale(1.12)" : undefined,
+                                  cursor: "pointer",
+                                  background: "#0d1320",
+                                }}>
+                                <img src={m.img} alt={m.name} className="h-8 w-8 rounded-full object-cover" draggable={false} />
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <span className="w-full text-[10px] text-white/40 sm:w-auto">
+                          {MASCOT_VISUAL[seat.mascotId].name}: {MASCOT_VISUAL[seat.mascotId].style}
+                        </span>
+                      </>
                     )}
                     {seat.mode === "ai" && (
                       <label className="flex items-center gap-2 text-xs text-white/60">

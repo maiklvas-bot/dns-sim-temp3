@@ -128,8 +128,31 @@ export interface ScenarioDef {
   startTweak?: { resources?: Partial<Resources>; metrics?: Partial<Metrics> };
 }
 
+// ── Маскоты (фигурки игроков) ───────────────────────────────────────────────
+export type MascotId = "strateg" | "media" | "dispatcher" | "captain";
+export const MASCOT_IDS: MascotId[] = ["strateg", "media", "dispatcher", "captain"];
+/** имя + краткая характеристика стиля игры (арт — на клиенте, zrd-mascots.ts) */
+export const MASCOT_META: Record<MascotId, { name: string; style: string }> = {
+  strateg: {
+    name: "Стратег",
+    style: "Играет вдолгую: тир-3 проекты, производство, холодный расчёт. Медленный старт — мощный финиш.",
+  },
+  media: {
+    name: "Промо-гений",
+    style: "Агрессивный охват: реклама, акции, вирусные ролики. Рискует кассой ради доли рынка.",
+  },
+  dispatcher: {
+    name: "Диспетчер",
+    style: "Процессы и логистика: склады, поставки, устойчивость к чёрным лебедям. Надёжность вместо блеска.",
+  },
+  captain: {
+    name: "Капитан команды",
+    style: "Люди и сервис: команда, лояльность, переговоры в кризисах. Выигрывает длинной волей.",
+  },
+};
+
 // ── Конфиг матча ────────────────────────────────────────────────────────────
-export interface SeatSetup { rrsId: RrsId; controller: SeatController }
+export interface SeatSetup { rrsId: RrsId; controller: SeatController; mascotId?: MascotId }
 
 export interface MatchConfig {
   scenario: ScenarioId;
@@ -159,6 +182,8 @@ export interface ActiveProject {
 export interface SeatState {
   rrsId: RrsId;
   controller: SeatController;
+  /** фигурка на карте; выбирается при рассадке по территориям */
+  mascotId: MascotId;
   resources: Resources;
   /** капитал, приходящий каждый месяц (экономика v3) */
   incomeMonthly: number;
@@ -243,6 +268,7 @@ export interface ZrdSeatPublicSummary {
   seatIdx: number;
   rrsId: RrsId;
   controllerKind: SeatController["kind"];
+  mascotId: MascotId;
   name: string;
   metrics: Metrics;
   kpi: Record<KpiId, number>;

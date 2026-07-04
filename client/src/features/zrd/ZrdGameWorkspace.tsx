@@ -8,6 +8,7 @@ import type { StandardAction, EventCard } from "@shared/zrd/types";
 import type { DeckId } from "@shared/zrd/match-types";
 import { RRS_LABEL } from "@shared/zrd/match-types";
 import { getSwan } from "@shared/zrd/content-swans";
+import { MASCOT_VISUAL } from "./zrd-mascots";
 import { useZrdMatch } from "./useZrdMatch";
 import { ZrdLobby } from "./components/organisms/ZrdLobby";
 import { ZrdEventDialog } from "./components/organisms/ZrdEventDialog";
@@ -36,6 +37,8 @@ export default function ZrdGameWorkspace() {
 
   const { view } = match;
   const showResults = Boolean(view?.matchEnded);
+  // матчи, созданные до появления маскотов, не несут mascotId — даём фигурку по умолчанию
+  const mascot = view ? (MASCOT_VISUAL[view.you.mascotId] ?? MASCOT_VISUAL.strateg) : null;
 
   // диалог реакции на лебедя: переиспользуем форму события (равная форма §8a)
   const swanDef = swanOpen ? getSwan(swanOpen) : null;
@@ -66,14 +69,23 @@ export default function ZrdGameWorkspace() {
               <div className="text-[11px]" style={{ color: "var(--zrd-text-dim)" }}>Покорение новых территорий</div>
             </div>
           </div>
-          {/* Кто проходит симуляцию: имя участника + его РРС */}
-          {view && view.you.controller.kind === "human" && (
-            <div className="inline-flex items-center gap-2 rounded-lg border px-3 py-1.5"
-              style={{ borderColor: "rgba(255,107,0,0.4)", background: "rgba(255,107,0,0.08)" }}>
-              <span className="h-2 w-2 rounded-full" style={{ background: "#FF6B00" }} aria-hidden />
+          {/* Кто проходит симуляцию: аватар маскота + имя участника + его РРС */}
+          {view && mascot && view.you.controller.kind === "human" && (
+            <div className="inline-flex items-center gap-2 rounded-lg border px-2.5 py-1"
+              style={{ borderColor: "rgba(255,107,0,0.4)", background: "rgba(255,107,0,0.08)" }}
+              title={`${mascot.name}: ${mascot.style}`}>
+              <img
+                src={mascot.img}
+                alt={mascot.name}
+                className="h-8 w-8 rounded-full object-cover"
+                style={{ border: `2px solid ${mascot.accent}` }}
+                draggable={false}
+              />
               <span className="leading-tight">
                 <span className="block text-sm font-extrabold" style={{ color: "var(--zrd-text)" }}>{view.you.controller.name}</span>
-                <span className="block text-[10px] uppercase tracking-wide" style={{ color: "var(--zrd-text-dim)" }}>{RRS_LABEL[view.you.rrsId]}</span>
+                <span className="block text-[10px] uppercase tracking-wide" style={{ color: "var(--zrd-text-dim)" }}>
+                  {RRS_LABEL[view.you.rrsId]} · {mascot.name}
+                </span>
               </span>
             </div>
           )}
@@ -121,9 +133,9 @@ export default function ZrdGameWorkspace() {
             </div>
           )}
 
-          {/* Игровой стол */}
+          {/* Игровой стол: на низких окнах — вертикальный скролл вместо разъезда панелей */}
           {view && !showResults && (
-            <div className="flex min-h-0 flex-1 flex-col p-2">
+            <div className="flex min-h-0 flex-1 flex-col overflow-y-auto p-2">
               <ZrdBoardBuild
                 view={view}
                 openDeck={deckOpen}

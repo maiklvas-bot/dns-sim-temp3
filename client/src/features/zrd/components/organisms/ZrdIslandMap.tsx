@@ -11,7 +11,7 @@ import type { LucideIcon } from "lucide-react";
 import type { ZrdSeatView } from "@shared/zrd/match-types";
 import { RRS_LABEL } from "@shared/zrd/match-types";
 import { computeKpi } from "@shared/zrd/kpi";
-import { BRAND_ASSETS } from "@/lib/brand-assets";
+import { MASCOT_VISUAL } from "../../zrd-mascots";
 import islandArt from "@/assets/brand/zrd/map/island-q1.png";
 
 // ── геометрия: аффинная гекс-решётка, подогнанная под арт (2000×1126) ───────
@@ -90,6 +90,8 @@ function hashStr(s: string): number {
 export function ZrdIslandMap({ view }: { view: ZrdSeatView }) {
   const [mascot, setMascot] = useState<Axial>(CAPITAL);
   const kpi = computeKpi(view.you);
+  // матчи до появления маскотов не несут mascotId — фигурка по умолчанию
+  const figure = MASCOT_VISUAL[view.you.mascotId] ?? MASCOT_VISUAL.strateg;
 
   // клетки, «поднятые» ростом показателей: доля охвата → сколько клеток сияет (от столицы наружу)
   const litKeys = useMemo(() => {
@@ -141,12 +143,12 @@ export function ZrdIslandMap({ view }: { view: ZrdSeatView }) {
           return (
             <path
               key={key}
-              d={hexPath(c, 0.92)}
+              d={hexPath(c, 0.86)}
               fill={lit ? "rgba(255,196,90,0.16)" : "rgba(6,10,18,0.30)"}
               stroke={canStep ? "#FF6B00" : lit ? "rgba(255,196,90,0.55)" : "rgba(140,160,190,0.25)"}
               strokeWidth={canStep ? 5 : 2}
               strokeDasharray={canStep ? "14 10" : undefined}
-              style={{ cursor: canStep ? "pointer" : "default", transition: "fill 300ms ease, stroke 200ms ease" }}
+              style={{ cursor: canStep ? "pointer" : "default", transition: "fill 300ms ease, stroke 200ms ease", outline: "none" }}
               onClick={() => { if (canStep) setMascot(c); }}
               tabIndex={canStep ? 0 : -1}
               onKeyDown={(e) => { if (canStep && (e.key === "Enter" || e.key === " ")) setMascot(c); }}
@@ -158,7 +160,7 @@ export function ZrdIslandMap({ view }: { view: ZrdSeatView }) {
         })}
 
         {/* столица */}
-        <path d={hexPath(CAPITAL, 0.92)} fill="none" stroke="#ffd166" strokeWidth={5} pointerEvents="none" />
+        <path d={hexPath(CAPITAL, 0.86)} fill="none" stroke="#ffd166" strokeWidth={5} pointerEvents="none" />
 
         {/* постройки из сыгранных карт */}
         {buildings.map((b, i) => {
@@ -176,10 +178,21 @@ export function ZrdIslandMap({ view }: { view: ZrdSeatView }) {
           );
         })}
 
-        {/* маскот — фигурка игрока, плавный шаг */}
+        {/* маскот — круглая фишка выбранной фигурки, плавный шаг */}
+        <defs>
+          <clipPath id="zrd-mascot-clip"><circle cx={0} cy={-52} r={48} /></clipPath>
+        </defs>
         <g style={{ transition: "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)", transform: `translate(${mc.x}px, ${mc.y}px)` }} pointerEvents="none">
-          <ellipse cx={0} cy={34} rx={44} ry={14} fill="rgba(0,0,0,0.45)" />
-          <image href={BRAND_ASSETS.heroes.alienPoint} x={-55} y={-118} width={110} height={148} style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.6))" }} />
+          <ellipse cx={0} cy={18} rx={40} ry={13} fill="rgba(0,0,0,0.5)" />
+          <line x1={0} y1={12} x2={0} y2={-8} stroke={figure.accent} strokeWidth={5} />
+          <image
+            href={figure.img}
+            x={-48} y={-100} width={96} height={96}
+            clipPath="url(#zrd-mascot-clip)"
+            preserveAspectRatio="xMidYMin slice"
+          />
+          <circle cx={0} cy={-52} r={48} fill="none" stroke={figure.accent} strokeWidth={4}
+            style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.7))" }} />
         </g>
       </svg>
 

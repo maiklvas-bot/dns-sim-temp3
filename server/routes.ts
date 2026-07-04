@@ -757,6 +757,7 @@ export async function registerRoutes(
           controller: s.controller,
           participantName: s.participantName,
           aiLevel: s.aiLevel as 1 | 2 | 3 | 4 | 5 | undefined,
+          mascotId: s.mascotId,
         })),
       });
       recordAudit(req, {
