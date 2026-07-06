@@ -4,9 +4,9 @@
  * Синхронизация: лёгкий поллинг /version каждые 3 с → при росте версии перезабор seat-view.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { SeatIntent, ZrdSeatView } from "@shared/zrd/match-types";
+import type { MascotId, SeatIntent, ZrdSeatView } from "@shared/zrd/match-types";
 import {
-  joinZrdMatch, fetchSeatView, fetchMatchVersion, sendSeatIntent, ZrdMatchIntentError,
+  joinZrdMatch, fetchSeatView, fetchMatchVersion, sendSeatIntent, setZrdMascot, ZrdMatchIntentError,
   type SeatViewResponse,
 } from "./zrd-match-api";
 
@@ -59,6 +59,7 @@ export interface ZrdMatchApi {
   joinByCode: (code: string) => Promise<void>;
   adoptSeat: (matchId: number, seatIdx: number, token: string) => Promise<void>;
   dispatch: (intent: SeatIntent) => Promise<void>;
+  chooseMascot: (mascotId: MascotId) => Promise<void>;
   leave: () => void;
 }
 
@@ -148,11 +149,23 @@ export function useZrdMatch(): ZrdMatchApi {
     }
   }, [seat]);
 
+  /** выбор фигурки игроком при входе (до выбора борд показывает экран выбора) */
+  const chooseMascot = useCallback(async (mascotId: MascotId) => {
+    if (!seat) return;
+    try {
+      const res = await setZrdMascot(seat.matchId, seat.seatIdx, mascotId, seat.token);
+      versionRef.current = res.version;
+      setView(res.view);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Не удалось выбрать фигурку");
+    }
+  }, [seat]);
+
   const leave = useCallback(() => {
     setSeat(null); setView(null); setError(null); setRejected(null);
     versionRef.current = -1;
     saveStored(null);
   }, []);
 
-  return { view, deadlineAt, paused, loading, error, rejected, joinByCode, adoptSeat, dispatch, leave };
+  return { view, deadlineAt, paused, loading, error, rejected, joinByCode, adoptSeat, dispatch, chooseMascot, leave };
 }

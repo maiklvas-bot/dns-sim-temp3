@@ -633,6 +633,12 @@ export const zrdMatchPauseSchema = z.object({
   paused: z.boolean(),
 });
 
+/** выбор фигурки игроком после входа по коду */
+export const zrdMatchMascotSchema = z.object({
+  seatIdx: z.number().int().min(0).max(3),
+  mascotId: z.enum(["strateg", "media", "dispatcher", "captain"]),
+});
+
 /** Секции инструкции /zrd/manual, к которым админ может добавлять дополнения. */
 export const ZRD_MANUAL_SECTION_IDS = [
   "about", "roles", "goal", "flow", "turnmap", "interface", "cards",

@@ -265,6 +265,22 @@ export const zrdMatchService = {
     return { ok: true as const, view: toSeatView(state, seatIdx), version: (match.stateVersion ?? 0) + 1, ended: state.ended };
   },
 
+  /** игрок выбирает свою фигурку при входе (оценщик аватары не назначает) */
+  setMascot(matchId: number, seatIdx: number, mascotId: MascotId) {
+    const match = this.refreshMatch(matchId);
+    if (!match) return { ok: false as const, error: "NOT_FOUND" };
+    const state = parseState(match.stateJson);
+    const seat = state.seats[seatIdx];
+    if (!seat || seat.controller.kind !== "human") return { ok: false as const, error: "SEAT_NOT_HUMAN" };
+    seat.mascotId = mascotId;
+    seat.mascotChosen = true;
+    zrdMatchStorage.updateMatch(matchId, {
+      stateJson: JSON.stringify(state),
+      stateVersion: (match.stateVersion ?? 0) + 1,
+    });
+    return { ok: true as const, view: toSeatView(state, seatIdx), version: (match.stateVersion ?? 0) + 1 };
+  },
+
   getSeatView(matchId: number, seatIdx: number) {
     const match = this.refreshMatch(matchId);
     if (!match) return null;

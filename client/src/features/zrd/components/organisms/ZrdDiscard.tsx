@@ -9,14 +9,15 @@ import { DECK_VISUAL, cardArt, discardCards } from "../../zrd-match-board";
  * «Раздача» (синяя) — карты, выданные на игру и ждущие добора: видно только количество
  * по направлениям, содержимое скрыто до добора (никто не знает будущих карт).
  */
-export function ZrdDiscard({ view }: { view: ZrdSeatView }) {
+export function ZrdDiscard({ view, only }: { view: ZrdSeatView; only?: "discard" | "deal" }) {
   const [open, setOpen] = useState<"discard" | "deal" | null>(null);
   const cards = discardCards(view.you);
   const dealTotal = DECK_IDS.reduce((a, d) => a + (view.you.deckCounts[d] ?? 0), 0);
 
   return (
     <>
-      <div style={{ display: "flex", gap: 8, height: "100%", flexShrink: 0 }}>
+      <div style={{ display: "flex", gap: 8, height: "100%", flexShrink: 0, justifyContent: "center" }}>
+        {only !== "deal" && (
         <button type="button" className="zrd-discard" onClick={() => setOpen("discard")}
           title={`Сброс (${cards.length}) — разыгранные карты, открыть`}
           aria-label={`Сброс: ${cards.length} разыгранных карт, открыть список`}>
@@ -27,7 +28,9 @@ export function ZrdDiscard({ view }: { view: ZrdSeatView }) {
           <span className="zrd-discard__bolt zrd-discard__bolt--br" aria-hidden />
           <span className="zrd-discard__label">СБРОС<br />{cards.length}</span>
         </button>
+        )}
 
+        {only !== "discard" && (
         <button type="button" className="zrd-discard zrd-discard--deal" onClick={() => setOpen("deal")}
           title={`Раздача (${dealTotal}) — карты, выданные на игру; содержимое скрыто до добора`}
           aria-label={`Раздача: ${dealTotal} карт ждут добора, открыть сводку`}>
@@ -38,6 +41,7 @@ export function ZrdDiscard({ view }: { view: ZrdSeatView }) {
           <span className="zrd-discard__bolt zrd-discard__bolt--br" aria-hidden />
           <span className="zrd-discard__label">РАЗДАЧА<br />{dealTotal}</span>
         </button>
+        )}
       </div>
 
       {open === "discard" && (

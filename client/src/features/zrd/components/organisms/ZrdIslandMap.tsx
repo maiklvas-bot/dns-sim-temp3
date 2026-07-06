@@ -1,11 +1,10 @@
 /**
- * ЗРД — центральное поле: ОБЩАЯ КАРТА ДИВИЗИОНА 2×2 — четыре четверти-острова,
- * по одному на РРС, друг напротив друга. Каждая четверть: арт Canva + аффинная
- * гекс-решётка (ячейки Вороного) + маскот-фишка + подсветка освоения (охват).
- * СВОЯ четверть интерактивна: маскот ходит по одному шагу (как в HoMM), постройки
- * появляются из сыгранных карт. Чужие четверти — обзорные (их руки/сбросы скрыты,
- * позиция чужого маскота пока не синхронизируется — стоит в столице).
- * Арты: ekb — DAHOZGYlaCI, chel — DAHOaYejeXg; tmn/perm — временно те же до своих карт.
+ * ЗРД — центральное поле: ЕДИНАЯ КАРТА ДИВИЗИОНА (полотно Canva DAHOaVN_cpI, обновлённое):
+ * 4 региона-блока разделены лесополосой и рекой; фон полотна вырезан (прозрачный).
+ * На каждом блоке — своя аффинная гекс-решётка (ячейки Вороного): подсветка освоения (охват),
+ * маскот-фигурка в полный рост (не выше гекса), постройки из сыгранных карт.
+ * СВОЙ блок интерактивен: маскот ходит по одному шагу (клик по соседней клетке, как в HoMM).
+ * Блоки: TL=Пермь (пригород), TR=Челябинск (даунтаун), BL=Екатеринбург (кварталы), TN=BR=Тюмень.
  */
 import { useMemo, useState } from "react";
 import { Store, Warehouse, Factory, Truck } from "lucide-react";
@@ -14,174 +13,98 @@ import type { MascotId, RrsId, ZrdSeatView } from "@shared/zrd/match-types";
 import { RRS_IDS, RRS_LABEL } from "@shared/zrd/match-types";
 import { computeKpi } from "@shared/zrd/kpi";
 import { MASCOT_VISUAL } from "../../zrd-mascots";
-import islandQ2 from "@/assets/brand/zrd/map/island-q2.png";
-import islandQ3 from "@/assets/brand/zrd/map/island-q3.png";
-import islandQ4 from "@/assets/brand/zrd/map/island-q4.png";
-import islandQ5 from "@/assets/brand/zrd/map/island-q5.png";
-import islandQ6 from "@/assets/brand/zrd/map/island-q6.png";
+import districtArt from "@/assets/brand/zrd/map/district-full.png";
 
-// ── геометрия: аффинная гекс-решётка, калибруется по каждому арту (2000×1126) ─
+// ── полотно ─────────────────────────────────────────────────────────────────
+const ART_W = 2400;
+const ART_H = 2400;
+/** видимая область полотна (bbox контента + небольшие поля) */
+const VIEW = { x: 600, y: 380, w: 1800, h: 1330 };
+
 interface Axial { q: number; r: number }
 interface Pt { x: number; y: number }
 const cellKey = (c: Axial) => `${c.q},${c.r}`;
 
-interface IslandConfig {
-  art: string;
-  /** размер файла арта (не у всех 2000×1126) */
-  artW: number;
-  artH: number;
+/** решётка одного блока: столица (0,0) + базис + прямоугольник блока + точечные вырезы */
+interface BlockConfig {
   origin: Pt;
   col: Pt;
   row: Pt;
-  inBounds: (x: number, y: number) => boolean;
+  rect: { x0: number; x1: number; y0: number; y1: number };
   exclude: Set<string>;
-  /** кроп пустых полей арта (viewBox) — острова смыкаются в единый район без зазоров */
-  crop: { x: number; y: number; w: number; h: number };
 }
 
-const Q2_CONFIG: IslandConfig = {
-  // Челябинск: промышленный мегаполис (столица — деловой центр)
-  art: islandQ2,
-  artW: 2000, artH: 1126,
-  origin: { x: 930, y: 460 },
-  col: { x: 181, y: 88 },
-  row: { x: -181, y: 104 },
-  inBounds: (x, y) =>
-    x >= 110 && x <= 1930 && y >= 150 && y <= 1000
-    && !(x < 420 && y < 320) && !(x > 1610 && y < 345)
-    && !(x > 1660 && y > 850) && !(x < 340 && y > 830),
-  exclude: new Set(["1,-3", "2,-3", "3,-2"]),
-  crop: { x: 80, y: 100, w: 1870, h: 930 },
+/** калибровка по координатной сетке полотна */
+const BLOCKS: Record<RrsId, BlockConfig> = {
+  // TL — Пермь: пригород (аэропорт, ферма, очистные; столица — городок с площадью)
+  perm: {
+    origin: { x: 1030, y: 705 },
+    col: { x: 77.5, y: 106 },
+    row: { x: -77.5, y: 106 },
+    rect: { x0: 630, x1: 1395, y0: 415, y1: 1065 },
+    exclude: new Set(),
+  },
+  // TR — Челябинск: даунтаун у воды (столица — небоскрёбный центр)
+  chel: {
+    origin: { x: 1920, y: 695 },
+    col: { x: 77.5, y: 105 },
+    row: { x: -77.5, y: 105 },
+    rect: { x0: 1605, x1: 2265, y0: 420, y1: 1005 },
+    exclude: new Set(),
+  },
+  // BL — Екатеринбург: крупные кварталы (столица — синие высотки, 2-й ряд)
+  ekb: {
+    origin: { x: 1000, y: 1290 },
+    col: { x: 77.5, y: 105 },
+    row: { x: -77.5, y: 105 },
+    rect: { x0: 640, x1: 1390, y0: 1130, y1: 1560 },
+    exclude: new Set(),
+  },
+  // BR — Тюмень: горы, ветряки, карьер (столица — городские высотки)
+  tmn: {
+    origin: { x: 1965, y: 1360 },
+    col: { x: 77.5, y: 106 },
+    row: { x: -77.5, y: 106 },
+    rect: { x0: 1545, x1: 2370, y0: 1100, y1: 1640 },
+    exclude: new Set(),
+  },
 };
 
-const Q3_CONFIG: IslandConfig = {
-  // 19 крупных кварталов: ТЭЦ, стадион, вокзал, карьер (столица — деловой центр)
-  art: islandQ3,
-  artW: 2000, artH: 1126,
-  origin: { x: 855, y: 445 },
-  col: { x: 152, y: 222 },
-  row: { x: -152, y: 222 },
-  inBounds: (x, y) =>
-    x >= 180 && x <= 1760 && y >= 110 && y <= 1060
-    && !(x < 260 && y < 330) && !(x < 430 && y > 760) && !(x > 1660 && y > 760),
-  exclude: new Set([]),
-  crop: { x: 160, y: 90, w: 1620, h: 990 },
-};
-
-const Q4_CONFIG: IslandConfig = {
-  // Даунтаун у воды: небоскрёбы, реки с мостами, ТЭЦ, ветряных нет (столица — небоскрёбный центр)
-  art: islandQ4,
-  artW: 2000, artH: 1333,
-  origin: { x: 1010, y: 590 },
-  col: { x: 155, y: 220 },
-  row: { x: -155, y: 220 },
-  inBounds: (x, y) =>
-    x >= 130 && x <= 1910 && y >= 60 && y <= 1240
-    && !(x < 540 && y < 250) && !(x > 1470 && y < 250)
-    && !(x < 400 && y > 850) && !(x > 1620 && y > 900),
-  exclude: new Set([]),
-  crop: { x: 120, y: 50, w: 1800, h: 1210 },
-};
-
-const Q5_CONFIG: IslandConfig = {
-  // Пригород: аэропорт, ферма, карьеры, очистные (столица — городок с площадью)
-  art: islandQ5,
-  artW: 2000, artH: 1333,
-  origin: { x: 860, y: 580 },
-  col: { x: 155, y: 220 },
-  row: { x: -155, y: 220 },
-  inBounds: (x, y) =>
-    x >= 140 && x <= 1660 && y >= 170 && y <= 1140
-    && !(x < 420 && y < 300) && !(x > 1330 && y < 250)
-    && !(x < 300 && y > 900),
-  exclude: new Set([]),
-  crop: { x: 30, y: 60, w: 1750, h: 1220 }, // правый/нижний край арта белый — срезан клипом
-};
-
-const Q6_CONFIG: IslandConfig = {
-  // Тюмень: горы, ферма, озеро, ветряк, карьер (столица — небоскрёбный центр)
-  art: islandQ6,
-  artW: 2000, artH: 1333,
-  origin: { x: 1010, y: 520 },
-  col: { x: 155, y: 200 },
-  row: { x: -155, y: 200 },
-  inBounds: (x, y) =>
-    x >= 150 && x <= 1810 && y >= 60 && y <= 1150
-    && !(x < 560 && y < 250) && !(x > 1520 && y < 230)
-    && !(x < 260 && y < 460) && !(x > 1520 && y > 950),
-  exclude: new Set([]),
-  crop: { x: 130, y: 40, w: 1780, h: 1180 },
-};
-
-/** раскладка четвертей: верх-лево ЕКБ, верх-право ЧЕЛ, низ-лево ТМН, низ-право ПРМ.
- *  Q2 (мегаполис) — в запасе. */
-const ISLAND_CONFIGS: Record<RrsId, IslandConfig> = {
-  ekb: Q3_CONFIG,
-  chel: Q4_CONFIG,
-  tmn: Q6_CONFIG,
-  perm: Q5_CONFIG,
-};
-void Q2_CONFIG; // арт в резерве
-const QUARTER_NO: Record<RrsId, number> = { ekb: 1, chel: 2, tmn: 3, perm: 4 };
-const RRS_SHORT: Record<RrsId, string> = { ekb: "Екатеринбург", chel: "Челябинск", tmn: "Тюмень", perm: "Пермь" };
-
-const center = (cfg: IslandConfig, c: Axial): Pt => ({
-  x: cfg.origin.x + c.q * cfg.col.x + c.r * cfg.row.x,
-  y: cfg.origin.y + c.q * cfg.col.y + c.r * cfg.row.y,
+const center = (b: BlockConfig, c: Axial): Pt => ({
+  x: b.origin.x + c.q * b.col.x + c.r * b.row.x,
+  y: b.origin.y + c.q * b.col.y + c.r * b.row.y,
 });
 
-function hexCorners(cfg: IslandConfig): Pt[] {
-  const a = cfg.col, b = cfg.row;
+/** вершины ячейки Вороного треугольной решётки с базисом (col,row) — тесселируются точно */
+function hexCorners(b: BlockConfig): Pt[] {
+  const a = b.col, d = b.row;
   const pts = [
-    { x: (a.x + b.x) / 3, y: (a.y + b.y) / 3 },
-    { x: (2 * b.x - a.x) / 3, y: (2 * b.y - a.y) / 3 },
-    { x: (b.x - 2 * a.x) / 3, y: (b.y - 2 * a.y) / 3 },
+    { x: (a.x + d.x) / 3, y: (a.y + d.y) / 3 },
+    { x: (2 * d.x - a.x) / 3, y: (2 * d.y - a.y) / 3 },
+    { x: (d.x - 2 * a.x) / 3, y: (d.y - 2 * a.y) / 3 },
   ];
   return [...pts, ...pts.map((p) => ({ x: -p.x, y: -p.y }))];
 }
-function hexPath(cfg: IslandConfig, corners: Pt[], c: Axial, inset = 1): string {
-  const { x, y } = center(cfg, c);
+function hexPath(b: BlockConfig, corners: Pt[], c: Axial, inset = 1): string {
+  const { x, y } = center(b, c);
   return corners.map((p, i) => `${i === 0 ? "M" : "L"}${(x + p.x * inset).toFixed(1)},${(y + p.y * inset).toFixed(1)}`).join(" ") + " Z";
 }
 const NEIGHBORS: Axial[] = [{ q: 1, r: 0 }, { q: -1, r: 0 }, { q: 0, r: 1 }, { q: 0, r: -1 }, { q: 1, r: -1 }, { q: -1, r: 1 }];
 const isNeighbor = (a: Axial, b: Axial) => NEIGHBORS.some((d) => a.q + d.q === b.q && a.r + d.r === b.r);
 
-function buildIsland(cfg: IslandConfig): Axial[] {
+function buildBlockCells(b: BlockConfig): Axial[] {
   const cells: Axial[] = [];
-  for (let q = -7; q <= 7; q++) {
-    for (let r = -7; r <= 7; r++) {
-      const { x, y } = center(cfg, { q, r });
-      if (!cfg.inBounds(x, y)) continue;
-      if (cfg.exclude.has(`${q},${r}`)) continue;
+  for (let q = -6; q <= 6; q++) {
+    for (let r = -6; r <= 6; r++) {
+      const { x, y } = center(b, { q, r });
+      if (x < b.rect.x0 || x > b.rect.x1 || y < b.rect.y0 || y > b.rect.y1) continue;
+      if (b.exclude.has(`${q},${r}`)) continue;
       cells.push({ q, r });
     }
   }
   return cells;
 }
 const CAPITAL: Axial = { q: 0, r: 0 };
-
-/** аспект ячейки, под который расширяем viewBox (заполнение без letterbox; излишки режет slice) */
-const CELL_RATIO = 2.6;
-function extendedCrop(cfg: IslandConfig): { x: number; y: number; w: number; h: number } {
-  const w = Math.max(cfg.crop.w, Math.round(cfg.crop.h * CELL_RATIO));
-  return { x: cfg.crop.x - Math.round((w - cfg.crop.w) / 2), y: cfg.crop.y, w, h: cfg.crop.h };
-}
-
-/** «пустые» гексы вокруг острова: продолжение той же решётки — поле закрывает всю ячейку */
-function buildFiller(cfg: IslandConfig, ext: { x: number; y: number; w: number; h: number }, islandKeys: Set<string>): Axial[] {
-  const cells: Axial[] = [];
-  const pad = Math.abs(cfg.col.x) + Math.abs(cfg.row.x); // запас в полтора гекса за края
-  for (let q = -14; q <= 14; q++) {
-    for (let r = -14; r <= 14; r++) {
-      if (islandKeys.has(`${q},${r}`)) continue;
-      const { x, y } = center(cfg, { q, r });
-      if (x < ext.x - pad || x > ext.x + ext.w + pad) continue;
-      if (y < ext.y - pad || y > ext.y + ext.h + pad) continue;
-      cells.push({ q, r });
-    }
-  }
-  return cells;
-}
 
 // ── постройки из сыгранных карт ─────────────────────────────────────────────
 const BUILDING_BY_ANCHOR: Record<string, { icon: LucideIcon; label: string; color: string }> = {
@@ -203,36 +126,35 @@ function hashStr(s: string): number {
   return h >>> 0;
 }
 
-// ── одна четверть ───────────────────────────────────────────────────────────
-interface QuarterData {
+// ── данные блока ────────────────────────────────────────────────────────────
+interface BlockData {
   rrsId: RrsId;
   name: string;
   controllerKind: "human" | "ai" | "off";
   mascotId: MascotId | undefined;
-  coveragePct: number;         // KPI «покрытие рынка» 0..100 → подсветка освоения
-  discard?: string[];          // только своя четверть (постройки)
+  coveragePct: number;
+  discard?: string[];
   isYou: boolean;
 }
 
-function IslandQuarter({ data, interactive }: { data: QuarterData; interactive: boolean }) {
-  const cfg = ISLAND_CONFIGS[data.rrsId] ?? Q3_CONFIG;
-  const corners = useMemo(() => hexCorners(cfg), [cfg]);
-  const island = useMemo(() => buildIsland(cfg), [cfg]);
-  const ext = useMemo(() => extendedCrop(cfg), [cfg]);
-  const filler = useMemo(() => buildFiller(cfg, ext, new Set(island.map(cellKey))), [cfg, ext, island]);
+/** один регион на полотне: решётка + маскот + постройки (рисуется внутрь общего svg) */
+function DistrictBlock({ data, interactive }: { data: BlockData; interactive: boolean }) {
+  const b = BLOCKS[data.rrsId];
+  const corners = useMemo(() => hexCorners(b), [b]);
+  const cells = useMemo(() => buildBlockCells(b), [b]);
   const [mascot, setMascot] = useState<Axial>(CAPITAL);
   const off = data.controllerKind === "off";
   const figure = MASCOT_VISUAL[data.mascotId ?? "strateg"] ?? MASCOT_VISUAL.strateg;
 
   const litKeys = useMemo(() => {
-    const byDist = [...island].sort((a, b) => {
+    const byDist = [...cells].sort((a, c) => {
       const da = Math.abs(a.q) + Math.abs(a.r) + Math.abs(a.q + a.r);
-      const db = Math.abs(b.q) + Math.abs(b.r) + Math.abs(b.q + b.r);
+      const db = Math.abs(c.q) + Math.abs(c.r) + Math.abs(c.q + c.r);
       return da - db;
     });
-    const n = Math.round((data.coveragePct / 100) * island.length);
+    const n = Math.round((data.coveragePct / 100) * cells.length);
     return new Set(byDist.slice(0, Math.max(off ? 0 : 1, n)).map(cellKey));
-  }, [data.coveragePct, island, off]);
+  }, [data.coveragePct, cells, off]);
 
   const buildings = useMemo(() => {
     if (!data.discard) return [];
@@ -242,127 +164,98 @@ function IslandQuarter({ data, interactive }: { data: QuarterData; interactive: 
       const anchor = Object.keys(BUILDING_BY_ANCHOR).find((a) => id.startsWith(a));
       if (!anchor) continue;
       const meta = BUILDING_BY_ANCHOR[anchor];
-      const idx = hashStr(id) % island.length;
-      for (let tries = 0; tries < island.length; tries++) {
-        const cell = island[(idx + tries) % island.length];
+      const idx = hashStr(id) % cells.length;
+      for (let tries = 0; tries < cells.length; tries++) {
+        const cell = cells[(idx + tries) % cells.length];
         if (!used.has(cellKey(cell))) { used.add(cellKey(cell)); out.push({ cell, ...meta }); break; }
       }
     }
     return out;
-  }, [data.discard, island]);
+  }, [data.discard, cells]);
 
-  const reachable = interactive ? island.filter((c) => isNeighbor(mascot, c)) : [];
-  const mc = center(cfg, mascot);
+  const reachable = interactive && !off ? cells.filter((c) => isNeighbor(mascot, c)) : [];
+  const mc = center(b, mascot);
+  const hexW = Math.abs(b.col.x - b.row.x); // ширина гекса блока
+  const FH = hexW * 0.95;                    // фигурка — в пределах одного гекса
+  const FW = FH * 0.62;
+  const cap = center(b, CAPITAL);
+  const labelY = b.rect.y0 - 14;
 
   return (
-    <div style={{ position: "relative", minWidth: 0, minHeight: 0, overflow: "hidden", background: "#0d0f14", opacity: off ? 0.55 : 1, boxShadow: data.isYou ? "inset 0 0 0 2px rgba(255,107,0,0.6)" : "none" }}>
-      <svg
-        viewBox={`${ext.x} ${ext.y} ${ext.w} ${ext.h}`}
-        preserveAspectRatio="xMidYMid slice"
-        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", filter: off ? "grayscale(0.85)" : undefined }}
-        role={interactive ? "application" : "img"}
-        aria-label={interactive
-          ? `Ваша территория ${RRS_LABEL[data.rrsId]}: клик по соседней клетке — шаг маскота`
-          : `Территория ${RRS_LABEL[data.rrsId]} (${off ? "не задействована" : data.name})`}
-      >
-        {/* жёсткий клип по расширенному кропу: содержимое за viewBox иначе дорисовывается наружу */}
-        <defs>
-          <clipPath id={`zrd-crop-${data.rrsId}`}>
-            <rect x={ext.x} y={ext.y} width={ext.w} height={ext.h} />
-          </clipPath>
-          {/* арт клипуется по исходному кропу — белые/грязные края файла не видны */}
-          <clipPath id={`zrd-art-${data.rrsId}`}>
-            <rect x={cfg.crop.x} y={cfg.crop.y} width={cfg.crop.w} height={cfg.crop.h} />
-          </clipPath>
-        </defs>
-        <g clipPath={`url(#zrd-crop-${data.rrsId})`}>
-        {/* фон + «пустые» гексы вокруг острова: поле региона закрывает всю ячейку без пустот */}
-        <rect x={ext.x} y={ext.y} width={ext.w} height={ext.h} fill="#0b0d12" />
-        {filler.map((c) => (
-          <path key={`f${cellKey(c)}`} d={hexPath(cfg, corners, c, 0.94)}
-            fill="rgba(24,30,42,0.55)" stroke="rgba(140,160,190,0.13)" strokeWidth={2.5} pointerEvents="none" />
-        ))}
-        <g clipPath={`url(#zrd-art-${data.rrsId})`}>
-          <image href={cfg.art} x={0} y={0} width={cfg.artW} height={cfg.artH} preserveAspectRatio="xMidYMid meet" />
+    <g style={{ opacity: off ? 0.55 : 1, filter: off ? "grayscale(0.85)" : undefined }}>
+      {cells.map((c) => {
+        const key = cellKey(c);
+        const lit = litKeys.has(key);
+        const canStep = reachable.some((n) => cellKey(n) === key);
+        return (
+          <path
+            key={key}
+            d={hexPath(b, corners, c, 0.85)}
+            fill={lit ? "rgba(255,196,90,0.16)" : "rgba(6,10,18,0.30)"}
+            stroke={canStep ? "#FF6B00" : lit ? "rgba(255,196,90,0.6)" : "rgba(120,140,170,0.25)"}
+            strokeWidth={canStep ? 3.5 : 1.4}
+            strokeDasharray={canStep ? "9 7" : undefined}
+            style={{ cursor: canStep ? "pointer" : "default", transition: "fill 300ms ease, stroke 200ms ease", outline: "none" }}
+            onClick={() => { if (canStep) setMascot(c); }}
+            tabIndex={canStep ? 0 : -1}
+            onKeyDown={(e) => { if (canStep && (e.key === "Enter" || e.key === " ")) setMascot(c); }}
+          >
+            <title>{canStep ? "Шагнуть сюда (1 ход)" : lit ? "Освоено — показатели растут" : "Дикая клетка"}</title>
+          </path>
+        );
+      })}
+
+      {/* столица */}
+      <path d={hexPath(b, corners, CAPITAL, 0.85)} fill="none" stroke="#ffd166" strokeWidth={3} pointerEvents="none" />
+
+      {/* постройки из сыгранных карт (только свой блок) */}
+      {buildings.map((bl, i) => {
+        const p = center(b, bl.cell);
+        const Icon = bl.icon;
+        return (
+          <g key={i} pointerEvents="none">
+            <circle cx={p.x + 26} cy={p.y - 22} r={17} fill="rgba(10,14,24,0.85)" stroke={bl.color} strokeWidth={2.5} />
+            <foreignObject x={p.x + 26 - 10} y={p.y - 22 - 10} width={20} height={20}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", color: bl.color }}>
+                <Icon size={15} aria-label={bl.label} />
+              </div>
+            </foreignObject>
+          </g>
+        );
+      })}
+
+      {/* маскот — фигурка в полный рост (у чужих — в столице; позиция чужих не синхронизируется) */}
+      {!off && (
+        <g style={{ transition: "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)", transform: `translate(${mc.x}px, ${mc.y}px)` }} pointerEvents="none">
+          <ellipse cx={0} cy={6} rx={FW * 0.55} ry={FH * 0.07} fill="rgba(0,0,0,0.55)" />
+          <ellipse cx={0} cy={6} rx={FW * 0.58} ry={FH * 0.085} fill="none" stroke={figure.accent} strokeWidth={2.5} opacity={0.9} />
+          <ellipse cx={0} cy={-FH * 0.38} rx={FW * 0.28} ry={FH * 0.38} fill="rgba(12,14,18,0.6)" />
+          <image
+            href={figure.figure}
+            x={-FW / 2} y={-FH + 4} width={FW} height={FH}
+            preserveAspectRatio="xMidYMax meet"
+            style={{ filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.65))" }}
+          />
         </g>
+      )}
 
-        {island.map((c) => {
-          const key = cellKey(c);
-          const lit = litKeys.has(key);
-          const canStep = reachable.some((n) => cellKey(n) === key);
-          return (
-            <path
-              key={key}
-              d={hexPath(cfg, corners, c, 0.86)}
-              fill={lit ? "rgba(255,196,90,0.16)" : "rgba(6,10,18,0.32)"}
-              stroke={canStep ? "#FF6B00" : lit ? "rgba(255,196,90,0.55)" : "rgba(140,160,190,0.22)"}
-              strokeWidth={canStep ? 6 : 2.5}
-              strokeDasharray={canStep ? "16 12" : undefined}
-              style={{ cursor: canStep ? "pointer" : "default", transition: "fill 300ms ease, stroke 200ms ease", outline: "none" }}
-              onClick={() => { if (canStep) setMascot(c); }}
-              tabIndex={canStep ? 0 : -1}
-              onKeyDown={(e) => { if (canStep && (e.key === "Enter" || e.key === " ")) setMascot(c); }}
-            >
-              <title>{canStep ? "Шагнуть сюда (1 ход)" : lit ? "Освоено — показатели растут" : "Дикая клетка"}</title>
-            </path>
-          );
-        })}
-
-        {/* столица */}
-        <path d={hexPath(cfg, corners, CAPITAL, 0.86)} fill="none" stroke="#ffd166" strokeWidth={5} pointerEvents="none" />
-
-        {/* постройки (только своя четверть — чужие сбросы скрыты) */}
-        {buildings.map((b, i) => {
-          const p = center(cfg, b.cell);
-          const Icon = b.icon;
-          return (
-            <g key={i} pointerEvents="none">
-              <circle cx={p.x + 52} cy={p.y - 40} r={34} fill="rgba(10,14,24,0.85)" stroke={b.color} strokeWidth={4} />
-              <foreignObject x={p.x + 52 - 20} y={p.y - 40 - 20} width={40} height={40}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", height: "100%", color: b.color }}>
-                  <Icon size={30} aria-label={b.label} />
-                </div>
-              </foreignObject>
-            </g>
-          );
-        })}
-
-        {/* маскот — фигурка в полный рост, не выше одного гекса (у чужих — в столице) */}
-        {!off && (() => {
-          const hexW = Math.abs(cfg.col.x - cfg.row.x); // горизонтальный шаг решётки = ширина гекса
-          const FH = hexW * 0.82;                        // высота фигурки — в пределах гекса
-          const FW = FH * 0.62;                          // аспект вырезанных артов ~0.55–0.62
-          return (
-            <g style={{ transition: "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)", transform: `translate(${mc.x}px, ${mc.y}px)` }} pointerEvents="none">
-              {/* тень + цветная подставка стиля игрока */}
-              <ellipse cx={0} cy={10} rx={FW * 0.55} ry={FH * 0.07} fill="rgba(0,0,0,0.55)" />
-              <ellipse cx={0} cy={10} rx={FW * 0.58} ry={FH * 0.085} fill="none" stroke={figure.accent} strokeWidth={4} opacity={0.9} />
-              {/* тёмная подложка-силуэт: закрывает огрехи вырезки фона на тёмной одежде */}
-              <ellipse cx={0} cy={-FH * 0.38} rx={FW * 0.28} ry={FH * 0.38} fill="rgba(12,14,18,0.6)" />
-              <image
-                href={figure.figure}
-                x={-FW / 2} y={-FH + 6} width={FW} height={FH}
-                preserveAspectRatio="xMidYMax meet"
-                style={{ filter: "drop-shadow(0 6px 12px rgba(0,0,0,0.65))" }}
-              />
-            </g>
-          );
-        })()}
-        </g>
-      </svg>
-
-      {/* плашка четверти */}
-      <div style={{ position: "absolute", left: 6, top: 5, display: "flex", alignItems: "center", gap: 6, borderRadius: 7, padding: "2px 8px", fontSize: 10.5, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: data.isYou ? "#FF6B00" : "rgba(220,228,240,0.85)", background: "rgba(10,14,24,0.75)", border: `1px solid ${data.isYou ? "rgba(255,107,0,0.45)" : "rgba(140,160,190,0.25)"}` }}>
-        {QUARTER_NO[data.rrsId]}/4 · {RRS_SHORT[data.rrsId]}{data.isYou ? " · вы" : ""} {off ? "· —" : `· ${Math.round(data.coveragePct)}%`}
-      </div>
-    </div>
+      {/* плашка региона над блоком */}
+      <g pointerEvents="none">
+        <rect x={cap.x - 150} y={labelY - 22} width={300} height={30} rx={8}
+          fill="rgba(10,14,24,0.78)" stroke={data.isYou ? "rgba(255,107,0,0.6)" : "rgba(140,160,190,0.3)"} strokeWidth={1.5} />
+        <text x={cap.x} y={labelY} textAnchor="middle"
+          fontSize={17} fontWeight={800} letterSpacing={1}
+          fill={data.isYou ? "#FF6B00" : "rgba(224,232,244,0.92)"}>
+          {RRS_LABEL[data.rrsId].toUpperCase()}{data.isYou ? " · ВЫ" : ""} {off ? "· —" : `· ${Math.round(data.coveragePct)}%`}
+        </text>
+      </g>
+    </g>
   );
 }
 
-// ── общая карта дивизиона 2×2 ───────────────────────────────────────────────
+// ── единая карта дивизиона ──────────────────────────────────────────────────
 export function ZrdIslandMap({ view }: { view: ZrdSeatView }) {
-  // данные четвертей: своя — полная, чужие — из публичной сводки
-  const quarters: QuarterData[] = RRS_IDS.map((rrsId) => {
+  const blocks: BlockData[] = RRS_IDS.map((rrsId) => {
     if (rrsId === view.you.rrsId) {
       return {
         rrsId,
@@ -386,11 +279,19 @@ export function ZrdIslandMap({ view }: { view: ZrdSeatView }) {
   });
 
   return (
-    // единый район из 4 регионов: карты смыкаются без зазоров (границы — только тонкие линии)
-    <div style={{ position: "absolute", inset: 0, display: "grid", gridTemplateColumns: "1fr 1fr", gridTemplateRows: "1fr 1fr", gap: 1, background: "rgba(140,160,190,0.15)" }}>
-      {quarters.map((q) => (
-        <IslandQuarter key={q.rrsId} data={q} interactive={q.isYou} />
-      ))}
+    <div style={{ position: "absolute", inset: 0, background: "#0b0d12" }}>
+      <svg
+        viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`}
+        preserveAspectRatio="xMidYMid meet"
+        style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+        role="application"
+        aria-label={`Карта дивизиона: 4 региона; ваш — ${RRS_LABEL[view.you.rrsId]}, клик по соседней клетке — шаг маскота`}
+      >
+        <image href={districtArt} x={0} y={0} width={ART_W} height={ART_H} preserveAspectRatio="xMidYMid meet" />
+        {blocks.map((bd) => (
+          <DistrictBlock key={bd.rrsId} data={bd} interactive={bd.isYou} />
+        ))}
+      </svg>
     </div>
   );
 }

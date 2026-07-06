@@ -11,6 +11,7 @@ import { getSwan } from "@shared/zrd/content-swans";
 import { MASCOT_VISUAL } from "./zrd-mascots";
 import { useZrdMatch } from "./useZrdMatch";
 import { ZrdLobby } from "./components/organisms/ZrdLobby";
+import { ZrdMascotPicker } from "./components/organisms/ZrdMascotPicker";
 import { ZrdEventDialog } from "./components/organisms/ZrdEventDialog";
 import { ZrdMatchResults } from "./components/organisms/ZrdMatchResults";
 import { ZrdBoardBuild } from "./components/organisms/ZrdBoardBuild";
@@ -150,6 +151,14 @@ export default function ZrdGameWorkspace() {
             </div>
           )}
         </main>
+
+        {/* Первый вход по коду: игрок сам выбирает фигурку (оценщик аватары не назначает) */}
+        {view && !showResults && view.you.controller.kind === "human" && view.you.mascotChosen === false && (
+          <ZrdMascotPicker
+            playerName={view.you.controller.name}
+            onPick={(id) => void match.chooseMascot(id)}
+          />
+        )}
 
         {/* Квартальная дилемма — модал (открывается из «События раунда» или блокирует пас) */}
         {view && !showResults && eventOpen && view.you.pendingEvent && (

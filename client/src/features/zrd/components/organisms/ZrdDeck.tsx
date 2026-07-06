@@ -45,7 +45,10 @@ export function ZrdDeck({ deckId, view, open, onToggle, onPlay }: { deckId: Deck
   };
 
   return (
-    <div className={`zrd-deck${open ? " is-open" : ""}`} style={{ "--acc": visual.accent, "--card-aspect": visual.cardAspect } as CSSProperties}>
+    // увёл мышь из области колоды (стопка + веер) → веер закрывается сам; крупный просмотр (sel) не трогаем
+    <div className={`zrd-deck${open ? " is-open" : ""}`}
+      style={{ "--acc": visual.accent, "--card-aspect": visual.cardAspect } as CSSProperties}
+      onMouseLeave={() => { if (open && !sel) onToggle(); }}>
       <button type="button" className="zrd-deck__pile"
         onClick={() => { onToggle(); setSel(null); }}
         title={`Колода «${visual.name}»: в руке ${hand.length}, в колоде ${remaining}`}>
@@ -59,8 +62,9 @@ export function ZrdDeck({ deckId, view, open, onToggle, onPlay }: { deckId: Deck
             Нет карт этой колоды в руке — добор в начале месяца
           </span>
         )}
-        {hand.map((c, i) => (
-          <button key={c.id} type="button" className="zrd-deck__card" style={{ zIndex: i + 1 }}
+        {/* без inline z-index: иначе он перебивает hover-подъём карты на первый план */}
+        {hand.map((c) => (
+          <button key={c.id} type="button" className="zrd-deck__card"
             onClick={() => setSel(c.id)} title={c.title}>
             <CardFace card={c} />
           </button>

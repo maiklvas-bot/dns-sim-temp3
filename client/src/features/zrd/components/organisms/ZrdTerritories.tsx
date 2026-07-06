@@ -33,8 +33,9 @@ function territoryFromSummary(s: ZrdSeatPublicSummary): TerritoryData {
   };
 }
 
-/** Нижняя зона — 4 РРС матча: публичные KPI всех мест, своё подсвечено, статус хода в шапке. */
-export function ZrdTerritories({ view }: { view: ZrdSeatView }) {
+/** Панели РРС матча: публичные KPI всех мест, своё подсвечено, статус хода в шапке.
+ *  pick — какие места показать (seatIdx), vertical — колонкой (по бокам карты дивизиона). */
+export function ZrdTerritories({ view, pick, vertical }: { view: ZrdSeatView; pick?: number[]; vertical?: boolean }) {
   const you: TerritoryData = {
     seatIdx: view.seatIdx,
     rrsId: view.you.rrsId,
@@ -45,10 +46,12 @@ export function ZrdTerritories({ view }: { view: ZrdSeatView }) {
     missionsDone: Object.values(view.you.missionDone).filter(Boolean).length,
     isYou: true,
   };
-  const all = [you, ...view.others.map(territoryFromSummary)].sort((a, b) => a.seatIdx - b.seatIdx);
+  const all = [you, ...view.others.map(territoryFromSummary)]
+    .sort((a, b) => a.seatIdx - b.seatIdx)
+    .filter((t) => !pick || pick.includes(t.seatIdx));
 
   return (
-    <div className="zrd-territories">
+    <div className={`zrd-territories${vertical ? " is-vertical" : ""}`}>
       {all.map((t) => {
         const off = t.controllerKind === "off";
         const Icon = t.controllerKind === "human" ? User : t.controllerKind === "ai" ? Bot : CircleOff;

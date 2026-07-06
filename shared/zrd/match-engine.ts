@@ -157,6 +157,8 @@ export function initMatch(config: MatchConfig): MatchState {
       rrsId: setup.rrsId,
       controller: setup.controller,
       mascotId: setup.mascotId ?? MASCOT_IDS[seatIdx % MASCOT_IDS.length],
+      // человек выбирает фигурку сам при входе; ИИ/выключенным выбор не нужен
+      mascotChosen: setup.controller.kind !== "human" || Boolean(setup.mascotId),
       resources,
       incomeMonthly: active ? INCOME_MONTHLY[config.difficulty] : 0,
       resourceProd: active ? { ...diff.startProd } : emptyResources(),

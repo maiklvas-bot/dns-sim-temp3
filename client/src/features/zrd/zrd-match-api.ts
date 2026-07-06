@@ -77,6 +77,13 @@ export async function fetchMatchVersion(matchId: number, seatIdx: number, token:
   return res.json();
 }
 
+/** игрок выбирает свою фигурку после входа по коду */
+export async function setZrdMascot(matchId: number, seatIdx: number, mascotId: MascotId, token: string | null): Promise<SeatViewResponse> {
+  const res = await apiRequest("POST", `/api/zrd/match/${matchId}/mascot`, { seatIdx, mascotId }, { headers: seatHeaders(token) });
+  const data = await res.json();
+  return { view: data.view, version: data.version, deadlineAt: null, paused: false };
+}
+
 export class ZrdMatchIntentError extends Error {
   code: string;
   constructor(code: string) {

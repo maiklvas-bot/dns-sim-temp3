@@ -54,6 +54,7 @@ import {
   zrdMatchIntentSchema,
   zrdMatchSwanSchema,
   zrdMatchPauseSchema,
+  zrdMatchMascotSchema,
   zrdManualSectionParamSchema,
   zrdManualNoteBodySchema,
   editableChatSchema,
@@ -849,6 +850,21 @@ export async function registerRoutes(
       res.json({ view: result.view, version: result.version, ended: result.ended });
     } catch (error) {
       next(internalApiError("ZRD_MATCH_INTENT_FAILED", "Не удалось применить ход.", error));
+    }
+  });
+
+  // Игрок выбирает свою фигурку при входе по коду (оценщик аватары не назначает)
+  app.post("/api/zrd/match/:id/mascot", validateParams(sessionIdParamSchema), validateBody(zrdMatchMascotSchema), requireZrdMatchSeatAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const { seatIdx, mascotId } = req.validatedBody as z.infer<typeof zrdMatchMascotSchema>;
+      const result = zrdMatchService.setMascot(id, seatIdx, mascotId);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Не удалось выбрать фигурку", code: "ZRD_MATCH_MASCOT_REJECTED", error: result.error });
+      }
+      res.json({ view: result.view, version: result.version });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_MASCOT_FAILED", "Не удалось выбрать фигурку.", error));
     }
   });
 

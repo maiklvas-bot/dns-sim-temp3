@@ -182,8 +182,10 @@ export interface ActiveProject {
 export interface SeatState {
   rrsId: RrsId;
   controller: SeatController;
-  /** фигурка на карте; выбирается при рассадке по территориям */
+  /** фигурка на карте; выбирает сам игрок при входе по коду */
   mascotId: MascotId;
+  /** игрок уже выбрал фигурку? до выбора борд показывает экран выбора (старые матчи: undefined = выбрано) */
+  mascotChosen?: boolean;
   resources: Resources;
   /** капитал, приходящий каждый месяц (экономика v3) */
   incomeMonthly: number;
