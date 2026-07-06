@@ -14,11 +14,11 @@ import type { MascotId, RrsId, ZrdSeatView } from "@shared/zrd/match-types";
 import { RRS_IDS, RRS_LABEL } from "@shared/zrd/match-types";
 import { computeKpi } from "@shared/zrd/kpi";
 import { MASCOT_VISUAL } from "../../zrd-mascots";
-import islandQ1 from "@/assets/brand/zrd/map/island-q1.png";
 import islandQ2 from "@/assets/brand/zrd/map/island-q2.png";
 import islandQ3 from "@/assets/brand/zrd/map/island-q3.png";
 import islandQ4 from "@/assets/brand/zrd/map/island-q4.png";
 import islandQ5 from "@/assets/brand/zrd/map/island-q5.png";
+import islandQ6 from "@/assets/brand/zrd/map/island-q6.png";
 
 // ── геометрия: аффинная гекс-решётка, калибруется по каждому арту (2000×1126) ─
 interface Axial { q: number; r: number }
@@ -38,21 +38,6 @@ interface IslandConfig {
   /** кроп пустых полей арта (viewBox) — острова смыкаются в единый район без зазоров */
   crop: { x: number; y: number; w: number; h: number };
 }
-
-const Q1_CONFIG: IslandConfig = {
-  // Екатеринбург: лесной остров с реками (столица — тайл с белым храмом)
-  art: islandQ1,
-  artW: 2000, artH: 1126,
-  origin: { x: 800, y: 460 },
-  col: { x: 181, y: 88 },
-  row: { x: -181, y: 104 },
-  inBounds: (x, y) =>
-    x >= 210 && x <= 1850 && y >= 195 && y <= 905
-    && !(x < 560 && y < 430) && !(x > 1560 && y < 340)
-    && !(x > 1700 && y > 780) && !(x < 400 && y > 780),
-  exclude: new Set(["1,-3", "3,-2", "4,-1"]),
-  crop: { x: 130, y: 120, w: 1790, h: 880 },
-};
 
 const Q2_CONFIG: IslandConfig = {
   // Челябинск: промышленный мегаполис (столица — деловой центр)
@@ -113,12 +98,27 @@ const Q5_CONFIG: IslandConfig = {
   crop: { x: 30, y: 60, w: 1750, h: 1220 }, // правый/нижний край арта белый — срезан клипом
 };
 
+const Q6_CONFIG: IslandConfig = {
+  // Тюмень: горы, ферма, озеро, ветряк, карьер (столица — небоскрёбный центр)
+  art: islandQ6,
+  artW: 2000, artH: 1333,
+  origin: { x: 1010, y: 520 },
+  col: { x: 155, y: 200 },
+  row: { x: -155, y: 200 },
+  inBounds: (x, y) =>
+    x >= 150 && x <= 1810 && y >= 60 && y <= 1150
+    && !(x < 560 && y < 250) && !(x > 1520 && y < 230)
+    && !(x < 260 && y < 460) && !(x > 1520 && y > 950),
+  exclude: new Set([]),
+  crop: { x: 130, y: 40, w: 1780, h: 1180 },
+};
+
 /** раскладка четвертей: верх-лево ЕКБ, верх-право ЧЕЛ, низ-лево ТМН, низ-право ПРМ.
  *  Q2 (мегаполис) — в запасе. */
 const ISLAND_CONFIGS: Record<RrsId, IslandConfig> = {
   ekb: Q3_CONFIG,
   chel: Q4_CONFIG,
-  tmn: Q1_CONFIG,
+  tmn: Q6_CONFIG,
   perm: Q5_CONFIG,
 };
 void Q2_CONFIG; // арт в резерве
@@ -160,6 +160,29 @@ function buildIsland(cfg: IslandConfig): Axial[] {
 }
 const CAPITAL: Axial = { q: 0, r: 0 };
 
+/** аспект ячейки, под который расширяем viewBox (заполнение без letterbox; излишки режет slice) */
+const CELL_RATIO = 2.6;
+function extendedCrop(cfg: IslandConfig): { x: number; y: number; w: number; h: number } {
+  const w = Math.max(cfg.crop.w, Math.round(cfg.crop.h * CELL_RATIO));
+  return { x: cfg.crop.x - Math.round((w - cfg.crop.w) / 2), y: cfg.crop.y, w, h: cfg.crop.h };
+}
+
+/** «пустые» гексы вокруг острова: продолжение той же решётки — поле закрывает всю ячейку */
+function buildFiller(cfg: IslandConfig, ext: { x: number; y: number; w: number; h: number }, islandKeys: Set<string>): Axial[] {
+  const cells: Axial[] = [];
+  const pad = Math.abs(cfg.col.x) + Math.abs(cfg.row.x); // запас в полтора гекса за края
+  for (let q = -14; q <= 14; q++) {
+    for (let r = -14; r <= 14; r++) {
+      if (islandKeys.has(`${q},${r}`)) continue;
+      const { x, y } = center(cfg, { q, r });
+      if (x < ext.x - pad || x > ext.x + ext.w + pad) continue;
+      if (y < ext.y - pad || y > ext.y + ext.h + pad) continue;
+      cells.push({ q, r });
+    }
+  }
+  return cells;
+}
+
 // ── постройки из сыгранных карт ─────────────────────────────────────────────
 const BUILDING_BY_ANCHOR: Record<string, { icon: LucideIcon; label: string; color: string }> = {
   pj_open_store: { icon: Store, label: "Магазин", color: "#FF6B00" },
@@ -192,13 +215,14 @@ interface QuarterData {
 }
 
 function IslandQuarter({ data, interactive }: { data: QuarterData; interactive: boolean }) {
-  const cfg = ISLAND_CONFIGS[data.rrsId] ?? Q1_CONFIG;
+  const cfg = ISLAND_CONFIGS[data.rrsId] ?? Q3_CONFIG;
   const corners = useMemo(() => hexCorners(cfg), [cfg]);
   const island = useMemo(() => buildIsland(cfg), [cfg]);
+  const ext = useMemo(() => extendedCrop(cfg), [cfg]);
+  const filler = useMemo(() => buildFiller(cfg, ext, new Set(island.map(cellKey))), [cfg, ext, island]);
   const [mascot, setMascot] = useState<Axial>(CAPITAL);
   const off = data.controllerKind === "off";
   const figure = MASCOT_VISUAL[data.mascotId ?? "strateg"] ?? MASCOT_VISUAL.strateg;
-  const clipId = `zrd-mclip-${data.rrsId}`;
 
   const litKeys = useMemo(() => {
     const byDist = [...island].sort((a, b) => {
@@ -233,22 +257,34 @@ function IslandQuarter({ data, interactive }: { data: QuarterData; interactive: 
   return (
     <div style={{ position: "relative", minWidth: 0, minHeight: 0, overflow: "hidden", background: "#0d0f14", opacity: off ? 0.55 : 1, boxShadow: data.isYou ? "inset 0 0 0 2px rgba(255,107,0,0.6)" : "none" }}>
       <svg
-        viewBox={`${cfg.crop.x} ${cfg.crop.y} ${cfg.crop.w} ${cfg.crop.h}`}
-        preserveAspectRatio="xMidYMid meet"
+        viewBox={`${ext.x} ${ext.y} ${ext.w} ${ext.h}`}
+        preserveAspectRatio="xMidYMid slice"
         style={{ position: "absolute", inset: 0, width: "100%", height: "100%", filter: off ? "grayscale(0.85)" : undefined }}
         role={interactive ? "application" : "img"}
         aria-label={interactive
           ? `Ваша территория ${RRS_LABEL[data.rrsId]}: клик по соседней клетке — шаг маскота`
           : `Территория ${RRS_LABEL[data.rrsId]} (${off ? "не задействована" : data.name})`}
       >
-        {/* жёсткий клип по кропу: содержимое за viewBox иначе дорисовывается в letterbox-зоны */}
+        {/* жёсткий клип по расширенному кропу: содержимое за viewBox иначе дорисовывается наружу */}
         <defs>
           <clipPath id={`zrd-crop-${data.rrsId}`}>
+            <rect x={ext.x} y={ext.y} width={ext.w} height={ext.h} />
+          </clipPath>
+          {/* арт клипуется по исходному кропу — белые/грязные края файла не видны */}
+          <clipPath id={`zrd-art-${data.rrsId}`}>
             <rect x={cfg.crop.x} y={cfg.crop.y} width={cfg.crop.w} height={cfg.crop.h} />
           </clipPath>
         </defs>
         <g clipPath={`url(#zrd-crop-${data.rrsId})`}>
-        <image href={cfg.art} x={0} y={0} width={cfg.artW} height={cfg.artH} preserveAspectRatio="xMidYMid meet" />
+        {/* фон + «пустые» гексы вокруг острова: поле региона закрывает всю ячейку без пустот */}
+        <rect x={ext.x} y={ext.y} width={ext.w} height={ext.h} fill="#0b0d12" />
+        {filler.map((c) => (
+          <path key={`f${cellKey(c)}`} d={hexPath(cfg, corners, c, 0.94)}
+            fill="rgba(24,30,42,0.55)" stroke="rgba(140,160,190,0.13)" strokeWidth={2.5} pointerEvents="none" />
+        ))}
+        <g clipPath={`url(#zrd-art-${data.rrsId})`}>
+          <image href={cfg.art} x={0} y={0} width={cfg.artW} height={cfg.artH} preserveAspectRatio="xMidYMid meet" />
+        </g>
 
         {island.map((c) => {
           const key = cellKey(c);
@@ -291,26 +327,27 @@ function IslandQuarter({ data, interactive }: { data: QuarterData; interactive: 
           );
         })}
 
-        {/* маскот-фишка (у чужих — в столице, позиция не синхронизируется) */}
-        {!off && (
-          <>
-            <defs>
-              <clipPath id={clipId}><circle cx={0} cy={-64} r={62} /></clipPath>
-            </defs>
+        {/* маскот — фигурка в полный рост, не выше одного гекса (у чужих — в столице) */}
+        {!off && (() => {
+          const hexW = Math.abs(cfg.col.x - cfg.row.x); // горизонтальный шаг решётки = ширина гекса
+          const FH = hexW * 0.82;                        // высота фигурки — в пределах гекса
+          const FW = FH * 0.62;                          // аспект вырезанных артов ~0.55–0.62
+          return (
             <g style={{ transition: "transform 420ms cubic-bezier(0.22, 1, 0.36, 1)", transform: `translate(${mc.x}px, ${mc.y}px)` }} pointerEvents="none">
-              <ellipse cx={0} cy={20} rx={48} ry={15} fill="rgba(0,0,0,0.5)" />
-              <line x1={0} y1={14} x2={0} y2={-10} stroke={figure.accent} strokeWidth={6} />
+              {/* тень + цветная подставка стиля игрока */}
+              <ellipse cx={0} cy={10} rx={FW * 0.55} ry={FH * 0.07} fill="rgba(0,0,0,0.55)" />
+              <ellipse cx={0} cy={10} rx={FW * 0.58} ry={FH * 0.085} fill="none" stroke={figure.accent} strokeWidth={4} opacity={0.9} />
+              {/* тёмная подложка-силуэт: закрывает огрехи вырезки фона на тёмной одежде */}
+              <ellipse cx={0} cy={-FH * 0.38} rx={FW * 0.28} ry={FH * 0.38} fill="rgba(12,14,18,0.6)" />
               <image
-                href={figure.img}
-                x={-62} y={-126} width={124} height={124}
-                clipPath={`url(#${clipId})`}
-                preserveAspectRatio="xMidYMin slice"
+                href={figure.figure}
+                x={-FW / 2} y={-FH + 6} width={FW} height={FH}
+                preserveAspectRatio="xMidYMax meet"
+                style={{ filter: "drop-shadow(0 6px 12px rgba(0,0,0,0.65))" }}
               />
-              <circle cx={0} cy={-64} r={62} fill="none" stroke={figure.accent} strokeWidth={5}
-                style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.7))" }} />
             </g>
-          </>
-        )}
+          );
+        })()}
         </g>
       </svg>
 

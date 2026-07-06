@@ -780,10 +780,16 @@
 .zrd-deck.is-open .zrd-deck__fan { opacity: 1; transform: translateX(0); pointer-events: auto; }
 .zrd-deck__card {
   position: relative; flex-shrink: 0; cursor: pointer; background: none; border: none; padding: 0;
-  height: var(--zrd-card-h); transition: transform 160ms ease;
+  height: var(--zrd-card-h); transform-origin: center center;
+  transition: transform 180ms cubic-bezier(.2, .7, .3, 1);
 }
-.zrd-deck__card:hover { transform: translateY(-12px); z-index: 50; }
+/* Наведение (без клика) — карта увеличивается >2×, текст читается; клик по-прежнему открывает крупный просмотр */
+.zrd-deck__card:hover, .zrd-deck__card:focus-visible { transform: scale(2.35); z-index: 120; }
+.zrd-deck__card:hover .zrd-cardface img, .zrd-deck__card:focus-visible .zrd-cardface img { box-shadow: 0 18px 44px rgba(0, 0, 0, 0.75); }
 .zrd-deck__card:focus-visible { outline: none; }
+/* у верхних колод рост вниз, у нижних — вверх, чтобы увеличенная карта не уходила за край экрана */
+.zrd-deck-col-r .zrd-deck:nth-child(-n+2) .zrd-deck__card { transform-origin: center 12%; }
+.zrd-deck-col-r .zrd-deck:nth-child(n+5) .zrd-deck__card { transform-origin: center 88%; }
 
 /* Лицо карты: арт + плашка показателей по нижней границе (не перекрывает основной визуал) */
 .zrd-cardface { position: relative; display: block; height: 100%; aspect-ratio: var(--card-aspect); container-type: size; }
@@ -791,16 +797,20 @@
   width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 10px;
   filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.55));
 }
-/* Условия карты-задачи — в нижнем чёрном поле карты (арт уже чёрный, градиент не нужен) */
+/* Условия карты-задачи — в нижнем чёрном поле карты; текст ВСЕГДА в границах карты
+   (размер от ширины карты, перенос, кламп строк — вылезаний нет; читабельность даёт hover-увеличение) */
 .zrd-card-stats {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 34%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5%;
-  padding: 0 7%; pointer-events: none;
+  position: absolute; left: 0; right: 0; bottom: 0; height: 36%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2%;
+  padding: 0 6%; pointer-events: none; overflow: hidden;
 }
 .zrd-card-stat {
-  font-weight: 800; font-size: clamp(9px, 4.6cqh, 17px); line-height: 1.15; white-space: nowrap;
+  font-weight: 800; font-size: clamp(5.5px, 8cqw, 14px); line-height: 1.12;
+  white-space: normal; text-align: center; max-width: 100%;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
+.zrd-card-stat + .zrd-card-stat { -webkit-line-clamp: 1; font-size: clamp(5px, 7cqw, 12px); }
 .zrd-card-stat.is-good { color: #74f0a0; }
 .zrd-card-stat.is-bad { color: #ff8080; }
 
