@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Play, Info, KeyRound, BookOpen } from "lucide-react";
-import { RRS_IDS } from "@shared/zrd/match-types";
-import { createZrdMatch, joinZrdMatch } from "../../zrd-match-api";
+import { createDemoZrdMatch, joinZrdMatch } from "../../zrd-match-api";
 
 interface Props {
   onJoinCode: (code: string) => void;
@@ -24,23 +23,13 @@ export function ZrdLobby({ onJoinCode, onAdoptSeat, loading, error }: Props) {
   const startDemo = async () => {
     setDemoBusy(true); setDemoError(null);
     try {
-      const created = await createZrdMatch({
-        scenario: "conquest",
-        difficulty: 3,
-        winMode: "year",
-        missionMode: "auto",
-        swanFrequency: "standard",
-        minutesPerTick: 6,
-        seats: RRS_IDS.map((rrsId, i) => (i === 0
-          ? { rrsId, controller: "human" as const, participantName: "Демо-игрок" }
-          : { rrsId, controller: "ai" as const, aiLevel: 3 as const })),
-      });
+      const created = await createDemoZrdMatch();
       const humanSeat = created.seats.find((s) => s.controllerKind === "human");
       if (!humanSeat?.accessCode) throw new Error("Код места не получен");
       const joined = await joinZrdMatch(humanSeat.accessCode);
       onAdoptSeat(joined.matchId, joined.seatIdx, joined.token);
     } catch (e) {
-      setDemoError(e instanceof Error ? e.message : "Не удалось создать демо-матч (нужен вход сотрудника)");
+      setDemoError(e instanceof Error ? e.message : "Не удалось создать демо-матч");
     } finally {
       setDemoBusy(false);
     }
@@ -113,7 +102,7 @@ export function ZrdLobby({ onJoinCode, onAdoptSeat, loading, error }: Props) {
       <div className="mt-4 flex items-start gap-2 text-[12px]" style={{ color: "var(--zrd-text-dim)" }}>
         <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" aria-hidden />
         <span>Боевые партии настраивает оценщик в своём кабинете (карточка «ЗРД») и раздаёт коды/ссылки.
-        Демо-матч доступен сотрудникам после служебного входа.</span>
+        Демо-матч запускается сразу, без входа — быстрая проба против трёх ИИ.</span>
       </div>
     </div>
   );

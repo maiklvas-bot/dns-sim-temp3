@@ -773,6 +773,31 @@ export async function registerRoutes(
     }
   });
 
+  // Демо-матч — самообслуживание без служебного входа: 1 человек + 3 ИИ, стандартный сценарий.
+  app.post("/api/zrd/match/demo", apiRateLimiter, (req, res, next) => {
+    try {
+      const created = zrdMatchService.createMatch({
+        evaluatorName: "Демо",
+        evaluatorAccountId: null,
+        scenario: "conquest",
+        difficulty: 3 as Difficulty,
+        winMode: "year",
+        missionMode: "auto",
+        swanFrequency: "standard",
+        minutesPerTick: 6,
+        seats: [
+          { rrsId: "ekb", controller: "human", participantName: "Демо-игрок" },
+          { rrsId: "chel", controller: "ai", aiLevel: 3 },
+          { rrsId: "tmn", controller: "ai", aiLevel: 3 },
+          { rrsId: "perm", controller: "ai", aiLevel: 3 },
+        ],
+      });
+      res.json({ id: created.match.id, seats: created.seats });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_DEMO_FAILED", "Не удалось создать демо-матч.", error));
+    }
+  });
+
   app.post("/api/zrd/match/join", validateBody(joinZrdMatchSchema), (req, res, next) => {
     try {
       const { code } = req.validatedBody as z.infer<typeof joinZrdMatchSchema>;

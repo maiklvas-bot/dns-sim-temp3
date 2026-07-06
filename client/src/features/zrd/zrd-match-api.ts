@@ -45,6 +45,12 @@ export async function createZrdMatch(input: CreateMatchInput): Promise<{ id: num
   return res.json();
 }
 
+/** Демо-матч (1 человек + 3 ИИ) — публичный, без служебного входа. */
+export async function createDemoZrdMatch(): Promise<{ id: number; seats: CreatedMatchSeat[] }> {
+  const res = await apiRequest("POST", "/api/zrd/match/demo");
+  return res.json();
+}
+
 export async function joinZrdMatch(code: string): Promise<{ matchId: number; seatIdx: number; token: string; participantName: string | null }> {
   const res = await apiRequest("POST", "/api/zrd/match/join", { code });
   return res.json();
