@@ -163,4 +163,10 @@ export async function setMatchPaused(matchId: number, paused: boolean): Promise<
   await apiRequest("POST", `/api/zrd/match/${matchId}/pause`, { paused });
 }
 
+/** подключить игрока к запущенной сессии (место ИИ/пустое → человек, выдаётся личный код) */
+export async function attachZrdPlayer(matchId: number, seatIdx: number, participantName: string): Promise<{ accessCode: string }> {
+  const res = await apiRequest("POST", `/api/zrd/match/${matchId}/attach-player`, { seatIdx, participantName });
+  return res.json();
+}
+
 export type { ActiveSwan };

@@ -150,6 +150,27 @@ async function main() {
   check("почта сохранена в состоянии места", Boolean(ctrl && ctrl.kind === "human" && ctrl.email === "vera@dns-shop.ru"));
   check("маскот выбран", seatAfterMascot?.view.you.mascotId === "captain" && seatAfterMascot?.view.you.mascotChosen === true);
 
+  // подключение игроков к ЗАПУЩЕННОЙ сессии: ИИ → человек (перехват) и пусто → человек (поздний вход)
+  const att1 = zrdMatchService.attachHuman(m2, 1, "Перехватчик"); // место 1 = ИИ
+  check("подключение на место ИИ", att1.ok === true && (att1.ok ? att1.accessCode.length === 6 : false));
+  if (att1.ok) {
+    const joined = zrdMatchService.joinSeat(att1.accessCode);
+    check("вход по коду подключённого", joined?.matchId === m2 && joined.seatIdx === 1 && joined.participantName === "Перехватчик");
+    const sv = zrdMatchService.getSeatView(m2, 1);
+    check("место ИИ стало человеком (живое состояние)", sv?.view.you.controller.kind === "human" && sv.view.you.resources.capital > 0);
+    check("подключённый выбирает фигурку сам", sv?.view.you.mascotChosen === false);
+  }
+  const att2 = zrdMatchService.attachHuman(m2, 2, "Поздний"); // место 2 = пусто
+  check("подключение на пустое место", att2.ok === true);
+  if (att2.ok) {
+    const sv2 = zrdMatchService.getSeatView(m2, 2);
+    check("пустое место активировано (стартовые ресурсы и колода)",
+      sv2 != null && sv2.view.you.resources.capital > 0 && Object.values(sv2.view.you.deckCounts).reduce((a, b) => a + b, 0) > 0);
+    check("поздний игрок ждёт следующий месяц", sv2?.view.you.passed === true);
+  }
+  const attTaken = zrdMatchService.attachHuman(m2, 0, "Дубль"); // место 0 уже человек
+  check("занятое место отклонено", !attTaken.ok && attTaken.error === "SEAT_TAKEN");
+
   // листинг матчей для панели «Активные сессии» оценщика (код выдан → матч должен быть виден)
   const list = zrdMatchService.listMatches();
   const listedM1 = list.find((m) => m.id === matchId);

@@ -638,6 +638,12 @@ export const joinZrdMatchSchema = z.object({
   code: z.string().regex(/^[A-Za-z0-9]{6}$/, "Код — 6 символов"),
 });
 
+/** подключение игрока к запущенному матчу (оценщик сажает человека на место ИИ/пустое) */
+export const zrdMatchAttachSchema = z.object({
+  seatIdx: z.number().int().min(0).max(3),
+  participantName: z.string().trim().min(1, "Выберите игрока").max(60),
+});
+
 export const zrdMatchSeatQuerySchema = z.object({
   seat: z.string().regex(/^[0-3]$/, "Место — 0..3"),
 });

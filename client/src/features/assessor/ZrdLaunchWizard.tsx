@@ -17,13 +17,12 @@ import { MISSION_CATALOG, getMission } from "@shared/zrd/content-missions";
 import { BLACK_SWANS } from "@shared/zrd/content-swans";
 import { AI_LEVEL_LABEL } from "../zrd/zrd-player-scenarios";
 import {
-  createZrdMatch, fetchObserverView, triggerMatchSwan, setMatchPaused,
+  createZrdMatch, fetchObserverView, triggerMatchSwan, setMatchPaused, attachZrdPlayer,
   type CreatedMatchSeat, type ObserverResponse,
 } from "../zrd/zrd-match-api";
 
 type SeatMode = "human" | "ai" | "off";
 interface SeatDraft { rrsId: RrsId; mode: SeatMode; name: string; aiLevel: AiLevel }
-const CUSTOM_NAME_OPTION = "__custom__";
 
 const SWAN_FREQ_LABEL: Record<SwanFrequency, string> = {
   off: "Выключены",
@@ -57,8 +56,6 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<{ id: number; seats: CreatedMatchSeat[] } | null>(null);
-  // по умолчанию — выбор из имён шага 1; «Другое» переключает конкретное место на ручной ввод
-  const [customNameSeats, setCustomNameSeats] = useState<Record<number, boolean>>({});
 
   // выбор сценария подтягивает его дефолты (режим победы, лебеди, авто-миссии)
   const pickScenario = (id: ScenarioId) => {
@@ -193,7 +190,6 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
               <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-white/45">2 · Состав стола (4 РРС)</h3>
               <div className="space-y-2">
                 {seats.map((seat, i) => {
-                  const useCustomInput = knownNames.length === 0 || customNameSeats[i];
                   return (
                   <div key={seat.rrsId} className="flex flex-col gap-1.5 rounded-xl border p-2.5" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
                     <div className="flex flex-wrap items-center gap-2">
@@ -211,34 +207,23 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
                               : { borderColor: "rgba(255,255,255,0.12)", color: "#fff", cursor: "pointer" }}>{icon}{label}</button>
                         ))}
                       </div>
+                      {/* имена вводятся ТОЛЬКО на шаге 1 («Кто проходит оценку») — здесь строго выбор игрока */}
                       {seat.mode === "human" && (
-                        useCustomInput ? (
-                          <input
-                            value={seat.name}
-                            onChange={(e) => updateSeat(i, { name: e.target.value })}
-                            placeholder="Имя участника"
-                            aria-label={`Имя участника ${RRS_LABEL[seat.rrsId]}`}
-                            className="min-w-[220px] flex-1 rounded-lg border px-2.5 py-1.5 text-sm text-white"
-                            style={{ borderColor: "rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.04)" }}
-                          />
-                        ) : (
+                        knownNames.length > 0 ? (
                           <select
                             value={knownNames.includes(seat.name) ? seat.name : ""}
-                            onChange={(e) => {
-                              if (e.target.value === CUSTOM_NAME_OPTION) {
-                                setCustomNameSeats((cur) => ({ ...cur, [i]: true }));
-                                updateSeat(i, { name: "" });
-                              } else {
-                                updateSeat(i, { name: e.target.value });
-                              }
-                            }}
-                            aria-label={`Имя участника ${RRS_LABEL[seat.rrsId]}`}
+                            onChange={(e) => updateSeat(i, { name: e.target.value })}
+                            aria-label={`Выбор игрока ${RRS_LABEL[seat.rrsId]}`}
                             className="min-w-[220px] flex-1 rounded-lg border px-2.5 py-1.5 text-sm text-white"
                             style={{ borderColor: "rgba(255,255,255,0.14)", background: "#131b2b", cursor: "pointer" }}>
-                            <option value="" disabled>— выбрать имя участника —</option>
+                            <option value="" disabled>— выбор игрока —</option>
                             {knownNames.map((n) => <option key={n} value={n}>{n}</option>)}
-                            <option value={CUSTOM_NAME_OPTION}>Другое (ввести вручную)…</option>
                           </select>
+                        ) : (
+                          <span className="min-w-[220px] flex-1 rounded-lg border px-2.5 py-1.5 text-xs"
+                            style={{ borderColor: "rgba(232,90,90,0.4)", color: "#ffb4b4" }}>
+                            Сначала добавьте участников на шаге «Кто проходит оценку»
+                          </span>
                         )
                       )}
                       {seat.mode === "ai" && (
@@ -376,7 +361,7 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
             {error && <div className="rounded-lg px-3 py-2 text-sm" style={{ background: "rgba(232,90,90,0.14)", color: "#e85a5a" }}>{error}</div>}
           </div>
         ) : (
-          <ZrdMatchCodesAndMonitor matchId={created.id} seats={created.seats} />
+          <ZrdMatchCodesAndMonitor matchId={created.id} seats={created.seats} knownNames={knownNames} />
         )}
 
         <footer className="flex items-center gap-2 border-t px-5 py-3.5" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
@@ -397,25 +382,30 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
   );
 }
 
-/** Экран после создания: коды входа + мини-наблюдение (поллинг observer-view); переиспользуется и из «Активных сессий» */
-export function ZrdMatchCodesAndMonitor({ matchId, seats }: { matchId: number; seats: CreatedMatchSeat[] }) {
+/** Экран после создания: коды входа + мини-наблюдение (поллинг observer-view); переиспользуется и из «Активных сессий».
+ *  К запущенной сессии можно ПОДКЛЮЧАТЬ игроков: место ИИ/пустое → человек, ему выдаётся личный код. */
+export function ZrdMatchCodesAndMonitor({ matchId, seats, knownNames = [] }: { matchId: number; seats: CreatedMatchSeat[]; knownNames?: string[] }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [obs, setObs] = useState<ObserverResponse | null>(null);
   const [swanId, setSwanId] = useState(BLACK_SWANS[0].id);
   const [swanTarget, setSwanTarget] = useState<RrsId | "all">("all");
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [attachNames, setAttachNames] = useState<Record<number, string>>({});
+  const [attaching, setAttaching] = useState<number | null>(null);
 
+  const load = async () => {
+    try {
+      const data = await fetchObserverView(matchId);
+      setObs(data);
+    } catch { /* повторим на следующем тике */ }
+  };
   useEffect(() => {
     let alive = true;
-    const load = async () => {
-      try {
-        const data = await fetchObserverView(matchId);
-        if (alive) setObs(data);
-      } catch { /* повторим на следующем тике */ }
-    };
-    void load();
-    const t = setInterval(load, 5000);
+    const tick = async () => { if (alive) await load(); };
+    void tick();
+    const t = setInterval(tick, 5000);
     return () => { alive = false; clearInterval(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [matchId]);
 
   const copy = async (text: string, key: string) => {
@@ -426,13 +416,42 @@ export function ZrdMatchCodesAndMonitor({ matchId, seats }: { matchId: number; s
     } catch { /* clipboard недоступен */ }
   };
 
-  const humanSeats = useMemo(() => seats.filter((s) => s.controllerKind === "human"), [seats]);
+  // живой состав мест: после подключения игрока observer отдаёт свежие коды
+  const liveSeats = obs?.seatAccess ?? seats;
+  const humanSeats = useMemo(() => liveSeats.filter((s) => s.controllerKind === "human"), [liveSeats]);
+  const attachableSeats = useMemo(
+    () => (obs && obs.status !== "completed" ? liveSeats.filter((s) => s.controllerKind !== "human") : []),
+    [liveSeats, obs],
+  );
+
+  const attach = async (seatIdx: number) => {
+    const name = (attachNames[seatIdx] ?? "").trim();
+    if (!name) return;
+    setAttaching(seatIdx);
+    setActionMsg(null);
+    try {
+      await attachZrdPlayer(matchId, seatIdx, name);
+      await load();
+      setActionMsg(`Игрок ${name} подключён — передайте ему код`);
+    } catch (e) {
+      setActionMsg(e instanceof Error ? e.message : "Не удалось подключить игрока");
+    } finally {
+      setAttaching(null);
+    }
+  };
 
   return (
     <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
       <section>
-        <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-white/45">Коды входа участников</h3>
-        {humanSeats.length === 0 && <p className="text-sm text-white/50">Людей за столом нет — матч играют ИИ. Наблюдайте ниже.</p>}
+        <h3 className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-white/45">
+          Коды входа участников
+          {/* код сессии: по нему оценщик находит матч в «Активных сессиях» и добавляет игроков */}
+          <span className="ml-auto inline-flex items-center gap-1.5 normal-case">
+            <span className="text-[11px] font-normal text-white/40">Код сессии</span>
+            <code className="rounded-md px-2 py-0.5 text-sm font-extrabold tracking-wider" style={{ background: "rgba(94,177,255,0.14)", color: "#8ec5ff" }}>#{matchId}</code>
+          </span>
+        </h3>
+        {humanSeats.length === 0 && <p className="text-sm text-white/50">Людей за столом нет — матч играют ИИ. Подключите игрока ниже или наблюдайте.</p>}
         <div className="space-y-2">
           {humanSeats.map((s) => (
             <div key={s.seatIdx} className="flex flex-wrap items-center gap-2 rounded-xl border p-3" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
@@ -453,6 +472,46 @@ export function ZrdMatchCodesAndMonitor({ matchId, seats }: { matchId: number; s
           ))}
         </div>
       </section>
+
+      {/* Подключение игроков к запущенной сессии: место ИИ/пустое → человек со своим кодом */}
+      {attachableSeats.length > 0 && (
+        <section>
+          <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.14em] text-white/45">
+            <Users className="h-3.5 w-3.5" aria-hidden /> Подключить игрока к сессии
+          </h3>
+          <div className="space-y-2">
+            {attachableSeats.map((s) => (
+              <div key={s.seatIdx} className="flex flex-wrap items-center gap-2 rounded-xl border p-3" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+                <div className="w-44">
+                  <div className="text-sm font-bold text-white">{RRS_LABEL[s.rrsId]}</div>
+                  <div className="text-[11px] text-white/45">{s.controllerKind === "ai" ? `сейчас ИИ · уровень ${s.aiLevel ?? "—"}` : "место пустое (игрок начнёт со следующего месяца)"}</div>
+                </div>
+                {knownNames.length > 0 ? (
+                  <select
+                    value={attachNames[s.seatIdx] ?? ""}
+                    onChange={(e) => setAttachNames((cur) => ({ ...cur, [s.seatIdx]: e.target.value }))}
+                    aria-label={`Выбор игрока для ${RRS_LABEL[s.rrsId]}`}
+                    className="min-w-[200px] flex-1 rounded-lg border px-2.5 py-1.5 text-sm text-white"
+                    style={{ borderColor: "rgba(255,255,255,0.14)", background: "#131b2b", cursor: "pointer" }}>
+                    <option value="" disabled>— выбор игрока —</option>
+                    {knownNames.map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                ) : (
+                  <span className="flex-1 text-xs text-white/40">Добавьте участников на шаге «Кто проходит оценку», чтобы подключить их сюда</span>
+                )}
+                <button type="button" disabled={!(attachNames[s.seatIdx] ?? "").trim() || attaching === s.seatIdx}
+                  onClick={() => attach(s.seatIdx)}
+                  className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
+                  style={{ borderColor: "rgba(255,107,0,0.5)", color: "#FF6B00", cursor: "pointer" }}>
+                  {attaching === s.seatIdx ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Users className="h-3.5 w-3.5" aria-hidden />}
+                  Подключить
+                </button>
+              </div>
+            ))}
+          </div>
+          {actionMsg && <p className="mt-2 text-xs" style={{ color: "#9fe8c6" }}>{actionMsg}</p>}
+        </section>
+      )}
 
       <section>
         <h3 className="mb-2 flex items-center gap-1.5 text-xs font-bold uppercase tracking-[0.14em] text-white/45">

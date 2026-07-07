@@ -12,6 +12,7 @@ import type {
 import { RRS_IDS } from "@shared/zrd/match-types";
 import {
   initMatch, applySeatIntent, resolveTickIfReady, toSeatView, toObserverView, triggerSwanManually,
+  attachHumanSeat,
 } from "@shared/zrd/match-engine";
 import { chooseSeatIntent } from "@shared/zrd/match-ai";
 import { computeSeatCompetencies } from "@shared/zrd/match-scoring";
@@ -185,6 +186,41 @@ export const zrdMatchService = {
         accessCode: row.accessCode,
       })),
     };
+  },
+
+  /**
+   * Подключение игрока к ЗАПУЩЕННОЙ сессии: оценщик выбирает место (ИИ или пустое),
+   * оно конвертируется в человека, игроку выдаётся личный код входа в рамках этой сессии.
+   */
+  attachHuman(matchId: number, seatIdx: number, participantName: string) {
+    const match = this.refreshMatch(matchId);
+    if (!match) return { ok: false as const, error: "NOT_FOUND" };
+    if (match.status === "completed") return { ok: false as const, error: "GAME_ENDED" };
+
+    const state = parseState(match.stateJson);
+    const res = attachHumanSeat(state, seatIdx, participantName.slice(0, 60) || "Игрок");
+    if (!res.ok) return { ok: false as const, error: res.error ?? "REJECTED" };
+
+    const seatRow = zrdMatchStorage.getSeats(matchId).find((s) => s.seatIdx === seatIdx);
+    if (!seatRow) return { ok: false as const, error: "NO_SEAT_ROW" };
+    // уникальный код в рамках всей таблицы мест (как при создании матча)
+    let accessCode = generateZrdMatchAccessCode();
+    let guard = 0;
+    while (zrdMatchStorage.getSeatByCode(accessCode) && guard++ < 20) accessCode = generateZrdMatchAccessCode();
+    const updated = zrdMatchStorage.updateSeatController(seatRow.id, {
+      controllerKind: "human",
+      participantName: participantName.slice(0, 60) || "Игрок",
+      aiLevel: null,
+      accessCode,
+    });
+
+    zrdMatchStorage.updateMatch(matchId, {
+      stateJson: JSON.stringify(state),
+      configJson: JSON.stringify(state.config),
+      stateVersion: (match.stateVersion ?? 0) + 1,
+    });
+
+    return { ok: true as const, seat: updated, accessCode };
   },
 
   /** вход по коду места: выдаёт свежий seat-токен (последний вход выигрывает) */

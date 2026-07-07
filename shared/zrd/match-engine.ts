@@ -200,6 +200,40 @@ export function initMatch(config: MatchConfig): MatchState {
   return state;
 }
 
+/**
+ * Подключение игрока к запущенному матчу (оценщик сажает человека на место ИИ или пустое).
+ * ИИ → человек: место живое, меняется только контроллер (игрок выбирает фигурку при входе).
+ * Пусто → человек: место активируется стартовым набором (ресурсы/метрики/колода/доход)
+ * и включается в игру со СЛЕДУЮЩЕГО месяца (passed=true до конца текущего такта).
+ */
+export function attachHumanSeat(s: MatchState, seatIdx: number, name: string): { ok: boolean; error?: string } {
+  const seat = s.seats[seatIdx];
+  if (!seat) return { ok: false, error: "NO_SEAT" };
+  if (s.ended) return { ok: false, error: "GAME_ENDED" };
+  if (seat.controller.kind === "human") return { ok: false, error: "SEAT_TAKEN" };
+  const wasOff = seat.controller.kind === "off";
+
+  seat.controller = { kind: "human", name };
+  seat.mascotChosen = false; // фигурку игрок выбирает сам при входе по коду
+  if (s.config.seats[seatIdx]) s.config.seats[seatIdx].controller = seat.controller;
+
+  if (wasOff) {
+    const diff = DIFFICULTY_CONFIGS[s.config.difficulty];
+    const scenario = SCENARIOS[s.config.scenario];
+    seat.resources = { ...diff.startResources };
+    seat.metrics = { ...diff.startMetrics };
+    if (scenario.startTweak?.resources) for (const k of RESOURCE_KEYS) seat.resources[k] = Math.max(0, seat.resources[k] + (scenario.startTweak.resources[k] ?? 0));
+    if (scenario.startTweak?.metrics) for (const k of METRIC_KEYS) seat.metrics[k] = clampMetric(seat.metrics[k] + (scenario.startTweak.metrics[k] ?? 0));
+    const sh = shuffle(MATCH_DECK_CARDS.map((c) => c.id), (s.config.seed ^ (seatIdx * 7919) ^ (s.tick * 104729)) >>> 0);
+    seat.deck = sh.arr;
+    seat.incomeMonthly = INCOME_MONTHLY[s.config.difficulty];
+    seat.resourceProd = { ...diff.startProd };
+    seat.passed = true; // текущий месяц пропускает — играет со следующего
+    seat.actionsLeft = 0;
+  }
+  return { ok: true };
+}
+
 function beginTick(s: MatchState): void {
   for (const seat of s.seats) {
     if (!isActive(seat)) continue;

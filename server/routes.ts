@@ -53,6 +53,7 @@ import {
   zrdIntentSchema,
   createZrdMatchSchema,
   joinZrdMatchSchema,
+  zrdMatchAttachSchema,
   zrdMatchSeatQuerySchema,
   zrdMatchIntentSchema,
   zrdMatchSwanSchema,
@@ -874,6 +875,29 @@ export async function registerRoutes(
       res.json({ view: result.view, version: result.version });
     } catch (error) {
       next(internalApiError("ZRD_MATCH_MASCOT_FAILED", "Не удалось выбрать фигурку.", error));
+    }
+  });
+
+  // Подключение игрока к запущенной сессии: оценщик сажает человека на место ИИ/пустое,
+  // игроку выдаётся личный код входа в рамках этой сессии.
+  app.post("/api/zrd/match/:id/attach-player", validateParams(sessionIdParamSchema), requireStaff, validateBody(zrdMatchAttachSchema), (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const { seatIdx, participantName } = req.validatedBody as z.infer<typeof zrdMatchAttachSchema>;
+      const result = zrdMatchService.attachHuman(id, seatIdx, participantName);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Не удалось подключить игрока", code: "ZRD_MATCH_ATTACH_REJECTED", error: result.error });
+      }
+      recordAudit(req, {
+        area: req.session.staff?.role === "admin" ? "admin" : "evaluator",
+        action: "zrd_player_attached",
+        entityType: "zrd-match",
+        entityId: id,
+        summary: `К матчу ЗРД #${id} подключён игрок ${participantName} (место ${seatIdx})`,
+      });
+      res.json({ ok: true, seatIdx, accessCode: result.accessCode });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_ATTACH_FAILED", "Не удалось подключить игрока.", error));
     }
   });
 

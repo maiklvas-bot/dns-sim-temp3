@@ -67,6 +67,11 @@ export class ZrdMatchStorage {
     return db.update(zrdMatchSeats).set({ tokenHash }).where(eq(zrdMatchSeats.id, seatId)).returning().get();
   }
 
+  /** конверсия места (подключение игрока к запущенному матчу): контроллер + имя + код входа */
+  updateSeatController(seatId: number, patch: { controllerKind: string; participantName: string | null; aiLevel: number | null; accessCode: string | null }) {
+    return db.update(zrdMatchSeats).set(patch).where(eq(zrdMatchSeats.id, seatId)).returning().get();
+  }
+
   addTurn(input: InsertZrdMatchTurn) {
     return db.insert(zrdMatchTurns).values({ ...input, createdAt: new Date().toISOString() }).returning().get();
   }
