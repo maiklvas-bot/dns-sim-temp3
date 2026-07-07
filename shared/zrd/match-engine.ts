@@ -414,12 +414,21 @@ export function resolveTickIfReady(prev: MatchState): MatchState {
     }
   }
 
-  // 7) гонка: первый выполнивший ключевую миссию завершает матч
+  // 7) гонка: первый, кто дотянул целевой KPI до цели финиша, завершает матч.
+  // Оценщик может настроить цель (KPI + значение) в мастере запуска — тогда она замещает
+  // встроенный quarterTargets[3] ключевой миссии; без настройки цель берётся из ключевой миссии (как раньше).
   if (s.config.winMode === "race") {
-    const finishers = s.seats.map((seat, idx) => ({ seat, idx })).filter(({ seat }) => isActive(seat) && seat.missionDone[s.config.keyMissionId]);
-    if (finishers.length > 0) {
-      endMatch(s, finishers.map((f) => f.idx));
-      return s;
+    const keyMission = getMission(s.config.keyMissionId);
+    const targetKpi = s.config.raceTargetKpi ?? keyMission?.kpi;
+    const targetValue = s.config.raceTargetValue ?? keyMission?.quarterTargets[3];
+    if (targetKpi != null && targetValue != null) {
+      const finishers = s.seats
+        .map((seat, idx) => ({ seat, idx }))
+        .filter(({ seat }) => isActive(seat) && computeKpi(seat)[targetKpi] >= targetValue);
+      if (finishers.length > 0) {
+        endMatch(s, finishers.map((f) => f.idx));
+        return s;
+      }
     }
   }
 

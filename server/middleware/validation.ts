@@ -619,6 +619,9 @@ export const createZrdMatchSchema = z.object({
   missionMode: z.enum(["auto", "manual"]).optional().default("auto"),
   missionIds: z.array(z.string().regex(/^m_[a-z_]+$/).max(40)).max(6).optional(),
   keyMissionId: z.string().regex(/^m_[a-z_]+$/).max(40).optional(),
+  /** «Гонка»: настраиваемая цель финиша (KPI + значение), замещает встроенный порог ключевой миссии */
+  raceTargetKpi: z.enum(["sales_growth", "market_coverage", "efficiency", "service_level", "logistics", "staffing"]).optional(),
+  raceTargetValue: z.number().int().min(1).max(100).optional(),
   swanFrequency: z.enum(["off", "rare", "standard", "storm"]).optional().default("standard"),
   minutesPerTick: z.number().int().min(2).max(15).optional().default(6),
   seed: z.number().int().min(0).max(2147483647).optional(),

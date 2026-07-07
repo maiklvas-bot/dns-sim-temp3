@@ -5,7 +5,7 @@
  */
 import { apiRequest, getCsrfToken } from "@/lib/queryClient";
 import type {
-  RrsId, ScenarioId, WinMode, MissionMode, SwanFrequency, AiLevel, MascotId,
+  RrsId, ScenarioId, WinMode, MissionMode, SwanFrequency, AiLevel, MascotId, KpiId,
   SeatIntent, ZrdSeatView, ZrdObserverView, ActiveSwan, ZrdMatchListItem,
 } from "@shared/zrd/match-types";
 import type { Difficulty, CompetencyScores } from "@shared/zrd/types";
@@ -25,6 +25,8 @@ export interface CreateMatchInput {
   missionMode: MissionMode;
   missionIds?: string[];
   keyMissionId?: string;
+  raceTargetKpi?: KpiId;
+  raceTargetValue?: number;
   swanFrequency: SwanFrequency;
   minutesPerTick: number;
   seats: CreateMatchSeatInput[];

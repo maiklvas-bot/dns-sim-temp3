@@ -757,6 +757,8 @@ export async function registerRoutes(
         missionMode: body.missionMode,
         missionIds: body.missionIds,
         keyMissionId: body.keyMissionId,
+        raceTargetKpi: body.raceTargetKpi,
+        raceTargetValue: body.raceTargetValue,
         swanFrequency: body.swanFrequency,
         minutesPerTick: body.minutesPerTick,
         seed: body.seed,

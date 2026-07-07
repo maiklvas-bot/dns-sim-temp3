@@ -162,6 +162,9 @@ export interface MatchConfig {
   /** выбранные миссии (manual) или копия набора сценария (auto) */
   missionIds: string[];
   keyMissionId: string;
+  /** «Гонка»: настраиваемая цель финиша (переопределяет встроенный quarterTargets[3] ключевой миссии) */
+  raceTargetKpi?: KpiId;
+  raceTargetValue?: number;
   swanFrequency: SwanFrequency;
   /** темп: минут реального времени на такт (следит сервер; движок времени не знает) */
   minutesPerTick: number;

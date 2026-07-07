@@ -9,10 +9,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Difficulty } from "@shared/zrd/types";
-import type { RrsId, ScenarioId, WinMode, MissionMode, SwanFrequency, AiLevel } from "@shared/zrd/match-types";
-import { RRS_IDS, RRS_LABEL } from "@shared/zrd/match-types";
+import type { RrsId, ScenarioId, WinMode, MissionMode, SwanFrequency, AiLevel, KpiId } from "@shared/zrd/match-types";
+import { RRS_IDS, RRS_LABEL, KPI_IDS } from "@shared/zrd/match-types";
+import { KPI_LABEL } from "@shared/zrd/kpi";
 import { SCENARIOS, SCENARIO_IDS } from "@shared/zrd/content-scenarios";
-import { MISSION_CATALOG } from "@shared/zrd/content-missions";
+import { MISSION_CATALOG, getMission } from "@shared/zrd/content-missions";
 import { BLACK_SWANS } from "@shared/zrd/content-swans";
 import { AI_LEVEL_LABEL } from "../zrd/zrd-player-scenarios";
 import {
@@ -44,6 +45,10 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
   const [missionMode, setMissionMode] = useState<MissionMode>("auto");
   const [missionIds, setMissionIds] = useState<string[]>(SCENARIOS.conquest.missionIds);
   const [keyMissionId, setKeyMissionId] = useState<string>(SCENARIOS.conquest.keyMissionId);
+  // «Гонка»: своя цель финиша вместо встроенного порога ключевой миссии (KPI гарантированно связан с картами — computeKpi считается из тех же ресурсов/метрик, что и все остальные миссии)
+  const [customRaceTarget, setCustomRaceTarget] = useState(false);
+  const [raceTargetKpi, setRaceTargetKpi] = useState<KpiId>("sales_growth");
+  const [raceTargetValue, setRaceTargetValue] = useState(75);
   const [swanFrequency, setSwanFrequency] = useState<SwanFrequency>("standard");
   const [minutesPerTick, setMinutesPerTick] = useState(6);
   const [seats, setSeats] = useState<SeatDraft[]>(
@@ -93,6 +98,8 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
         missionMode,
         missionIds: missionMode === "manual" ? missionIds : undefined,
         keyMissionId: winMode === "race" ? keyMissionId : undefined,
+        raceTargetKpi: winMode === "race" && customRaceTarget ? raceTargetKpi : undefined,
+        raceTargetValue: winMode === "race" && customRaceTarget ? raceTargetValue : undefined,
         swanFrequency,
         minutesPerTick,
         seats: seats.map((s) => ({
@@ -304,7 +311,33 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
                   );
                 })}
               </div>
-              {winMode === "race" && <p className="mt-1.5 text-[11px] text-white/40">Режим «Гонка»: побеждает первый, кто выполнит миссию с короной.</p>}
+              {winMode === "race" && (
+                <div className="mt-2 rounded-lg border p-2.5" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
+                  <p className="text-[11px] text-white/40">
+                    Режим «Гонка»: побеждает первый, кто дотянет KPI миссии с короной до цели.
+                    По умолчанию цель — встроенный порог миссии ({getMission(keyMissionId)?.quarterTargets[3] ?? "—"}%
+                    {" "}{KPI_LABEL[getMission(keyMissionId)?.kpi ?? "sales_growth"]}).
+                  </p>
+                  <label className="mt-2 flex items-center gap-2 text-xs text-white">
+                    <input type="checkbox" checked={customRaceTarget} onChange={(e) => setCustomRaceTarget(e.target.checked)} style={{ cursor: "pointer" }} />
+                    Своя цель финиша (не миссия, а любой KPI + значение)
+                  </label>
+                  {customRaceTarget && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <select value={raceTargetKpi} onChange={(e) => setRaceTargetKpi(e.target.value as KpiId)}
+                        aria-label="Целевой KPI гонки"
+                        className="rounded-lg border px-2 py-1.5 text-xs text-white" style={{ borderColor: "rgba(255,255,255,0.14)", background: "#131b2b", cursor: "pointer" }}>
+                        {KPI_IDS.map((k) => <option key={k} value={k}>{KPI_LABEL[k]}</option>)}
+                      </select>
+                      <input type="number" min={1} max={100} value={raceTargetValue}
+                        onChange={(e) => setRaceTargetValue(Math.max(1, Math.min(100, Number(e.target.value) || 1)))}
+                        aria-label="Целевое значение KPI (1-100)"
+                        className="w-20 rounded-lg border px-2 py-1.5 text-xs text-white" style={{ borderColor: "rgba(255,255,255,0.14)", background: "#131b2b" }} />
+                      <span className="text-xs text-white/40">% — первый, кто достигнет, побеждает</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
 
             {/* Шаг 4 — чёрные лебеди */}

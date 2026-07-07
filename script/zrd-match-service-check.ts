@@ -158,6 +158,24 @@ async function main() {
   check("листинг: завершённый матч помечен completed", listedM1?.status === "completed");
   check("листинг: коды и имена мест на месте", listedM2?.seats.some((s) => s.accessCode && s.participantName === "Вера") ?? false);
 
+  // «Гонка» с настраиваемой целью финиша: цель ниже стартового KPI efficiency (база 40) → матч
+  // должен завершиться сразу же (тик 1), а не по встроенному порогу ключевой миссии.
+  const raceCustom = zrdMatchService.createMatch({
+    evaluatorName: "Оценщик", evaluatorAccountId: null, scenario: "efficiency", difficulty: 3,
+    winMode: "race", missionMode: "auto", swanFrequency: "off", minutesPerTick: 6, seed: 555,
+    raceTargetKpi: "efficiency", raceTargetValue: 35,
+    seats: [
+      { rrsId: RRS_IDS[0], controller: "human", participantName: "Гонщик" },
+      { rrsId: RRS_IDS[1], controller: "off" },
+      { rrsId: RRS_IDS[2], controller: "off" },
+      { rrsId: RRS_IDS[3], controller: "off" },
+    ],
+  });
+  zrdMatchService.applyIntent(raceCustom.match.id, 0, { kind: "pass" });
+  const raceView = zrdMatchService.getSeatView(raceCustom.match.id, 0);
+  check("гонка с своей целью: матч завершён сразу (цель ниже стартового KPI)", raceView?.view.matchEnded === true, `tick=${raceView?.view.tick}`);
+  check("гонка с своей целью: победитель определён", (raceView?.view.winnerSeat ?? null) === 0);
+
   if (failures > 0) { console.error(`\n${failures} проверок провалено`); process.exit(1); }
   console.log("\nВсе проверки сервиса матча пройдены.");
 }

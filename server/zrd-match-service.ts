@@ -7,7 +7,7 @@
 import type { CompetencyScores, Difficulty } from "@shared/zrd/types";
 import type {
   MatchConfig, MatchState, SeatIntent, SeatSetup, RrsId, ScenarioId, WinMode, MissionMode,
-  SwanFrequency, AiLevel, MascotId, ZrdMatchListItem,
+  SwanFrequency, AiLevel, MascotId, ZrdMatchListItem, KpiId,
 } from "@shared/zrd/match-types";
 import { RRS_IDS } from "@shared/zrd/match-types";
 import {
@@ -38,6 +38,9 @@ export interface CreateZrdMatchInput {
   /** для manual; в auto берётся набор сценария */
   missionIds?: string[];
   keyMissionId?: string;
+  /** «Гонка»: настраиваемая цель финиша (замещает встроенный quarterTargets[3] ключевой миссии) */
+  raceTargetKpi?: KpiId;
+  raceTargetValue?: number;
   swanFrequency: SwanFrequency;
   minutesPerTick: number;
   seats: CreateZrdMatchSeatInput[]; // ровно 4, порядок = RRS_IDS
@@ -130,6 +133,8 @@ export const zrdMatchService = {
       missionMode: input.missionMode,
       missionIds,
       keyMissionId,
+      raceTargetKpi: input.winMode === "race" ? input.raceTargetKpi : undefined,
+      raceTargetValue: input.winMode === "race" ? input.raceTargetValue : undefined,
       swanFrequency: input.swanFrequency,
       minutesPerTick: Math.max(2, Math.min(15, input.minutesPerTick)),
       seats,
