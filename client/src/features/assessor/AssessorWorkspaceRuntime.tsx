@@ -541,6 +541,13 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     visibleParticipantSetups.findIndex((item) => item.id === activeParticipantId),
   );
   const activeParticipantLabel = participantName.trim() || `Участник ${activeParticipantIndex + 1}`;
+  // имена, уже введённые на шаге 1 («Кто проходит оценку») — ЗРД-мастер выбирает из них, а не переспрашивает
+  const knownParticipantNames = useMemo(() => {
+    const names = [participantName, ...visibleParticipantSetups.map((p) => p.name)]
+      .map((n) => n.trim())
+      .filter(Boolean);
+    return Array.from(new Set(names));
+  }, [participantName, visibleParticipantSetups]);
   const isSetupReadyToLaunch = (setup: AssessorParticipantConfig) => getSetupValidation(setup).readyToLaunch;
   const readyParticipantSetups = visibleParticipantSetups.filter(isSetupReadyToLaunch);
 
@@ -1770,7 +1777,12 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
             {renderSidePanel()}
           </div>
         )}
-        {zrdWizardOpen && <ZrdLaunchWizard onClose={() => setZrdWizardOpen(false)} />}
+        {zrdWizardOpen && (
+          <ZrdLaunchWizard
+            onClose={() => setZrdWizardOpen(false)}
+            knownNames={knownParticipantNames}
+          />
+        )}
         <ProductFooter />
       </div>
     </div>

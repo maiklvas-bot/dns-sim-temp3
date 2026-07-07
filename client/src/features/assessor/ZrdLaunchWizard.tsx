@@ -22,6 +22,7 @@ import {
 
 type SeatMode = "human" | "ai" | "off";
 interface SeatDraft { rrsId: RrsId; mode: SeatMode; name: string; aiLevel: AiLevel }
+const CUSTOM_NAME_OPTION = "__custom__";
 
 const SWAN_FREQ_LABEL: Record<SwanFrequency, string> = {
   off: "Выключены",
@@ -34,7 +35,9 @@ function joinLink(matchId: number, code: string): string {
   return `${window.location.origin}/?id=${matchId}&seat=${code}#/zrd`;
 }
 
-export function ZrdLaunchWizard({ onClose }: { onClose: () => void }) {
+/** Оценщик заводит ФИО участников один раз на шаге 1 («Кто проходит оценку»);
+ *  здесь — только выбор из уже введённых имён (плюс ручной ввод как запасной путь). */
+export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => void; knownNames?: string[] }) {
   const [scenario, setScenario] = useState<ScenarioId>("conquest");
   const [difficulty, setDifficulty] = useState<Difficulty>(3);
   const [winMode, setWinMode] = useState<WinMode>("year");
@@ -49,6 +52,8 @@ export function ZrdLaunchWizard({ onClose }: { onClose: () => void }) {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<{ id: number; seats: CreatedMatchSeat[] } | null>(null);
+  // по умолчанию — выбор из имён шага 1; «Другое» переключает конкретное место на ручной ввод
+  const [customNameSeats, setCustomNameSeats] = useState<Record<number, boolean>>({});
 
   // выбор сценария подтягивает его дефолты (режим победы, лебеди, авто-миссии)
   const pickScenario = (id: ScenarioId) => {
@@ -180,54 +185,77 @@ export function ZrdLaunchWizard({ onClose }: { onClose: () => void }) {
             <section>
               <h3 className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-white/45">2 · Состав стола (4 РРС)</h3>
               <div className="space-y-2">
-                {seats.map((seat, i) => (
-                  <div key={seat.rrsId} className="flex flex-wrap items-center gap-2 rounded-xl border p-2.5" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
-                    <div className="w-44 text-sm font-bold text-white">{RRS_LABEL[seat.rrsId]}</div>
-                    <div className="flex gap-1" role="group" aria-label={`Контроллер ${RRS_LABEL[seat.rrsId]}`}>
-                      {([
-                        ["human", "Человек", <Users key="h" className="h-3.5 w-3.5" aria-hidden />],
-                        ["ai", "ИИ", <Bot key="a" className="h-3.5 w-3.5" aria-hidden />],
-                        ["off", "Пусто", <CircleOff key="o" className="h-3.5 w-3.5" aria-hidden />],
-                      ] as [SeatMode, string, React.ReactNode][]).map(([mode, label, icon]) => (
-                        <button key={mode} type="button" onClick={() => updateSeat(i, { mode })} aria-pressed={seat.mode === mode}
-                          className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold"
-                          style={seat.mode === mode
-                            ? { borderColor: "#FF6B00", background: "rgba(255,107,0,0.14)", color: "#FF6B00", cursor: "pointer" }
-                            : { borderColor: "rgba(255,255,255,0.12)", color: "#fff", cursor: "pointer" }}>{icon}{label}</button>
-                      ))}
+                {seats.map((seat, i) => {
+                  const useCustomInput = knownNames.length === 0 || customNameSeats[i];
+                  return (
+                  <div key={seat.rrsId} className="flex flex-col gap-1.5 rounded-xl border p-2.5" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="w-44 text-sm font-bold text-white">{RRS_LABEL[seat.rrsId]}</div>
+                      <div className="flex gap-1" role="group" aria-label={`Контроллер ${RRS_LABEL[seat.rrsId]}`}>
+                        {([
+                          ["human", "Человек", <Users key="h" className="h-3.5 w-3.5" aria-hidden />],
+                          ["ai", "ИИ", <Bot key="a" className="h-3.5 w-3.5" aria-hidden />],
+                          ["off", "Пусто", <CircleOff key="o" className="h-3.5 w-3.5" aria-hidden />],
+                        ] as [SeatMode, string, React.ReactNode][]).map(([mode, label, icon]) => (
+                          <button key={mode} type="button" onClick={() => updateSeat(i, { mode })} aria-pressed={seat.mode === mode}
+                            className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold"
+                            style={seat.mode === mode
+                              ? { borderColor: "#FF6B00", background: "rgba(255,107,0,0.14)", color: "#FF6B00", cursor: "pointer" }
+                              : { borderColor: "rgba(255,255,255,0.12)", color: "#fff", cursor: "pointer" }}>{icon}{label}</button>
+                        ))}
+                      </div>
+                      {seat.mode === "human" && (
+                        useCustomInput ? (
+                          <input
+                            value={seat.name}
+                            onChange={(e) => updateSeat(i, { name: e.target.value })}
+                            placeholder="Имя участника"
+                            aria-label={`Имя участника ${RRS_LABEL[seat.rrsId]}`}
+                            className="min-w-[220px] flex-1 rounded-lg border px-2.5 py-1.5 text-sm text-white"
+                            style={{ borderColor: "rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.04)" }}
+                          />
+                        ) : (
+                          <select
+                            value={knownNames.includes(seat.name) ? seat.name : ""}
+                            onChange={(e) => {
+                              if (e.target.value === CUSTOM_NAME_OPTION) {
+                                setCustomNameSeats((cur) => ({ ...cur, [i]: true }));
+                                updateSeat(i, { name: "" });
+                              } else {
+                                updateSeat(i, { name: e.target.value });
+                              }
+                            }}
+                            aria-label={`Имя участника ${RRS_LABEL[seat.rrsId]}`}
+                            className="min-w-[220px] flex-1 rounded-lg border px-2.5 py-1.5 text-sm text-white"
+                            style={{ borderColor: "rgba(255,255,255,0.14)", background: "#131b2b", cursor: "pointer" }}>
+                            <option value="" disabled>— выбрать имя участника —</option>
+                            {knownNames.map((n) => <option key={n} value={n}>{n}</option>)}
+                            <option value={CUSTOM_NAME_OPTION}>Другое (ввести вручную)…</option>
+                          </select>
+                        )
+                      )}
+                      {seat.mode === "ai" && (
+                        <label className="flex items-center gap-2 text-xs text-white/60">
+                          Уровень
+                          <select
+                            value={seat.aiLevel}
+                            onChange={(e) => updateSeat(i, { aiLevel: Number(e.target.value) as AiLevel })}
+                            className="rounded-lg border px-2 py-1.5 text-sm text-white"
+                            style={{ borderColor: "rgba(255,255,255,0.14)", background: "#131b2b", cursor: "pointer" }}>
+                            {([1, 2, 3, 4, 5] as AiLevel[]).map((l) => (
+                              <option key={l} value={l}>{l} — {AI_LEVEL_LABEL[l]}</option>
+                            ))}
+                          </select>
+                        </label>
+                      )}
                     </div>
+                    {/* фигурку и корпоративную почту участник укажет САМ при входе по коду — оценщик задаёт только настройки */}
                     {seat.mode === "human" && (
-                      <>
-                        <input
-                          value={seat.name}
-                          onChange={(e) => updateSeat(i, { name: e.target.value })}
-                          placeholder="Имя участника"
-                          aria-label={`Имя участника ${RRS_LABEL[seat.rrsId]}`}
-                          className="min-w-[140px] flex-1 rounded-lg border px-2.5 py-1.5 text-sm text-white"
-                          style={{ borderColor: "rgba(255,255,255,0.14)", background: "rgba(255,255,255,0.04)" }}
-                        />
-                        {/* фигурку игрок выбирает САМ при входе по коду — оценщик задаёт только настройки */}
-                        <span className="w-full text-[10px] text-white/40 sm:w-auto">
-                          Фигурку участник выберет сам при входе по коду
-                        </span>
-                      </>
-                    )}
-                    {seat.mode === "ai" && (
-                      <label className="flex items-center gap-2 text-xs text-white/60">
-                        Уровень
-                        <select
-                          value={seat.aiLevel}
-                          onChange={(e) => updateSeat(i, { aiLevel: Number(e.target.value) as AiLevel })}
-                          className="rounded-lg border px-2 py-1.5 text-sm text-white"
-                          style={{ borderColor: "rgba(255,255,255,0.14)", background: "#131b2b", cursor: "pointer" }}>
-                          {([1, 2, 3, 4, 5] as AiLevel[]).map((l) => (
-                            <option key={l} value={l}>{l} — {AI_LEVEL_LABEL[l]}</option>
-                          ))}
-                        </select>
-                      </label>
+                      <span className="text-[10px] text-white/40">Фигурку и почту для связи участник укажет сам при входе по коду</span>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
               <p className="mt-1.5 text-[11px] text-white/40">Любые комбинации: соло против ИИ, люди друг против друга, часть столов можно оставить пустыми.</p>
             </section>

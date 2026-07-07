@@ -44,8 +44,7 @@ export function ZrdBoardBuild({ view, openDeck, onToggleDeck, onStandard, onPlay
         <div className="min-h-0 flex-1 overflow-hidden"><ZrdPanelProjects view={view} /></div>
       </div>
 
-      {/* Центр: сверху «Миссия» + «Событие раунда» + «Чёрный лебедь»;
-          ниже — единая карта дивизиона, панели РРС по бокам (лев: места 0–1, прав: 2–3) */}
+      {/* Центр: сверху «Миссия» + «Событие раунда» + «Чёрный лебедь»; ниже — карта дивизиона (слот под арт) */}
       <div className="flex min-w-0 flex-1 flex-col gap-2 py-1">
         <div className="flex shrink-0 gap-2" style={{ height: "calc((100% - 32px) / 5)", minHeight: 120 }}>
           <div className="min-w-0 flex-1 overflow-hidden"><ZrdMissionPanel view={view} /></div>
@@ -54,32 +53,25 @@ export function ZrdBoardBuild({ view, openDeck, onToggleDeck, onStandard, onPlay
             <ZrdClosingBlock view={view} onReact={onReactSwan} />
           </div>
         </div>
-        <div className="flex min-h-0 flex-1 gap-2">
-          {/* левый борт: РРС 0–1 + Сброс */}
-          <div className="flex w-[205px] flex-shrink-0 flex-col gap-2 min-h-0">
-            <div className="min-h-0 flex-1 overflow-hidden"><ZrdTerritories view={view} pick={[0, 1]} vertical /></div>
-            <div className="h-[80px] shrink-0"><ZrdDiscard view={view} only="discard" /></div>
-          </div>
-          {/* единая карта дивизиона; кнопка завершения хода поверх */}
-          <div className="relative min-h-0 min-w-0 flex-1 overflow-hidden rounded-xl border"
-            style={{ borderColor: "rgba(255,107,0,0.16)", background: "#111318" }}>
-            <ZrdIslandMap view={view} />
-            <button
-              type="button"
-              onClick={onPass}
-              disabled={!canPass}
-              className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-xl px-6 py-2.5 text-sm font-extrabold text-white transition-opacity disabled:opacity-40"
-              style={{ background: "#FF6B00", cursor: canPass ? "pointer" : "default", boxShadow: "0 6px 18px rgba(0,0,0,0.5)" }}
-              title={view.you.pendingEvent ? "Сначала решите событие квартала" : view.you.passed ? "Ход завершён — ждём остальных" : "Завершить ход месяца"}
-            >
-              {view.you.passed ? "Ход завершён — ждём остальных" : `Завершить месяц (осталось действий: ${view.you.actionsLeft})`}
-            </button>
-          </div>
-          {/* правый борт: РРС 2–3 + Раздача */}
-          <div className="flex w-[205px] flex-shrink-0 flex-col gap-2 min-h-0">
-            <div className="min-h-0 flex-1 overflow-hidden"><ZrdTerritories view={view} pick={[2, 3]} vertical /></div>
-            <div className="h-[80px] shrink-0"><ZrdDiscard view={view} only="deal" /></div>
-          </div>
+        {/* Центр — единая карта дивизиона (4 РРС); кнопка завершения хода поверх */}
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border"
+          style={{ borderColor: "rgba(255,107,0,0.16)", background: "#111318" }}>
+          <ZrdIslandMap view={view} />
+          <button
+            type="button"
+            onClick={onPass}
+            disabled={!canPass}
+            className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-xl px-6 py-2.5 text-sm font-extrabold text-white transition-opacity disabled:opacity-40"
+            style={{ background: "#FF6B00", cursor: canPass ? "pointer" : "default", boxShadow: "0 6px 18px rgba(0,0,0,0.5)" }}
+            title={view.you.pendingEvent ? "Сначала решите событие квартала" : view.you.passed ? "Ход завершён — ждём остальных" : "Завершить ход месяца"}
+          >
+            {view.you.passed ? "Ход завершён — ждём остальных" : `Завершить месяц (осталось действий: ${view.you.actionsLeft})`}
+          </button>
+        </div>
+        {/* Нижняя полоса: 4 РРС + колода сброса */}
+        <div className="flex shrink-0 gap-2" style={{ height: "calc((100% - 32px) / 5)", minHeight: 120 }}>
+          <div className="min-w-0 flex-1 overflow-hidden"><ZrdTerritories view={view} /></div>
+          <ZrdDiscard view={view} />
         </div>
       </div>
 

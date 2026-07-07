@@ -742,7 +742,12 @@
 /* ── Колоды слева (board): универсальная дека (оригинальная стопка + веер карт) ── */
 /* --zrd-card-h — высота карт в РАСКРЫТОМ веере (крупные, читаемые).
    --zrd-pile-h — высота СВЁРНУТОЙ стопки-обложки (может быть меньше; в колонке авто-масштаб). */
-.zrd-deck { --acc: #2ec27e; --card-aspect: 186 / 432; --zrd-card-h: clamp(120px, 15vh, 158px); --zrd-pile-h: var(--zrd-card-h); position: relative; display: inline-flex; align-items: flex-end; }
+.zrd-deck { --acc: #2ec27e; --card-aspect: 186 / 432; --zrd-card-h: clamp(120px, 15vh, 158px); --zrd-pile-h: var(--zrd-card-h); position: relative; z-index: 1; display: inline-flex; align-items: flex-end; }
+/* открытая колода — весь её блок (стопка + веер + увеличенная по hover карта) всегда физически
+   и по хиттесту НАД остальными (закрытыми) колодами, независимо от геометрического наложения
+   вееров и от порядка в DOM — иначе при равном z-index соседних .zrd-deck__fan побеждал DOM-порядок,
+   и наведённая карта одной колоды визуально «подменялась» соседней (баг «Сервис открывает другое меню»). */
+.zrd-deck.is-open { z-index: 100; }
 
 /* Колонка колод справа: стопки друг под другом, ДЕЛЯТ высоту поровну (flex:1) — 6 колод влезают при любой высоте окна.
    Колода = карта: высота карт веера = высоте стопки (обе = высоте слота колонки). */
@@ -823,14 +828,15 @@
   transition: transform 200ms cubic-bezier(.2, .7, .3, 1), border-color 160ms ease, box-shadow 200ms ease;
   transform-origin: center 85%;
 }
-.zrd-mascot-pick img { height: 150px; width: auto; filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.6)); transition: transform 200ms cubic-bezier(.2, .7, .3, 1); }
+/* transform-origin: bottom — доп. увеличение картинки растёт только ВВЕРХ и не наезжает на подпись под ней */
+.zrd-mascot-pick img { height: 150px; width: auto; transform-origin: center bottom; filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.6)); transition: transform 200ms cubic-bezier(.2, .7, .3, 1); }
 .zrd-mascot-pick__name { font-size: 14px; font-weight: 800; color: var(--zrd-text); }
 .zrd-mascot-pick__style { font-size: 10.5px; line-height: 1.3; color: var(--zrd-text-dim); }
 .zrd-mascot-pick:hover, .zrd-mascot-pick:focus-visible {
   transform: scale(1.22); z-index: 10; outline: none;
   border-color: var(--acc); box-shadow: 0 0 0 2px color-mix(in srgb, var(--acc) 45%, transparent), 0 18px 40px rgba(0, 0, 0, 0.55);
 }
-.zrd-mascot-pick:hover img { transform: scale(1.35) translateY(-8px); }
+.zrd-mascot-pick:hover img { transform: scale(1.35); }
 .zrd-mascot-pick:disabled { opacity: 0.55; cursor: wait; }
 
 .zrd-deck__overlay {

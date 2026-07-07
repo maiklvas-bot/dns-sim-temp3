@@ -25,14 +25,18 @@ interface Axial { q: number; r: number }
 interface Pt { x: number; y: number }
 const cellKey = (c: Axial) => `${c.q},${c.r}`;
 
-/** решётка одного блока: столица (0,0) + базис + прямоугольник блока + точечные вырезы */
+/** решётка одного блока: столица (0,0) + базис + точный набор клеток (силуэт острова).
+ *  Силуэт откалиброван программно (сэмплинг альфа-канала district-full.png в центре каждой
+ *  клетки + отсев соседних дивайдеров — реки/лесополосы) и выверен визуально по гекс-сетке;
+ *  это НЕ прямоугольник — контур острова фигурный, прямоугольная граница даёт клетки на воде/фоне. */
 interface BlockConfig {
   origin: Pt;
   col: Pt;
   row: Pt;
-  rect: { x0: number; x1: number; y0: number; y1: number };
-  exclude: Set<string>;
+  include: Set<string>;
 }
+
+const cellsOf = (list: [number, number][]): Set<string> => new Set(list.map(([q, r]) => `${q},${r}`));
 
 /** калибровка по координатной сетке полотна */
 const BLOCKS: Record<RrsId, BlockConfig> = {
@@ -41,32 +45,43 @@ const BLOCKS: Record<RrsId, BlockConfig> = {
     origin: { x: 1030, y: 705 },
     col: { x: 77.5, y: 106 },
     row: { x: -77.5, y: 106 },
-    rect: { x0: 630, x1: 1395, y0: 415, y1: 1065 },
-    exclude: new Set(),
+    include: cellsOf([
+      [-2, 0], [-2, 1], [-2, 2], [-2, 3], [-1, -1], [-1, 0], [-1, 1], [-1, 2], [-1, 3],
+      [0, -2], [0, -1], [0, 0], [0, 1], [0, 2], [1, -2], [1, -1], [1, 0], [1, 1],
+      [2, -3], [2, -2], [2, -1], [2, 0], [3, -2], [3, -1],
+    ]),
   },
   // TR — Челябинск: даунтаун у воды (столица — небоскрёбный центр)
   chel: {
     origin: { x: 1920, y: 695 },
     col: { x: 77.5, y: 105 },
     row: { x: -77.5, y: 105 },
-    rect: { x0: 1605, x1: 2265, y0: 420, y1: 1005 },
-    exclude: new Set(),
+    include: cellsOf([
+      [-3, 2], [-2, 0], [-2, 1], [-2, 2], [-1, -1], [-1, 0], [-1, 1], [-1, 2],
+      [0, -2], [0, -1], [0, 0], [0, 1], [0, 2], [1, -2], [1, -1], [1, 0], [1, 1],
+      [2, -3], [2, -2], [2, -1], [2, 0],
+    ]),
   },
   // BL — Екатеринбург: крупные кварталы (столица — синие высотки, 2-й ряд)
   ekb: {
     origin: { x: 1000, y: 1290 },
     col: { x: 77.5, y: 105 },
     row: { x: -77.5, y: 105 },
-    rect: { x0: 640, x1: 1390, y0: 1130, y1: 1560 },
-    exclude: new Set(),
+    include: cellsOf([
+      [-2, 1], [-2, 2], [-1, 0], [-1, 1], [-1, 2], [0, -1], [0, 0], [0, 1], [0, 2],
+      [1, -2], [1, -1], [1, 0], [1, 1], [2, -3], [2, -2], [2, -1], [2, 0], [3, -2], [3, -1],
+    ]),
   },
   // BR — Тюмень: горы, ветряки, карьер (столица — городские высотки)
   tmn: {
     origin: { x: 1965, y: 1360 },
     col: { x: 77.5, y: 106 },
     row: { x: -77.5, y: 106 },
-    rect: { x0: 1545, x1: 2370, y0: 1100, y1: 1640 },
-    exclude: new Set(),
+    include: cellsOf([
+      [-3, 1], [-2, 1], [-2, 2], [-2, 3], [-1, -1], [-1, 0], [-1, 1], [-1, 2], [-1, 3],
+      [0, -2], [0, -1], [0, 0], [0, 1], [0, 2], [1, -2], [1, -1], [1, 0], [1, 1],
+      [2, -3], [2, -2], [2, -1], [2, 0],
+    ]),
   },
 };
 
@@ -93,16 +108,10 @@ const NEIGHBORS: Axial[] = [{ q: 1, r: 0 }, { q: -1, r: 0 }, { q: 0, r: 1 }, { q
 const isNeighbor = (a: Axial, b: Axial) => NEIGHBORS.some((d) => a.q + d.q === b.q && a.r + d.r === b.r);
 
 function buildBlockCells(b: BlockConfig): Axial[] {
-  const cells: Axial[] = [];
-  for (let q = -6; q <= 6; q++) {
-    for (let r = -6; r <= 6; r++) {
-      const { x, y } = center(b, { q, r });
-      if (x < b.rect.x0 || x > b.rect.x1 || y < b.rect.y0 || y > b.rect.y1) continue;
-      if (b.exclude.has(`${q},${r}`)) continue;
-      cells.push({ q, r });
-    }
-  }
-  return cells;
+  return Array.from(b.include, (key) => {
+    const [q, r] = key.split(",").map(Number);
+    return { q, r };
+  });
 }
 const CAPITAL: Axial = { q: 0, r: 0 };
 
@@ -179,7 +188,9 @@ function DistrictBlock({ data, interactive }: { data: BlockData; interactive: bo
   const FH = hexW * 0.95;                    // фигурка — в пределах одного гекса
   const FW = FH * 0.62;
   const cap = center(b, CAPITAL);
-  const labelY = b.rect.y0 - 14;
+  // плашка — на 1 гекс выше самой верхней клетки силуэта (не над жёстким rect'ом, которого больше нет)
+  const topCellY = Math.min(...cells.map((c) => center(b, c).y));
+  const labelY = topCellY - Math.abs(b.col.y) * 0.9 - 14;
 
   return (
     <g style={{ opacity: off ? 0.55 : 1, filter: off ? "grayscale(0.85)" : undefined }}>
