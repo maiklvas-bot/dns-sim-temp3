@@ -1,5 +1,6 @@
-import type { PublicZrdState } from "@shared/zrd/engine";
 import type { StandardAction } from "@shared/zrd/types";
+import type { DeckId, ZrdSeatView } from "@shared/zrd/match-types";
+import { DECK_IDS } from "@shared/zrd/match-types";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ZrdPanelRegionStats } from "./ZrdPanelRegionStats";
 import { ZrdPanelAvailableActions } from "./ZrdPanelAvailableActions";
@@ -12,64 +13,73 @@ import { ZrdMissionPanel } from "./ZrdMissionPanel";
 import { ZrdTerritories } from "./ZrdTerritories";
 import { ZrdDiscard } from "./ZrdDiscard";
 import { ZrdClosingBlock } from "./ZrdClosingBlock";
-import { STAFF_DECK, GOODS_DECK, LOGISTICS_DECK, SERVICE_DECK, PROMO_DECK, PROJECTS_DECK } from "../../zrd-decks";
+import { ZrdIslandMap } from "./ZrdIslandMap";
 
 interface Props {
-  state: PublicZrdState;
+  view: ZrdSeatView;
+  openDeck: DeckId | null;
+  onToggleDeck: (deckId: DeckId) => void;
   onStandard: (a: StandardAction) => void;
+  onPlayCard: (cardId: string) => void;
   onPass: () => void;
-  onOpenDeck: (deckId: string) => void;
+  onViewData: () => void;
+  onOpenEvent: () => void;
+  onReactSwan: (swanId: string) => void;
 }
 
-/** Чистый борд — собираем по частям. Нижний ряд готов (5 панелей); верх и центр — следующими частями. */
-export function ZrdBoardBuild({ state, onStandard, onOpenDeck }: Props) {
+/** Борд матча: все блоки живые от seat-view; правые колоды — личные 6×50. */
+export function ZrdBoardBuild({ view, openDeck, onToggleDeck, onStandard, onPlayCard, onPass, onViewData, onOpenEvent, onReactSwan }: Props) {
+  const canPass = !view.matchEnded && !view.you.passed && !view.you.pendingEvent;
   return (
     <TooltipProvider delayDuration={150} skipDelayDuration={300}>
-    <div className="flex h-full gap-2">
+    {/* min-h: ниже этой высоты борд не сжимается — родитель уходит в скролл (защита от «уплывания»).
+        640 подобрано под FullHD с масштабом Windows 125% (CSS-вьюпорт ~1493×730). */}
+    <div className="flex h-full min-h-[640px] gap-2">
       {/* Левый край — 5 панелей вертикально, на ВСЮ высоту полотна (делят высоту поровну) */}
       <div className="flex w-[248px] flex-shrink-0 flex-col gap-2 min-h-0 py-1 pl-1">
-        <div className="min-h-0 flex-1"><ZrdPanelRegionStats state={state} /></div>
-        <div className="min-h-0 flex-1"><ZrdPanelAvailableActions state={state} onStandard={onStandard} /></div>
-        <div className="min-h-0 flex-1"><ZrdPanelActions state={state} onOpenDeck={onOpenDeck} /></div>
-        <div className="min-h-0 flex-1"><ZrdPanelResources state={state} /></div>
-        <div className="min-h-0 flex-1"><ZrdPanelProjects /></div>
+        <div className="min-h-0 flex-1 overflow-hidden"><ZrdPanelRegionStats view={view} /></div>
+        <div className="min-h-0 flex-1 overflow-hidden"><ZrdPanelAvailableActions view={view} onStandard={onStandard} /></div>
+        <div className="min-h-0 flex-1 overflow-hidden"><ZrdPanelActions view={view} onOpenDeck={onToggleDeck} onViewData={onViewData} /></div>
+        <div className="min-h-0 flex-1 overflow-hidden"><ZrdPanelResources view={view} /></div>
+        <div className="min-h-0 flex-1 overflow-hidden"><ZrdPanelProjects view={view} /></div>
       </div>
 
-      {/* Центр: сверху горизонтальный ряд из 2 блоков — «Миссия» (слева) и «Событие раунда» (справа); ниже — центр (4 РРС).
-          py-1 — чтобы верхний ряд выровнялся по вертикали с левыми панелями (у них тоже py-1). */}
+      {/* Центр: сверху «Миссия» + «Событие раунда» + «Чёрный лебедь»; ниже — карта дивизиона (слот под арт) */}
       <div className="flex min-w-0 flex-1 flex-col gap-2 py-1">
-        {/* Верхний ряд: два блока РАВНОЙ ширины, РОВНО в высоту одной левой панели: (контент − 4 зазора×8) / 5.
-            Справа невидимый спейсер шириной = «колоде сброса», чтобы правая граница Миссии/События совпала с правым краем РРС Пермь (не тянулась до колод). */}
-        <div className="flex shrink-0 gap-2" style={{ height: "calc((100% - 32px) / 5)" }}>
-          <div className="min-w-0 flex-1"><ZrdMissionPanel state={state} /></div>
-          <div className="min-w-0 flex-1"><ZrdTopStrip state={state} /></div>
-          {/* Замыкающий блок «Чёрный лебедь»: тот же слот, что был у спейсера (aspect 5/4 = ширина колоды сброса),
-              поэтому правая граница Миссии/События остаётся ровно по правому краю РРС Пермь, а блок стоит между Событием и колодами. */}
-          <div className="shrink-0" style={{ aspectRatio: "5 / 4", height: "100%" }}>
-            <ZrdClosingBlock state={state} />
+        <div className="flex shrink-0 gap-2" style={{ height: "calc((100% - 32px) / 5)", minHeight: 120 }}>
+          <div className="min-w-0 flex-1 overflow-hidden"><ZrdMissionPanel view={view} /></div>
+          <div className="min-w-0 flex-1 overflow-hidden"><ZrdTopStrip view={view} onOpenEvent={onOpenEvent} /></div>
+          <div className="shrink-0 overflow-hidden" style={{ aspectRatio: "5 / 4", height: "100%" }}>
+            <ZrdClosingBlock view={view} onReact={onReactSwan} />
           </div>
         </div>
-        {/* Центр — карта 4 РРС (следующая часть) */}
-        <div className="flex min-h-0 flex-1 items-center justify-center rounded-xl border border-dashed"
-          style={{ borderColor: "rgba(255,107,0,0.12)", color: "var(--zrd-text-dim)" }}>
-          <span className="text-sm">Центр — карта 4 РРС (собираем по частям)</span>
+        {/* Центр — единая карта дивизиона (4 РРС); кнопка завершения хода поверх */}
+        <div className="relative min-h-0 flex-1 overflow-hidden rounded-xl border"
+          style={{ borderColor: "rgba(255,107,0,0.16)", background: "#111318" }}>
+          <ZrdIslandMap view={view} />
+          <button
+            type="button"
+            onClick={onPass}
+            disabled={!canPass}
+            className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-xl px-6 py-2.5 text-sm font-extrabold text-white transition-opacity disabled:opacity-40"
+            style={{ background: "#FF6B00", cursor: canPass ? "pointer" : "default", boxShadow: "0 6px 18px rgba(0,0,0,0.5)" }}
+            title={view.you.pendingEvent ? "Сначала решите событие квартала" : view.you.passed ? "Ход завершён — ждём остальных" : "Завершить ход месяца"}
+          >
+            {view.you.passed ? "Ход завершён — ждём остальных" : `Завершить месяц (осталось действий: ${view.you.actionsLeft})`}
+          </button>
         </div>
-        {/* Нижняя полоса: 4 территории (РРС) + колода сброса справа (у колод); высота = одной панели */}
-        <div className="flex shrink-0 gap-2" style={{ height: "calc((100% - 32px) / 5)" }}>
-          <div className="min-w-0 flex-1"><ZrdTerritories state={state} /></div>
-          <ZrdDiscard count={state.player.playedCardIds?.length ?? 0} />
+        {/* Нижняя полоса: 4 РРС + колода сброса */}
+        <div className="flex shrink-0 gap-2" style={{ height: "calc((100% - 32px) / 5)", minHeight: 120 }}>
+          <div className="min-w-0 flex-1 overflow-hidden"><ZrdTerritories view={view} /></div>
+          <ZrdDiscard view={view} />
         </div>
       </div>
 
-      {/* Правый край — 6 колод карт вертикально (сверху вниз): Продвижение · Сервис · Логистика · Товар · Сотрудники · Проекты.
-          Колода = карта; клик по стопке → её карты выезжают ВЛЕВО в один ряд на уровне своей колоды. */}
+      {/* Правый край — 6 личных колод (Продвижение · Сервис · Логистика · Товар · Сотрудники · Проекты) */}
       <div className="zrd-deck-col-r flex-shrink-0 min-h-0 py-1 pr-1">
-        <ZrdDeck deck={PROMO_DECK} state={state} onPlay={onStandard} />
-        <ZrdDeck deck={SERVICE_DECK} state={state} onPlay={onStandard} />
-        <ZrdDeck deck={LOGISTICS_DECK} state={state} onPlay={onStandard} />
-        <ZrdDeck deck={GOODS_DECK} state={state} onPlay={onStandard} />
-        <ZrdDeck deck={STAFF_DECK} state={state} onPlay={onStandard} />
-        <ZrdDeck deck={PROJECTS_DECK} state={state} onPlay={onStandard} />
+        {DECK_IDS.map((deckId) => (
+          <ZrdDeck key={deckId} deckId={deckId} view={view} open={openDeck === deckId} onToggle={() => onToggleDeck(deckId)} onPlay={onPlayCard} />
+        ))}
       </div>
     </div>
     </TooltipProvider>

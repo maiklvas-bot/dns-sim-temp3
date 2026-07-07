@@ -22,6 +22,8 @@ import {
 } from "@/lib/live-session";
 import { BRAND_ASSETS, hideMissingBrandAsset } from "@/lib/brand-assets";
 import { getSimulationContentSnapshot, getSimulationSettingsSnapshot, resolveSimulationBriefingHtml } from "@/lib/runtime-content";
+import { joinZrdMatch } from "@/features/zrd/zrd-match-api";
+import { storeZrdSeat } from "@/features/zrd/useZrdMatch";
 
 export default function StudentJoinPage() {
   const [, navigate] = useLocation();
@@ -33,6 +35,7 @@ export default function StudentJoinPage() {
     assets: getSimulationContentSnapshot().assets,
   });
   const [accessCode, setAccessCode] = useState("");
+  const [participantEmail, setParticipantEmail] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
 
@@ -50,13 +53,21 @@ export default function StudentJoinPage() {
       await primeAudioPlayback();
       dispatch({ type: "RESET" });
       resetLiveSimulation();
-      const session = await joinRemoteLiveSimulation(normalizedCode);
+      const session = await joinRemoteLiveSimulation(normalizedCode, participantEmail.trim() || undefined);
       setPendingLiveSimulationState(session);
       setLiveSimulationRole("student");
       navigate("/simulation");
-    } catch (error) {
-      console.error("Failed to join live session", error);
-      setJoinError("Сессия по этому коду не найдена или уже завершена.");
+    } catch (liveError) {
+      // Один вход — два типа кодов: не live-сессия? Пробуем матч ЗРД тем же кодом.
+      try {
+        const seat = await joinZrdMatch(normalizedCode);
+        storeZrdSeat(seat.matchId, seat.seatIdx, seat.token);
+        navigate("/zrd");
+        return;
+      } catch {
+        console.error("Failed to join live session", liveError);
+        setJoinError("Код не найден: ни живой сессии, ни матча ЗРД. Проверьте код у оценщика.");
+      }
     } finally {
       setIsJoining(false);
     }
@@ -92,16 +103,16 @@ export default function StudentJoinPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Вход космонавта</h1>
-              <p className="mt-1 text-sm text-[#8890a8]">Введите код, который выдаст оценщик после настройки симуляции.</p>
+              <p className="mt-1 text-sm text-[#8890a8]">Введите код, который выдаст оценщик: подходит и для симуляции магазина, и для матча ЗРД.</p>
             </div>
           </div>
 
           <div className="dns-visual-hud rounded-xl p-4">
             <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">Как начать</div>
             <ol className="mt-3 space-y-2 text-sm leading-relaxed text-[#c9d2e6]">
-              <li>1. Дождитесь, пока оценщик настроит симуляцию.</li>
-              <li>2. Получите от него 6-символьный код сессии.</li>
-              <li>3. Введите код ниже и нажмите «Войти в сессию».</li>
+              <li>1. Дождитесь, пока оценщик настроит симуляцию или матч ЗРД.</li>
+              <li>2. Получите от него 6-символьный код.</li>
+              <li>3. Введите код ниже — система сама определит, куда вас посадить.</li>
             </ol>
           </div>
 
@@ -122,6 +133,18 @@ export default function StudentJoinPage() {
             >
               {isJoining ? "Подключаем..." : "Войти в сессию"}
             </button>
+          </div>
+
+          <div className="mt-3">
+            <Input
+              type="email"
+              value={participantEmail}
+              onChange={(event) => setParticipantEmail(event.target.value)}
+              placeholder="Корпоративная почта (необязательно)"
+              className="border-[#2a3a4e] bg-[#141c2b] text-sm text-white placeholder:text-[#4a5068]"
+              data-testid="student-participant-email"
+            />
+            <p className="mt-1.5 text-xs text-[#6a7290]">Для обратной связи и дальнейшей коммуникации по итогам</p>
           </div>
 
           {joinError && (

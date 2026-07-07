@@ -679,8 +679,24 @@
 .zrd-discard__bolt--bl { bottom: 8px; left: 8px; } .zrd-discard__bolt--br { bottom: 8px; right: 8px; }
 .zrd-discard__label { position: relative; text-align: center; line-height: 1.18; font-size: clamp(12px, 2.2vh, 20px); font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #fff7ef; text-shadow: 0 0 8px rgba(255, 230, 190, 0.9), 0 1px 2px rgba(90, 30, 0, 0.6); }
 
-/* ── Нижняя зона: 4 территории (РРС) в ОДИН горизонтальный ряд, стиль «KPI региона», у каждой свой цвет ── */
+/* «Раздача» — синий вариант кнопки-колоды: карты, выданные на игру (содержимое скрыто до добора) */
+.zrd-discard--deal {
+  background: radial-gradient(ellipse at 50% 34%, #4ea8de 0%, #2f83f0 42%, #1c56a8 74%, #123a74 100%);
+  box-shadow:
+    inset 0 0 0 2px rgba(150, 200, 255, 0.8),
+    inset 0 14px 30px rgba(200, 228, 255, 0.35),
+    inset 0 -16px 32px rgba(10, 30, 70, 0.55),
+    0 0 34px -6px rgba(60, 140, 255, 0.7),
+    0 10px 24px rgba(0, 0, 0, 0.6);
+}
+.zrd-discard--deal:hover { filter: brightness(1.08); box-shadow: inset 0 0 0 2px rgba(170, 214, 255, 0.95), inset 0 14px 30px rgba(200, 228, 255, 0.45), inset 0 -16px 32px rgba(10, 30, 70, 0.5), 0 0 44px -4px rgba(80, 160, 255, 0.85), 0 10px 24px rgba(0, 0, 0, 0.6); }
+.zrd-discard--deal:active { transform: translateY(2px); box-shadow: inset 0 0 0 2px rgba(150, 200, 255, 0.8), inset 0 8px 22px rgba(10, 30, 80, 0.6), 0 0 26px -8px rgba(60, 140, 255, 0.65), 0 4px 12px rgba(0, 0, 0, 0.6); }
+.zrd-discard--deal .zrd-discard__bolt { background: radial-gradient(circle at 40% 35%, #cfe6ff, #1d5eb8 70%); }
+.zrd-discard--deal .zrd-discard__label { color: #f2f8ff; text-shadow: 0 0 8px rgba(190, 225, 255, 0.9), 0 1px 2px rgba(10, 30, 70, 0.6); }
+
+/* ── Территории (РРС): ряд (низ) или колонка (по бокам карты дивизиона), у каждой свой цвет ── */
 .zrd-territories { display: flex; flex-direction: row; gap: 8px; height: 100%; min-height: 0; }
+.zrd-territories.is-vertical { flex-direction: column; }
 .zrd-terr {
   --acc: #EC4899;
   flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; text-align: left;
@@ -726,7 +742,12 @@
 /* ── Колоды слева (board): универсальная дека (оригинальная стопка + веер карт) ── */
 /* --zrd-card-h — высота карт в РАСКРЫТОМ веере (крупные, читаемые).
    --zrd-pile-h — высота СВЁРНУТОЙ стопки-обложки (может быть меньше; в колонке авто-масштаб). */
-.zrd-deck { --acc: #2ec27e; --card-aspect: 186 / 432; --zrd-card-h: clamp(120px, 15vh, 158px); --zrd-pile-h: var(--zrd-card-h); position: relative; display: inline-flex; align-items: flex-end; }
+.zrd-deck { --acc: #2ec27e; --card-aspect: 186 / 432; --zrd-card-h: clamp(120px, 15vh, 158px); --zrd-pile-h: var(--zrd-card-h); position: relative; z-index: 1; display: inline-flex; align-items: flex-end; }
+/* открытая колода — весь её блок (стопка + веер + увеличенная по hover карта) всегда физически
+   и по хиттесту НАД остальными (закрытыми) колодами, независимо от геометрического наложения
+   вееров и от порядка в DOM — иначе при равном z-index соседних .zrd-deck__fan побеждал DOM-порядок,
+   и наведённая карта одной колоды визуально «подменялась» соседней (баг «Сервис открывает другое меню»). */
+.zrd-deck.is-open { z-index: 100; }
 
 /* Колонка колод справа: стопки друг под другом, ДЕЛЯТ высоту поровну (flex:1) — 6 колод влезают при любой высоте окна.
    Колода = карта: высота карт веера = высоте стопки (обе = высоте слота колонки). */
@@ -765,10 +786,16 @@
 .zrd-deck.is-open .zrd-deck__fan { opacity: 1; transform: translateX(0); pointer-events: auto; }
 .zrd-deck__card {
   position: relative; flex-shrink: 0; cursor: pointer; background: none; border: none; padding: 0;
-  height: var(--zrd-card-h); transition: transform 160ms ease;
+  height: var(--zrd-card-h); transform-origin: center center;
+  transition: transform 180ms cubic-bezier(.2, .7, .3, 1);
 }
-.zrd-deck__card:hover { transform: translateY(-12px); z-index: 50; }
+/* Наведение (без клика) — карта увеличивается >2×, текст читается; клик по-прежнему открывает крупный просмотр */
+.zrd-deck__card:hover, .zrd-deck__card:focus-visible { transform: scale(2.35); z-index: 120; }
+.zrd-deck__card:hover .zrd-cardface img, .zrd-deck__card:focus-visible .zrd-cardface img { box-shadow: 0 18px 44px rgba(0, 0, 0, 0.75); }
 .zrd-deck__card:focus-visible { outline: none; }
+/* у верхних колод рост вниз, у нижних — вверх, чтобы увеличенная карта не уходила за край экрана */
+.zrd-deck-col-r .zrd-deck:nth-child(-n+2) .zrd-deck__card { transform-origin: center 12%; }
+.zrd-deck-col-r .zrd-deck:nth-child(n+5) .zrd-deck__card { transform-origin: center 88%; }
 
 /* Лицо карты: арт + плашка показателей по нижней границе (не перекрывает основной визуал) */
 .zrd-cardface { position: relative; display: block; height: 100%; aspect-ratio: var(--card-aspect); container-type: size; }
@@ -776,18 +803,41 @@
   width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 10px;
   filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.55));
 }
-/* Условия карты-задачи — в нижнем чёрном поле карты (арт уже чёрный, градиент не нужен) */
+/* Условия карты-задачи — в нижнем чёрном поле карты; текст ВСЕГДА в границах карты
+   (размер от ширины карты, перенос, кламп строк — вылезаний нет; читабельность даёт hover-увеличение) */
 .zrd-card-stats {
-  position: absolute; left: 0; right: 0; bottom: 0; height: 34%;
-  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5%;
-  padding: 0 7%; pointer-events: none;
+  position: absolute; left: 0; right: 0; bottom: 0; height: 36%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2%;
+  padding: 0 6%; pointer-events: none; overflow: hidden;
 }
 .zrd-card-stat {
-  font-weight: 800; font-size: clamp(9px, 4.6cqh, 17px); line-height: 1.15; white-space: nowrap;
+  font-weight: 800; font-size: clamp(5.5px, 8cqw, 14px); line-height: 1.12;
+  white-space: normal; text-align: center; max-width: 100%;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
+.zrd-card-stat + .zrd-card-stat { -webkit-line-clamp: 1; font-size: clamp(5px, 7cqw, 12px); }
 .zrd-card-stat.is-good { color: #74f0a0; }
 .zrd-card-stat.is-bad { color: #ff8080; }
+
+/* ── Выбор фигурки игроком: наведение увеличивает (как карты колоды), клик выбирает ── */
+.zrd-mascot-pick {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  width: 200px; padding: 14px 10px 12px; cursor: pointer;
+  background: rgba(255, 255, 255, 0.03); border: 1.5px solid var(--zrd-border); border-radius: 14px;
+  transition: transform 200ms cubic-bezier(.2, .7, .3, 1), border-color 160ms ease, box-shadow 200ms ease;
+  transform-origin: center 85%;
+}
+/* transform-origin: bottom — доп. увеличение картинки растёт только ВВЕРХ и не наезжает на подпись под ней */
+.zrd-mascot-pick img { height: 150px; width: auto; transform-origin: center bottom; filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.6)); transition: transform 200ms cubic-bezier(.2, .7, .3, 1); }
+.zrd-mascot-pick__name { font-size: 14px; font-weight: 800; color: var(--zrd-text); }
+.zrd-mascot-pick__style { font-size: 10.5px; line-height: 1.3; color: var(--zrd-text-dim); }
+.zrd-mascot-pick:hover, .zrd-mascot-pick:focus-visible {
+  transform: scale(1.22); z-index: 10; outline: none;
+  border-color: var(--acc); box-shadow: 0 0 0 2px color-mix(in srgb, var(--acc) 45%, transparent), 0 18px 40px rgba(0, 0, 0, 0.55);
+}
+.zrd-mascot-pick:hover img { transform: scale(1.35); }
+.zrd-mascot-pick:disabled { opacity: 0.55; cursor: wait; }
 
 .zrd-deck__overlay {
   position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center;

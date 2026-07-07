@@ -34,17 +34,34 @@ function RoundFlip({ text }: { text: string }) {
   );
 }
 
-/** Компактный бейдж раунда в шапке: живые часы/дата + оранжевая плашка «Раунд XX/24» (перекидной календарь). */
-export function ZrdRoundBadge({ round, total }: { round: number; total: number }) {
+/**
+ * Бейдж календаря матча в шапке: часы + «Кв Q/4 · Мес M» (перекидной) + таймер дедлайна такта.
+ * Дедлайн приходит с сервера; по истечении непоходившие пропускают месяц.
+ */
+export function ZrdRoundBadge({ quarter, tick, deadlineAt, paused }: { quarter: number; tick: number; deadlineAt: string | null; paused: boolean }) {
   const now = useClock();
+  let timer: string | null = null;
+  let urgent = false;
+  if (paused) {
+    timer = "пауза";
+  } else if (deadlineAt) {
+    const left = Math.max(0, Math.floor((Date.parse(deadlineAt) - now.getTime()) / 1000));
+    timer = `${pad(Math.floor(left / 60))}:${pad(left % 60)}`;
+    urgent = left <= 60;
+  }
   return (
     <div className="zrd-round-badge">
       <span className="zrd-round-badge__dt">
         {pad(now.getHours())}:{pad(now.getMinutes())} · {pad(now.getDate())}.{pad(now.getMonth() + 1)}.{now.getFullYear()}
+        {timer && (
+          <span style={{ marginLeft: 8, fontWeight: 700, color: urgent ? "#e85a5a" : "#FF6B00" }}>
+            ⏱ {timer}
+          </span>
+        )}
       </span>
       <div className="zrd-round-badge__pill">
-        <span className="zrd-round-badge__label">Раунд</span>
-        <RoundFlip text={`${pad(round)}/${pad(total)}`} />
+        <span className="zrd-round-badge__label">Кв {quarter}/4</span>
+        <RoundFlip text={`Мес ${pad(tick)}/12`} />
       </div>
     </div>
   );

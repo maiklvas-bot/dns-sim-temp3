@@ -1,46 +1,44 @@
-import { Store, Truck, Network, GraduationCap, Headset } from "lucide-react";
+import { Hammer, Boxes, Lightbulb, Users as UsersIcon, Megaphone, Wrench } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { ZRD_ACTIVE_PROJECTS } from "../../zrd-board-data";
-import type { ZrdActiveProject } from "../../zrd-board-data";
+import type { DeckId, ZrdSeatView } from "@shared/zrd/match-types";
 import { ZrdTip } from "./ZrdTip";
 
-/** Иконка-плитка + цвет + описание под каждый проект (по макету panel-projects.png). */
-const PROJECT_META: Record<string, { icon: LucideIcon; color: string; desc: string }> = {
-  "Открытие 2 магазинов в Тюмени": { icon: Store, color: "#C8862A",
-    desc: "Расширение сети в Тюмени: рост охвата и продаж региона. Статус «в работе» — идёт по плану." },
-  "Расширение склада Екатеринбург": { icon: Truck, color: "#7A5230",
-    desc: "Увеличение складских мощностей в ЕКБ: усилит логистику и доступность товара. В работе." },
-  "IT-платформа для логистики": { icon: Network, color: "#8E44AD",
-    desc: "Цифровая платформа управления маршрутами и складом. «Задержка» — не хватает ресурса/решения, требует внимания." },
-  "Обучение управленцев": { icon: GraduationCap, color: "#2E78C7",
-    desc: "Программа развития руководителей точек: поднимет уровень сервиса и мотивацию команды. В работе." },
-  "Сервисный центр Пермь": { icon: Headset, color: "#5A6270",
-    desc: "Новый сервисный центр в Перми: усилит сервис и лояльность клиентов. Статус «план» — ещё не запущен." },
+const DECK_ICON: Record<DeckId, { icon: LucideIcon; color: string }> = {
+  projects: { icon: Lightbulb, color: "#C8862A" },
+  logistics: { icon: Boxes, color: "#2E78C7" },
+  goods: { icon: Hammer, color: "#8E44AD" },
+  staff: { icon: UsersIcon, color: "#2E9E6B" },
+  promo: { icon: Megaphone, color: "#C0392B" },
+  service: { icon: Wrench, color: "#5A6270" },
 };
 
-const BADGE_CLASS: Record<ZrdActiveProject["status"], string> = {
-  "В РАБОТЕ": "zrd-proj-badge--work",
-  "ЗАДЕРЖКА": "zrd-proj-badge--delay",
-  "ПЛАН": "zrd-proj-badge--plan",
-};
-
-/** #9-3 «Проекты (активные)» — список активных проектов региона со статусами. */
-export function ZrdPanelProjects() {
+/** «Проекты (активные)» — реальные многонедельные проекты места: прогресс в неделях, эффект по завершении. */
+export function ZrdPanelProjects({ view }: { view: ZrdSeatView }) {
+  const projects = view.you.activeProjects;
   return (
     <div className="zrd-frame h-full">
       <div className="zrd-frame__head">
-        Проекты <span className="zrd-head-sub">(активные)</span>
+        Проекты <span className="zrd-head-sub">(активные: {projects.length})</span>
       </div>
       <div className="zrd-frame__body">
-        {ZRD_ACTIVE_PROJECTS.map((p) => {
-          const meta = PROJECT_META[p.name] ?? { icon: Store, color: "#5A6270", desc: "" };
+        {projects.length === 0 && (
+          <div className="zrd-proj-row" style={{ opacity: 0.6 }}>
+            <span className="zrd-proj-name">Нет активных проектов — сыграйте карту с длительностью</span>
+          </div>
+        )}
+        {projects.map((p) => {
+          const meta = DECK_ICON[p.deck] ?? DECK_ICON.projects;
           const Icon = meta.icon;
+          const doneWeeks = p.totalWeeks - p.weeksLeft;
           return (
-            <ZrdTip key={p.name} title={p.name} value={`Статус: ${p.status}`} desc={meta.desc}>
+            <ZrdTip key={p.cardId} title={p.title} value={`Осталось ${p.weeksLeft} нед. из ${p.totalWeeks}`}
+              desc="Проект идёт по неделям; эффект карты применится по завершении. Прогресс тикает каждый месяц.">
               <div className="zrd-proj-row">
                 <span className="zrd-proj-ico" style={{ background: meta.color }}><Icon aria-hidden /></span>
-                <span className="zrd-proj-name">{p.name}</span>
-                <span className={`zrd-proj-badge ${BADGE_CLASS[p.status]}`}>{p.status}</span>
+                <span className="zrd-proj-name">{p.title}</span>
+                <span className={`zrd-proj-badge ${p.weeksLeft <= 4 ? "zrd-proj-badge--work" : "zrd-proj-badge--plan"}`}>
+                  {doneWeeks}/{p.totalWeeks} НЕД
+                </span>
               </div>
             </ZrdTip>
           );

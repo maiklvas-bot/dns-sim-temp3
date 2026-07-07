@@ -129,6 +129,7 @@ export class SessionStorage {
     return rows.map(({ session, result }) => ({
       id: session.id,
       participantName: session.participantName,
+      participantEmail: session.participantEmail,
       evaluatorName: session.evaluatorName,
       difficulty: session.difficulty,
       technicalStatus: session.technicalStatus,

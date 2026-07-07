@@ -1,26 +1,28 @@
 import { Store, Settings, User, Star, DollarSign } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { PublicZrdState } from "@shared/zrd/engine";
+import type { ZrdSeatView } from "@shared/zrd/match-types";
+import { computeKpi } from "@shared/zrd/kpi";
 import { ZrdTip } from "./ZrdTip";
 
-/** #9-5 «Показатели региона» — кодовая панель на живых данных движка. */
-export function ZrdPanelRegionStats({ state }: { state: PublicZrdState }) {
-  const m = state.player.metrics;
-  const r = state.player.resources;
+/** «Показатели региона» — живые данные своего места (метрики + KPI движка). */
+export function ZrdPanelRegionStats({ view }: { view: ZrdSeatView }) {
+  const you = view.you;
+  const m = you.metrics;
+  const kpi = computeKpi(you);
   const pct = (v: number) => Math.round((v / 20) * 100);
-  const storeCards = state.player.playedCardIds.filter((id) => ["store", "hyper", "new_district"].includes(id)).length;
+  const projectStores = you.discard.filter((id) => id.startsWith("pj_open_store") || id.startsWith("pj_new_loc")).length;
 
   const rows: { icon: LucideIcon; label: string; value: string; desc: string }[] = [
-    { icon: Store, label: "Сеть магазинов", value: String(40 + m.coverage * 2 + storeCards * 2),
-      desc: "Число точек в регионе (магазины и гипермаркеты). Растёт от открытия точек и инфраструктурных проектов." },
-    { icon: Settings, label: "Уровень сервиса", value: `${pct(m.nps)}%`,
-      desc: "Качество обслуживания (NPS). Поднимается сервисными действиями и обучением; влияет на лояльность и продажи." },
-    { icon: User, label: "Доля онлайн", value: `${Math.min(60, 25 + r.market * 4)}%`,
-      desc: "Доля онлайн-продаж в регионе. Растёт от e-commerce и маркетинговой активности." },
-    { icon: Star, label: "Укомплектованность", value: `${Math.min(99, 55 + r.staff * 6)}%`,
-      desc: "Заполненность штата точек. Зависит от ресурса «Люди»; низкая — бьёт по сервису и продажам." },
+    { icon: Store, label: "Сеть магазинов", value: String(40 + m.coverage * 2 + projectStores * 2),
+      desc: "Число точек РРС. Растёт от открытия магазинов, пунктов выдачи и проектов развития." },
+    { icon: Settings, label: "Уровень сервиса", value: `${kpi.service_level}%`,
+      desc: "Качество обслуживания (NPS). Поднимается сервисными картами и обучением; влияет на лояльность и продажи." },
+    { icon: User, label: "Доля онлайн", value: `${Math.min(60, 25 + you.resources.market * 4)}%`,
+      desc: "Доля онлайн-продаж РРС. Растёт от продвижения и рыночного потенциала." },
+    { icon: Star, label: "Укомплектованность", value: `${kpi.staffing}%`,
+      desc: "Заполненность штата точек. Зависит от ресурса «Люди» и его производства; низкая — бьёт по сервису." },
     { icon: DollarSign, label: "Доля рынка (оценочно)", value: `${pct(m.coverage)}%`,
-      desc: "Оценочная доля рынка региона — сводный показатель охвата и присутствия сети." },
+      desc: "Оценочная доля рынка РРС — сводный показатель охвата и присутствия сети." },
   ];
 
   return (

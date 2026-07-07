@@ -17,6 +17,8 @@ export interface LiveSimulationConfig extends SimulationSettingsSnapshot {
   assessorName: string;
   participantName: string;
   participantRole?: string;
+  /** участник вводит сам при входе по коду (не оценщик) — для обратной связи и дальнейшей коммуникации */
+  participantEmail?: string;
   initialMetrics: LiveSimulationMetrics;
   createdAt: number;
 }
@@ -27,6 +29,7 @@ export interface LiveSimulationMonitorSummary {
   accessCode: string;
   participantName: string;
   participantRole?: string;
+  participantEmail?: string;
   assessorName: string;
   createdAt: number;
   status: LiveSimulationStatus;

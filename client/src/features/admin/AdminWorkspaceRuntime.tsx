@@ -33,6 +33,7 @@ import {
   resolveSimulationBriefingHtml,
 } from "@/lib/runtime-content";
 import { buildPdfPayloadFromReport, buildReportFromSessionDetails } from "@/lib/report-data";
+import { ParticipantMailDialog } from "./components/ParticipantMailDialog";
 import {
   AlertTriangle,
   ArrowDown,
@@ -51,6 +52,7 @@ import {
   History,
   Info,
   LayoutDashboard,
+  Mail,
   Pause,
   Play,
   Radio,
@@ -112,6 +114,7 @@ interface ComparisonResultRow {
   averageScore: number;
   answersCount: number;
   competencyAverages: Record<string, number>;
+  participantEmail: string;
   report: ComparisonReport | null;
   detail: any | null;
   isLoading: boolean;
@@ -1156,6 +1159,7 @@ export default function AdminPage() {
   const [signalWizardDraft, setSignalWizardDraft] = useState<EmailCase | MessengerCase | VideoCase>(() => createEmptyEmail(1));
   const [scheduleDraft, setScheduleDraft] = useState<ScheduleRow[]>([]);
   const [comparisonSelection, setComparisonSelection] = useState<number[]>([]);
+  const [mailDialog, setMailDialog] = useState<{ rowId: number; mode: "contact" | "results" | "training" } | null>(null);
 
   const {
     queryClient,
@@ -1437,6 +1441,7 @@ export default function AdminPage() {
         averageScore: Number(report?.avgScore ?? detail?.result?.averageScore ?? listItem?.averageScore ?? 0),
         answersCount: Number(report?.totalDecisions ?? detail?.answers?.length ?? 0),
         competencyAverages,
+        participantEmail: String(session.participantEmail || listItem?.participantEmail || ""),
         report,
         detail,
         isLoading: Boolean(detailQuery?.isLoading),
@@ -3124,6 +3129,20 @@ export default function AdminPage() {
                               Детали результата не загрузились.
                             </div>
                           )}
+                          <div className="mt-3 flex gap-1.5 border-t border-[#2a3a4e] pt-3">
+                            <Button type="button" size="sm" variant="outline" className="h-7 flex-1 gap-1 border-[#2a3a4e] bg-transparent px-2 text-[10px] text-[#8aa2c4]"
+                              onClick={() => setMailDialog({ rowId: row.id, mode: "contact" })} title="Связаться с участником">
+                              <Mail className="h-3 w-3" /> Связаться
+                            </Button>
+                            <Button type="button" size="sm" variant="outline" className="h-7 flex-1 gap-1 border-[#2a3a4e] bg-transparent px-2 text-[10px] text-[#8aa2c4]"
+                              onClick={() => setMailDialog({ rowId: row.id, mode: "results" })} disabled={!row.report} title="Отправить отчёт на почту">
+                              <FileText className="h-3 w-3" /> Отчёт
+                            </Button>
+                            <Button type="button" size="sm" variant="outline" className="h-7 flex-1 gap-1 border-[#2a3a4e] bg-transparent px-2 text-[10px] text-[#8aa2c4]"
+                              onClick={() => setMailDialog({ rowId: row.id, mode: "training" })} title="Назначить обучение">
+                              <CalendarClock className="h-3 w-3" /> Обучение
+                            </Button>
+                          </div>
                         </div>
                       );
                     })}
@@ -3838,6 +3857,19 @@ export default function AdminPage() {
         </div>
         <ProductFooter />
       </div>
+      {mailDialog && (() => {
+        const row = comparisonRows.find((r) => r.id === mailDialog.rowId);
+        if (!row) return null;
+        return (
+          <ParticipantMailDialog
+            mode={mailDialog.mode}
+            participantName={row.participantName}
+            defaultEmail={row.participantEmail}
+            report={row.report}
+            onClose={() => setMailDialog(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

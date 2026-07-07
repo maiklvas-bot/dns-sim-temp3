@@ -1,173 +1,138 @@
-import { useState, type CSSProperties } from "react";
-import { User, Bot } from "lucide-react";
-import type { PublicZrdState } from "@shared/zrd/engine";
+import type { CSSProperties } from "react";
+import { User, Bot, CircleOff } from "lucide-react";
+import type { ZrdSeatPublicSummary, ZrdSeatView, KpiId, RrsId } from "@shared/zrd/match-types";
+import { RRS_LABEL } from "@shared/zrd/match-types";
+import { KPI_LABEL, computeKpi } from "@shared/zrd/kpi";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
-import { scenarioById, AI_LEVEL_LABEL } from "../../zrd-player-scenarios";
 
-type Trend = "up" | "down" | "flat";
-interface Kpi { label: string; value: string; pct: number; delta: string; trend: Trend }
-/** Кто управляет РРС: живой игрок или ИИ. Состав задаёт оценщик; сценарий живого — выбор при входе по коду. */
-type Controller = { kind: "human"; scenarioId: string } | { kind: "ai"; scenarioId: string; level: 1 | 2 | 3 | 4 | 5 };
-interface Territory { id: string; name: string; accent: string; controller: Controller; feature: string; kpis: Kpi[] }
-
-/** 4 территории (РРС) с KPI. Значения/состав — заглушки до появления по-территориальной модели и live-сессии. */
-const TERRITORIES: Territory[] = [
-  { id: "ekb", name: "РРС Екатеринбург", accent: "#EC4899",
-    controller: { kind: "human", scenarioId: "crisis" },
-    feature: "Флагман дивизиона: крупнейший рынок и трафик, максимальная конкуренция.",
-    kpis: [
-    { label: "Рост продаж", value: "+28%", pct: 92, delta: "+3%", trend: "up" },
-    { label: "Покрытие рынка", value: "72%", pct: 72, delta: "+1%", trend: "up" },
-    { label: "Эффективность", value: "85%", pct: 85, delta: "−1%", trend: "down" },
-    { label: "Уровень сервиса", value: "91%", pct: 91, delta: "+2%", trend: "up" },
-    { label: "Логистика", value: "78%", pct: 78, delta: "−2%", trend: "down" },
-    { label: "Персонал", value: "81%", pct: 81, delta: "+1%", trend: "up" },
-  ] },
-  { id: "chl", name: "РРС Челябинск", accent: "#06B6D4",
-    controller: { kind: "ai", scenarioId: "optimizer", level: 2 },
-    feature: "Промышленный город: сильный спрос на КБТ и B2B, чувствителен к ценам.",
-    kpis: [
-    { label: "Рост продаж", value: "+12%", pct: 64, delta: "+2%", trend: "up" },
-    { label: "Покрытие рынка", value: "58%", pct: 58, delta: "+3%", trend: "up" },
-    { label: "Эффективность", value: "70%", pct: 70, delta: "0%", trend: "flat" },
-    { label: "Уровень сервиса", value: "84%", pct: 84, delta: "+1%", trend: "up" },
-    { label: "Логистика", value: "66%", pct: 66, delta: "−1%", trend: "down" },
-    { label: "Персонал", value: "74%", pct: 74, delta: "+2%", trend: "up" },
-  ] },
-  { id: "tmn", name: "РРС Тюмень", accent: "#84CC16",
-    controller: { kind: "ai", scenarioId: "growth", level: 4 },
-    feature: "Нефтегазовый регион: высокий средний чек и платёжеспособный спрос.",
-    kpis: [
-    { label: "Рост продаж", value: "+19%", pct: 78, delta: "+4%", trend: "up" },
-    { label: "Покрытие рынка", value: "63%", pct: 63, delta: "+1%", trend: "up" },
-    { label: "Эффективность", value: "88%", pct: 88, delta: "+2%", trend: "up" },
-    { label: "Уровень сервиса", value: "79%", pct: 79, delta: "−1%", trend: "down" },
-    { label: "Логистика", value: "82%", pct: 82, delta: "+3%", trend: "up" },
-    { label: "Персонал", value: "69%", pct: 69, delta: "−2%", trend: "down" },
-  ] },
-  { id: "prm", name: "РРС Пермь", accent: "#A78BFA",
-    controller: { kind: "ai", scenarioId: "strategist", level: 3 },
-    feature: "Растущий рынок: длинное логистическое плечо, охват ещё не выбран.",
-    kpis: [
-    { label: "Рост продаж", value: "+8%", pct: 52, delta: "+1%", trend: "up" },
-    { label: "Покрытие рынка", value: "49%", pct: 49, delta: "−2%", trend: "down" },
-    { label: "Эффективность", value: "75%", pct: 75, delta: "+1%", trend: "up" },
-    { label: "Уровень сервиса", value: "88%", pct: 88, delta: "+2%", trend: "up" },
-    { label: "Логистика", value: "71%", pct: 71, delta: "0%", trend: "flat" },
-    { label: "Персонал", value: "77%", pct: 77, delta: "+1%", trend: "up" },
-  ] },
-];
-
+const ACCENT: Record<RrsId, string> = { ekb: "#EC4899", chel: "#06B6D4", tmn: "#84CC16", perm: "#A78BFA" };
+const FEATURE: Record<RrsId, string> = {
+  ekb: "Флагман дивизиона: крупнейший рынок и трафик, максимальная конкуренция.",
+  chel: "Промышленный город: сильный спрос на КБТ и B2B, чувствителен к ценам.",
+  tmn: "Нефтегазовый регион: высокий средний чек и платёжеспособный спрос.",
+  perm: "Растущий рынок: длинное логистическое плечо, охват ещё не выбран.",
+};
+const KPI_ORDER: KpiId[] = ["sales_growth", "market_coverage", "efficiency", "service_level", "logistics", "staffing"];
 const SEG = 6;
-const deltaClass = (t: Trend) => (t === "up" ? "is-up" : t === "down" ? "is-down" : "is-flat");
 
-/** Подробная карточка РРС (по наведению): тип управленца, особенность региона, текущие показатели. */
-function TerritoryPopover({ t }: { t: Territory }) {
-  const sc = scenarioById(t.controller.scenarioId);
-  const isHuman = t.controller.kind === "human";
-  return (
-    <HoverCardContent
-      side="top"
-      align="center"
-      sideOffset={10}
-      className="zrd-terr-pop w-[320px] p-0 bg-transparent border-0 rounded-none shadow-none"
-      style={{ "--acc": t.accent } as CSSProperties}
-    >
-      <div className="zrd-terr-pop__head">
-        <span className={`zrd-terr-pop__ico ${isHuman ? "is-human" : "is-ai"}`}>
-          {isHuman ? <User aria-hidden /> : <Bot aria-hidden />}
-        </span>
-        <span className="zrd-terr-pop__name">{t.name}</span>
-        <span className="zrd-terr-pop__tag">{isHuman ? "живой игрок" : "компьютер"}</span>
-      </div>
-      <div className="zrd-terr-pop__inner">
-        <div className="zrd-terr-pop__sect">Тип управленца</div>
-        {sc && (
-          <>
-            <div className="zrd-terr-pop__mtype">
-              {sc.name}
-              {!isHuman && t.controller.kind === "ai" && (
-                <span className="zrd-terr-pop__lvl">· {AI_LEVEL_LABEL[t.controller.level]}</span>
-              )}
-            </div>
-            <div className="zrd-terr-pop__mdesc">{sc.behavior}</div>
-            <div className="zrd-terr-pop__chips">
-              {sc.competencies.map((c) => (
-                <span key={c} className="zrd-terr-pop__chip">{c}</span>
-              ))}
-            </div>
-          </>
-        )}
-
-        <div className="zrd-terr-pop__sect">Особенность РРС</div>
-        <div className="zrd-terr-pop__feature">{t.feature}</div>
-
-        <div className="zrd-terr-pop__sect">Показатели сейчас</div>
-        <ul className="zrd-terr-pop__kpis">
-          {t.kpis.map((k) => (
-            <li key={k.label} className="zrd-terr-pop__kpirow">
-              <span className="zrd-terr-pop__kpilabel">{k.label}</span>
-              <span className="zrd-terr-pop__kpival">{k.value}</span>
-              <span className={`zrd-terr-pop__kpidelta ${deltaClass(k.trend)}`}>{k.delta}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </HoverCardContent>
-  );
+interface TerritoryData {
+  seatIdx: number;
+  rrsId: RrsId;
+  name: string;
+  controllerKind: "human" | "ai" | "off";
+  kpi: Record<KpiId, number>;
+  passed: boolean;
+  missionsDone: number;
+  isYou: boolean;
 }
 
-/**
- * Нижняя зона — 4 территории (РРС), плоский стиль борда «KPI региона».
- * В шапке блока — значок управленца (человек = живой игрок, робот = ИИ) в цвет РРС.
- * При наведении — подробная карточка: тип управленца, особенность региона, текущие показатели.
- */
-export function ZrdTerritories(_props: { state: PublicZrdState }) {
-  const [active, setActive] = useState<string>(TERRITORIES[0].id);
+function territoryFromSummary(s: ZrdSeatPublicSummary): TerritoryData {
+  return {
+    seatIdx: s.seatIdx, rrsId: s.rrsId, name: s.name, controllerKind: s.controllerKind,
+    kpi: s.kpi, passed: s.passed, missionsDone: s.missionsDone, isYou: false,
+  };
+}
+
+/** Панели РРС матча: публичные KPI всех мест, своё подсвечено, статус хода в шапке.
+ *  pick — какие места показать (seatIdx), vertical — колонкой (по бокам карты дивизиона). */
+export function ZrdTerritories({ view, pick, vertical }: { view: ZrdSeatView; pick?: number[]; vertical?: boolean }) {
+  const you: TerritoryData = {
+    seatIdx: view.seatIdx,
+    rrsId: view.you.rrsId,
+    name: view.you.controller.kind === "human" ? view.you.controller.name : RRS_LABEL[view.you.rrsId],
+    controllerKind: view.you.controller.kind,
+    kpi: computeKpi(view.you),
+    passed: view.you.passed,
+    missionsDone: Object.values(view.you.missionDone).filter(Boolean).length,
+    isYou: true,
+  };
+  const all = [you, ...view.others.map(territoryFromSummary)]
+    .sort((a, b) => a.seatIdx - b.seatIdx)
+    .filter((t) => !pick || pick.includes(t.seatIdx));
+
   return (
-    <div className="zrd-territories">
-      {TERRITORIES.map((t) => {
-        const isHuman = t.controller.kind === "human";
+    <div className={`zrd-territories${vertical ? " is-vertical" : ""}`}>
+      {all.map((t) => {
+        const off = t.controllerKind === "off";
+        const Icon = t.controllerKind === "human" ? User : t.controllerKind === "ai" ? Bot : CircleOff;
         return (
-          <HoverCard key={t.id} openDelay={120} closeDelay={80}>
+          <HoverCard key={t.rrsId} openDelay={120} closeDelay={80}>
             <HoverCardTrigger asChild>
               <button
                 type="button"
-                className={`zrd-terr${active === t.id ? " is-active" : ""}`}
-                style={{ "--acc": t.accent } as CSSProperties}
-                onClick={() => setActive(t.id)}
-                aria-pressed={active === t.id}
+                className={`zrd-terr${t.isYou ? " is-active" : ""}`}
+                style={{ "--acc": ACCENT[t.rrsId], opacity: off ? 0.45 : 1 } as CSSProperties}
+                aria-pressed={t.isYou}
               >
                 <div className="zrd-terr__head">
                   <span className="zrd-terr__dot" />
-                  <span className="zrd-terr__name">{t.name}</span>
+                  <span className="zrd-terr__name">{RRS_LABEL[t.rrsId]}{t.isYou ? " · вы" : ""}</span>
                   <span
-                    className={`zrd-terr__who ${isHuman ? "is-human" : "is-ai"}`}
-                    title={isHuman ? "Живой игрок" : "Компьютер (ИИ)"}
+                    className={`zrd-terr__who ${t.controllerKind === "human" ? "is-human" : "is-ai"}`}
+                    title={t.controllerKind === "human" ? "Живой игрок" : t.controllerKind === "ai" ? "Компьютер (ИИ)" : "Не задействована"}
                   >
-                    {isHuman ? <User aria-hidden /> : <Bot aria-hidden />}
+                    <Icon aria-hidden />
                   </span>
                 </div>
                 <div className="zrd-terr__kpis">
-                  {t.kpis.map((k) => {
-                    const on = Math.max(0, Math.min(SEG, Math.round((k.pct / 100) * SEG)));
+                  {KPI_ORDER.map((k) => {
+                    const v = off ? 0 : t.kpi[k];
+                    const on = Math.max(0, Math.min(SEG, Math.round((v / 100) * SEG)));
                     return (
-                      <div key={k.label} className="zrd-terr__kpi">
-                        <span className="zrd-terr__label">{k.label}</span>
-                        <span className="zrd-terr__value">{k.value}</span>
+                      <div key={k} className="zrd-terr__kpi">
+                        <span className="zrd-terr__label">{KPI_LABEL[k]}</span>
+                        <span className="zrd-terr__value">{off ? "—" : `${v}%`}</span>
                         <span className="zrd-terr__bar" aria-hidden>
                           {Array.from({ length: SEG }).map((_, i) => (
                             <span key={i} className={`zrd-terr__cell${i < on ? " is-on" : ""}`} />
                           ))}
                         </span>
-                        <span className={`zrd-terr__delta ${deltaClass(k.trend)}`}>{k.delta}</span>
+                        <span className="zrd-terr__delta is-flat" />
                       </div>
                     );
                   })}
                 </div>
               </button>
             </HoverCardTrigger>
-            <TerritoryPopover t={t} />
+            <HoverCardContent side="top" align="center" sideOffset={10}
+              className="zrd-terr-pop w-[300px] p-0 bg-transparent border-0 rounded-none shadow-none"
+              style={{ "--acc": ACCENT[t.rrsId] } as CSSProperties}>
+              <div className="zrd-terr-pop__head">
+                <span className={`zrd-terr-pop__ico ${t.controllerKind === "human" ? "is-human" : "is-ai"}`}><Icon aria-hidden /></span>
+                <span className="zrd-terr-pop__name">{RRS_LABEL[t.rrsId]}</span>
+                <span className="zrd-terr-pop__tag">
+                  {t.controllerKind === "human" ? "живой игрок" : t.controllerKind === "ai" ? "компьютер" : "не задействована"}
+                </span>
+              </div>
+              <div className="zrd-terr-pop__inner">
+                {!off && (
+                  <>
+                    <div className="zrd-terr-pop__sect">Управленец</div>
+                    <div className="zrd-terr-pop__mtype">{t.name}</div>
+                    <div className="zrd-terr-pop__mdesc">
+                      {t.passed ? "Ход в этом месяце завершён." : "Принимает решения этого месяца."}
+                      {t.missionsDone > 0 ? ` Выполнено миссий: ${t.missionsDone}.` : ""}
+                    </div>
+                  </>
+                )}
+                <div className="zrd-terr-pop__sect">Особенность РРС</div>
+                <div className="zrd-terr-pop__feature">{FEATURE[t.rrsId]}</div>
+                {!off && (
+                  <>
+                    <div className="zrd-terr-pop__sect">Показатели сейчас</div>
+                    <ul className="zrd-terr-pop__kpis">
+                      {KPI_ORDER.map((k) => (
+                        <li key={k} className="zrd-terr-pop__kpirow">
+                          <span className="zrd-terr-pop__kpilabel">{KPI_LABEL[k]}</span>
+                          <span className="zrd-terr-pop__kpival">{t.kpi[k]}%</span>
+                          <span className="zrd-terr-pop__kpidelta is-flat" />
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                )}
+              </div>
+            </HoverCardContent>
           </HoverCard>
         );
       })}

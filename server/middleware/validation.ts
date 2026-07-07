@@ -106,6 +106,22 @@ export const feedbackBodySchema = z.object({
   url: z.string().trim().max(300).optional(),
 }).strict();
 
+/** «Связаться с пользователем» — оценщик пишет участнику на его корпоративную почту. */
+export const contactParticipantMailSchema = z.object({
+  to: z.string().trim().toLowerCase().email().max(120),
+  participantName: z.string().trim().min(1).max(120),
+  subject: z.string().trim().min(1).max(200),
+  message: z.string().trim().min(1).max(4000),
+}).strict();
+
+/** «Назначить обучение на определённую дату». */
+export const scheduleTrainingMailSchema = z.object({
+  to: z.string().trim().toLowerCase().email().max(120),
+  participantName: z.string().trim().min(1).max(120),
+  trainingDate: z.string().trim().min(1).max(60),
+  note: z.string().trim().max(1000).optional(),
+}).strict();
+
 /**
  * Схема для создания симуляционной сессии.
  * Валидация всех полей с ограничениями диапазонов.
@@ -113,6 +129,8 @@ export const feedbackBodySchema = z.object({
 export const createSimulationSessionSchema = z.object({
   participantName: nameSchema.optional().default("Участник"),
   participantExternalId: z.string().max(100).nullable().optional().default(null),
+  /** участник вводит сам при входе по коду (не оценщик) — для обратной связи и дальнейшей коммуникации */
+  participantEmail: z.string().trim().toLowerCase().email().max(120).optional(),
   assessorName: z.string().max(100).optional().default(""),
   difficulty: z.enum(["easy", "medium", "hard"]).optional().default("medium"),
   selectedCaseIds: z.array(idStringSchema).optional().default([]),
@@ -223,6 +241,8 @@ export const joinLiveSessionSchema = z.object({
     .min(1, "Код доступа обязателен")
     .max(20, "Код доступа слишком длинный")
     .regex(/^[A-Z0-9]+$/, "Неверный формат кода доступа"),
+  /** участник вводит сам при входе — для обратной связи и дальнейшей коммуникации, не обязателен */
+  email: z.string().trim().toLowerCase().email().max(120).optional(),
 });
 
 /**
@@ -504,6 +524,14 @@ export const pdfExportSchema = z.object({
   impactfulDecisions: z.array(pdfImpactfulDecisionSchema).max(100).optional().default([]),
 }).strict();
 
+/** «Отправить обратную связь на почту» — итоги/отчёт участнику, PDF формируется на сервере из того же payload, что и /api/export-pdf. */
+export const sendResultsMailSchema = z.object({
+  to: z.string().trim().toLowerCase().email().max(120),
+  participantName: z.string().trim().min(1).max(120),
+  summary: z.string().trim().min(1).max(2000),
+  pdfPayload: pdfExportSchema,
+}).strict();
+
 /**
  * Схема для экспорта Excel.
  */
@@ -576,6 +604,86 @@ export const zrdIntentSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("eventChoice"), optionId: zrdOptionIdSchema }),
   z.object({ kind: z.literal("pass") }),
 ]);
+
+// =============================================================================
+// ЗРД v2 — матч на 4 места (мультистол)
+// =============================================================================
+
+const zrdRrsIdSchema = z.enum(["ekb", "chel", "tmn", "perm"]);
+const zrdCardIdSchema = z.string().regex(/^[a-z0-9_]+$/, "Некорректный id карты").max(60);
+
+export const createZrdMatchSchema = z.object({
+  scenario: z.enum(["conquest", "crisis", "race", "efficiency"]),
+  difficulty: z.number().int().min(1).max(5).optional().default(3),
+  winMode: z.enum(["year", "race"]).optional().default("year"),
+  missionMode: z.enum(["auto", "manual"]).optional().default("auto"),
+  missionIds: z.array(z.string().regex(/^m_[a-z_]+$/).max(40)).max(6).optional(),
+  keyMissionId: z.string().regex(/^m_[a-z_]+$/).max(40).optional(),
+  /** «Гонка»: настраиваемая цель финиша (KPI + значение), замещает встроенный порог ключевой миссии */
+  raceTargetKpi: z.enum(["sales_growth", "market_coverage", "efficiency", "service_level", "logistics", "staffing"]).optional(),
+  raceTargetValue: z.number().int().min(1).max(100).optional(),
+  swanFrequency: z.enum(["off", "rare", "standard", "storm"]).optional().default("standard"),
+  minutesPerTick: z.number().int().min(2).max(15).optional().default(6),
+  seed: z.number().int().min(0).max(2147483647).optional(),
+  seats: z.array(z.object({
+    rrsId: zrdRrsIdSchema,
+    controller: z.enum(["human", "ai", "off"]),
+    participantName: z.string().max(60).optional(),
+    aiLevel: z.number().int().min(1).max(5).optional(),
+    mascotId: z.enum(["strateg", "media", "dispatcher", "captain"]).optional(),
+  })).length(4),
+});
+
+export const joinZrdMatchSchema = z.object({
+  code: z.string().regex(/^[A-Za-z0-9]{6}$/, "Код — 6 символов"),
+});
+
+export const zrdMatchSeatQuerySchema = z.object({
+  seat: z.string().regex(/^[0-3]$/, "Место — 0..3"),
+});
+
+/** Намерение места матча (SeatIntent) */
+export const zrdMatchIntentSchema = z.object({
+  seatIdx: z.number().int().min(0).max(3),
+  intent: z.discriminatedUnion("kind", [
+    z.object({ kind: z.literal("playCard"), cardId: zrdCardIdSchema }),
+    z.object({ kind: z.literal("standard"), action: zrdStandardActionSchema }),
+    z.object({ kind: z.literal("eventChoice"), optionId: zrdOptionIdSchema }),
+    z.object({ kind: z.literal("swanChoice"), swanId: zrdOptionIdSchema, optionId: zrdOptionIdSchema }),
+    z.object({ kind: z.literal("viewData") }),
+    z.object({ kind: z.literal("pass") }),
+  ]),
+});
+
+export const zrdMatchSwanSchema = z.object({
+  swanId: z.string().regex(/^[a-z_]+$/).max(40),
+  target: z.union([zrdRrsIdSchema, z.literal("all")]),
+});
+
+export const zrdMatchPauseSchema = z.object({
+  paused: z.boolean(),
+});
+
+/** выбор фигурки игроком после входа по коду (следом — своя корпоративная почта, необязательно) */
+export const zrdMatchMascotSchema = z.object({
+  seatIdx: z.number().int().min(0).max(3),
+  mascotId: z.enum(["strateg", "media", "dispatcher", "captain"]),
+  email: z.string().trim().toLowerCase().email().max(120).optional(),
+});
+
+/** Секции инструкции /zrd/manual, к которым админ может добавлять дополнения. */
+export const ZRD_MANUAL_SECTION_IDS = [
+  "about", "roles", "goal", "flow", "turnmap", "interface", "cards",
+  "events", "scenarios", "competencies", "results", "learning", "admin",
+] as const;
+
+export const zrdManualSectionParamSchema = z.object({
+  sectionId: z.enum(ZRD_MANUAL_SECTION_IDS),
+});
+
+export const zrdManualNoteBodySchema = z.object({
+  bodyMd: z.string().max(8000),
+});
 
 // =============================================================================
 // Middleware-фабрики

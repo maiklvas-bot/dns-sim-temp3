@@ -1,61 +1,71 @@
 import { useState, type CSSProperties } from "react";
-import type { PublicZrdState } from "@shared/zrd/engine";
-import type { StandardAction, Resources } from "@shared/zrd/types";
-import { STANDARD_ACTIONS } from "@shared/zrd/content";
-import type { ZrdDeckDef, ZrdDeckCard } from "../../zrd-decks";
+import type { DeckId, MatchCardDef, ZrdSeatView } from "@shared/zrd/match-types";
+import { DECK_VISUAL, cardArt, checkPlayable, handOfDeck } from "../../zrd-match-board";
+import { formatEffects, formatCost } from "../../zrd-view";
 
-/** Лицо карты: оригинальный арт + (опц.) кодовая плашка показателей по нижней границе. */
-function CardFace({ card }: { card: ZrdDeckCard }) {
+/** Лицо карты матча: арт якоря (лист Canva) + кодовая плашка названия/эффектов по нижней границе. */
+function CardFace({ card }: { card: MatchCardDef }) {
+  const img = cardArt(card);
+  const chips = formatEffects(card.effects).slice(0, 2);
   return (
     <span className="zrd-cardface">
-      <img src={card.img} alt={card.title} draggable={false} />
-      {card.stats && card.stats.length > 0 && (
-        <span className="zrd-card-stats">
-          {card.stats.map((s, i) => (
-            <span key={i} className={`zrd-card-stat ${s.good ? "is-good" : "is-bad"}`}>{s.text}</span>
-          ))}
-        </span>
-      )}
+      {img && <img src={img} alt={card.title} draggable={false} />}
+      <span className="zrd-card-stats">
+        <span className="zrd-card-stat is-good" style={{ fontWeight: 700 }}>{card.title}</span>
+        {chips.map((s, i) => (
+          <span key={i} className={`zrd-card-stat ${s.positive ? "is-good" : "is-bad"}`}>{s.text}</span>
+        ))}
+      </span>
     </span>
   );
 }
 
-/** Универсальная колода (левый край). Клик → ВСЕ карты выезжают вправо → выбор → крупно → «Разыграть». */
-export function ZrdDeck({ deck, state, onPlay }: { deck: ZrdDeckDef; state: PublicZrdState; onPlay: (a: StandardAction) => void }) {
-  const [open, setOpen] = useState(false);
+/**
+ * Личная колода места (правый край). Стопка показывает остаток в колоде;
+ * веер — карты ЭТОЙ колоды в руке. Выбор → крупно → «Разыграть» (интент playCard).
+ * Раскрытием управляет борд (глагол слева тоже открывает свою колоду).
+ */
+export function ZrdDeck({ deckId, view, open, onToggle, onPlay }: { deckId: DeckId; view: ZrdSeatView; open: boolean; onToggle: () => void; onPlay: (cardId: string) => void }) {
+  const visual = DECK_VISUAL[deckId];
   const [sel, setSel] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
-  const selected = deck.cards.find((c) => c.id === sel) ?? null;
 
-  const canAct = state.phase === "action" && state.actionsLeft > 0;
-  const afford = (a: StandardAction) =>
-    Object.entries(STANDARD_ACTIONS[a].cost).every(([k, v]) => (state.player.resources[k as keyof Resources] ?? 0) >= (v ?? 0));
-  const playable = (c: ZrdDeckCard) => canAct && afford(c.action);
+  const hand = handOfDeck(view.you, deckId);
+  const remaining = view.you.deckCounts[deckId] ?? 0;
+  const selected = hand.find((c) => c.id === sel) ?? null;
 
-  const play = (c: ZrdDeckCard) => {
+  const play = (c: MatchCardDef) => {
     setPlaying(true);
     window.setTimeout(() => {
-      onPlay(c.action);
+      onPlay(c.id);
       setPlaying(false);
       setSel(null);
-      setOpen(false);
+      if (open) onToggle();
     }, 340);
   };
 
   return (
-    <div className={`zrd-deck${open ? " is-open" : ""}`} style={{ "--acc": deck.accent, "--card-aspect": deck.cardAspect } as CSSProperties}>
-      {/* Стопка — оригинальная картинка листа (ширину колонки задаёт явный width, img её не раздувает) */}
+    // увёл мышь из области колоды (стопка + веер) → веер закрывается сам; крупный просмотр (sel) не трогаем
+    <div className={`zrd-deck${open ? " is-open" : ""}`}
+      style={{ "--acc": visual.accent, "--card-aspect": visual.cardAspect } as CSSProperties}
+      onMouseLeave={() => { if (open && !sel) onToggle(); }}>
       <button type="button" className="zrd-deck__pile"
-        onClick={() => { setOpen((o) => !o); setSel(null); }}
-        title={`Колода «${deck.name}» (${deck.cards.length})`}>
-        <img src={deck.pile} alt={`Колода ${deck.name}`} draggable={false} />
+        onClick={() => { onToggle(); setSel(null); }}
+        title={`Колода «${visual.name}»: в руке ${hand.length}, в колоде ${remaining}`}>
+        <img src={visual.pile} alt={`Колода ${visual.name}: в руке ${hand.length}, в колоде ${remaining}`} draggable={false} />
       </button>
 
-      {/* Веер — ВСЕ карты колоды */}
+      {/* Веер — карты этой колоды в руке (чужие руки и порядок колоды не видны никому) */}
       <div className="zrd-deck__fan">
-        {deck.cards.map((c, i) => (
-          <button key={c.id} type="button" className="zrd-deck__card" style={{ zIndex: i + 1 }}
-            onClick={() => { setOpen(true); setSel(c.id); }} title={c.title}>
+        {hand.length === 0 && open && (
+          <span className="zrd-deck__card" style={{ zIndex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "rgba(255,255,255,0.5)", fontSize: 11, padding: 8 }}>
+            Нет карт этой колоды в руке — добор в начале месяца
+          </span>
+        )}
+        {/* без inline z-index: иначе он перебивает hover-подъём карты на первый план */}
+        {hand.map((c) => (
+          <button key={c.id} type="button" className="zrd-deck__card"
+            onClick={() => setSel(c.id)} title={c.title}>
             <CardFace card={c} />
           </button>
         ))}
@@ -65,16 +75,22 @@ export function ZrdDeck({ deck, state, onPlay }: { deck: ZrdDeckDef; state: Publ
         <div className="zrd-deck__overlay" onClick={() => { if (!playing) setSel(null); }}>
           <div className={`zrd-deck__preview${playing ? " is-playing" : ""}`} onClick={(e) => e.stopPropagation()}>
             <div className="zrd-deck__preview-card"><CardFace card={selected} /></div>
-            {!playing && (
-              <div className="zrd-deck__actions">
-                <button type="button" className="zrd-deck__play" disabled={!playable(selected)}
-                  onClick={() => play(selected)} style={{ background: deck.accent }}
-                  title={playable(selected) ? `Разыграть: ${selected.title}` : "Недоступно (фаза/ходы/ресурсы)"}>
-                  Разыграть
-                </button>
-                <button type="button" className="zrd-deck__close" onClick={() => setSel(null)}>Закрыть</button>
-              </div>
-            )}
+            {!playing && (() => {
+              const check = checkPlayable(view.you, selected);
+              const cost = formatCost(selected.cost);
+              return (
+                <div className="zrd-deck__actions">
+                  <button type="button" className="zrd-deck__play" disabled={!check.ok}
+                    onClick={() => play(selected)} style={{ background: visual.accent }}
+                    title={check.ok
+                      ? `Разыграть: ${selected.title}${cost ? ` (${cost})` : ""}${selected.durationWeeks > 0 ? ` · проект ${selected.durationWeeks} нед.` : ""}`
+                      : check.reason}>
+                    {selected.durationWeeks > 0 ? `Запустить (${selected.durationWeeks} нед.)` : "Разыграть"}{cost ? ` · ${cost}` : ""}
+                  </button>
+                  <button type="button" className="zrd-deck__close" onClick={() => setSel(null)}>Закрыть</button>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}
