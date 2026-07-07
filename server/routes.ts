@@ -35,7 +35,10 @@ import {
   loginRateLimiter,
   recordFailedLogin,
 } from "./middleware/rate-limiter";
-import { FeedbackMailNotConfiguredError, isFeedbackMailConfigured, sendFeedbackMail, verifyFeedbackTransport } from "./mail";
+import {
+  FeedbackMailNotConfiguredError, isFeedbackMailConfigured, sendFeedbackMail, verifyFeedbackTransport,
+  sendContactParticipantMail, sendResultsMail, sendTrainingScheduleMail,
+} from "./mail";
 import { generateCsrfToken, getCsrfToken } from "./middleware/csrf";
 import { internalApiError } from "./middleware/error-handler";
 import {
@@ -64,6 +67,9 @@ import {
   editableVideoCaseSchema,
   excelExportSchema,
   feedbackBodySchema,
+  contactParticipantMailSchema,
+  sendResultsMailSchema,
+  scheduleTrainingMailSchema,
   joinLiveSessionSchema,
   listResultsQuerySchema,
   liveRecoverSessionParamSchema,
@@ -574,6 +580,7 @@ export async function registerRoutes(
         participantId: participant?.id || null,
         participantTokenHash: hashSimulationSessionToken(sessionToken),
         participantName: body.participantName || participant?.fullName || "Участник",
+        participantEmail: body.participantEmail || null,
         evaluatorAccountId: staff?.role === "evaluator" ? staff.id : null,
         evaluatorName: body.assessorName || staff?.displayName || "",
         difficulty: body.difficulty || "medium",
@@ -1588,6 +1595,103 @@ export async function registerRoutes(
         "Не удалось сформировать PDF.",
         error,
       ));
+    }
+  });
+
+  // «Связаться с пользователем» — оценщик пишет участнику на его корпоративную почту.
+  app.post("/api/staff/mail/contact-participant", requireStaff, heavyOperationRateLimiter, validateBody(contactParticipantMailSchema), async (req, res, next) => {
+    try {
+      const body = req.validatedBody as z.infer<typeof contactParticipantMailSchema>;
+      const staff = req.session.staff;
+      await sendContactParticipantMail({
+        to: body.to,
+        participantName: body.participantName,
+        evaluatorName: staff?.displayName || "",
+        subject: body.subject,
+        message: body.message,
+      });
+      recordAudit(req, {
+        area: "evaluator",
+        action: "participant_contacted",
+        actor: staff || null,
+        entityType: "mail",
+        summary: `Письмо участнику ${body.participantName} (${body.to})`,
+      });
+      res.json({ ok: true });
+    } catch (error) {
+      if (error instanceof FeedbackMailNotConfiguredError) {
+        res.status(503).json({ message: "Почта не настроена. Сообщите администратору.", code: "MAIL_NOT_CONFIGURED" });
+        return;
+      }
+      next(internalApiError("MAIL_CONTACT_FAILED", "Не удалось отправить письмо участнику.", error));
+    }
+  });
+
+  // «Отправить обратную связь на почту» — итоги/отчёт участнику; PDF формируется тем же генератором, что и /api/export-pdf.
+  app.post("/api/staff/mail/send-results", requireStaff, heavyOperationRateLimiter, validateBody(sendResultsMailSchema), async (req, res, next) => {
+    try {
+      const body = req.validatedBody as z.infer<typeof sendResultsMailSchema>;
+      const staff = req.session.staff;
+
+      const scriptPath = path.resolve(__dirname, "generate_pdf.py");
+      if (!fs.existsSync(scriptPath)) {
+        next(internalApiError("PDF_EXPORT_FAILED", "Не удалось сформировать PDF.", new Error(`PDF generator not found: ${scriptPath}`)));
+        return;
+      }
+      const pdf = await generatePdfBuffer(body.pdfPayload, scriptPath);
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const filename = `${getPdfFilenamePart(body.participantName)}_${dateStr}.pdf`;
+
+      await sendResultsMail({
+        to: body.to,
+        participantName: body.participantName,
+        evaluatorName: staff?.displayName || "",
+        summary: body.summary,
+        attachments: [{ filename, content: pdf }],
+      });
+      recordAudit(req, {
+        area: "evaluator",
+        action: "results_mailed",
+        actor: staff || null,
+        entityType: "mail",
+        summary: `Результаты отправлены участнику ${body.participantName} (${body.to})`,
+      });
+      res.json({ ok: true });
+    } catch (error) {
+      if (error instanceof FeedbackMailNotConfiguredError) {
+        res.status(503).json({ message: "Почта не настроена. Сообщите администратору.", code: "MAIL_NOT_CONFIGURED" });
+        return;
+      }
+      next(internalApiError("MAIL_RESULTS_FAILED", "Не удалось отправить результаты на почту.", error));
+    }
+  });
+
+  // «Назначить обучение на определённую дату».
+  app.post("/api/staff/mail/schedule-training", requireStaff, heavyOperationRateLimiter, validateBody(scheduleTrainingMailSchema), async (req, res, next) => {
+    try {
+      const body = req.validatedBody as z.infer<typeof scheduleTrainingMailSchema>;
+      const staff = req.session.staff;
+      await sendTrainingScheduleMail({
+        to: body.to,
+        participantName: body.participantName,
+        evaluatorName: staff?.displayName || "",
+        trainingDate: body.trainingDate,
+        note: body.note,
+      });
+      recordAudit(req, {
+        area: "evaluator",
+        action: "training_scheduled_mail_sent",
+        actor: staff || null,
+        entityType: "mail",
+        summary: `Уведомление об обучении отправлено ${body.participantName} (${body.to}) на ${body.trainingDate}`,
+      });
+      res.json({ ok: true });
+    } catch (error) {
+      if (error instanceof FeedbackMailNotConfiguredError) {
+        res.status(503).json({ message: "Почта не настроена. Сообщите администратору.", code: "MAIL_NOT_CONFIGURED" });
+        return;
+      }
+      next(internalApiError("MAIL_TRAINING_FAILED", "Не удалось отправить уведомление об обучении.", error));
     }
   });
 

@@ -275,6 +275,8 @@ export const simulationSessions = sqliteTable("simulation_sessions", {
   participantId: integer("participant_id"),
   participantTokenHash: text("participant_token_hash"),
   participantName: text("participant_name").notNull(),
+  /** участник вводит сам при входе по коду (не оценщик) — для обратной связи и дальнейшей коммуникации */
+  participantEmail: text("participant_email"),
   evaluatorAccountId: integer("evaluator_account_id"),
   evaluatorName: text("evaluator_name").notNull().default(""),
   difficulty: text("difficulty").notNull().default("medium"),

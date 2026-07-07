@@ -106,6 +106,22 @@ export const feedbackBodySchema = z.object({
   url: z.string().trim().max(300).optional(),
 }).strict();
 
+/** «Связаться с пользователем» — оценщик пишет участнику на его корпоративную почту. */
+export const contactParticipantMailSchema = z.object({
+  to: z.string().trim().toLowerCase().email().max(120),
+  participantName: z.string().trim().min(1).max(120),
+  subject: z.string().trim().min(1).max(200),
+  message: z.string().trim().min(1).max(4000),
+}).strict();
+
+/** «Назначить обучение на определённую дату». */
+export const scheduleTrainingMailSchema = z.object({
+  to: z.string().trim().toLowerCase().email().max(120),
+  participantName: z.string().trim().min(1).max(120),
+  trainingDate: z.string().trim().min(1).max(60),
+  note: z.string().trim().max(1000).optional(),
+}).strict();
+
 /**
  * Схема для создания симуляционной сессии.
  * Валидация всех полей с ограничениями диапазонов.
@@ -113,6 +129,8 @@ export const feedbackBodySchema = z.object({
 export const createSimulationSessionSchema = z.object({
   participantName: nameSchema.optional().default("Участник"),
   participantExternalId: z.string().max(100).nullable().optional().default(null),
+  /** участник вводит сам при входе по коду (не оценщик) — для обратной связи и дальнейшей коммуникации */
+  participantEmail: z.string().trim().toLowerCase().email().max(120).optional(),
   assessorName: z.string().max(100).optional().default(""),
   difficulty: z.enum(["easy", "medium", "hard"]).optional().default("medium"),
   selectedCaseIds: z.array(idStringSchema).optional().default([]),
@@ -504,6 +522,14 @@ export const pdfExportSchema = z.object({
   verdict: pdfVerdictSchema.optional().default({}),
   retestDate: pdfSafeText(120).optional().default(""),
   impactfulDecisions: z.array(pdfImpactfulDecisionSchema).max(100).optional().default([]),
+}).strict();
+
+/** «Отправить обратную связь на почту» — итоги/отчёт участнику, PDF формируется на сервере из того же payload, что и /api/export-pdf. */
+export const sendResultsMailSchema = z.object({
+  to: z.string().trim().toLowerCase().email().max(120),
+  participantName: z.string().trim().min(1).max(120),
+  summary: z.string().trim().min(1).max(2000),
+  pdfPayload: pdfExportSchema,
 }).strict();
 
 /**

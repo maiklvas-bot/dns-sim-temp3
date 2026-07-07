@@ -4,9 +4,9 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "dev": "cross-env NODE_ENV=development tsx server/index.ts",
+    "dev": "cross-env NODE_ENV=development tsx --env-file-if-exists=.env server/index.ts",
     "build": "tsx script/build.ts",
-    "start": "cross-env NODE_ENV=production node dist/index.cjs",
+    "start": "cross-env NODE_ENV=production node --env-file-if-exists=.env dist/index.cjs",
     "check": "tsc",
     "lint": "npm run check",
     "test": "tsx script/ci-smoke.ts",
