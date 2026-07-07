@@ -310,6 +310,27 @@ export interface ZrdSeatView {
   winnerSeat?: number | null;
 }
 
+/** сводка матча для листинга в панели оценщика («Активные сессии») — без полного состояния */
+export interface ZrdMatchListItem {
+  id: number;
+  status: string;
+  paused: boolean;
+  evaluatorName: string;
+  scenario: ScenarioId;
+  difficulty: Difficulty;
+  startedAt: string;
+  completedAt: string | null;
+  tick: number;
+  quarter: number;
+  seats: Array<{
+    seatIdx: number;
+    rrsId: RrsId;
+    controllerKind: SeatController["kind"];
+    participantName: string | null;
+    accessCode: string | null;
+  }>;
+}
+
 export interface ZrdObserverView {
   tick: number;
   quarter: number;

@@ -7,7 +7,7 @@
 import type { CompetencyScores, Difficulty } from "@shared/zrd/types";
 import type {
   MatchConfig, MatchState, SeatIntent, SeatSetup, RrsId, ScenarioId, WinMode, MissionMode,
-  SwanFrequency, AiLevel, MascotId,
+  SwanFrequency, AiLevel, MascotId, ZrdMatchListItem,
 } from "@shared/zrd/match-types";
 import { RRS_IDS } from "@shared/zrd/match-types";
 import {
@@ -339,6 +339,36 @@ export const zrdMatchService = {
         outcome: JSON.parse(r.outcomeJson) as Record<string, unknown>,
       })),
     };
+  },
+
+  /** сводка активных/недавних матчей для панели оценщика («Активные сессии») */
+  listMatches(limit = 50): ZrdMatchListItem[] {
+    return zrdMatchStorage.listMatches(limit).map((row) => {
+      const match = this.refreshMatch(row.id) ?? row;
+      const state = parseState(match.stateJson);
+      const config = parseConfig(match.configJson);
+      const seats = zrdMatchStorage.getSeats(match.id);
+      const observer = toObserverView(state);
+      return {
+        id: match.id,
+        status: match.status,
+        paused: Boolean(match.paused),
+        evaluatorName: match.evaluatorName,
+        scenario: config.scenario,
+        difficulty: config.difficulty,
+        startedAt: match.startedAt,
+        completedAt: match.completedAt,
+        tick: observer.tick,
+        quarter: observer.quarter,
+        seats: seats.map((s) => ({
+          seatIdx: s.seatIdx,
+          rrsId: s.rrsId as RrsId,
+          controllerKind: s.controllerKind as ZrdMatchListItem["seats"][number]["controllerKind"],
+          participantName: s.participantName,
+          accessCode: s.accessCode,
+        })),
+      };
+    });
   },
 
   triggerSwan(matchId: number, swanId: string, target: RrsId | "all") {

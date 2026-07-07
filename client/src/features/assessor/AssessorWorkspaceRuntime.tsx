@@ -33,7 +33,7 @@ import {
   MousePointerClick, ListChecks, Settings2, Target, GitBranch,
   ArrowUpRight, ArrowDownRight, SlidersHorizontal, ClipboardCheck, Map,
   Activity, Gauge, Copy, ShieldCheck,
-  LogOut, Save, HeartPulse,
+  LogOut, Save, HeartPulse, X,
 } from "lucide-react";
 
 // Иконка «активные сессии» — сердечный ритм (мягкая пульсация).
@@ -85,7 +85,9 @@ import type {
 } from "./assessor-types";
 import { cloneChannelItemIds, cloneMetrics, createAssessorParticipantId, createDefaultParticipantSetup } from "./assessor-utils";
 import { AssessorWiki } from "./components/AssessorWiki";
-import { ZrdLaunchWizard } from "./ZrdLaunchWizard";
+import { ZrdLaunchWizard, ZrdMatchCodesAndMonitor } from "./ZrdLaunchWizard";
+import { fetchZrdMatchList } from "../zrd/zrd-match-api";
+import { SCENARIOS } from "@shared/zrd/content-scenarios";
 import { AssessorTooltip as Tooltip } from "./components/AssessorTooltip";
 import { WizardSteps } from "./components/WizardSteps";
 import { useSetupValidation } from "./hooks/useSetupValidation";
@@ -173,6 +175,13 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     queryFn: getQueryFn<LiveSimulationMonitorSummary[]>({ on401: "throw" }),
     refetchInterval: 2500,
   });
+  // матчи ЗРД — отдельный листинг (выдан код → сессия должна быть видна независимо от типа симуляции)
+  const zrdMatchesQuery = useQuery({
+    queryKey: ["/api/staff/zrd-matches"],
+    queryFn: () => fetchZrdMatchList(),
+    refetchInterval: 2500,
+  });
+  const [zrdObserveMatchId, setZrdObserveMatchId] = useState<number | null>(null);
   const staffPrincipalQuery = useQuery({
     queryKey: ["/api/staff/me"],
     queryFn: getQueryFn<{ username: string; displayName: string; role: "admin" | "evaluator" }>({ on401: "throw" }),
@@ -241,6 +250,10 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   const monitorSessions = useMemo(
     () => liveSessionsQuery.data || [],
     [liveSessionsQuery.data],
+  );
+  const monitorZrdMatches = useMemo(
+    () => zrdMatchesQuery.data || [],
+    [zrdMatchesQuery.data],
   );
 
   const captureCurrentParticipantSetup = (): AssessorParticipantConfig => ({
@@ -662,7 +675,9 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     },
   ];
   const setupProgress = reviewItems.filter((item) => item.done).length;
-  const completedSessionCount = monitorSessions.filter((item) => item.status === "completed").length;
+  const completedSessionCount = monitorSessions.filter((item) => item.status === "completed").length
+    + monitorZrdMatches.filter((item) => item.status === "completed").length;
+  const activeZrdMatchCount = monitorZrdMatches.filter((item) => item.status !== "completed").length;
 
   const copyAccessCode = async (code: string) => {
     try {
@@ -831,7 +846,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   }> = [
     { id: "participant", title: "Кандидаты", state: `${visibleParticipantSetups.length}`, icon: Users, active: activePanel === "participant" },
     { id: "scenario", title: "Настройка оценки", state: `${setupProgress}/4`, icon: Settings2, active: isSetupPanel },
-    { id: "sessions", title: "Активные сессии", state: `${monitorSessions.filter((item) => item.status !== "completed").length}`, icon: SessionsHeartIcon, active: activePanel === "sessions" },
+    { id: "sessions", title: "Активные сессии", state: `${monitorSessions.filter((item) => item.status !== "completed").length + activeZrdMatchCount}`, icon: SessionsHeartIcon, active: activePanel === "sessions" },
     { id: "results", title: "Результаты", state: `${completedSessionCount}`, icon: ResultsBarsIcon, active: activePanel === "results" },
   ];
   const railItems = baseRailItems.map((item) => ({
@@ -1417,6 +1432,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
 
   const renderSessionsPanel = (resultsOnly = false) => {
     const visibleSessions = monitorSessions.filter((session) => resultsOnly ? session.status === "completed" : session.status !== "completed");
+    const visibleZrdMatches = monitorZrdMatches.filter((m) => resultsOnly ? m.status === "completed" : m.status !== "completed");
     return (
     <section className="dns-assessor-v2-panel dns-assessor-v2-main-panel">
       <div className="dns-assessor-v2-panel-head">
@@ -1426,7 +1442,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
           <p>{resultsOnly ? "Завершенные прохождения, итоговые отчеты и экспорт PDF." : "Статус, прогресс и текущая оценка участников в реальном времени."}</p>
         </div>
         <span className={`dns-assessor-v2-pill ${resultsOnly ? "" : "dns-assessor-v2-pill--ok"}`}>
-          {visibleSessions.length} {resultsOnly ? "завершено" : "в работе"}
+          {visibleSessions.length + visibleZrdMatches.length} {resultsOnly ? "завершено" : "в работе"}
         </span>
       </div>
 
@@ -1435,6 +1451,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         <div><span>Идут</span><strong className="text-[#35d38a]">{monitorSessions.filter((item) => item.status === "running").length}</strong></div>
         <div><span>Ожидают</span><strong className="text-[#f5c04e]">{monitorSessions.filter((item) => item.status === "waiting").length}</strong></div>
         <div><span>Завершены</span><strong className="text-[#5eb1ff]">{monitorSessions.filter((item) => item.status === "completed").length}</strong></div>
+        <div><span>Матчи ЗРД</span><strong className="text-[#FF6B00]">{monitorZrdMatches.filter((item) => item.status !== "completed").length}</strong></div>
       </div>}
 
       {!resultsOnly && launchResults.length > 0 && (
@@ -1500,6 +1517,65 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
                 <Button type="button" size="sm" variant="outline" className="border-[#ff6472]/35 bg-transparent text-[#ffc2c8] hover:bg-[#ff6472]/10" onClick={() => removeLiveSession(session.liveSessionId)} disabled={removeLoadingId === session.liveSessionId}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   {removeLoadingId === session.liveSessionId ? "Удаление..." : "Удалить"}
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Матчи ЗРД — отдельный список: у матча до 4 кодов и участников, в отличие от одиночной сессии Космонавта */}
+      <div className="dns-assessor-v2-panel-head" style={{ marginTop: visibleZrdMatches.length > 0 ? "1.5rem" : 0 }}>
+        <div>
+          <div className="dns-assessor-v2-kicker">Институт ЗРД</div>
+          <h2 style={{ fontSize: "1.05rem" }}>{resultsOnly ? "Завершённые матчи ЗРД" : "Матчи ЗРД"}</h2>
+        </div>
+      </div>
+      <div className="dns-assessor-v2-session-list">
+        {visibleZrdMatches.length === 0 && (
+          <div className="dns-assessor-v2-empty">
+            <Info className="h-4 w-4" />
+            {resultsOnly ? "Завершённых матчей ЗРД пока нет." : "Активных матчей ЗРД пока нет."}
+          </div>
+        )}
+        {visibleZrdMatches.map((match) => {
+          const statusInfo = getStatusLabel(match.status === "in_progress" ? "running" : match.status);
+          const humanSeats = match.seats.filter((s) => s.controllerKind === "human");
+          const progressPercent = Math.round((match.tick / 12) * 100);
+          return (
+            <div key={`zrd-${match.id}`} className="dns-assessor-v2-session-card">
+              <div className="dns-assessor-v2-session-person">
+                <span className="dns-assessor-v2-session-avatar">З</span>
+                <div className="min-w-0">
+                  <strong>{humanSeats.length > 0 ? humanSeats.map((s) => s.participantName).join(", ") : "Только ИИ"}</strong>
+                  <p>Оценщик: {match.evaluatorName || "—"} · {SCENARIOS[match.scenario]?.title ?? match.scenario}</p>
+                </div>
+              </div>
+              <div className="dns-assessor-v2-session-code">
+                <span>Коды участников</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {humanSeats.length === 0 && <span className="text-xs text-white/40">—</span>}
+                  {humanSeats.map((s) => (
+                    <span key={s.seatIdx}>{renderCopyAccessCodeButton(s.accessCode ?? "")}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="dns-assessor-v2-session-state">
+                <span className={statusInfo.color}>{match.paused ? "Пауза" : statusInfo.label}</span>
+                <div className="dns-assessor-v2-progress">
+                  <span style={{ width: progressPercent + "%" }} />
+                </div>
+                <em>Мес {match.tick}/12 · Кв {match.quarter}</em>
+              </div>
+              <div className="dns-assessor-v2-session-score">
+                <span>Сложность</span>
+                <strong>{match.difficulty}</strong>
+                <small>из 5</small>
+              </div>
+              <div className="dns-assessor-v2-session-actions">
+                <Button type="button" size="sm" className="bg-[#5eb1ff] text-white hover:bg-[#4a9fe8]" onClick={() => setZrdObserveMatchId(match.id)}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Наблюдать
                 </Button>
               </div>
             </div>
@@ -1783,6 +1859,25 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
             knownNames={knownParticipantNames}
           />
         )}
+        {zrdObserveMatchId !== null && (() => {
+          const match = monitorZrdMatches.find((m) => m.id === zrdObserveMatchId);
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(8,12,22,0.7)", backdropFilter: "blur(4px)" }} role="dialog" aria-modal="true" aria-label="Наблюдение за матчем ЗРД">
+              <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border" style={{ background: "#101725", borderColor: "rgba(255,255,255,0.09)" }}>
+                <header className="flex items-center gap-3 border-b px-5 py-4" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+                  <div className="text-base font-extrabold text-white">Матч ЗРД #{zrdObserveMatchId}{match ? ` · ${SCENARIOS[match.scenario]?.title ?? match.scenario}` : ""}</div>
+                  <button type="button" onClick={() => setZrdObserveMatchId(null)} aria-label="Закрыть" className="ml-auto rounded-lg border p-1.5 text-white/60" style={{ borderColor: "rgba(255,255,255,0.12)", cursor: "pointer" }}>
+                    <X className="h-4 w-4" aria-hidden />
+                  </button>
+                </header>
+                <ZrdMatchCodesAndMonitor
+                  matchId={zrdObserveMatchId}
+                  seats={(match?.seats ?? []).map((s) => ({ ...s, aiLevel: null }))}
+                />
+              </div>
+            </div>
+          );
+        })()}
         <ProductFooter />
       </div>
     </div>

@@ -150,6 +150,14 @@ async function main() {
   check("почта сохранена в состоянии места", Boolean(ctrl && ctrl.kind === "human" && ctrl.email === "vera@dns-shop.ru"));
   check("маскот выбран", seatAfterMascot?.view.you.mascotId === "captain" && seatAfterMascot?.view.you.mascotChosen === true);
 
+  // листинг матчей для панели «Активные сессии» оценщика (код выдан → матч должен быть виден)
+  const list = zrdMatchService.listMatches();
+  const listedM1 = list.find((m) => m.id === matchId);
+  const listedM2 = list.find((m) => m.id === m2);
+  check("листинг содержит оба матча", Boolean(listedM1 && listedM2));
+  check("листинг: завершённый матч помечен completed", listedM1?.status === "completed");
+  check("листинг: коды и имена мест на месте", listedM2?.seats.some((s) => s.accessCode && s.participantName === "Вера") ?? false);
+
   if (failures > 0) { console.error(`\n${failures} проверок провалено`); process.exit(1); }
   console.log("\nВсе проверки сервиса матча пройдены.");
 }

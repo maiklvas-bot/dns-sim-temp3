@@ -364,8 +364,8 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
   );
 }
 
-/** Экран после создания: коды входа + мини-наблюдение (поллинг observer-view) */
-function ZrdMatchCodesAndMonitor({ matchId, seats }: { matchId: number; seats: CreatedMatchSeat[] }) {
+/** Экран после создания: коды входа + мини-наблюдение (поллинг observer-view); переиспользуется и из «Активных сессий» */
+export function ZrdMatchCodesAndMonitor({ matchId, seats }: { matchId: number; seats: CreatedMatchSeat[] }) {
   const [copied, setCopied] = useState<string | null>(null);
   const [obs, setObs] = useState<ObserverResponse | null>(null);
   const [swanId, setSwanId] = useState(BLACK_SWANS[0].id);

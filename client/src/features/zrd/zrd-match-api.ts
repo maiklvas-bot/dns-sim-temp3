@@ -6,7 +6,7 @@
 import { apiRequest, getCsrfToken } from "@/lib/queryClient";
 import type {
   RrsId, ScenarioId, WinMode, MissionMode, SwanFrequency, AiLevel, MascotId,
-  SeatIntent, ZrdSeatView, ZrdObserverView, ActiveSwan,
+  SeatIntent, ZrdSeatView, ZrdObserverView, ActiveSwan, ZrdMatchListItem,
 } from "@shared/zrd/match-types";
 import type { Difficulty, CompetencyScores } from "@shared/zrd/types";
 
@@ -144,6 +144,12 @@ export interface ObserverResponse {
 
 export async function fetchObserverView(matchId: number): Promise<ObserverResponse> {
   const res = await apiRequest("GET", `/api/zrd/match/${matchId}/observer`);
+  return res.json();
+}
+
+/** сводка матчей ЗРД для панели «Активные сессии» (у оценщика) */
+export async function fetchZrdMatchList(): Promise<ZrdMatchListItem[]> {
+  const res = await apiRequest("GET", "/api/staff/zrd-matches");
   return res.json();
 }
 

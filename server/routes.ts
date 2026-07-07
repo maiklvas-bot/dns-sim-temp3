@@ -1272,6 +1272,15 @@ export async function registerRoutes(
     res.json(liveSessionService.listSessions());
   });
 
+  // Матчи ЗРД — отдельный листинг (у матча может быть до 4 кодов вместо одного)
+  app.get("/api/staff/zrd-matches", requireStaff, (_req, res, next) => {
+    try {
+      res.json(zrdMatchService.listMatches());
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_LIST_FAILED", "Не удалось получить список матчей ЗРД.", error));
+    }
+  });
+
   app.delete("/api/live-sessions/:id", requireStaff, validateParams(liveSessionIdParamSchema), (req, res) => {
     const { id } = req.validatedParams as z.infer<typeof liveSessionIdParamSchema>;
     const before = liveSessionService.getSessionById(id);
