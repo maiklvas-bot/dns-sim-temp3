@@ -6,7 +6,7 @@
  * СВОЙ блок интерактивен: маскот ходит по одному шагу (клик по соседней клетке, как в HoMM).
  * Блоки: TL=Пермь (пригород), TR=Челябинск (даунтаун), BL=Екатеринбург (кварталы), TN=BR=Тюмень.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Store, Warehouse, Factory, Truck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { MascotId, RrsId, ZrdSeatView } from "@shared/zrd/match-types";
@@ -145,6 +145,8 @@ interface BlockData {
   coveragePct: number;
   discard?: string[];
   isYou: boolean;
+  /** счётчик активности места: растёт с каждым действием → маскот сам делает шаг (HoMM-стиль) */
+  activity: number;
 }
 
 /** один регион на полотне: решётка + маскот + постройки (рисуется внутрь общего svg) */
@@ -155,6 +157,39 @@ function DistrictBlock({ data, interactive }: { data: BlockData; interactive: bo
   const [mascot, setMascot] = useState<Axial>(CAPITAL);
   const off = data.controllerKind === "off";
   const figure = MASCOT_VISUAL[data.mascotId ?? "strateg"] ?? MASCOT_VISUAL.strateg;
+
+  // ── авто-ход маскота (HoMM-стиль): каждое действие места двигает фигурку на клетку сама,
+  //    без кликов пользователя; работает и для ИИ-мест (по их публичному счётчику активности)
+  const visitedRef = useRef<Set<string>>(new Set([cellKey(CAPITAL)]));
+  const prevActivity = useRef(data.activity);
+  const stepTimers = useRef<number[]>([]);
+  const [stepFx, setStepFx] = useState<{ key: number; cell: Axial } | null>(null);
+  useEffect(() => () => { stepTimers.current.forEach((t) => window.clearTimeout(t)); }, []);
+
+  const autoStep = () => {
+    setMascot((m) => {
+      const nbs = cells.filter((c) => isNeighbor(m, c));
+      if (nbs.length === 0) return m;
+      const fresh = nbs.filter((c) => !visitedRef.current.has(cellKey(c)));
+      const pool = fresh.length > 0 ? fresh : nbs;
+      const pick = pool[Math.floor(Math.random() * pool.length)];
+      visitedRef.current.add(cellKey(pick));
+      setStepFx({ key: Date.now() + Math.random(), cell: pick });
+      return pick;
+    });
+  };
+
+  useEffect(() => {
+    const delta = data.activity - prevActivity.current;
+    prevActivity.current = data.activity;
+    if (off || delta <= 0) return;
+    // несколько действий между поллингами → серия шагов с паузой (виден сам ход, как в HoMM)
+    const steps = Math.min(delta, 3);
+    for (let i = 0; i < steps; i++) {
+      stepTimers.current.push(window.setTimeout(autoStep, i * 480));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.activity, off]);
 
   const litKeys = useMemo(() => {
     const byDist = [...cells].sort((a, c) => {
@@ -208,9 +243,9 @@ function DistrictBlock({ data, interactive }: { data: BlockData; interactive: bo
             strokeWidth={canStep ? 3.5 : 1.4}
             strokeDasharray={canStep ? "9 7" : undefined}
             style={{ cursor: canStep ? "pointer" : "default", transition: "fill 300ms ease, stroke 200ms ease", outline: "none" }}
-            onClick={() => { if (canStep) setMascot(c); }}
+            onClick={() => { if (canStep) { visitedRef.current.add(key); setMascot(c); } }}
             tabIndex={canStep ? 0 : -1}
-            onKeyDown={(e) => { if (canStep && (e.key === "Enter" || e.key === " ")) setMascot(c); }}
+            onKeyDown={(e) => { if (canStep && (e.key === "Enter" || e.key === " ")) { visitedRef.current.add(key); setMascot(c); } }}
           >
             <title>{canStep ? "Шагнуть сюда (1 ход)" : lit ? "Освоено — показатели растут" : "Дикая клетка"}</title>
           </path>
@@ -219,6 +254,12 @@ function DistrictBlock({ data, interactive }: { data: BlockData; interactive: bo
 
       {/* столица */}
       <path d={hexPath(b, corners, CAPITAL, 0.85)} fill="none" stroke="#ffd166" strokeWidth={3} pointerEvents="none" />
+
+      {/* эффект шага: расходящееся кольцо на клетке, куда пришёл маскот */}
+      {stepFx && !off && (() => {
+        const p = center(b, stepFx.cell);
+        return <circle key={stepFx.key} cx={p.x} cy={p.y} r={22} className="zrd-step-fx" style={{ stroke: figure.accent }} pointerEvents="none" />;
+      })()}
 
       {/* постройки из сыгранных карт (только свой блок) */}
       {buildings.map((bl, i) => {
@@ -277,6 +318,8 @@ export function ZrdIslandMap({ view }: { view: ZrdSeatView }) {
         coveragePct: computeKpi(view.you).market_coverage,
         discard: view.you.discard,
         isYou: true,
+        // каждое действие (карта/стандарт) и пас двигают фигурку сами
+        activity: view.you.actionsTotal + (view.you.passed ? 1 : 0),
       };
     }
     const other = view.others.find((o) => o.rrsId === rrsId);
@@ -287,6 +330,8 @@ export function ZrdIslandMap({ view }: { view: ZrdSeatView }) {
       mascotId: other?.mascotId,
       coveragePct: other?.kpi.market_coverage ?? 0,
       isYou: false,
+      // у чужих мест виден сброс и факт паса — этого достаточно, чтобы их маскоты «жили»
+      activity: (other?.discardCount ?? 0) + (other?.passed ? 1 : 0),
     };
   });
 

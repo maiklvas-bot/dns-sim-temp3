@@ -1,5 +1,5 @@
 import "@/styles/zrd.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, AlertCircle, Layers, PauseCircle, BookOpen } from "lucide-react";
 import { useDnsTheme } from "@/components/theme-toggle";
@@ -40,6 +40,13 @@ export default function ZrdGameWorkspace() {
   const showResults = Boolean(view?.matchEnded);
   // матчи, созданные до появления маскотов, не несут mascotId — даём фигурку по умолчанию
   const mascot = view ? (MASCOT_VISUAL[view.you.mascotId] ?? MASCOT_VISUAL.strateg) : null;
+
+  // Квартальная дилемма БЛОКИРУЕТ все действия месяца (EVENT_PENDING) — открываем её диалог сами,
+  // как событие в HoMM: иначе игрок видит «мёртвые» кнопки и не понимает, что матч ждёт его решения.
+  const pendingEventId = view?.you.pendingEvent?.id ?? null;
+  useEffect(() => {
+    if (pendingEventId) setEventOpen(true);
+  }, [pendingEventId]);
 
   // диалог реакции на лебедя: переиспользуем форму события (равная форма §8a)
   const swanDef = swanOpen ? getSwan(swanOpen) : null;

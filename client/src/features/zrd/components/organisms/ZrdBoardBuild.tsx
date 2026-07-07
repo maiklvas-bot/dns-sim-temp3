@@ -14,6 +14,7 @@ import { ZrdTerritories } from "./ZrdTerritories";
 import { ZrdDiscard } from "./ZrdDiscard";
 import { ZrdClosingBlock } from "./ZrdClosingBlock";
 import { ZrdIslandMap } from "./ZrdIslandMap";
+import { ZrdHelperMascot } from "./ZrdHelperMascot";
 
 interface Props {
   view: ZrdSeatView;
@@ -67,6 +68,8 @@ export function ZrdBoardBuild({ view, openDeck, onToggleDeck, onStandard, onPlay
           >
             {view.you.passed ? "Ход завершён — ждём остальных" : `Завершить месяц (осталось действий: ${view.you.actionsLeft})`}
           </button>
+          {/* помощник: свободный маскот с подсказкой, если игрок «завис» на 10 секунд */}
+          <ZrdHelperMascot view={view} />
         </div>
         {/* Нижняя полоса: 4 РРС + колода сброса */}
         <div className="flex shrink-0 gap-2" style={{ height: "calc((100% - 32px) / 5)", minHeight: 120 }}>

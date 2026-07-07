@@ -1160,6 +1160,8 @@ export default function AdminPage() {
   const [scheduleDraft, setScheduleDraft] = useState<ScheduleRow[]>([]);
   const [comparisonSelection, setComparisonSelection] = useState<number[]>([]);
   const [mailDialog, setMailDialog] = useState<{ rowId: number; mode: "contact" | "results" | "training" } | null>(null);
+  // диагностика SMTP из вкладки «Настройки»: конфиг + живое соединение, без отправки письма
+  const [mailDiag, setMailDiag] = useState<{ loading: boolean; result: { configured: boolean; ok: boolean; error?: string } | null }>({ loading: false, result: null });
 
   const {
     queryClient,
@@ -2200,10 +2202,7 @@ export default function AdminPage() {
           </div>
           <div className="dns-header-actions dns-admin-header-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <Button variant="outline" size="sm" onClick={() => setAuditHistoryOpen(true)}>
-              <History className="mr-1.5 h-4 w-4" />
-              История
-            </Button>
+            {/* «История» — только внизу навигации (по просьбе пользователя убрана из шапки) */}
             <FeedbackButton size="sm" />
             <Button variant="outline" size="sm" onClick={() => navigate("/evaluator")}>
               В оценщик
@@ -3347,6 +3346,47 @@ export default function AdminPage() {
                     />
                   </div>
                 ))}
+              </div>
+
+              {/* Диагностика почты: конфигурация из .env сервера + живое соединение с Exchange (без отправки) */}
+              <div className="mt-4 rounded-xl border border-[#243244] bg-[#141c2b]/45 p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <div className="text-sm font-semibold text-white">Почта (SMTP / Exchange)</div>
+                    <div className="mt-1 text-xs text-[#8aa2c4]">
+                      Настраивается в .env сервера (FEEDBACK_SMTP_*). Проверка соединяется с сервером почты, письмо не отправляет.
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="border-[#2a3a4e] bg-transparent text-[#8ec5ff]"
+                    disabled={mailDiag.loading}
+                    onClick={async () => {
+                      setMailDiag({ loading: true, result: null });
+                      try {
+                        const res = await apiRequest("GET", "/api/feedback/diagnostics");
+                        setMailDiag({ loading: false, result: await res.json() });
+                      } catch (err: any) {
+                        setMailDiag({ loading: false, result: { configured: false, ok: false, error: err?.message || "Запрос диагностики не прошёл" } });
+                      }
+                    }}
+                  >
+                    {mailDiag.loading ? "Проверяем..." : "Проверить соединение"}
+                  </Button>
+                </div>
+                {mailDiag.result && (
+                  <div className={`mt-3 rounded-lg border px-3 py-2 text-xs ${mailDiag.result.ok
+                    ? "border-[#35d38a]/40 bg-[#35d38a]/10 text-[#9fe8c6]"
+                    : "border-[#ff6472]/40 bg-[#ff6472]/10 text-[#ffc2c8]"}`}>
+                    {mailDiag.result.ok
+                      ? "Соединение и авторизация на почтовом сервере успешны — отправка писем должна работать."
+                      : !mailDiag.result.configured
+                        ? "SMTP не сконфигурирован: сервер не видит FEEDBACK_SMTP_HOST/FEEDBACK_FROM. Проверьте, что рядом с приложением лежит .env и сервер запущен через npm start (флаг --env-file-if-exists)."
+                        : `Конфигурация есть, но соединение не удалось: ${mailDiag.result.error || "неизвестная ошибка"}. Типовые причины: порт 587 закрыт файрволом с хоста сервера; неверный пароль; нужен FEEDBACK_SMTP_TLS_REJECT_UNAUTHORIZED=false для внутреннего сертификата Exchange.`}
+                  </div>
+                )}
               </div>
 
               <div className="mt-4 rounded-xl border border-[#243244] bg-[#141c2b]/45 p-4">
