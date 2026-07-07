@@ -10,6 +10,21 @@
 
 ---
 
+## 2026-07-07 (гонка: настраиваемая цель финиша; почта участника; листинг матчей)
+- **«Гонка к цели»**: цель финиша теперь настраивается оценщиком в мастере запуска —
+  любой из 6 KPI + значение 1–100 (`MatchConfig.raceTargetKpi/raceTargetValue`); замещает
+  финальный порог ключевой миссии. Без настройки поведение прежнее. Win-condition движка
+  сравнивает `computeKpi(seat)[targetKpi] >= targetValue` вместо `missionDone[keyMissionId]` —
+  `shared/zrd/match-engine.ts`, `shared/zrd/match-types.ts`, `server/zrd-match-service.ts`,
+  `client/src/features/assessor/ZrdLaunchWizard.tsx`, раздел [15](15-multistol.md).
+- **Почта участника**: после выбора фигурки игрок может указать свою корпоративную почту
+  (необязательно) — хранится в `SeatController` human-места (`email?`),
+  `ZrdMascotPicker`/`setMascot`.
+- **Листинг матчей**: `zrdMatchService.listMatches()` + `GET /api/staff/zrd-matches` —
+  матчи видны в «Активных сессиях» кабинета оценщика.
+- **Гекс-сетка карты дивизиона**: силуэты 4 блоков заданы точными include-наборами клеток
+  (калибровка по альфа-каналу арта) вместо rect+exclude — `ZrdIslandMap.tsx`.
+
 ## 2026-07-04 (полный комплект карт: 4 разных острова)
 - **Новая раскладка четвертей** по указанию пользователя: 1/4 ЕКБ — крупные кварталы
   (`DAHOaUoPEEo`), 2/4 ЧЕЛ — даунтаун у воды (`DAHOacpI12w`, новый арт island-q4), 3/4 ТМН —
