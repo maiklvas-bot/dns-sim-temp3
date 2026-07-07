@@ -156,7 +156,7 @@ export default function ZrdGameWorkspace() {
         {view && !showResults && view.you.controller.kind === "human" && view.you.mascotChosen === false && (
           <ZrdMascotPicker
             playerName={view.you.controller.name}
-            onPick={(id) => void match.chooseMascot(id)}
+            onComplete={(id, email) => void match.chooseMascot(id, email)}
           />
         )}
 

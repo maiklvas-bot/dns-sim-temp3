@@ -142,6 +142,14 @@ async function main() {
   check("ход в паузе отклонён", !paused.ok && paused.error === "PAUSED");
   check("пауза снимается", zrdMatchService.setPaused(m2, false).ok);
 
+  // выбор фигурки + своя корпоративная почта (участник вводит сам, не оценщик)
+  const mascotRes = zrdMatchService.setMascot(m2, 0, "captain", "vera@dns-shop.ru");
+  check("фигурка + почта приняты", mascotRes.ok === true);
+  const seatAfterMascot = zrdMatchService.getSeatView(m2, 0);
+  const ctrl = seatAfterMascot?.view.you.controller;
+  check("почта сохранена в состоянии места", Boolean(ctrl && ctrl.kind === "human" && ctrl.email === "vera@dns-shop.ru"));
+  check("маскот выбран", seatAfterMascot?.view.you.mascotId === "captain" && seatAfterMascot?.view.you.mascotChosen === true);
+
   if (failures > 0) { console.error(`\n${failures} проверок провалено`); process.exit(1); }
   console.log("\nВсе проверки сервиса матча пройдены.");
 }

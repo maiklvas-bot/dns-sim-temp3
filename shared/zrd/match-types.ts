@@ -19,7 +19,7 @@ export const RRS_LABEL: Record<RrsId, string> = {
 
 export type AiLevel = 1 | 2 | 3 | 4 | 5;
 export type SeatController =
-  | { kind: "human"; name: string }
+  | { kind: "human"; name: string; email?: string }
   | { kind: "ai"; level: AiLevel }
   | { kind: "off" };
 

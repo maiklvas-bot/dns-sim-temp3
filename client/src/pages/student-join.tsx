@@ -35,6 +35,7 @@ export default function StudentJoinPage() {
     assets: getSimulationContentSnapshot().assets,
   });
   const [accessCode, setAccessCode] = useState("");
+  const [participantEmail, setParticipantEmail] = useState("");
   const [joinError, setJoinError] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
 
@@ -52,7 +53,7 @@ export default function StudentJoinPage() {
       await primeAudioPlayback();
       dispatch({ type: "RESET" });
       resetLiveSimulation();
-      const session = await joinRemoteLiveSimulation(normalizedCode);
+      const session = await joinRemoteLiveSimulation(normalizedCode, participantEmail.trim() || undefined);
       setPendingLiveSimulationState(session);
       setLiveSimulationRole("student");
       navigate("/simulation");
@@ -132,6 +133,18 @@ export default function StudentJoinPage() {
             >
               {isJoining ? "Подключаем..." : "Войти в сессию"}
             </button>
+          </div>
+
+          <div className="mt-3">
+            <Input
+              type="email"
+              value={participantEmail}
+              onChange={(event) => setParticipantEmail(event.target.value)}
+              placeholder="Корпоративная почта (необязательно)"
+              className="border-[#2a3a4e] bg-[#141c2b] text-sm text-white placeholder:text-[#4a5068]"
+              data-testid="student-participant-email"
+            />
+            <p className="mt-1.5 text-xs text-[#6a7290]">Для обратной связи и дальнейшей коммуникации по итогам</p>
           </div>
 
           {joinError && (

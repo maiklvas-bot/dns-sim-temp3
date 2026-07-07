@@ -857,8 +857,8 @@ export async function registerRoutes(
   app.post("/api/zrd/match/:id/mascot", validateParams(sessionIdParamSchema), validateBody(zrdMatchMascotSchema), requireZrdMatchSeatAccess, (req, res, next) => {
     try {
       const id = Number(getSingleParam(req.params.id));
-      const { seatIdx, mascotId } = req.validatedBody as z.infer<typeof zrdMatchMascotSchema>;
-      const result = zrdMatchService.setMascot(id, seatIdx, mascotId);
+      const { seatIdx, mascotId, email } = req.validatedBody as z.infer<typeof zrdMatchMascotSchema>;
+      const result = zrdMatchService.setMascot(id, seatIdx, mascotId, email);
       if (!result.ok) {
         return res.status(400).json({ message: "Не удалось выбрать фигурку", code: "ZRD_MATCH_MASCOT_REJECTED", error: result.error });
       }
@@ -1187,7 +1187,7 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Access code is required" });
     }
 
-    const session = liveSessionService.getSessionByAccessCode(accessCode);
+    let session = liveSessionService.getSessionByAccessCode(accessCode);
     if (!session) {
       recordAudit(req, {
         area: "security",
@@ -1199,6 +1199,11 @@ export async function registerRoutes(
         metadata: { accessCodeProvided: accessCode.length > 0 },
       });
       return res.status(404).json({ message: "Live session not found" });
+    }
+
+    // участник сам вводит корпоративную почту при входе (оценщик её не назначает)
+    if (body.email) {
+      session = liveSessionService.setParticipantEmail(session.config.liveSessionId, body.email) ?? session;
     }
 
     recordAudit(req, {

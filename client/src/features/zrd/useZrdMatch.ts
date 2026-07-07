@@ -59,7 +59,7 @@ export interface ZrdMatchApi {
   joinByCode: (code: string) => Promise<void>;
   adoptSeat: (matchId: number, seatIdx: number, token: string) => Promise<void>;
   dispatch: (intent: SeatIntent) => Promise<void>;
-  chooseMascot: (mascotId: MascotId) => Promise<void>;
+  chooseMascot: (mascotId: MascotId, email?: string) => Promise<void>;
   leave: () => void;
 }
 
@@ -149,11 +149,11 @@ export function useZrdMatch(): ZrdMatchApi {
     }
   }, [seat]);
 
-  /** выбор фигурки игроком при входе (до выбора борд показывает экран выбора) */
-  const chooseMascot = useCallback(async (mascotId: MascotId) => {
+  /** выбор фигурки игроком при входе (до выбора борд показывает экран выбора); следом — своя почта */
+  const chooseMascot = useCallback(async (mascotId: MascotId, email?: string) => {
     if (!seat) return;
     try {
-      const res = await setZrdMascot(seat.matchId, seat.seatIdx, mascotId, seat.token);
+      const res = await setZrdMascot(seat.matchId, seat.seatIdx, mascotId, seat.token, email);
       versionRef.current = res.version;
       setView(res.view);
     } catch (e) {

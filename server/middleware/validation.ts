@@ -223,6 +223,8 @@ export const joinLiveSessionSchema = z.object({
     .min(1, "Код доступа обязателен")
     .max(20, "Код доступа слишком длинный")
     .regex(/^[A-Z0-9]+$/, "Неверный формат кода доступа"),
+  /** участник вводит сам при входе — для обратной связи и дальнейшей коммуникации, не обязателен */
+  email: z.string().trim().toLowerCase().email().max(120).optional(),
 });
 
 /**
@@ -633,10 +635,11 @@ export const zrdMatchPauseSchema = z.object({
   paused: z.boolean(),
 });
 
-/** выбор фигурки игроком после входа по коду */
+/** выбор фигурки игроком после входа по коду (следом — своя корпоративная почта, необязательно) */
 export const zrdMatchMascotSchema = z.object({
   seatIdx: z.number().int().min(0).max(3),
   mascotId: z.enum(["strateg", "media", "dispatcher", "captain"]),
+  email: z.string().trim().toLowerCase().email().max(120).optional(),
 });
 
 /** Секции инструкции /zrd/manual, к которым админ может добавлять дополнения. */
