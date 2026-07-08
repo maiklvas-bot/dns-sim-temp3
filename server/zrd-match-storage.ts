@@ -72,6 +72,11 @@ export class ZrdMatchStorage {
     return db.update(zrdMatchSeats).set(patch).where(eq(zrdMatchSeats.id, seatId)).returning().get();
   }
 
+  /** смена РРС места (игрок выбрал РРС сам при входе; при свопе зовётся для обоих мест) */
+  updateSeatRrs(seatId: number, rrsId: string) {
+    return db.update(zrdMatchSeats).set({ rrsId }).where(eq(zrdMatchSeats.id, seatId)).returning().get();
+  }
+
   addTurn(input: InsertZrdMatchTurn) {
     return db.insert(zrdMatchTurns).values({ ...input, createdAt: new Date().toISOString() }).returning().get();
   }

@@ -609,7 +609,7 @@ export const zrdIntentSchema = z.discriminatedUnion("kind", [
 // ЗРД v2 — матч на 4 места (мультистол)
 // =============================================================================
 
-const zrdRrsIdSchema = z.enum(["ekb", "chel", "tmn", "perm"]);
+const zrdRrsIdSchema = z.enum(["ekb", "chel", "tmn", "perm", "chbo2", "svo1"]);
 const zrdCardIdSchema = z.string().regex(/^[a-z0-9_]+$/, "Некорректный id карты").max(60);
 
 export const createZrdMatchSchema = z.object({
@@ -675,6 +675,12 @@ export const zrdMatchMascotSchema = z.object({
   seatIdx: z.number().int().min(0).max(3),
   mascotId: z.enum(["strateg", "media", "dispatcher", "captain"]),
   email: z.string().trim().toLowerCase().email().max(120).optional(),
+});
+
+/** выбор РРС самим игроком при входе (когда людей за столом больше одного) */
+export const zrdMatchRrsSchema = z.object({
+  seatIdx: z.number().int().min(0).max(3),
+  rrsId: zrdRrsIdSchema,
 });
 
 /** Секции инструкции /zrd/manual, к которым админ может добавлять дополнения. */

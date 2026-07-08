@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Store, Warehouse, Factory, Truck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { MascotId, RrsId, ZrdSeatView } from "@shared/zrd/match-types";
-import { RRS_IDS, RRS_LABEL } from "@shared/zrd/match-types";
+import { RRS_LABEL } from "@shared/zrd/match-types";
 import { computeKpi } from "@shared/zrd/kpi";
 import { MASCOT_VISUAL } from "../../zrd-mascots";
 import districtArt from "@/assets/brand/zrd/map/district-full.png";
@@ -38,8 +38,11 @@ interface BlockConfig {
 
 const cellsOf = (list: [number, number][]): Set<string> => new Set(list.map(([q, r]) => `${q},${r}`));
 
-/** калибровка по координатной сетке полотна */
-const BLOCKS: Record<RrsId, BlockConfig> = {
+/** калибровка по координатной сетке полотна: 4 квадранта-острова.
+ *  Классические РРС живут на «домашних» островах; областные (ЧБО2/СВО1) занимают
+ *  квадранты РРС, отсутствующих в составе матча. */
+const QUADRANT_OF_CLASSIC: Partial<Record<RrsId, keyof typeof BLOCKS>> = { perm: "perm", chel: "chel", ekb: "ekb", tmn: "tmn" };
+const BLOCKS = {
   // TL — Пермь: пригород (аэропорт, ферма, очистные; столица — городок с площадью)
   perm: {
     origin: { x: 1030, y: 705 },
@@ -139,6 +142,8 @@ function hashStr(s: string): number {
 // ── данные блока ────────────────────────────────────────────────────────────
 interface BlockData {
   rrsId: RrsId;
+  /** квадрант-остров полотна (классические РРС — домашние, областные — свободные) */
+  quadrant: keyof typeof BLOCKS;
   name: string;
   controllerKind: "human" | "ai" | "off";
   mascotId: MascotId | undefined;
@@ -151,7 +156,7 @@ interface BlockData {
 
 /** один регион на полотне: решётка + маскот + постройки (рисуется внутрь общего svg) */
 function DistrictBlock({ data, interactive }: { data: BlockData; interactive: boolean }) {
-  const b = BLOCKS[data.rrsId];
+  const b = BLOCKS[data.quadrant];
   const corners = useMemo(() => hexCorners(b), [b]);
   const cells = useMemo(() => buildBlockCells(b), [b]);
   const [mascot, setMascot] = useState<Axial>(CAPITAL);
@@ -308,32 +313,57 @@ function DistrictBlock({ data, interactive }: { data: BlockData; interactive: bo
 
 // ── единая карта дивизиона ──────────────────────────────────────────────────
 export function ZrdIslandMap({ view }: { view: ZrdSeatView }) {
-  const blocks: BlockData[] = RRS_IDS.map((rrsId) => {
-    if (rrsId === view.you.rrsId) {
-      return {
-        rrsId,
-        name: view.you.controller.kind === "human" ? view.you.controller.name : RRS_LABEL[rrsId],
-        controllerKind: view.you.controller.kind,
-        mascotId: view.you.mascotId,
-        coveragePct: computeKpi(view.you).market_coverage,
-        discard: view.you.discard,
-        isYou: true,
-        // каждое действие (карта/стандарт) и пас двигают фигурку сами
-        activity: view.you.actionsTotal + (view.you.passed ? 1 : 0),
-      };
-    }
-    const other = view.others.find((o) => o.rrsId === rrsId);
-    return {
-      rrsId,
-      name: other?.name ?? RRS_LABEL[rrsId],
-      controllerKind: other?.controllerKind ?? "off",
-      mascotId: other?.mascotId,
-      coveragePct: other?.kpi.market_coverage ?? 0,
+  // 4 места матча (вы + соперники) в порядке seatIdx; состав РРС задаёт оценщик
+  const seatsAll = [
+    {
+      seatIdx: view.seatIdx,
+      rrsId: view.you.rrsId,
+      name: view.you.controller.kind === "human" ? view.you.controller.name : RRS_LABEL[view.you.rrsId],
+      controllerKind: view.you.controller.kind,
+      mascotId: view.you.mascotId,
+      coveragePct: computeKpi(view.you).market_coverage,
+      discard: view.you.discard,
+      isYou: true,
+      // каждое действие (карта/стандарт) и пас двигают фигурку сами
+      activity: view.you.actionsTotal + (view.you.passed ? 1 : 0),
+    },
+    ...view.others.map((other) => ({
+      seatIdx: other.seatIdx,
+      rrsId: other.rrsId,
+      name: other.name ?? RRS_LABEL[other.rrsId],
+      controllerKind: other.controllerKind,
+      mascotId: other.mascotId,
+      coveragePct: other.kpi.market_coverage ?? 0,
+      discard: undefined as string[] | undefined,
       isYou: false,
       // у чужих мест виден сброс и факт паса — этого достаточно, чтобы их маскоты «жили»
-      activity: (other?.discardCount ?? 0) + (other?.passed ? 1 : 0),
-    };
-  });
+      activity: (other.discardCount ?? 0) + (other.passed ? 1 : 0),
+    })),
+  ].sort((a, z) => a.seatIdx - z.seatIdx);
+
+  // квадранты: классические РРС — на домашних островах; областные (ЧБО2/СВО1) — на свободных
+  const quadTaken = new Set<keyof typeof BLOCKS>();
+  const assigned = new Map<number, keyof typeof BLOCKS>();
+  for (const s of seatsAll) {
+    const home = QUADRANT_OF_CLASSIC[s.rrsId];
+    if (home && !quadTaken.has(home)) { assigned.set(s.seatIdx, home); quadTaken.add(home); }
+  }
+  const freeQuads = (Object.keys(BLOCKS) as (keyof typeof BLOCKS)[]).filter((q) => !quadTaken.has(q));
+  for (const s of seatsAll) {
+    if (!assigned.has(s.seatIdx)) assigned.set(s.seatIdx, freeQuads.shift() ?? "perm");
+  }
+
+  const blocks: BlockData[] = seatsAll.map((s) => ({
+    rrsId: s.rrsId,
+    quadrant: assigned.get(s.seatIdx) ?? "perm",
+    name: s.name,
+    controllerKind: s.controllerKind,
+    mascotId: s.mascotId,
+    coveragePct: s.coveragePct,
+    discard: s.discard,
+    isYou: s.isYou,
+    activity: s.activity,
+  }));
 
   return (
     <div style={{ position: "absolute", inset: 0, background: "#0b0d12" }}>

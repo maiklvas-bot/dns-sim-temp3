@@ -10,7 +10,7 @@ import type {
   MatchConfig, MatchState, SeatState, SeatIntent, SeatIntentResult, ActiveSwan, DeckId,
   ZrdSeatView, ZrdObserverView, ZrdSeatPublicSummary, MissionProgressView, RrsId, MatchCardDef, SeatOutcome, KpiId,
 } from "./match-types";
-import { DECK_IDS, RRS_LABEL, MASCOT_IDS, TICKS_TOTAL, WEEKS_PER_TICK, quarterOfTick, monthOfQuarter, isQuarterEnd } from "./match-types";
+import { DECK_IDS, RRS_LABEL, RRS_PROFILES, MASCOT_IDS, TICKS_TOTAL, WEEKS_PER_TICK, quarterOfTick, monthOfQuarter, isQuarterEnd } from "./match-types";
 import { MATCH_DECK_CARDS, getMatchCard } from "./content-decks";
 import { BLACK_SWANS, SWAN_TICK_PROBABILITY, getSwan } from "./content-swans";
 import { getMission } from "./content-missions";
@@ -136,11 +136,25 @@ function drawCards(s: MatchState, seat: SeatState, count: number): void {
 }
 
 // ── init ────────────────────────────────────────────────────────────────────
+/** особенности РРС (профиль): стартовый твик экономики поверх сложности и сценария */
+function applyRrsProfile(seat: SeatState, rrsId: RrsId): void {
+  const tweak = RRS_PROFILES[rrsId]?.tweak;
+  if (!tweak) return;
+  if (tweak.resources) for (const k of RESOURCE_KEYS) seat.resources[k] = Math.max(0, seat.resources[k] + (tweak.resources[k] ?? 0));
+  if (tweak.metrics) for (const k of METRIC_KEYS) seat.metrics[k] = clampMetric(seat.metrics[k] + (tweak.metrics[k] ?? 0));
+  if (tweak.resourceProd) for (const k of RESOURCE_KEYS) seat.resourceProd[k] = Math.max(0, seat.resourceProd[k] + (tweak.resourceProd[k] ?? 0));
+  if (tweak.metricProd) for (const k of METRIC_KEYS) seat.metricProd[k] = seat.metricProd[k] + (tweak.metricProd[k] ?? 0);
+  if (tweak.incomeDelta) seat.incomeMonthly = Math.max(0, seat.incomeMonthly + tweak.incomeDelta);
+}
+
 export function initMatch(config: MatchConfig): MatchState {
   if (config.seats.length !== 4) throw new Error("MATCH_NEEDS_4_SEATS");
   const diff = DIFFICULTY_CONFIGS[config.difficulty];
   const scenario = SCENARIOS[config.scenario];
   let seed = config.seed >>> 0;
+  // >1 человека за столом → каждый игрок сам выбирает РРС при входе (у людей rrsChosen=false,
+  // профиль РРС применяется в момент выбора); соло-человек/ИИ — РРС закреплена сразу
+  const humanCount = config.seats.filter((s) => s.controller.kind === "human").length;
 
   const seats: SeatState[] = config.seats.map((setup, seatIdx) => {
     const active = setup.controller.kind !== "off";
@@ -153,12 +167,14 @@ export function initMatch(config: MatchConfig): MatchState {
       const sh = shuffle(MATCH_DECK_CARDS.map((c) => c.id), seed);
       deck = sh.arr; seed = sh.seed;
     }
+    const rrsChosen = setup.controller.kind !== "human" || humanCount <= 1;
     return {
       rrsId: setup.rrsId,
       controller: setup.controller,
       mascotId: setup.mascotId ?? MASCOT_IDS[seatIdx % MASCOT_IDS.length],
       // человек выбирает фигурку сам при входе; ИИ/выключенным выбор не нужен
       mascotChosen: setup.controller.kind !== "human" || Boolean(setup.mascotId),
+      rrsChosen,
       resources,
       incomeMonthly: active ? INCOME_MONTHLY[config.difficulty] : 0,
       resourceProd: active ? { ...diff.startProd } : emptyResources(),
@@ -179,6 +195,12 @@ export function initMatch(config: MatchConfig): MatchState {
     };
   });
 
+  // профиль РРС применяется сразу только там, где РРС уже закреплена (ИИ, соло-человек);
+  // при выборе игроком — в момент выбора (chooseSeatRrs)
+  for (const seat of seats) {
+    if (seat.controller.kind !== "off" && seat.rrsChosen) applyRrsProfile(seat, seat.rrsId);
+  }
+
   const evSh = shuffle(EVENT_CARDS.map((e) => e.id), seed);
 
   const state: MatchState = {
@@ -198,6 +220,37 @@ export function initMatch(config: MatchConfig): MatchState {
   }
   beginTick(state);
   return state;
+}
+
+/**
+ * Выбор РРС самим игроком при входе (когда за столом >1 человек): игрок берёт любую
+ * свободную «человеческую» РРС; если она провизорно числится за другим невыбравшим
+ * местом — провизорные РРС свопаются. Профиль РРС применяется в момент выбора.
+ */
+export function chooseSeatRrs(s: MatchState, seatIdx: number, rrsId: RrsId): { ok: boolean; error?: string } {
+  const seat = s.seats[seatIdx];
+  if (!seat) return { ok: false, error: "NO_SEAT" };
+  if (s.ended) return { ok: false, error: "GAME_ENDED" };
+  if (seat.controller.kind !== "human") return { ok: false, error: "SEAT_NOT_HUMAN" };
+  if (seat.rrsChosen !== false) return { ok: false, error: "RRS_ALREADY_CHOSEN" };
+
+  if (seat.rrsId !== rrsId) {
+    const holderIdx = s.seats.findIndex((o) => o.rrsId === rrsId);
+    if (holderIdx >= 0) {
+      const holder = s.seats[holderIdx];
+      // забрать можно только РРС, провизорно висящую на другом ЕЩЁ НЕ ВЫБРАВШЕМ человеке
+      if (!(holder.controller.kind === "human" && holder.rrsChosen === false)) {
+        return { ok: false, error: "RRS_TAKEN" };
+      }
+      holder.rrsId = seat.rrsId;
+      if (s.config.seats[holderIdx]) s.config.seats[holderIdx].rrsId = seat.rrsId;
+    }
+    seat.rrsId = rrsId;
+    if (s.config.seats[seatIdx]) s.config.seats[seatIdx].rrsId = rrsId;
+  }
+  seat.rrsChosen = true;
+  applyRrsProfile(seat, seat.rrsId);
+  return { ok: true };
 }
 
 /**
@@ -228,6 +281,7 @@ export function attachHumanSeat(s: MatchState, seatIdx: number, name: string): {
     seat.deck = sh.arr;
     seat.incomeMonthly = INCOME_MONTHLY[s.config.difficulty];
     seat.resourceProd = { ...diff.startProd };
+    applyRrsProfile(seat, seat.rrsId); // особенности РРС этого места (ЧБО2/СВО1 и т.п.)
     seat.passed = true; // текущий месяц пропускает — играет со следующего
     seat.actionsLeft = 0;
   }
@@ -550,6 +604,7 @@ function publicSummary(seat: SeatState, idx: number): ZrdSeatPublicSummary {
     seatIdx: idx,
     rrsId: seat.rrsId,
     controllerKind: seat.controller.kind,
+    rrsChosen: seat.rrsChosen,
     mascotId: seat.mascotId,
     name: seat.controller.kind === "off" ? RRS_LABEL[seat.rrsId] : seatName(seat),
     metrics: { ...seat.metrics },

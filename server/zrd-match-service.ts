@@ -12,7 +12,7 @@ import type {
 import { RRS_IDS } from "@shared/zrd/match-types";
 import {
   initMatch, applySeatIntent, resolveTickIfReady, toSeatView, toObserverView, triggerSwanManually,
-  attachHumanSeat,
+  attachHumanSeat, chooseSeatRrs,
 } from "@shared/zrd/match-engine";
 import { chooseSeatIntent } from "@shared/zrd/match-ai";
 import { computeSeatCompetencies } from "@shared/zrd/match-scoring";
@@ -304,6 +304,29 @@ export const zrdMatchService = {
     if (state.ended) this.finalize(matchId, state);
 
     return { ok: true as const, view: toSeatView(state, seatIdx), version: (match.stateVersion ?? 0) + 1, ended: state.ended };
+  },
+
+  /** игрок сам выбирает РРС при входе (когда людей за столом >1); свопит провизорные РРС и синхронизирует строки мест */
+  chooseRrs(matchId: number, seatIdx: number, rrsId: RrsId) {
+    const match = this.refreshMatch(matchId);
+    if (!match) return { ok: false as const, error: "NOT_FOUND" };
+    const state = parseState(match.stateJson);
+    const res = chooseSeatRrs(state, seatIdx, rrsId);
+    if (!res.ok) return { ok: false as const, error: res.error ?? "REJECTED" };
+
+    // строки мест в БД: rrsId мог смениться у обоих участников свопа — синхронизируем все
+    const rows = zrdMatchStorage.getSeats(matchId);
+    for (const row of rows) {
+      const live = state.seats[row.seatIdx];
+      if (live && row.rrsId !== live.rrsId) zrdMatchStorage.updateSeatRrs(row.id, live.rrsId);
+    }
+
+    zrdMatchStorage.updateMatch(matchId, {
+      stateJson: JSON.stringify(state),
+      configJson: JSON.stringify(state.config),
+      stateVersion: (match.stateVersion ?? 0) + 1,
+    });
+    return { ok: true as const, view: toSeatView(state, seatIdx), version: (match.stateVersion ?? 0) + 1 };
   },
 
   /** игрок выбирает свою фигурку при входе (оценщик аватары не назначает); следом — своя почта, необязательно */

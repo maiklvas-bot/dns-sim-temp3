@@ -5,12 +5,17 @@ import { RRS_LABEL } from "@shared/zrd/match-types";
 import { KPI_LABEL, computeKpi } from "@shared/zrd/kpi";
 import { HoverCard, HoverCardTrigger, HoverCardContent } from "@/components/ui/hover-card";
 
-const ACCENT: Record<RrsId, string> = { ekb: "#EC4899", chel: "#06B6D4", tmn: "#84CC16", perm: "#A78BFA" };
+const ACCENT: Record<RrsId, string> = {
+  ekb: "#EC4899", chel: "#06B6D4", tmn: "#84CC16", perm: "#A78BFA",
+  chbo2: "#F59E0B", svo1: "#22D3EE",
+};
 const FEATURE: Record<RrsId, string> = {
   ekb: "Флагман дивизиона: крупнейший рынок и трафик, максимальная конкуренция.",
   chel: "Промышленный город: сильный спрос на КБТ и B2B, чувствителен к ценам.",
   tmn: "Нефтегазовый регион: высокий средний чек и платёжеспособный спрос.",
   perm: "Растущий рынок: длинное логистическое плечо, охват ещё не выбран.",
+  chbo2: "Удалённый РРС на границе дивизионов: разрозненные магазины, сильная конкуренция, слабый клиентопоток — но рынок перспективный и подразделений уже много.",
+  svo1: "Между областными центрами: транспортные артерии и промышленные кластеры. Магазинов мало, клиент проезжий — зато денег вокруг много.",
 };
 const KPI_ORDER: KpiId[] = ["sales_growth", "market_coverage", "efficiency", "service_level", "logistics", "staffing"];
 const SEG = 6;

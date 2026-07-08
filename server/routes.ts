@@ -59,6 +59,7 @@ import {
   zrdMatchSwanSchema,
   zrdMatchPauseSchema,
   zrdMatchMascotSchema,
+  zrdMatchRrsSchema,
   zrdManualSectionParamSchema,
   zrdManualNoteBodySchema,
   editableChatSchema,
@@ -875,6 +876,21 @@ export async function registerRoutes(
       res.json({ view: result.view, version: result.version });
     } catch (error) {
       next(internalApiError("ZRD_MATCH_MASCOT_FAILED", "Не удалось выбрать фигурку.", error));
+    }
+  });
+
+  // Игрок сам выбирает РРС при входе (когда людей за столом >1); до выбора борд показывает экран выбора
+  app.post("/api/zrd/match/:id/rrs", validateParams(sessionIdParamSchema), validateBody(zrdMatchRrsSchema), requireZrdMatchSeatAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const { seatIdx, rrsId } = req.validatedBody as z.infer<typeof zrdMatchRrsSchema>;
+      const result = zrdMatchService.chooseRrs(id, seatIdx, rrsId);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Не удалось выбрать РРС", code: "ZRD_MATCH_RRS_REJECTED", error: result.error });
+      }
+      res.json({ view: result.view, version: result.version });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_RRS_FAILED", "Не удалось выбрать РРС.", error));
     }
   });
 

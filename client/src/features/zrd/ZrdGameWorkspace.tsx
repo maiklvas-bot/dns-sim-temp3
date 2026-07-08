@@ -12,6 +12,7 @@ import { MASCOT_VISUAL } from "./zrd-mascots";
 import { useZrdMatch } from "./useZrdMatch";
 import { ZrdLobby } from "./components/organisms/ZrdLobby";
 import { ZrdMascotPicker } from "./components/organisms/ZrdMascotPicker";
+import { ZrdRrsPicker } from "./components/organisms/ZrdRrsPicker";
 import { ZrdEventDialog } from "./components/organisms/ZrdEventDialog";
 import { ZrdMatchResults } from "./components/organisms/ZrdMatchResults";
 import { ZrdBoardBuild } from "./components/organisms/ZrdBoardBuild";
@@ -159,8 +160,12 @@ export default function ZrdGameWorkspace() {
           )}
         </main>
 
-        {/* Первый вход по коду: игрок сам выбирает фигурку (оценщик аватары не назначает) */}
-        {view && !showResults && view.you.controller.kind === "human" && view.you.mascotChosen === false && (
+        {/* Первый вход по коду: сначала игрок сам выбирает РРС (если людей за столом >1)… */}
+        {view && !showResults && view.you.controller.kind === "human" && view.you.rrsChosen === false && (
+          <ZrdRrsPicker view={view} onPick={(rrsId) => void match.chooseRrs(rrsId)} />
+        )}
+        {/* …затем фигурку (оценщик ни РРС, ни аватары не назначает) */}
+        {view && !showResults && view.you.controller.kind === "human" && view.you.rrsChosen !== false && view.you.mascotChosen === false && (
           <ZrdMascotPicker
             playerName={view.you.controller.name}
             onComplete={(id, email) => void match.chooseMascot(id, email)}

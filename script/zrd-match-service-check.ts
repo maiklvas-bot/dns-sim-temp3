@@ -150,6 +150,56 @@ async function main() {
   check("почта сохранена в состоянии места", Boolean(ctrl && ctrl.kind === "human" && ctrl.email === "vera@dns-shop.ru"));
   check("маскот выбран", seatAfterMascot?.view.you.mascotId === "captain" && seatAfterMascot?.view.you.mascotChosen === true);
 
+  // ── областные РРС (ЧБО2/СВО1): профили экономики + выбор РРС самими игроками ──
+  const { initMatch, chooseSeatRrs } = await import("../shared/zrd/match-engine");
+  const { SCENARIOS } = await import("../shared/zrd/content-scenarios");
+  const cfg3 = {
+    scenario: "conquest" as const, difficulty: 3 as const, winMode: "year" as const,
+    missionMode: "auto" as const, missionIds: SCENARIOS.conquest.missionIds,
+    keyMissionId: SCENARIOS.conquest.keyMissionId, swanFrequency: "off" as const,
+    minutesPerTick: 6, seed: 999,
+    seats: [
+      { rrsId: "tmn" as const, controller: { kind: "human" as const, name: "Один" } },
+      { rrsId: "ekb" as const, controller: { kind: "human" as const, name: "Два" } },
+      { rrsId: "svo1" as const, controller: { kind: "ai" as const, level: 3 as const } },
+      { rrsId: "chbo2" as const, controller: { kind: "ai" as const, level: 3 as const } },
+    ],
+  };
+  const st3 = initMatch(cfg3);
+  check("2 человека: РРС людей не закреплены (выберут сами)", st3.seats[0].rrsChosen === false && st3.seats[1].rrsChosen === false);
+  check("РРС ИИ закреплены сразу", st3.seats[2].rrsChosen === true && st3.seats[3].rrsChosen === true);
+  check("профиль СВО1 применён (капитал +6)", st3.seats[2].resources.capital === st3.seats[0].resources.capital + 6);
+  check("профиль СВО1: доход выше на 1", st3.seats[2].incomeMonthly === st3.seats[0].incomeMonthly + 1);
+  check("профиль ЧБО2: охват выше на 3", st3.seats[3].metrics.coverage === st3.seats[0].metrics.coverage + 3);
+  check("профиль ЧБО2: доход ниже на 1", st3.seats[3].incomeMonthly === st3.seats[0].incomeMonthly - 1);
+  // игрок 1 забирает РРС игрока 2 → провизорные свопаются
+  const pick1 = chooseSeatRrs(st3, 0, "ekb");
+  check("выбор чужой провизорной РРС свопает места", pick1.ok && st3.seats[0].rrsId === "ekb" && st3.seats[1].rrsId === "tmn");
+  check("выбравший закреплён, второй — ещё нет", st3.seats[0].rrsChosen === true && st3.seats[1].rrsChosen === false);
+  const pickTaken = chooseSeatRrs(st3, 1, "svo1");
+  check("занятую ИИ РРС забрать нельзя", !pickTaken.ok && pickTaken.error === "RRS_TAKEN");
+  const pick2 = chooseSeatRrs(st3, 1, "tmn");
+  check("второй игрок закрепляет оставшуюся", pick2.ok && st3.seats[1].rrsChosen === true);
+
+  // сервисный слой: своп синхронизирует rrsId в строках мест БД
+  const created4 = zrdMatchService.createMatch({
+    evaluatorName: "Оценщик", evaluatorAccountId: null, scenario: "conquest", difficulty: 3,
+    winMode: "year", missionMode: "auto", swanFrequency: "off", minutesPerTick: 6, seed: 1000,
+    seats: [
+      { rrsId: "tmn", controller: "human", participantName: "А" },
+      { rrsId: "chbo2", controller: "human", participantName: "Б" },
+      { rrsId: "ekb", controller: "off" },
+      { rrsId: "perm", controller: "off" },
+    ],
+  });
+  const m4 = created4.match.id;
+  const svc = zrdMatchService.chooseRrs(m4, 0, "chbo2");
+  check("сервис: выбор РРС проходит", svc.ok === true && (svc.ok ? svc.view.you.rrsId === "chbo2" : false));
+  const listed4 = zrdMatchService.listMatches().find((m) => m.id === m4);
+  check("сервис: своп отражён в строках мест", listed4?.seats[0].rrsId === "chbo2" && listed4?.seats[1].rrsId === "tmn");
+  check("сервис: профиль ЧБО2 применился выбравшему",
+    svc.ok ? svc.view.you.metrics.coverage > 0 && svc.view.you.incomeMonthly >= 0 : false);
+
   // подключение игроков к ЗАПУЩЕННОЙ сессии: ИИ → человек (перехват) и пусто → человек (поздний вход)
   const att1 = zrdMatchService.attachHuman(m2, 1, "Перехватчик"); // место 1 = ИИ
   check("подключение на место ИИ", att1.ok === true && (att1.ok ? att1.accessCode.length === 6 : false));

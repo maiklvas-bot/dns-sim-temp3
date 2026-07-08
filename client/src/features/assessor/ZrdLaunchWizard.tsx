@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import type { Difficulty } from "@shared/zrd/types";
 import type { RrsId, ScenarioId, WinMode, MissionMode, SwanFrequency, AiLevel, KpiId } from "@shared/zrd/match-types";
-import { RRS_IDS, RRS_LABEL, KPI_IDS } from "@shared/zrd/match-types";
+import { RRS_IDS, RRS_ALL, RRS_LABEL, RRS_PROFILES, KPI_IDS } from "@shared/zrd/match-types";
 import { KPI_LABEL } from "@shared/zrd/kpi";
 import { SCENARIOS, SCENARIO_IDS } from "@shared/zrd/content-scenarios";
 import { MISSION_CATALOG, getMission } from "@shared/zrd/content-missions";
@@ -191,9 +191,19 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
               <div className="space-y-2">
                 {seats.map((seat, i) => {
                   return (
-                  <div key={seat.rrsId} className="flex flex-col gap-1.5 rounded-xl border p-2.5" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
+                  <div key={i} className="flex flex-col gap-1.5 rounded-xl border p-2.5" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="w-44 text-sm font-bold text-white">{RRS_LABEL[seat.rrsId]}</div>
+                      {/* состав РРС задаёт оценщик: классические 4 + областные ЧБО2/СВО1 (доп. выбор) */}
+                      <select
+                        value={seat.rrsId}
+                        onChange={(e) => updateSeat(i, { rrsId: e.target.value as RrsId })}
+                        aria-label={`РРС места ${i + 1}`}
+                        className="w-44 rounded-lg border px-2 py-1.5 text-sm font-bold text-white"
+                        style={{ borderColor: "rgba(255,255,255,0.14)", background: "#131b2b", cursor: "pointer" }}>
+                        {RRS_ALL.filter((id) => id === seat.rrsId || !seats.some((s2, j) => j !== i && s2.rrsId === id)).map((id) => (
+                          <option key={id} value={id} title={RRS_PROFILES[id]?.tagline}>{RRS_LABEL[id]}</option>
+                        ))}
+                      </select>
                       <div className="flex gap-1" role="group" aria-label={`Контроллер ${RRS_LABEL[seat.rrsId]}`}>
                         {([
                           ["human", "Человек", <Users key="h" className="h-3.5 w-3.5" aria-hidden />],
@@ -241,6 +251,10 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
                         </label>
                       )}
                     </div>
+                    {/* особенности областных РРС — сразу видны оценщику */}
+                    {RRS_PROFILES[seat.rrsId]?.tweak && (
+                      <span className="text-[10px] leading-relaxed" style={{ color: "#8ec5ff" }}>{RRS_PROFILES[seat.rrsId].tagline}</span>
+                    )}
                     {/* фигурку и корпоративную почту участник укажет САМ при входе по коду — оценщик задаёт только настройки */}
                     {seat.mode === "human" && (
                       <span className="text-[10px] text-white/40">Фигурку и почту для связи участник укажет сам при входе по коду</span>
@@ -249,7 +263,10 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
                   );
                 })}
               </div>
-              <p className="mt-1.5 text-[11px] text-white/40">Любые комбинации: соло против ИИ, люди друг против друга, часть столов можно оставить пустыми.</p>
+              <p className="mt-1.5 text-[11px] text-white/40">
+                Любые комбинации: соло против ИИ, люди друг против друга, часть столов можно оставить пустыми.
+                Если людей за столом больше одного — каждый игрок при входе по коду САМ выбирает, за какую РРС играть.
+              </p>
             </section>
 
             {/* Шаг 3 — миссии */}
@@ -551,7 +568,8 @@ export function ZrdMatchCodesAndMonitor({ matchId, seats, knownNames = [] }: { m
                 <select value={swanTarget} onChange={(e) => setSwanTarget(e.target.value as RrsId | "all")} aria-label="Цель лебедя"
                   className="rounded-lg border px-2 py-1.5 text-xs text-white" style={{ borderColor: "rgba(255,255,255,0.14)", background: "#131b2b", cursor: "pointer" }}>
                   <option value="all">Все РРС</option>
-                  {RRS_IDS.map((r) => <option key={r} value={r}>{RRS_LABEL[r]}</option>)}
+                  {/* цели — фактические РРС этого матча (состав может включать ЧБО2/СВО1) */}
+                  {obs.observer.seats.map((s) => <option key={s.rrsId} value={s.rrsId}>{RRS_LABEL[s.rrsId as RrsId]}</option>)}
                 </select>
                 <button type="button"
                   onClick={async () => {
