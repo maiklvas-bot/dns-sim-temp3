@@ -20,6 +20,7 @@ const AdminPage = lazy(() => import("@/pages/admin"));
 const EvaluatorPage = lazy(() => import("@/pages/evaluator"));
 const ZrdPage = lazy(() => import("@/pages/zrd"));
 const ZrdManualPage = lazy(() => import("@/pages/zrd-manual"));
+const DesignSystemPage = lazy(() => import("@/pages/design-system"));
 
 function AppRouter() {
   return (
@@ -35,6 +36,7 @@ function AppRouter() {
       <Route path="/zrd" component={ZrdPage} />
       <Route path="/results/:sessionId" component={ResultsPage} />
       <Route path="/results" component={ResultsPage} />
+      <Route path="/design-system" component={DesignSystemPage} />
       <Route component={NotFound} />
     </Switch>
   );
