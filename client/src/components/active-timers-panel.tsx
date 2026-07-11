@@ -35,7 +35,7 @@ export default function ActiveTimersPanel() {
 
   if (activeTimers.length === 0) {
     return (
-      <div className="rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(30,42,58,0.9),rgba(14,21,33,0.94))] p-3 md:p-4">
+      <div className="flex h-full flex-col justify-center gap-4 rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(30,42,58,0.9),rgba(14,21,33,0.94))] p-3 md:p-4">
         <div className="flex items-start gap-2">
           <Clock3 className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#4a9eff]" />
           <div className="min-w-0">
@@ -43,7 +43,7 @@ export default function ActiveTimersPanel() {
             <div className="mt-0.5 text-[11px] leading-4 text-muted-foreground">Дедлайны появятся здесь сразу после прихода задач.</div>
           </div>
         </div>
-        <div className="mt-3 flex items-center gap-2 rounded-lg border border-border bg-background/72 px-3 py-2">
+        <div className="flex items-center gap-2 rounded-lg border border-border bg-background/72 px-3 py-2">
           <ShieldAlert className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
           <div className="min-w-0 text-[11px] leading-4 text-foreground">
             Сейчас нет активных дедлайнов или событие ещё не пришло.

@@ -101,10 +101,10 @@ export default function SignalFeed() {
                 setActiveTab(tab.key);
                 dispatch({ type: "CLEAR_ACTION_PANEL" });
               }}
-              className={`flex min-h-11 flex-shrink-0 items-center gap-1.5 rounded-xl px-2.5 py-2 text-[11px] font-semibold transition-all ${
-                isActive ? "text-white shadow-[0_0_0_1px_rgba(255,255,255,0.08)_inset]" : "text-muted-foreground hover:bg-accent hover:text-foreground"
+              className={`flex min-h-11 flex-shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-2 text-[11px] font-semibold transition-all ${
+                isActive ? "" : "text-muted-foreground hover:bg-accent hover:text-foreground"
               }`}
-              style={isActive ? { background: tab.color + "22", color: "#f8fbff", borderBottom: `2px solid ${tab.color}` } : {}}
+              style={isActive ? { background: tab.color + "22", color: tab.color, borderBottom: `2px solid ${tab.color}` } : {}}
               data-testid={`tab-${tab.key}`}
             >
               <Icon className="h-4 w-4" />
