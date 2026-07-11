@@ -186,6 +186,14 @@ export default function SimulationPage() {
               </div>
             )}
 
+            {/* Session code (student) */}
+            {mode === "student" && liveSessionConfig && !state.isCompleted && (
+              <div className="flex items-center gap-1.5 rounded-lg border border-[#FF6B00]/30 bg-[#FF6B00]/10 px-2 md:px-3 py-1 flex-shrink-0">
+                <span className="hidden sm:inline text-[10px] uppercase tracking-[0.14em] text-[#8b93ab]">Код сессии</span>
+                <span className="text-xs font-mono font-bold tabular-nums text-[#FF6B00]">{liveSessionConfig.accessCode}</span>
+              </div>
+            )}
+
             {/* Test mode badge */}
             {state.isTestMode && (
               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#ffc107]/15 border border-[#ffc107]/40 flex-shrink-0">
@@ -475,12 +483,6 @@ export default function SimulationPage() {
         {isReadOnly && state.isRunning && (
           <div className="pointer-events-none absolute right-4 top-16 z-20 rounded-full border border-[#4a9eff]/35 bg-[#4a9eff]/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">
             Режим наблюдения
-          </div>
-        )}
-
-        {mode === "student" && liveSessionConfig && !state.isCompleted && (
-          <div className="pointer-events-none absolute left-4 top-16 z-20 rounded-full border border-[#2a3a4e] bg-[#141c2b]/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#aab7d0]">
-            Код сессии: {liveSessionConfig.accessCode}
           </div>
         )}
 
