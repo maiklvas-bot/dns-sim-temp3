@@ -29,7 +29,8 @@
     "build": "remotion bundle",
     "upgrade": "remotion upgrade",
     "lint": "eslint src && tsc",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate:music": "tsx src/audio/generate-music-cli.ts"
   },
   "sideEffects": [
     "*.css"
