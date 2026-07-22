@@ -13,6 +13,6 @@ describe("theme tokens", () => {
     expect(COLORS.textSecondary).toBe("#94A3B8");
     expect(COLORS.textMuted).toBe("#64748B");
     expect(FONT_FAMILY).toBe("Inter, system-ui, -apple-system, sans-serif");
-    expect(GRADIENTS.hero).toContain("#F04E23");
+    expect(GRADIENTS.hero).toContain("240,78,35");
   });
 });
