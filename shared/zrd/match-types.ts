@@ -8,13 +8,58 @@ import type {
 } from "./types";
 
 // ── Места и РРС ─────────────────────────────────────────────────────────────
-export type RrsId = "ekb" | "chel" | "tmn" | "perm";
-export const RRS_IDS: RrsId[] = ["ekb", "chel", "tmn", "perm"];
+export type RrsId = "ekb" | "chel" | "tmn" | "perm" | "chbo2" | "svo1";
+/** состав стола ПО УМОЛЧАНИЮ (Тюмень первая — место игрока-человека по дефолту) */
+export const RRS_IDS: RrsId[] = ["tmn", "ekb", "chel", "perm"];
+/** полный каталог РРС: 4 классических + 2 областных (доп. выбор, не по умолчанию) */
+export const RRS_ALL: RrsId[] = ["tmn", "ekb", "chel", "perm", "chbo2", "svo1"];
 export const RRS_LABEL: Record<RrsId, string> = {
   ekb: "РРС Екатеринбург",
   chel: "РРС Челябинск",
   tmn: "РРС Тюмень",
   perm: "РРС Пермь",
+  chbo2: "РРС ЧБО2",
+  svo1: "РРС СВО1",
+};
+
+/** профиль РРС: описание + стартовые особенности экономики (поверх сложности и сценария) */
+export interface RrsProfile {
+  tagline: string;
+  tweak?: {
+    resources?: Partial<Resources>;
+    metrics?: Partial<Metrics>;
+    resourceProd?: Partial<Resources>;
+    metricProd?: Partial<Metrics>;
+    /** прибавка к месячному доходу (может быть отрицательной) */
+    incomeDelta?: number;
+  };
+}
+
+export const RRS_PROFILES: Record<RrsId, RrsProfile> = {
+  tmn: { tagline: "Домашний регион: сбалансированный старт без особенностей" },
+  ekb: { tagline: "Столица дивизиона: плотный рынок, ровные стартовые условия" },
+  chel: { tagline: "Промышленный центр: ровные стартовые условия" },
+  perm: { tagline: "Западный форпост: ровные стартовые условия" },
+  // удалённый РРС на границе дивизионов: магазины разрозненны, конкуренция высокая,
+  // клиентопоток слабый — но рынок перспективный и база подразделений уже большая
+  chbo2: {
+    tagline: "Удалённый РРС на границе дивизионов: разрозненные магазины, сильная конкуренция и слабый клиентопоток — но рынок перспективный, подразделений уже много",
+    tweak: {
+      metrics: { coverage: 3, sales: -2, nps: -1 },
+      metricProd: { coverage: 1 },
+      incomeDelta: -1,
+    },
+  },
+  // РРС между областными центрами: транспортные артерии и промышленные кластеры,
+  // магазинов мало и они небольшие, клиент проезжий — зато денег вокруг много
+  svo1: {
+    tagline: "Между областными центрами: транспортные артерии и промышленные кластеры. Магазинов мало, клиент проезжий — зато денег вокруг много",
+    tweak: {
+      resources: { capital: 6, warehouse: 1 },
+      metrics: { coverage: -2, nps: -2 },
+      incomeDelta: 1,
+    },
+  },
 };
 
 export type AiLevel = 1 | 2 | 3 | 4 | 5;
@@ -189,6 +234,9 @@ export interface SeatState {
   mascotId: MascotId;
   /** игрок уже выбрал фигурку? до выбора борд показывает экран выбора (старые матчи: undefined = выбрано) */
   mascotChosen?: boolean;
+  /** игрок уже выбрал РРС? при >1 человек за столом каждый выбирает сам при входе
+   *  (false = ждём выбора, undefined/true = закреплено; старые матчи: undefined) */
+  rrsChosen?: boolean;
   resources: Resources;
   /** капитал, приходящий каждый месяц (экономика v3) */
   incomeMonthly: number;
@@ -273,6 +321,8 @@ export interface ZrdSeatPublicSummary {
   seatIdx: number;
   rrsId: RrsId;
   controllerKind: SeatController["kind"];
+  /** false = человек ещё не выбрал РРС (его провизорная РРС доступна другим при выборе) */
+  rrsChosen?: boolean;
   mascotId: MascotId;
   name: string;
   metrics: Metrics;

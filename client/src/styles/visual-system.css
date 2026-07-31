@@ -1,7 +1,7 @@
 .dns-visual-shell {
-  --dns-visual-orange: #ff6b00;
-  --dns-visual-blue: #4a9eff;
-  --dns-visual-cyan: #00d4aa;
+  --dns-visual-orange: hsl(var(--dns-orange));
+  --dns-visual-blue: hsl(var(--dns-blue));
+  --dns-visual-cyan: hsl(var(--dns-teal));
   --dns-visual-text: #f7f9ff;
   --dns-visual-muted: #a4b0c5;
   --dns-visual-panel: rgba(10, 18, 31, 0.9);

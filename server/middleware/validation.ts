@@ -335,6 +335,19 @@ const caseCycleSchema = z.object({
   options: z.array(editableOptionSchema).max(50).default([]),
 });
 
+const caseDataPointSchema = z.object({
+  label: safeLooseTextSchema(500),
+  costToRequest: safeLooseTextSchema(300).nullable().optional().default(null),
+});
+
+const caseQaStatusSchema = z.enum([
+  "draft",
+  "auto_check_failed",
+  "methodical_review",
+  "ready_prototype",
+  "ready_launch",
+]);
+
 export const editableSimCaseSchema = z.object({
   id: emptyOrIdStringSchema.optional().default(""),
   title: safeLooseTextSchema(300),
@@ -348,6 +361,11 @@ export const editableSimCaseSchema = z.object({
   }),
   zones_affected: z.array(zoneTypeSchema).max(10).default([]),
   cycles: z.array(caseCycleSchema).min(1).max(50),
+  businessProblem: safeLooseTextSchema(5_000).nullable().optional().default(null),
+  hiddenCause: safeLooseTextSchema(5_000).nullable().optional().default(null),
+  dataPoints: z.array(caseDataPointSchema).max(30).optional().default([]),
+  falseTrails: z.array(safeLooseTextSchema(1_000)).max(30).optional().default([]),
+  qaStatus: caseQaStatusSchema.optional().default("draft"),
   imageAssetId: nullableIdStringSchema.optional().default(null),
   audioAssetId: nullableIdStringSchema.optional().default(null),
   timing: timingConfigSchema,
@@ -609,7 +627,7 @@ export const zrdIntentSchema = z.discriminatedUnion("kind", [
 // ЗРД v2 — матч на 4 места (мультистол)
 // =============================================================================
 
-const zrdRrsIdSchema = z.enum(["ekb", "chel", "tmn", "perm"]);
+const zrdRrsIdSchema = z.enum(["ekb", "chel", "tmn", "perm", "chbo2", "svo1"]);
 const zrdCardIdSchema = z.string().regex(/^[a-z0-9_]+$/, "Некорректный id карты").max(60);
 
 export const createZrdMatchSchema = z.object({
@@ -636,6 +654,12 @@ export const createZrdMatchSchema = z.object({
 
 export const joinZrdMatchSchema = z.object({
   code: z.string().regex(/^[A-Za-z0-9]{6}$/, "Код — 6 символов"),
+});
+
+/** подключение игрока к запущенному матчу (оценщик сажает человека на место ИИ/пустое) */
+export const zrdMatchAttachSchema = z.object({
+  seatIdx: z.number().int().min(0).max(3),
+  participantName: z.string().trim().min(1, "Выберите игрока").max(60),
 });
 
 export const zrdMatchSeatQuerySchema = z.object({
@@ -669,6 +693,12 @@ export const zrdMatchMascotSchema = z.object({
   seatIdx: z.number().int().min(0).max(3),
   mascotId: z.enum(["strateg", "media", "dispatcher", "captain"]),
   email: z.string().trim().toLowerCase().email().max(120).optional(),
+});
+
+/** выбор РРС самим игроком при входе (когда людей за столом больше одного) */
+export const zrdMatchRrsSchema = z.object({
+  seatIdx: z.number().int().min(0).max(3),
+  rrsId: zrdRrsIdSchema,
 });
 
 /** Секции инструкции /zrd/manual, к которым админ может добавлять дополнения. */

@@ -60,3 +60,7 @@ live-sessions.json
 # Рабочие/эфемерные артефакты (скрипты Playwright, дампы страниц MCP)
 /tmp/
 /.playwright-mcp/
+.mcp.json
+
+# Отладочные скриншоты UI в корне (Playwright/ручная проверка) — не версионируем
+/*.png

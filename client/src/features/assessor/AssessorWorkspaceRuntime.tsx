@@ -1547,7 +1547,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
               <div className="dns-assessor-v2-session-person">
                 <span className="dns-assessor-v2-session-avatar">З</span>
                 <div className="min-w-0">
-                  <strong>{humanSeats.length > 0 ? humanSeats.map((s) => s.participantName).join(", ") : "Только ИИ"}</strong>
+                  <strong>Сессия #{match.id} · {humanSeats.length > 0 ? humanSeats.map((s) => s.participantName).join(", ") : "только ИИ"}</strong>
                   <p>Оценщик: {match.evaluatorName || "—"} · {SCENARIOS[match.scenario]?.title ?? match.scenario}</p>
                 </div>
               </div>
@@ -1873,6 +1873,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
                 <ZrdMatchCodesAndMonitor
                   matchId={zrdObserveMatchId}
                   seats={(match?.seats ?? []).map((s) => ({ ...s, aiLevel: null }))}
+                  knownNames={knownParticipantNames}
                 />
               </div>
             </div>

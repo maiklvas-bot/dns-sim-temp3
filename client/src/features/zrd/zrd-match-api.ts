@@ -79,6 +79,13 @@ export async function fetchMatchVersion(matchId: number, seatIdx: number, token:
   return res.json();
 }
 
+/** игрок сам выбирает РРС при входе (когда людей за столом больше одного) */
+export async function chooseZrdRrs(matchId: number, seatIdx: number, rrsId: RrsId, token: string | null): Promise<SeatViewResponse> {
+  const res = await apiRequest("POST", `/api/zrd/match/${matchId}/rrs`, { seatIdx, rrsId }, { headers: seatHeaders(token) });
+  const data = await res.json();
+  return { view: data.view, version: data.version, deadlineAt: null, paused: false };
+}
+
 /** игрок выбирает свою фигурку после входа по коду; следом — своя корпоративная почта (необязательно) */
 export async function setZrdMascot(matchId: number, seatIdx: number, mascotId: MascotId, token: string | null, email?: string): Promise<SeatViewResponse> {
   const res = await apiRequest("POST", `/api/zrd/match/${matchId}/mascot`, { seatIdx, mascotId, email }, { headers: seatHeaders(token) });
@@ -161,6 +168,12 @@ export async function triggerMatchSwan(matchId: number, swanId: string, target: 
 
 export async function setMatchPaused(matchId: number, paused: boolean): Promise<void> {
   await apiRequest("POST", `/api/zrd/match/${matchId}/pause`, { paused });
+}
+
+/** подключить игрока к запущенной сессии (место ИИ/пустое → человек, выдаётся личный код) */
+export async function attachZrdPlayer(matchId: number, seatIdx: number, participantName: string): Promise<{ accessCode: string }> {
+  const res = await apiRequest("POST", `/api/zrd/match/${matchId}/attach-player`, { seatIdx, participantName });
+  return res.json();
 }
 
 export type { ActiveSwan };

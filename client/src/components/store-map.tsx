@@ -323,8 +323,6 @@ export default function StoreMap() {
         <div className="dns-store-map-tactical custom-scroll" role="listbox" aria-label="Зоны магазина">
           {zoneCards.map((zone) => {
             const tone = HEALTH_STYLES[zone.health];
-            const sparklineValues = metricHistory[zone.historyKey] ?? [currentSnapshots[zone.historyKey]];
-            const activeDots = Math.max(1, Math.ceil(zone.percentage / 20));
             return (
               <button
                 key={zone.key}
@@ -355,42 +353,16 @@ export default function StoreMap() {
                   <span className="dns-store-map-card-badge">{tone.badge}</span>
                 </span>
 
-                <span className="dns-store-map-card-body">
-                  <span className="dns-store-map-kpi">
-                    <strong>{zone.primaryValue}</strong>
-                    <small>{zone.unitLabel}</small>
-                  </span>
-                  <span className="dns-store-map-sparkline">
-                    <svg viewBox="0 0 82 26" preserveAspectRatio="none" focusable="false">
-                      <path
-                        d={buildSparklinePath(sparklineValues, zone.inverseTrend)}
-                        fill="none"
-                        stroke="var(--zone-accent)"
-                        strokeWidth="2.2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
-                </span>
-
-                <span className="dns-store-map-card-bottom">
-                  <span className="dns-store-map-meter" aria-hidden="true">
+                <span className="dns-store-map-card-figure">
+                  <strong className="dns-store-map-card-value">{zone.primaryValue}</strong>
+                  <span className="dns-store-map-meter" aria-label={`${zone.percentage}%`}>
                     <span
                       className="dns-store-map-meter-fill"
                       style={{
                         width: `${Math.max(8, zone.percentage)}%`,
-                        background: `linear-gradient(90deg, ${tone.accent}, rgba(255,255,255,0.18))`,
+                        background: `linear-gradient(90deg, ${tone.accent}, color-mix(in srgb, ${tone.accent} 40%, transparent))`,
                       }}
                     />
-                  </span>
-                  <span className="dns-store-map-dot-row" aria-label={`${zone.percentage}%`}>
-                    {Array.from({ length: 5 }).map((_, index) => (
-                      <span
-                        key={index}
-                        className={index < activeDots ? "dns-store-map-mini-dot dns-store-map-mini-dot--active" : "dns-store-map-mini-dot"}
-                      />
-                    ))}
                   </span>
                 </span>
               </button>

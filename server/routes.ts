@@ -4,6 +4,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import { accumulateCompetencyTotals } from "@shared/simulation-scoring";
+import { validateCase, shouldBlockCaseSave } from "@shared/case-validation";
 import { buildWorkbookBuffer } from "./excel-export";
 import { requireExportAccess } from "./export-access";
 import { generatePdfBuffer } from "./pdf-export";
@@ -53,11 +54,13 @@ import {
   zrdIntentSchema,
   createZrdMatchSchema,
   joinZrdMatchSchema,
+  zrdMatchAttachSchema,
   zrdMatchSeatQuerySchema,
   zrdMatchIntentSchema,
   zrdMatchSwanSchema,
   zrdMatchPauseSchema,
   zrdMatchMascotSchema,
+  zrdMatchRrsSchema,
   zrdManualSectionParamSchema,
   zrdManualNoteBodySchema,
   editableChatSchema,
@@ -877,6 +880,44 @@ export async function registerRoutes(
     }
   });
 
+  // Игрок сам выбирает РРС при входе (когда людей за столом >1); до выбора борд показывает экран выбора
+  app.post("/api/zrd/match/:id/rrs", validateParams(sessionIdParamSchema), validateBody(zrdMatchRrsSchema), requireZrdMatchSeatAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const { seatIdx, rrsId } = req.validatedBody as z.infer<typeof zrdMatchRrsSchema>;
+      const result = zrdMatchService.chooseRrs(id, seatIdx, rrsId);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Не удалось выбрать РРС", code: "ZRD_MATCH_RRS_REJECTED", error: result.error });
+      }
+      res.json({ view: result.view, version: result.version });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_RRS_FAILED", "Не удалось выбрать РРС.", error));
+    }
+  });
+
+  // Подключение игрока к запущенной сессии: оценщик сажает человека на место ИИ/пустое,
+  // игроку выдаётся личный код входа в рамках этой сессии.
+  app.post("/api/zrd/match/:id/attach-player", validateParams(sessionIdParamSchema), requireStaff, validateBody(zrdMatchAttachSchema), (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const { seatIdx, participantName } = req.validatedBody as z.infer<typeof zrdMatchAttachSchema>;
+      const result = zrdMatchService.attachHuman(id, seatIdx, participantName);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Не удалось подключить игрока", code: "ZRD_MATCH_ATTACH_REJECTED", error: result.error });
+      }
+      recordAudit(req, {
+        area: req.session.staff?.role === "admin" ? "admin" : "evaluator",
+        action: "zrd_player_attached",
+        entityType: "zrd-match",
+        entityId: id,
+        summary: `К матчу ЗРД #${id} подключён игрок ${participantName} (место ${seatIdx})`,
+      });
+      res.json({ ok: true, seatIdx, accessCode: result.accessCode });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_ATTACH_FAILED", "Не удалось подключить игрока.", error));
+    }
+  });
+
   app.get("/api/zrd/match/:id/observer", validateParams(sessionIdParamSchema), requireStaff, (req, res, next) => {
     try {
       const id = Number(getSingleParam(req.params.id));
@@ -1418,6 +1459,10 @@ export async function registerRoutes(
 
   app.post("/api/admin/cases", requireAdmin, adminRateLimiter, validateBody(editableSimCaseSchema), (req, res) => {
     const body = req.validatedBody as z.infer<typeof editableSimCaseSchema>;
+    const validationIssues = validateCase(body as EditableSimCase);
+    if (shouldBlockCaseSave(body.qaStatus, validationIssues)) {
+      return res.status(400).json({ error: "case_validation_failed", issues: validationIssues });
+    }
     const before = body.id ? getCaseSnapshot(body.id) : null;
     const id = contentStorage.saveCase(body as EditableSimCase);
     const after = getCaseSnapshot(id);
@@ -1430,7 +1475,7 @@ export async function registerRoutes(
       before,
       after,
     });
-    res.json({ id });
+    res.json({ id, validationIssues });
   });
 
   app.post("/api/admin/cases/reorder", requireAdmin, adminRateLimiter, validateBody(adminCaseReorderSchema), (req, res) => {

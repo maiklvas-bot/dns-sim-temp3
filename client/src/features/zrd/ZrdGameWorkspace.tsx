@@ -1,5 +1,5 @@
 import "@/styles/zrd.css";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, AlertCircle, Layers, PauseCircle, BookOpen } from "lucide-react";
 import { useDnsTheme } from "@/components/theme-toggle";
@@ -12,6 +12,7 @@ import { MASCOT_VISUAL } from "./zrd-mascots";
 import { useZrdMatch } from "./useZrdMatch";
 import { ZrdLobby } from "./components/organisms/ZrdLobby";
 import { ZrdMascotPicker } from "./components/organisms/ZrdMascotPicker";
+import { ZrdRrsPicker } from "./components/organisms/ZrdRrsPicker";
 import { ZrdEventDialog } from "./components/organisms/ZrdEventDialog";
 import { ZrdMatchResults } from "./components/organisms/ZrdMatchResults";
 import { ZrdBoardBuild } from "./components/organisms/ZrdBoardBuild";
@@ -40,6 +41,13 @@ export default function ZrdGameWorkspace() {
   const showResults = Boolean(view?.matchEnded);
   // матчи, созданные до появления маскотов, не несут mascotId — даём фигурку по умолчанию
   const mascot = view ? (MASCOT_VISUAL[view.you.mascotId] ?? MASCOT_VISUAL.strateg) : null;
+
+  // Квартальная дилемма БЛОКИРУЕТ все действия месяца (EVENT_PENDING) — открываем её диалог сами,
+  // как событие в HoMM: иначе игрок видит «мёртвые» кнопки и не понимает, что матч ждёт его решения.
+  const pendingEventId = view?.you.pendingEvent?.id ?? null;
+  useEffect(() => {
+    if (pendingEventId) setEventOpen(true);
+  }, [pendingEventId]);
 
   // диалог реакции на лебедя: переиспользуем форму события (равная форма §8a)
   const swanDef = swanOpen ? getSwan(swanOpen) : null;
@@ -152,8 +160,12 @@ export default function ZrdGameWorkspace() {
           )}
         </main>
 
-        {/* Первый вход по коду: игрок сам выбирает фигурку (оценщик аватары не назначает) */}
-        {view && !showResults && view.you.controller.kind === "human" && view.you.mascotChosen === false && (
+        {/* Первый вход по коду: сначала игрок сам выбирает РРС (если людей за столом >1)… */}
+        {view && !showResults && view.you.controller.kind === "human" && view.you.rrsChosen === false && (
+          <ZrdRrsPicker view={view} onPick={(rrsId) => void match.chooseRrs(rrsId)} />
+        )}
+        {/* …затем фигурку (оценщик ни РРС, ни аватары не назначает) */}
+        {view && !showResults && view.you.controller.kind === "human" && view.you.rrsChosen !== false && view.you.mascotChosen === false && (
           <ZrdMascotPicker
             playerName={view.you.controller.name}
             onComplete={(id, email) => void match.chooseMascot(id, email)}

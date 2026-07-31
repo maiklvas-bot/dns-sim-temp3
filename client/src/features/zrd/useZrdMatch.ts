@@ -4,9 +4,9 @@
  * Синхронизация: лёгкий поллинг /version каждые 3 с → при росте версии перезабор seat-view.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { MascotId, SeatIntent, ZrdSeatView } from "@shared/zrd/match-types";
+import type { MascotId, RrsId, SeatIntent, ZrdSeatView } from "@shared/zrd/match-types";
 import {
-  joinZrdMatch, fetchSeatView, fetchMatchVersion, sendSeatIntent, setZrdMascot, ZrdMatchIntentError,
+  joinZrdMatch, fetchSeatView, fetchMatchVersion, sendSeatIntent, setZrdMascot, chooseZrdRrs, ZrdMatchIntentError,
   type SeatViewResponse,
 } from "./zrd-match-api";
 
@@ -60,6 +60,7 @@ export interface ZrdMatchApi {
   adoptSeat: (matchId: number, seatIdx: number, token: string) => Promise<void>;
   dispatch: (intent: SeatIntent) => Promise<void>;
   chooseMascot: (mascotId: MascotId, email?: string) => Promise<void>;
+  chooseRrs: (rrsId: RrsId) => Promise<void>;
   leave: () => void;
 }
 
@@ -161,11 +162,23 @@ export function useZrdMatch(): ZrdMatchApi {
     }
   }, [seat]);
 
+  /** выбор РРС игроком при входе (когда людей за столом больше одного) — до выбора фигурки */
+  const chooseRrs = useCallback(async (rrsId: RrsId) => {
+    if (!seat) return;
+    try {
+      const res = await chooseZrdRrs(seat.matchId, seat.seatIdx, rrsId, seat.token);
+      versionRef.current = res.version;
+      setView(res.view);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Не удалось выбрать РРС");
+    }
+  }, [seat]);
+
   const leave = useCallback(() => {
     setSeat(null); setView(null); setError(null); setRejected(null);
     versionRef.current = -1;
     saveStored(null);
   }, []);
 
-  return { view, deadlineAt, paused, loading, error, rejected, joinByCode, adoptSeat, dispatch, chooseMascot, leave };
+  return { view, deadlineAt, paused, loading, error, rejected, joinByCode, adoptSeat, dispatch, chooseMascot, chooseRrs, leave };
 }
