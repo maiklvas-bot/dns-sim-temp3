@@ -3,6 +3,8 @@ export interface CompetencyDefinition {
   name: string;
   description: string;
   category: "basic" | "advanced" | "leadership";
+  facetOfCompetencyId?: string | null;
+  isStopFactor?: boolean;
 }
 
 export interface MetricEffects {
@@ -69,6 +71,18 @@ export interface CaseTrigger {
 
 export type ZoneType = "торговый_зал" | "склад" | "выдача" | "начальство";
 
+export interface CaseDataPoint {
+  label: string;
+  costToRequest?: string | null;
+}
+
+export type CaseQaStatus =
+  | "draft"
+  | "auto_check_failed"
+  | "methodical_review"
+  | "ready_prototype"
+  | "ready_launch";
+
 export interface SimCase {
   id: string;
   title: string;
@@ -78,6 +92,11 @@ export interface SimCase {
   trigger: CaseTrigger;
   zones_affected: ZoneType[];
   cycles: CaseCycle[];
+  businessProblem?: string | null;
+  hiddenCause?: string | null;
+  dataPoints?: CaseDataPoint[];
+  falseTrails?: string[];
+  qaStatus?: CaseQaStatus;
   imageAssetId: string | null;
   imageUrl: string | null;
   audioAssetId: string | null;
