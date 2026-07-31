@@ -274,6 +274,70 @@ async function runAdminStorageAcceptanceChecks() {
     assertCondition(persistedCycle?.priority === "critical", "Cycle priority must survive persistence");
     assertCondition(persistedCycle?.criticality === "risk", "Cycle criticality must survive persistence");
 
+    const { validateCase } = await import("../shared/case-validation");
+    const incompleteDossierCase = {
+      id: "TASK-030-DOSSIER-INCOMPLETE",
+      title: "Dossier gate acceptance",
+      description: "Checks the 4 auto-checks gate",
+      primaryCompetencies: [],
+      secondaryCompetencies: [],
+      trigger: { type: "message" as const, source: "Acceptance", text: "Start" },
+      zones_affected: [],
+      cycles: [{
+        id: "TASK-030-DOSSIER-INCOMPLETE-C1",
+        cycle: 1,
+        situation: "Situation",
+        signal: { type: "message" as const, content: "Signal" },
+        options: [
+          { id: "OPT-1", level: 1, text: "Option one", score: 1, effects: { queue: 0, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 }, competency_scores: {} },
+        ],
+      }],
+      imageAssetId: null,
+      imageUrl: null,
+      audioAssetId: null,
+      audioUrl: null,
+      sortOrder: 2,
+      isActive: true,
+    };
+    const gateIssues = validateCase(incompleteDossierCase as Parameters<typeof validateCase>[0]);
+    assertCondition(
+      gateIssues.some((issue) => issue.check === "diagnostics") && gateIssues.some((issue) => issue.check === "effect_reality"),
+      "Case missing dossier and real effects must fail diagnostics and effect_reality checks",
+    );
+
+    contentStorage.saveCase({
+      id: "TASK-030-DOSSIER-COMPLETE",
+      title: "Dossier persistence acceptance",
+      description: "Checks case dossier persists end to end",
+      primaryCompetencies: [],
+      secondaryCompetencies: [],
+      trigger: { type: "message", source: "Acceptance", text: "Start" },
+      zones_affected: [],
+      cycles: [{
+        id: "TASK-030-DOSSIER-COMPLETE-C1",
+        cycle: 1,
+        situation: "Situation",
+        signal: { type: "message", content: "Signal" },
+        options: [
+          { id: "OPT-2", level: 1, text: "Option one", score: 1, effects: { queue: 5, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 }, competency_scores: { planning: 1 } },
+        ],
+      }],
+      businessProblem: "Test business problem",
+      hiddenCause: "Root cause",
+      dataPoints: [{ label: "Report", costToRequest: null }],
+      falseTrails: ["Distraction"],
+      qaStatus: "ready_prototype",
+      imageAssetId: null,
+      audioAssetId: null,
+      sortOrder: 3,
+      isActive: true,
+    });
+    const persistedDossierCase = contentStorage.getPublicContent(true).cases.find((item) => item.id === "TASK-030-DOSSIER-COMPLETE");
+    assertCondition(persistedDossierCase?.hiddenCause === "Root cause", "Hidden cause must survive persistence");
+    assertCondition(persistedDossierCase?.dataPoints?.length === 1, "Data points must survive persistence");
+    assertCondition(persistedDossierCase?.falseTrails?.length === 1, "False trails must survive persistence");
+    assertCondition(persistedDossierCase?.qaStatus === "ready_prototype", "QA status must survive persistence");
+
     const auditRequest = {
       session: {
         staff: {
@@ -1131,6 +1195,16 @@ assertSchemaRejects(
   editableSimCaseSchema,
   { ...validCasePayload, cycles: "not-an-array" },
   "Editable case schema must reject malformed cycles",
+);
+assertSchemaAccepts(
+  editableSimCaseSchema,
+  { ...validCasePayload, hiddenCause: "Root cause", dataPoints: [{ label: "Report" }], falseTrails: ["Distraction"], qaStatus: "methodical_review" },
+  "Editable case schema must accept a filled case dossier",
+);
+assertSchemaRejects(
+  editableSimCaseSchema,
+  { ...validCasePayload, qaStatus: "not-a-real-status" },
+  "Editable case schema must reject unknown QA statuses",
 );
 
 assertSchemaRejects(
