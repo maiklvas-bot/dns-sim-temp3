@@ -60,3 +60,4 @@ live-sessions.json
 # Рабочие/эфемерные артефакты (скрипты Playwright, дампы страниц MCP)
 /tmp/
 /.playwright-mcp/
+.mcp.json
