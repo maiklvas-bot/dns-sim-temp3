@@ -20,7 +20,7 @@ import {
   STORE_EFFECT_FIELDS,
   STORE_ZONE_OPTIONS,
 } from "./case-editor-support";
-import { createEmptyStructuredOption, formatCompetencyScores, parseCompetencyScores } from "./case-editor-support";
+import { createEmptyStructuredOption } from "./case-editor-support";
 
 export function StructuredOptionsEditor({
   title,

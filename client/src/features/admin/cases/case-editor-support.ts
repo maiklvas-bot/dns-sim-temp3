@@ -1,4 +1,5 @@
 import type { CompetencyDefinition, SimCase } from "@shared/simulation-content";
+import { BARS_LEVEL_SCORES } from "@shared/case-validation";
 
 export const CASE_SIGNAL_TYPE_OPTIONS = [
   { value: "call", label: "Звонок" },
@@ -131,4 +132,38 @@ export function getPreviewAudioUrl(entityId: string, mode: "case" | "email" | "m
   if (mode === "case") return `/library/audio_case_${suffix}.mp3`;
   if (mode === "video") return `/library/audio_video_${suffix}.mp3`;
   return null;
+}
+
+export type BarsLevel = "none" | "weak" | "mid" | "strong" | "off_scale";
+
+export const BARS_OPTIONS: ReadonlyArray<{ level: BarsLevel; score: number; label: string; hint: string }> = [
+  { level: "none", score: 0, label: "Не влияет", hint: "Вариант не проявляет эту компетенцию" },
+  { level: "weak", score: BARS_LEVEL_SCORES.weak, label: "Слабо", hint: "Поведение из нижнего якоря" },
+  { level: "mid", score: BARS_LEVEL_SCORES.mid, label: "Средне", hint: "Формально верно, без глубины" },
+  { level: "strong", score: BARS_LEVEL_SCORES.strong, label: "Сильно", hint: "Поведение из верхнего якоря" },
+];
+
+export function barsLevelForScore(score: number | undefined | null): BarsLevel {
+  const value = Number(score || 0);
+  const match = BARS_OPTIONS.find((option) => option.score === value);
+  return match ? match.level : "off_scale";
+}
+
+export interface CaseDossierSummary {
+  filled: number;
+  total: number;
+  isComplete: boolean;
+  missing: string[];
+}
+
+export function buildCaseDossierSummary(caseInput: SimCase): CaseDossierSummary {
+  const checks: Array<{ key: string; filled: boolean }> = [
+    { key: "businessProblem", filled: Boolean(caseInput.businessProblem && caseInput.businessProblem.trim()) },
+    { key: "hiddenCause", filled: Boolean(caseInput.hiddenCause && caseInput.hiddenCause.trim()) },
+    { key: "dataPoints", filled: Boolean(caseInput.dataPoints && caseInput.dataPoints.length > 0) },
+    { key: "falseTrails", filled: Boolean(caseInput.falseTrails && caseInput.falseTrails.length > 0) },
+  ];
+  const missing = checks.filter((check) => !check.filled).map((check) => check.key);
+  const filled = checks.length - missing.length;
+  return { filled, total: checks.length, isComplete: missing.length === 0, missing };
 }
