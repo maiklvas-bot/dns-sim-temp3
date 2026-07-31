@@ -335,6 +335,19 @@ const caseCycleSchema = z.object({
   options: z.array(editableOptionSchema).max(50).default([]),
 });
 
+const caseDataPointSchema = z.object({
+  label: safeLooseTextSchema(500),
+  costToRequest: safeLooseTextSchema(300).nullable().optional().default(null),
+});
+
+const caseQaStatusSchema = z.enum([
+  "draft",
+  "auto_check_failed",
+  "methodical_review",
+  "ready_prototype",
+  "ready_launch",
+]);
+
 export const editableSimCaseSchema = z.object({
   id: emptyOrIdStringSchema.optional().default(""),
   title: safeLooseTextSchema(300),
@@ -348,6 +361,11 @@ export const editableSimCaseSchema = z.object({
   }),
   zones_affected: z.array(zoneTypeSchema).max(10).default([]),
   cycles: z.array(caseCycleSchema).min(1).max(50),
+  businessProblem: safeLooseTextSchema(5_000).nullable().optional().default(null),
+  hiddenCause: safeLooseTextSchema(5_000).nullable().optional().default(null),
+  dataPoints: z.array(caseDataPointSchema).max(30).optional().default([]),
+  falseTrails: z.array(safeLooseTextSchema(1_000)).max(30).optional().default([]),
+  qaStatus: caseQaStatusSchema.optional().default("draft"),
   imageAssetId: nullableIdStringSchema.optional().default(null),
   audioAssetId: nullableIdStringSchema.optional().default(null),
   timing: timingConfigSchema,
