@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spearmanRho, validateCase } from "../shared/case-validation";
+import { spearmanRho, validateCase, shouldBlockCaseSave } from "../shared/case-validation";
 import type { SimCase } from "../shared/simulation-content";
 
 const baseEffects = { queue: 0, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 };
@@ -79,5 +79,26 @@ const antigamingIssues = validateCase(antigamingCase).filter(
   (issue) => issue.check === "antigaming" && issue.message.includes("шкала хорошести"),
 );
 assert.equal(antigamingIssues.length, 1);
+
+// shouldBlockCaseSave composition tests: the gate in POST /api/admin/cases
+// ensures that if there are validation issues AND the QA status is blocking, we reject the save.
+
+// Case 1: issues + blocking status -> should block (true)
+const caseWithIssues = buildCase({ hiddenCause: null }); // triggers diagnostics issue
+const issuesFromBadCase = validateCase(caseWithIssues);
+assert.ok(issuesFromBadCase.length > 0, "should produce validation issues");
+assert.equal(shouldBlockCaseSave("ready_launch", issuesFromBadCase), true);
+
+// Case 2: issues + draft status -> should NOT block (false)
+assert.equal(shouldBlockCaseSave("draft", issuesFromBadCase), false);
+
+// Case 3: no issues + blocking status -> should NOT block (false)
+const goodCase = buildCase();
+const noIssues = validateCase(goodCase);
+assert.equal(noIssues.length, 0, "good case should have no issues");
+assert.equal(shouldBlockCaseSave("ready_launch", noIssues), false);
+
+// Case 4: undefined qaStatus (backward compatibility for existing admin clients) + issues -> should NOT block (false)
+assert.equal(shouldBlockCaseSave(undefined, issuesFromBadCase), false);
 
 console.log("case-validation parity checks passed");

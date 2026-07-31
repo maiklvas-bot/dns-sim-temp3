@@ -153,3 +153,13 @@ export function validateCase(caseInput: SimCase): CaseValidationIssue[] {
     ...checkEffectReality(caseInput),
   ];
 }
+
+const BLOCKING_QA_STATUSES: ReadonlySet<string> = new Set([
+  "methodical_review",
+  "ready_prototype",
+  "ready_launch",
+]);
+
+export function shouldBlockCaseSave(qaStatus: string | undefined, issues: CaseValidationIssue[]): boolean {
+  return issues.length > 0 && BLOCKING_QA_STATUSES.has(qaStatus || "draft");
+}
