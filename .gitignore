@@ -61,3 +61,6 @@ live-sessions.json
 /tmp/
 /.playwright-mcp/
 .mcp.json
+
+# Отладочные скриншоты UI в корне (Playwright/ручная проверка) — не версионируем
+/*.png
