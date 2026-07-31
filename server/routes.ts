@@ -4,6 +4,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import { accumulateCompetencyTotals } from "@shared/simulation-scoring";
+import { validateCase } from "@shared/case-validation";
 import { buildWorkbookBuffer } from "./excel-export";
 import { requireExportAccess } from "./export-access";
 import { generatePdfBuffer } from "./pdf-export";
@@ -1458,6 +1459,11 @@ export async function registerRoutes(
 
   app.post("/api/admin/cases", requireAdmin, adminRateLimiter, validateBody(editableSimCaseSchema), (req, res) => {
     const body = req.validatedBody as z.infer<typeof editableSimCaseSchema>;
+    const validationIssues = validateCase(body as EditableSimCase);
+    const blockingStatuses = new Set(["methodical_review", "ready_prototype", "ready_launch"]);
+    if (validationIssues.length > 0 && blockingStatuses.has(body.qaStatus)) {
+      return res.status(400).json({ error: "case_validation_failed", issues: validationIssues });
+    }
     const before = body.id ? getCaseSnapshot(body.id) : null;
     const id = contentStorage.saveCase(body as EditableSimCase);
     const after = getCaseSnapshot(id);
@@ -1470,7 +1476,7 @@ export async function registerRoutes(
       before,
       after,
     });
-    res.json({ id });
+    res.json({ id, validationIssues });
   });
 
   app.post("/api/admin/cases/reorder", requireAdmin, adminRateLimiter, validateBody(adminCaseReorderSchema), (req, res) => {
