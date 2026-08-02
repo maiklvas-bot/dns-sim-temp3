@@ -40,4 +40,20 @@ assert.equal(empty.org_control, undefined);
 const rounding = aggregateFacetAverages({ planning: 1, task_setting: 2, control: 2 }, definitions);
 assert.equal(rounding.org_control, 1.7);
 
+// A directly scored parent must not be silently discarded. Existing content scores competencies
+// directly, so if facets are introduced alongside, dropping the parent's own value would lose
+// a real signal. Instead the parent's score joins the facets as one more observation:
+// (org_control=4, planning=2, control=4) -> (4+2+4)/3 = 3.3
+const parentAndFacets = aggregateFacetAverages({ org_control: 4, planning: 2, control: 4 }, definitions);
+assert.equal(parentAndFacets.org_control, 3.3);
+
+// A directly scored parent with no facet data at all stays exactly as it was
+const parentOnly = aggregateFacetAverages({ org_control: 4 }, definitions);
+assert.equal(parentOnly.org_control, 4);
+
+// The input object is never mutated
+const source = { planning: 2, control: 4 };
+aggregateFacetAverages(source, definitions);
+assert.deepEqual(source, { planning: 2, control: 4 });
+
 console.log("facet-aggregation parity checks passed");

@@ -101,4 +101,34 @@ assert.equal(shouldBlockCaseSave("ready_launch", noIssues), false);
 // Case 4: undefined qaStatus (backward compatibility for existing admin clients) + issues -> should NOT block (false)
 assert.equal(shouldBlockCaseSave(undefined, issuesFromBadCase), false);
 
+// Diagnostics must judge content, not just array length. A dossier filled with blank
+// placeholders provides no material to diagnose, so it must not pass the gate — otherwise
+// an author could satisfy the check by adding empty rows.
+const blankDossier = buildCase({
+  hiddenCause: "Root cause",
+  dataPoints: [{ label: "   " }],
+  falseTrails: ["  "],
+});
+const blankDossierIssues = validateCase(blankDossier).filter((issue) => issue.check === "diagnostics");
+assert.equal(blankDossierIssues.length, 2);
+
+// A dossier where only some rows are blank still counts as filled — the author supplied real material.
+const partiallyBlankDossier = buildCase({
+  hiddenCause: "Root cause",
+  dataPoints: [{ label: "   " }, { label: "Отчёт по смене" }],
+  falseTrails: ["", "Кажется, виновата касса"],
+});
+assert.equal(
+  validateCase(partiallyBlankDossier).filter((issue) => issue.check === "diagnostics").length,
+  0,
+);
+
+// Whitespace-only hiddenCause was already covered by trim; keep it pinned so the three
+// diagnostics sub-checks stay symmetric.
+const blankCause = buildCase({ hiddenCause: "   " });
+assert.equal(
+  validateCase(blankCause).filter((issue) => issue.check === "diagnostics").length,
+  1,
+);
+
 console.log("case-validation parity checks passed");

@@ -115,13 +115,18 @@ function checkAntigaming(caseInput: SimCase): CaseValidationIssue[] {
 
 function checkDiagnostics(caseInput: SimCase): CaseValidationIssue[] {
   const issues: CaseValidationIssue[] = [];
+  // Пустые строки-заглушки не считаются заполнением: они не дают участнику материала
+  // для диагностики, а автору позволили бы пройти проверку добавлением пустых строк.
+  const meaningfulDataPoints = (caseInput.dataPoints || []).filter((point) => Boolean(point.label && point.label.trim()));
+  const meaningfulFalseTrails = (caseInput.falseTrails || []).filter((trail) => Boolean(trail && trail.trim()));
+
   if (!caseInput.hiddenCause || !caseInput.hiddenCause.trim()) {
     issues.push({ check: "diagnostics", message: "Не заполнена скрытая причина кейса." });
   }
-  if (!caseInput.dataPoints || caseInput.dataPoints.length === 0) {
+  if (meaningfulDataPoints.length === 0) {
     issues.push({ check: "diagnostics", message: "Не добавлено ни одной записи данных для запроса." });
   }
-  if (!caseInput.falseTrails || caseInput.falseTrails.length === 0) {
+  if (meaningfulFalseTrails.length === 0) {
     issues.push({ check: "diagnostics", message: "Не добавлено ни одного ложного следа." });
   }
   return issues;
