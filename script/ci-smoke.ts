@@ -274,7 +274,7 @@ async function runAdminStorageAcceptanceChecks() {
     assertCondition(persistedCycle?.priority === "critical", "Cycle priority must survive persistence");
     assertCondition(persistedCycle?.criticality === "risk", "Cycle criticality must survive persistence");
 
-    const { validateCase } = await import("../shared/case-validation");
+    const { validateCase, shouldBlockCaseSave } = await import("../shared/case-validation");
     const incompleteDossierCase = {
       id: "TASK-030-DOSSIER-INCOMPLETE",
       title: "Dossier gate acceptance",
@@ -334,9 +334,43 @@ async function runAdminStorageAcceptanceChecks() {
     });
     const persistedDossierCase = contentStorage.getPublicContent(true).cases.find((item) => item.id === "TASK-030-DOSSIER-COMPLETE");
     assertCondition(persistedDossierCase?.hiddenCause === "Root cause", "Hidden cause must survive persistence");
-    assertCondition(persistedDossierCase?.dataPoints?.length === 1, "Data points must survive persistence");
-    assertCondition(persistedDossierCase?.falseTrails?.length === 1, "False trails must survive persistence");
+    assertCondition(persistedDossierCase?.dataPoints?.[0]?.label === "Report", "Data point content must survive persistence");
+    assertCondition(persistedDossierCase?.falseTrails?.[0] === "Distraction", "False trail content must survive persistence");
     assertCondition(persistedDossierCase?.qaStatus === "ready_prototype", "QA status must survive persistence");
+
+    // Контракт гейта на уровне обработчика: без этой проверки удаление гейта из routes.ts
+    // не уронило бы ни один тест — валидация и сохранение покрыты по отдельности.
+    const gateHandler = (body: Parameters<typeof validateCase>[0] & { qaStatus?: string }) => {
+      const validationIssues = validateCase(body);
+      if (shouldBlockCaseSave(body.qaStatus, validationIssues)) {
+        return { status: 400, payload: { error: "case_validation_failed", issues: validationIssues } };
+      }
+      return { status: 200, payload: { id: body.id, validationIssues } };
+    };
+
+    const defectiveReadyCase = { ...incompleteDossierCase, qaStatus: "ready_launch" } as Parameters<typeof gateHandler>[0];
+    const blocked = gateHandler(defectiveReadyCase);
+    assertCondition(blocked.status === 400, "Gate must reject a defective case marked ready for launch");
+    assertCondition(
+      (blocked.payload as { error?: string }).error === "case_validation_failed",
+      "Gate rejection must name the validation failure",
+    );
+
+    const defectiveDraft = { ...incompleteDossierCase, qaStatus: "draft" } as Parameters<typeof gateHandler>[0];
+    const allowed = gateHandler(defectiveDraft);
+    assertCondition(allowed.status === 200, "Gate must let a defective draft through");
+    assertCondition(
+      Array.isArray((allowed.payload as { validationIssues?: unknown }).validationIssues)
+        && ((allowed.payload as { validationIssues: unknown[] }).validationIssues.length > 0),
+      "A saved draft must carry its validation issues back to the author",
+    );
+
+    const legacyClientCase = { ...incompleteDossierCase } as Parameters<typeof gateHandler>[0];
+    delete legacyClientCase.qaStatus;
+    assertCondition(
+      gateHandler(legacyClientCase).status === 200,
+      "Existing admin clients that never send qaStatus must keep working",
+    );
 
     const auditRequest = {
       session: {

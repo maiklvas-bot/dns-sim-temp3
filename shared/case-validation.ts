@@ -36,9 +36,22 @@ function checkBarsConformance(caseInput: SimCase): CaseValidationIssue[] {
   return issues;
 }
 
+// Невидимые символы (zero-width space, joiner, BOM) не убираются String.trim(), поэтому
+// текст из них проходил бы как содержательный. Единый источник истины для механики и
+// для сводки заполненности в админке — иначе интерфейс и проверка разойдутся.
+const INVISIBLE_CHARACTERS = /[\u200B-\u200F\u00A0\u2060\uFEFF]/g;
+
+export function hasMeaningfulText(value: string | null | undefined): boolean {
+  if (!value) return false;
+  return value.replace(INVISIBLE_CHARACTERS, "").trim().length > 0;
+}
+
 export function spearmanRho(a: number[], b: number[]): number {
   const n = a.length;
   if (n < 2 || b.length !== n) return 0;
+  // NaN сортируется непредсказуемо и давал «идеальную корреляцию» из мусора,
+  // Infinity — частичную. Сломанные данные не должны выглядеть как сигнал.
+  if (!a.every(Number.isFinite) || !b.every(Number.isFinite)) return 0;
   const rank = (values: number[]): number[] => {
     const sorted = values.map((value, index) => ({ value, index })).sort((x, y) => x.value - y.value);
     const ranks = new Array<number>(n);
@@ -92,6 +105,10 @@ function checkAntigaming(caseInput: SimCase): CaseValidationIssue[] {
       const levels = options.map((option) => option.level);
       const competencyIds = new Set<string>();
       options.forEach((option) => Object.keys(option.competency_scores || {}).forEach((id) => competencyIds.add(id)));
+      // Проверяются только компетенции, оценённые во всех вариантах цикла. Приравнивать
+      // пропуск к нулю нельзя: правило требует, чтобы монотонными были ВСЕ компетенции,
+      // поэтому одна некоррелирующая (полученная из пропусков) заглушила бы проверку целиком —
+      // это более простой обход, чем тот, который такая замена пытается закрыть.
       const scoredEverywhere = Array.from(competencyIds).filter((id) =>
         options.every((option) => typeof (option.competency_scores || {})[id] === "number"),
       );
@@ -115,13 +132,18 @@ function checkAntigaming(caseInput: SimCase): CaseValidationIssue[] {
 
 function checkDiagnostics(caseInput: SimCase): CaseValidationIssue[] {
   const issues: CaseValidationIssue[] = [];
-  if (!caseInput.hiddenCause || !caseInput.hiddenCause.trim()) {
+  // Пустые строки-заглушки не считаются заполнением: они не дают участнику материала
+  // для диагностики, а автору позволили бы пройти проверку добавлением пустых строк.
+  const meaningfulDataPoints = (caseInput.dataPoints || []).filter((point) => hasMeaningfulText(point.label));
+  const meaningfulFalseTrails = (caseInput.falseTrails || []).filter((trail) => hasMeaningfulText(trail));
+
+  if (!hasMeaningfulText(caseInput.hiddenCause)) {
     issues.push({ check: "diagnostics", message: "Не заполнена скрытая причина кейса." });
   }
-  if (!caseInput.dataPoints || caseInput.dataPoints.length === 0) {
+  if (meaningfulDataPoints.length === 0) {
     issues.push({ check: "diagnostics", message: "Не добавлено ни одной записи данных для запроса." });
   }
-  if (!caseInput.falseTrails || caseInput.falseTrails.length === 0) {
+  if (meaningfulFalseTrails.length === 0) {
     issues.push({ check: "diagnostics", message: "Не добавлено ни одного ложного следа." });
   }
   return issues;
@@ -131,7 +153,11 @@ function checkEffectReality(caseInput: SimCase): CaseValidationIssue[] {
   const issues: CaseValidationIssue[] = [];
   caseInput.cycles.forEach((cycle) => {
     cycle.options.forEach((option) => {
-      const hasNonZeroEffect = Object.values(option.effects).some((value) => Number(value) !== 0);
+      // Number.isFinite обязателен: NaN !== 0 истинно в JS, поэтому сломанный эффект
+      // раньше засчитывался как реальное изменение состояния.
+      const hasNonZeroEffect = Object.values(option.effects || {}).some(
+        (value) => Number.isFinite(Number(value)) && Number(value) !== 0,
+      );
       if (!hasNonZeroEffect) {
         issues.push({
           check: "effect_reality",

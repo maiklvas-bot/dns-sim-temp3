@@ -117,4 +117,32 @@ for (const forbiddenReference of [
   );
 }
 
+const caseUi = [
+  "client/src/features/admin/cases/StructuredOptionsEditor.tsx",
+  "client/src/features/admin/cases/CaseDossierEditor.tsx",
+  "client/src/features/admin/cases/CaseValidationPanel.tsx",
+  "client/src/features/admin/components/EntityEditor.tsx",
+].map(readText).join("\n");
+
+assertCondition(
+  !caseUi.includes("max={5}"),
+  "Баллы компетенций больше не выставляются слайдером 0-5 — должен использоваться выбор уровня BARS",
+);
+assertCondition(
+  caseUi.includes("BARS_OPTIONS"),
+  "Редактор вариантов должен предлагать уровни BARS из общего справочника",
+);
+assertCondition(
+  caseUi.includes("hiddenCause") && caseUi.includes("falseTrails") && caseUi.includes("dataPoints"),
+  "Редактор паспорта должен закрывать скрытую причину, данные и ложные следы",
+);
+assertCondition(
+  caseUi.includes("validateCase"),
+  "Автор кейса должен видеть замечания автопроверки до сохранения",
+);
+assertCondition(
+  caseUi.includes('"dossier"'),
+  "В редакторе кейса должна быть отдельная вкладка паспорта",
+);
+
 console.log("UI acceptance checks passed: shared themes, responsive admin editor, assessor workspace and simulation scrolling verified.");

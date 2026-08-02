@@ -1150,6 +1150,9 @@ export default function AdminPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Замечания автопроверки — это успешное сохранение с предупреждением, а не ошибка.
+  // Отдельное состояние, чтобы не показывать их красной плашкой отказа.
+  const [notice, setNotice] = useState("");
   const [excelLoading, setExcelLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [deleteResultLoading, setDeleteResultLoading] = useState(false);
@@ -1520,6 +1523,7 @@ export default function AdminPage() {
   const handleUploadAsset = async (file: File) => {
     setUploading(true);
     setError("");
+    setNotice("");
     try {
       const dataUrl = await readFileAsDataUrl(file);
       const response = await apiRequest("POST", "/api/admin/assets", {
@@ -1542,11 +1546,16 @@ export default function AdminPage() {
   const saveCurrent = async () => {
     setSaving(true);
     setError("");
+    setNotice("");
     try {
       if (tab === "cases" && caseDraft) {
         const response = await apiRequest("POST", "/api/admin/cases", caseDraft);
         const payload = await response.json();
         setSelectedCaseId(payload.id);
+        const issueCount = Array.isArray(payload.validationIssues) ? payload.validationIssues.length : 0;
+        if (issueCount > 0) {
+          setNotice(`Кейс сохранён как черновик. Автопроверка нашла замечаний: ${issueCount}. Откройте вкладку «Паспорт», чтобы посмотреть список.`);
+        }
       }
       if (tab === "channels" && channelTab === "email" && emailDraft) {
         const response = await apiRequest("POST", "/api/admin/email-cases", emailDraft);
@@ -1586,6 +1595,7 @@ export default function AdminPage() {
 
     setSaving(true);
     setError("");
+    setNotice("");
     try {
       const publishedDraft = { ...caseDraft, isActive: true };
       const response = await apiRequest("POST", "/api/admin/cases", publishedDraft);
@@ -1593,6 +1603,13 @@ export default function AdminPage() {
       setCaseDraft(publishedDraft);
       setSelectedCaseId(payload.id);
       await invalidateRuntimeContent();
+      // Публикация меняет isActive, но не qaStatus, поэтому серверный гейт её не блокирует —
+      // иначе уже опубликованные кейсы с замечаниями стало бы невозможно переопубликовать.
+      // Но администратор должен видеть, что выпускает участникам кейс с известными дефектами.
+      const issueCount = Array.isArray(payload.validationIssues) ? payload.validationIssues.length : 0;
+      if (issueCount > 0) {
+        setNotice(`Кейс опубликован, но автопроверка нашла замечаний: ${issueCount}. Участники увидят его в текущем виде — проверьте вкладку «Паспорт».`);
+      }
     } catch (err: any) {
       setError(err.message || "Не удалось опубликовать кейс");
     } finally {
@@ -1620,6 +1637,8 @@ export default function AdminPage() {
     }
 
     setError("");
+
+    setNotice("");
 
     if (activePreviewKey === previewKey) {
       stopPreviewAudio();
@@ -1684,6 +1703,7 @@ export default function AdminPage() {
   const saveSchedule = async () => {
     setSaving(true);
     setError("");
+    setNotice("");
     try {
       const casesById = new Map(((contentQuery.data?.cases || []) as SimCase[]).map((item) => [item.id, item]));
       const emailsById = new Map(((contentQuery.data?.emailCases || []) as EmailCase[]).map((item) => [item.id, item]));
@@ -1801,6 +1821,7 @@ export default function AdminPage() {
 
     setSaving(true);
     setError("");
+    setNotice("");
     try {
       const response = await apiRequest("POST", "/api/admin/cases", nextDraft);
       const payload = await response.json();
@@ -1810,6 +1831,10 @@ export default function AdminPage() {
       setSelectedCaseId(savedId);
       setCaseDraft({ ...nextDraft, id: savedId });
       setCaseWizardOpen(false);
+      const issueCount = Array.isArray(payload.validationIssues) ? payload.validationIssues.length : 0;
+      if (issueCount > 0) {
+        setNotice(`Кейс создан как черновик. Автопроверка нашла замечаний: ${issueCount}. Откройте вкладку «Паспорт», чтобы посмотреть список.`);
+      }
     } catch (err: any) {
       setError(err.message || "Не удалось создать кейс. Черновик сохранён в браузере.");
     } finally {
@@ -1820,6 +1845,7 @@ export default function AdminPage() {
   const confirmSignalWizard = async () => {
     setSaving(true);
     setError("");
+    setNotice("");
 
     if (signalWizardMode === "email") {
       const nextDraft = deepClone(signalWizardDraft as EmailCase);
@@ -1887,6 +1913,7 @@ export default function AdminPage() {
   const exportResultsExcel = async () => {
     setExcelLoading(true);
     setError("");
+    setNotice("");
     try {
       const summaryRows = [
         [
@@ -1972,6 +1999,7 @@ export default function AdminPage() {
 
     setPdfLoading(true);
     setError("");
+    setNotice("");
     try {
       const payload = buildPdfPayloadFromReport(selectedResultReport);
       const response = await apiRequest("POST", "/api/export-pdf", payload);
@@ -2007,6 +2035,7 @@ export default function AdminPage() {
 
     setDeleteResultLoading(true);
     setError("");
+    setNotice("");
     try {
       await apiRequest("DELETE", `/api/admin/results/${selectedResultId}`);
       setSelectedResultId(null);
@@ -2021,6 +2050,7 @@ export default function AdminPage() {
 
   const handleDeleteCurrent = async () => {
     setError("");
+    setNotice("");
     try {
       if (tab === "cases" && selectedCaseId) {
         await apiRequest("DELETE", `/api/admin/cases/${selectedCaseId}`);
@@ -2258,6 +2288,7 @@ export default function AdminPage() {
 
           <main className={`dns-admin-dashboard-main dns-admin-dashboard-main--${tab}`}>
         {error && <div className="mb-4 rounded-lg border border-[#ff4444]/30 bg-[#ff4444]/10 px-4 py-3 text-sm text-[#ff9999]">{error}</div>}
+        {notice && <div className="mb-4 rounded-lg border border-[#ffc107]/30 bg-[#ffc107]/10 px-4 py-3 text-sm text-[#ffd77a]">{notice}</div>}
 
         <AdminWikiDialog open={adminWikiOpen} onOpenChange={setAdminWikiOpen} tab={tab} />
         <AdminAuditHistory open={auditHistoryOpen} onOpenChange={setAuditHistoryOpen} />
