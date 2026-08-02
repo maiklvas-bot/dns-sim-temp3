@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pause, Play } from "lucide-react";
 import { CaseMediaPanel, StructuredCyclesEditor, StructuredOptionsEditor } from "../cases/CaseEditors";
+import { CaseDossierEditor } from "../cases/CaseDossierEditor";
 import { getPreviewAudioUrl, CASE_SIGNAL_TYPE_OPTIONS, STORE_ZONE_OPTIONS } from "../cases/case-editor-support";
 import { CompetencyRoleSelector, Field, FieldArea, MultiSelectField, SelectField, SuggestField } from "./AdminFields";
 
@@ -63,7 +64,7 @@ export function EntityEditor({
     value: competency.id,
     label: competency.name,
   }));
-  const [caseEditorSection, setCaseEditorSection] = useState<"details" | "cycles">("details");
+  const [caseEditorSection, setCaseEditorSection] = useState<"details" | "dossier" | "cycles">("details");
 
   useEffect(() => {
     if (mode === "case" && typeof selectedCycleIndex === "number") {
@@ -107,6 +108,7 @@ export function EntityEditor({
         <div className="flex flex-wrap gap-2 rounded-xl border border-[#243244] bg-[#101826]/60 p-2">
           {([
             ["details", "Карточка кейса"],
+            ["dossier", "Паспорт"],
             ["cycles", "Циклы и медиа"],
           ] as const).map(([section, label]) => (
             <button
@@ -219,6 +221,9 @@ export function EntityEditor({
                 competencies={competencies}
               />
             </>
+          )}
+          {caseEditorSection === "dossier" && (
+            <CaseDossierEditor entity={entity} onChange={(patch) => update(patch)} />
           )}
           {caseEditorSection === "cycles" && (
             <StructuredCyclesEditor
