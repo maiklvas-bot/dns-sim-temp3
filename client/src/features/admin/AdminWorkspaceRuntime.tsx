@@ -1547,6 +1547,10 @@ export default function AdminPage() {
         const response = await apiRequest("POST", "/api/admin/cases", caseDraft);
         const payload = await response.json();
         setSelectedCaseId(payload.id);
+        const issueCount = Array.isArray(payload.validationIssues) ? payload.validationIssues.length : 0;
+        if (issueCount > 0) {
+          setError(`Кейс сохранён как черновик. Автопроверка нашла замечаний: ${issueCount}. Откройте вкладку «Паспорт», чтобы посмотреть список.`);
+        }
       }
       if (tab === "channels" && channelTab === "email" && emailDraft) {
         const response = await apiRequest("POST", "/api/admin/email-cases", emailDraft);
@@ -1810,6 +1814,10 @@ export default function AdminPage() {
       setSelectedCaseId(savedId);
       setCaseDraft({ ...nextDraft, id: savedId });
       setCaseWizardOpen(false);
+      const issueCount = Array.isArray(payload.validationIssues) ? payload.validationIssues.length : 0;
+      if (issueCount > 0) {
+        setError(`Кейс создан как черновик. Автопроверка нашла замечаний: ${issueCount}. Откройте вкладку «Паспорт», чтобы посмотреть список.`);
+      }
     } catch (err: any) {
       setError(err.message || "Не удалось создать кейс. Черновик сохранён в браузере.");
     } finally {
