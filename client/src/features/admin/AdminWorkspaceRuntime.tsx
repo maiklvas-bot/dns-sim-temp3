@@ -1597,6 +1597,13 @@ export default function AdminPage() {
       setCaseDraft(publishedDraft);
       setSelectedCaseId(payload.id);
       await invalidateRuntimeContent();
+      // Публикация меняет isActive, но не qaStatus, поэтому серверный гейт её не блокирует —
+      // иначе уже опубликованные кейсы с замечаниями стало бы невозможно переопубликовать.
+      // Но администратор должен видеть, что выпускает участникам кейс с известными дефектами.
+      const issueCount = Array.isArray(payload.validationIssues) ? payload.validationIssues.length : 0;
+      if (issueCount > 0) {
+        setError(`Кейс опубликован, но автопроверка нашла замечаний: ${issueCount}. Участники увидят его в текущем виде — проверьте вкладку «Паспорт».`);
+      }
     } catch (err: any) {
       setError(err.message || "Не удалось опубликовать кейс");
     } finally {
