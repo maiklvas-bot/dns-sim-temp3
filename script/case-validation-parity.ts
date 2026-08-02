@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { spearmanRho, validateCase, shouldBlockCaseSave } from "../shared/case-validation";
+import { hasMeaningfulText, spearmanRho, validateCase, shouldBlockCaseSave } from "../shared/case-validation";
 import type { SimCase } from "../shared/simulation-content";
 
 const baseEffects = { queue: 0, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 };
@@ -129,6 +129,64 @@ const blankCause = buildCase({ hiddenCause: "   " });
 assert.equal(
   validateCase(blankCause).filter((issue) => issue.check === "diagnostics").length,
   1,
+);
+
+// hasMeaningfulText is the single source of truth shared with the admin UI summary.
+// String.trim() only strips ASCII whitespace and NBSP, so zero-width characters would
+// otherwise pass as real content and let an author satisfy the check with invisible text.
+assert.equal(hasMeaningfulText("Отчёт по смене"), true);
+assert.equal(hasMeaningfulText("   "), false);
+assert.equal(hasMeaningfulText(""), false);
+assert.equal(hasMeaningfulText(undefined), false);
+assert.equal(hasMeaningfulText(null), false);
+assert.equal(hasMeaningfulText("\u200B"), false, "zero-width space is not content");
+assert.equal(hasMeaningfulText("\u00A0"), false, "non-breaking space is not content");
+assert.equal(hasMeaningfulText("\uFEFF\u200D"), false, "BOM and zero-width joiner are not content");
+
+const invisibleDossier = buildCase({
+  hiddenCause: "Root cause",
+  dataPoints: [{ label: "\u200B" }],
+  falseTrails: ["\uFEFF"],
+});
+assert.equal(
+  validateCase(invisibleDossier).filter((issue) => issue.check === "diagnostics").length,
+  2,
+  "invisible characters must not satisfy the diagnostics check",
+);
+
+// Broken numeric data must not be treated as a valid signal. NaN sorts unpredictably, which
+// previously produced a perfect correlation out of garbage; Infinity produced a partial one.
+assert.equal(spearmanRho([1, 2, 3], [1, NaN, 3]), 0, "NaN input yields no correlation, not a perfect one");
+assert.equal(spearmanRho([1, 2, 3], [1, Infinity, 3]), 0, "Infinity input yields no correlation");
+assert.equal(spearmanRho([1, NaN, 3], [1, 2, 3]), 0, "NaN on either side is rejected");
+
+// NaN !== 0 is true in JS, so a broken effect used to pass as a real state change.
+const nanEffects = buildCase();
+nanEffects.cycles[0].options[0].effects = { ...baseEffects, queue: NaN };
+assert.equal(
+  validateCase(nanEffects).filter((issue) => issue.check === "effect_reality").length,
+  1,
+  "NaN effect is broken data, not a real state change",
+);
+
+// Known and accepted limitation of the "single goodness axis" rule, pinned here so a future
+// change is a deliberate decision rather than an accident.
+//
+// Only competencies scored in EVERY option take part: leaving one unscored drops it from the
+// set, and with a single competency left the rule cannot fire (one competency is a legitimate
+// case design, not a ladder). Treating a gap as 0 was tried and is worse — because the rule
+// requires ALL competencies to correlate, one deliberately non-correlating competency would
+// silence the check entirely, which is an easier bypass than the one it closes.
+const gapCase = buildCase();
+gapCase.cycles[0].options = [
+  { id: "O1", level: 1, text: "Wait and see how it goes", score: 1, effects: { ...baseEffects, queue: 5 }, competency_scores: { planning: 1, communication: 1 } },
+  { id: "O2", level: 2, text: "Ask a colleague for input", score: 2, effects: { ...baseEffects, queue: 3 }, competency_scores: { planning: 3 } },
+  { id: "O3", level: 3, text: "Run a two-minute standup", score: 3, effects: { ...baseEffects, queue: -2 }, competency_scores: { planning: 5, communication: 5 } },
+];
+assert.equal(
+  validateCase(gapCase).filter((issue) => issue.check === "antigaming" && issue.message.includes("шкала хорошести")).length,
+  0,
+  "a gap drops the competency from the set — documented limitation, not silent behaviour",
 );
 
 console.log("case-validation parity checks passed");

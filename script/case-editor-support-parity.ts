@@ -69,4 +69,37 @@ assert.equal(summaryFull.filled, 4);
 assert.equal(summaryFull.isComplete, true);
 assert.deepEqual(summaryFull.missing, []);
 
+// Сводка в интерфейсе обязана совпадать с механикой: раньше UI считал заполненным
+// массив с пустой строкой, а checkDiagnostics — нет, и автор видел «4 из 4» при
+// замечаниях от автопроверки.
+const blankRows = buildCaseDossierSummary({
+  ...emptyDossier,
+  businessProblem: "Очередь растёт",
+  hiddenCause: "Не хватает людей",
+  dataPoints: [{ label: "   " }],
+  falseTrails: [""],
+});
+assert.equal(blankRows.filled, 2);
+assert.equal(blankRows.isComplete, false);
+assert.deepEqual(blankRows.missing, ["dataPoints", "falseTrails"]);
+
+const invisibleRows = buildCaseDossierSummary({
+  ...emptyDossier,
+  businessProblem: "Очередь растёт",
+  hiddenCause: "Не хватает людей",
+  dataPoints: [{ label: "\u200B" }],
+  falseTrails: ["\uFEFF"],
+});
+assert.equal(invisibleRows.isComplete, false, "невидимые символы не считаются заполнением");
+
+// Достаточно одной содержательной строки среди пустых
+const mixedRows = buildCaseDossierSummary({
+  ...emptyDossier,
+  businessProblem: "Очередь растёт",
+  hiddenCause: "Не хватает людей",
+  dataPoints: [{ label: "  " }, { label: "Отчёт по смене" }],
+  falseTrails: ["", "Кажется, виновата касса"],
+});
+assert.equal(mixedRows.isComplete, true);
+
 console.log("case-editor-support parity checks passed");
