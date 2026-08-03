@@ -127,7 +127,11 @@ const caseUi = [
   "client/src/features/admin/cases/master/IssueCard.tsx",
   "client/src/features/admin/cases/master/CompetencyLadderHint.tsx",
   "client/src/features/admin/cases/master/steps/StepDecisions.tsx",
+  "client/src/features/admin/cases/master/TemplatePicker.tsx",
+  "client/src/features/admin/cases/master/CaseRoadmap.tsx",
 ].map(readText).join("\n");
+
+
 
 assertCondition(
   !caseUi.includes("max={5}"),
@@ -266,6 +270,15 @@ assertCondition(
   "Цвета дерева кейса должны быть заданы переменными для обеих тем",
 );
 
+// Правило «никаких нейтральных серых» должно распространяться и на разметку
+// кабинета, а не только на admin.css: иначе новый компонент вносит их заново.
+const neutralInMarkup = [...caseUi.matchAll(/#([0-9a-fA-F]{6})\b/g)]
+  .map((match) => match[1].toLowerCase())
+  .filter(isNeutralColor);
+assertCondition(
+  neutralInMarkup.length === 0,
+  `В разметке мастера не должно быть нейтральных серых, найдены: ${[...new Set(neutralInMarkup)].map((hex) => `#${hex}`).join(", ")}`,
+);
 // Плитки набора выкладываются равной сеткой, а не блоками вразнобой со span.
 // Ищем класс в разметке, а не слово в тексте: упоминание в комментарии
 // не должно удерживать проверку зелёной.

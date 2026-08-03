@@ -19,7 +19,7 @@ export function TemplatePicker({
         <div className="flex flex-wrap items-center gap-3">
           <div className="min-w-0">
             <div className="text-sm font-semibold text-white">Начать с готового образца</div>
-            <div className="mt-1 text-[11px] text-[#8890a8]">
+            <div className="mt-1 text-[11px] text-[#8fa8cf]">
               Пять выверенных кейсов со всей структурой и связями. Тексты потом перепишете под свою ситуацию.
             </div>
           </div>
@@ -51,7 +51,7 @@ export function TemplatePicker({
           <div key={template.id} className="rounded-lg border border-[#243244] bg-[#0d1522]/70 p-3">
             <div className="text-[13px] font-semibold text-white">{template.title}</div>
             <div className="mt-1 text-[11.5px] text-[#b8c7df]">{template.summary}</div>
-            <div className="mt-1 text-[11px] text-[#70829d]">Учит: {template.teaches}</div>
+            <div className="mt-1 text-[11px] text-[#7d9bc9]">Учит: {template.teaches}</div>
 
             {confirming?.id === template.id ? (
               <div className="mt-2 rounded-md border border-[#f68b1f]/35 bg-[#f68b1f]/12 p-2">

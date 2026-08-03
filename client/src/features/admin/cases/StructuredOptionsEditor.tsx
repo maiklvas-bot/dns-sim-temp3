@@ -87,7 +87,7 @@ export function StructuredOptionsEditor({
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-white">{title}</div>
-          <div className="mt-1 text-[11px] text-[#8890a8]">Каждый вариант ответа заполняется отдельными полями без JSON.</div>
+          <div className="mt-1 text-[11px] text-[#8fa8cf]">Каждый вариант ответа заполняется отдельными полями без JSON.</div>
         </div>
         <Button type="button" size="sm" className="shrink-0 whitespace-nowrap" onClick={addOption}>Добавить вариант</Button>
       </div>
@@ -114,7 +114,7 @@ export function StructuredOptionsEditor({
             <div className="mt-3">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-lg border border-[#243244] bg-[#0d1522]/70 px-3 py-2">
-                <div className="text-[10px] uppercase tracking-[0.16em] text-[#70829d]">Позиция варианта</div>
+                <div className="text-[10px] uppercase tracking-[0.16em] text-[#7d9bc9]">Позиция варианта</div>
                 <div className="mt-1 text-sm font-semibold text-white">{index + 1}</div>
               </div>
               <Field label="Оценка" value={option.score} onChange={(value) => updateOption(index, { score: Number(value) })} />
@@ -173,7 +173,7 @@ export function StructuredOptionsEditor({
                     value={option.effects?.[field.key] ?? 0}
                     onChange={(value) => updateEffects(index, field.key, Number(value))}
                   />
-                  <div className="mt-1 text-[10px] leading-relaxed text-[#71839d]">{field.metric}</div>
+                  <div className="mt-1 text-[10px] leading-relaxed text-[#7d9bc9]">{field.metric}</div>
                 </div>
               ))}
             </div>
@@ -181,7 +181,7 @@ export function StructuredOptionsEditor({
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6fa0ff]">Влияние на компетенции</div>
-                  <div className="mt-1 text-[11px] leading-relaxed text-[#8890a8]">
+                  <div className="mt-1 text-[11px] leading-relaxed text-[#8fa8cf]">
                     Выберите уровень проявления компетенции в этом варианте. Уровни соответствуют якорям поведения: слабо — нижний якорь, сильно — верхний. Промежуточные значения не используются, иначе автопроверка забракует кейс.
                   </div>
                 </div>
@@ -196,7 +196,7 @@ export function StructuredOptionsEditor({
                       <div className="mb-2 flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <div className="truncate text-xs font-medium text-white">{competency.name}</div>
-                          <div className="text-[10px] uppercase tracking-[0.16em] text-[#70829d]">{competencyCategoryLabel(competency.category)}</div>
+                          <div className="text-[10px] uppercase tracking-[0.16em] text-[#7d9bc9]">{competencyCategoryLabel(competency.category)}</div>
                         </div>
                         {currentLevel === "off_scale" && (
                           <div className="shrink-0 rounded-full border border-[#ffb27a]/40 bg-[#f68b1f]/12 px-2 py-1 text-[10px] font-semibold text-[#ffb27a]">
@@ -237,7 +237,7 @@ export function StructuredOptionsEditor({
       </div>
       <div className="mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
         <div className="text-sm font-semibold text-white">Живой preview влияния кейса</div>
-        <div className="mt-1 text-[11px] leading-relaxed text-[#8890a8]">
+        <div className="mt-1 text-[11px] leading-relaxed text-[#8fa8cf]">
           Ниже видно, как текущий набор вариантов ответа формирует ожидаемый профиль компетенций у этого кейса.
         </div>
         {previewData.length > 0 ? (

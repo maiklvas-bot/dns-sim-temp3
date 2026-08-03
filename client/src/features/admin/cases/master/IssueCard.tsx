@@ -36,7 +36,7 @@ export function IssueCard({
             Вернуть в работу
           </Button>
         </div>
-        <div className="mt-1 text-[10px] text-[#70829d]">Принято автором</div>
+        <div className="mt-1 text-[10px] text-[#7d9bc9]">Принято автором</div>
       </div>
     );
   }
@@ -46,10 +46,10 @@ export function IssueCard({
       <div className="text-[12.5px] font-semibold text-white">{explanation.what}</div>
       <div className="mt-1.5 text-[11.5px] leading-relaxed text-[#b8c7df]">{explanation.why}</div>
       <div className="mt-2 rounded-md border border-[#243244] bg-[#0d1522]/60 px-2.5 py-2">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#70829d]">Как исправить</div>
+        <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#7d9bc9]">Как исправить</div>
         <div className="mt-1 text-[11.5px] leading-relaxed text-[#cbd8ef]">{explanation.how}</div>
       </div>
-      <div className="mt-2 text-[10px] text-[#70829d]">{explanation.detail}</div>
+      <div className="mt-2 text-[10px] text-[#7d9bc9]">{explanation.detail}</div>
 
       {showReason ? (
         <div className="mt-2 space-y-2">
