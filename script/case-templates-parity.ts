@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { CASE_TEMPLATES, instantiateTemplate } from "../shared/case-templates";
-import { validateCase } from "../shared/case-validation";
+import { spearmanRho, validateCase } from "../shared/case-validation";
 
 // Библиотека непустая и покрывает разные ситуации розницы
 assert.ok(CASE_TEMPLATES.length >= 2, "в библиотеке минимум два эталона на этом этапе");
@@ -41,5 +41,57 @@ created.cycles[0].situation = "изменено";
 assert.notEqual(source.caseData.cycles[0].situation, "изменено", "эталон не мутируется");
 // Копия эталона тоже обязана быть валидной
 assert.deepEqual(validateCase(created), []);
+
+// Эталон учит не только тем, что проходит проверку, но и тем, насколько уверенно.
+// Набор, где корреляция уровней впритык под порогом, показывает автору почти лестницу.
+// Требуем заметный запас: ни в одном шаге компетенции не должны идти почти вместе.
+// Одна компетенция может расти от слабого ответа к сильному — это нормально.
+// Профиль возникает там, где хотя бы одна другая ведёт себя иначе. Требуем не
+// просто «прошло проверку», а заметный запас: иначе эталон учит почти лестнице.
+const PROFILE_MAX_RHO = 0.75;
+for (const template of CASE_TEMPLATES) {
+  for (const cycle of template.caseData.cycles) {
+    // На двух вариантах корреляция всегда ±1: профиль по двум точкам не строится,
+    // и механика антигейминга такие шаги тоже не судит.
+    const options = [...cycle.options].sort((a, b) => a.level - b.level);
+    if (options.length < 3) continue;
+    const levels = options.map((option) => option.level);
+    const competencyIds = Array.from(
+      new Set(options.flatMap((option) => Object.keys(option.competency_scores || {}))),
+    );
+    if (competencyIds.length < 2) continue;
+
+    const correlations = competencyIds.map((competencyId) => ({
+      competencyId,
+      rho: Math.abs(
+        spearmanRho(
+          levels,
+          options.map((option) => Number((option.competency_scores || {})[competencyId] || 0)),
+        ),
+      ),
+    }));
+    assert.ok(
+      correlations.some((item) => item.rho <= PROFILE_MAX_RHO),
+      `${template.id}, шаг ${cycle.cycle}: все компетенции идут почти вместе `
+        + `(${correlations.map((item) => `${item.competencyId} ${item.rho.toFixed(2)}`).join(", ")}). `
+        + "Эталон должен показывать явный профиль, а не проходить проверку впритык.",
+    );
+  }
+}
+
+// Ни один вариант не должен быть сильным сразу по всем размеченным компетенциям:
+// именно так выглядит «правильная кнопка», от которой кейс и должен уходить.
+for (const template of CASE_TEMPLATES) {
+  for (const cycle of template.caseData.cycles) {
+    for (const option of cycle.options) {
+      const scores = Object.values(option.competency_scores || {});
+      if (scores.length < 2) continue;
+      assert.ok(
+        !scores.every((score) => score === 5),
+        `${template.id}, шаг ${cycle.cycle}, «${option.text}»: вариант силён по всему — это правильная кнопка, а не профиль`,
+      );
+    }
+  }
+}
 
 console.log("case-templates parity checks passed");
