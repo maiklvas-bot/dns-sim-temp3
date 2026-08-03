@@ -1,41 +1,55 @@
 import { useMemo } from "react";
-import type { SimCase } from "@shared/simulation-content";
-import { validateCase, type CaseValidationIssue } from "@shared/case-validation";
+import type { AcceptedIssue, SimCase } from "@shared/simulation-content";
+import { isIssueAccepted, validateCase, type CaseValidationIssue } from "@shared/case-validation";
+import { IssueCard } from "./master/IssueCard";
 
-const CHECK_LABELS: Record<CaseValidationIssue["check"], string> = {
-  bars_conformance: "Уровни BARS",
-  antigaming: "Антигейминг",
-  diagnostics: "Диагностика",
-  effect_reality: "Влияние на состояние",
-};
-
-const CHECK_HINTS: Record<CaseValidationIssue["check"], string> = {
-  bars_conformance: "Баллы компетенций должны совпадать с уровнями якорей поведения",
-  antigaming: "Правильный ответ не должен угадываться по форме варианта",
-  diagnostics: "Без скрытой причины и данных кейс проходится без диагностики",
-  effect_reality: "Каждый вариант должен менять состояние магазина",
-};
-
-export function CaseValidationPanel({ caseInput }: { caseInput: SimCase | null }) {
+/**
+ * Замечания автопроверки на этапе «Оформление и запуск».
+ *
+ * Каждое замечание — карточка с объяснением: что не так, почему это ломает
+ * оценку участника и как исправить. Замечание можно осознанно принять с
+ * обоснованием — тогда оно перестаёт блокировать, но остаётся видимым.
+ */
+export function CaseValidationPanel({
+  caseInput,
+  onChange,
+}: {
+  caseInput: SimCase | null;
+  /** Без него панель только показывает: принять замечание будет нечем. */
+  onChange?: (patch: Partial<SimCase>) => void;
+}) {
   const issues = useMemo(() => (caseInput ? validateCase(caseInput) : []), [caseInput]);
-
-  const grouped = useMemo(() => {
-    const map = new Map<CaseValidationIssue["check"], CaseValidationIssue[]>();
-    issues.forEach((issue) => {
-      const list = map.get(issue.check) || [];
-      list.push(issue);
-      map.set(issue.check, list);
-    });
-    return Array.from(map.entries());
-  }, [issues]);
+  const accepted = useMemo(() => caseInput?.acceptedIssues || [], [caseInput]);
+  const blocking = useMemo(
+    () => issues.filter((issue) => !isIssueAccepted(issue, accepted)),
+    [issues, accepted],
+  );
 
   if (!caseInput) {
     return null;
   }
 
+  const acceptIssue = (entry: AcceptedIssue) => {
+    onChange?.({ acceptedIssues: [...accepted, entry] });
+  };
+
+  // Отмена снимает записи с той же привязкой — той же тройкой, по которой идёт сопоставление.
+  const revokeIssue = (issue: CaseValidationIssue) => {
+    onChange?.({
+      acceptedIssues: accepted.filter(
+        (item) =>
+          !(
+            item.check === issue.check
+            && (item.cycleId ?? null) === (issue.cycleId ?? null)
+            && (item.optionId ?? null) === (issue.optionId ?? null)
+          ),
+      ),
+    });
+  };
+
   if (issues.length === 0) {
     return (
-      <div className="rounded-xl border border-[#2f6b2f]/40 bg-[#2f6b2f]/10 p-4">
+      <div className="rounded-xl border border-[#54d28c]/40 bg-[#54d28c]/10 p-4">
         <div className="text-sm font-semibold text-[#54d28c]">Автопроверка пройдена</div>
         <div className="mt-1 text-[11px] leading-relaxed text-[#8aa2c4]">
           Кейс можно переводить в статус готовности к прототипу или запуску.
@@ -44,34 +58,37 @@ export function CaseValidationPanel({ caseInput }: { caseInput: SimCase | null }
     );
   }
 
+  const allAccepted = blocking.length === 0;
+
   return (
-    <div className="rounded-xl border border-[#ffb27a]/35 bg-[#f68b1f]/8 p-4">
+    <div
+      className={`rounded-xl border p-4 ${
+        allAccepted ? "border-[#54d28c]/35 bg-[#54d28c]/8" : "border-[#ffb27a]/35 bg-[#f68b1f]/8"
+      }`}
+    >
       <div className="flex items-baseline justify-between gap-3">
-        <div className="text-sm font-semibold text-[#ffb27a]">Замечания автопроверки</div>
-        <div className="text-[11px] font-semibold text-[#ffb27a]">{issues.length}</div>
+        <div className={`text-sm font-semibold ${allAccepted ? "text-[#54d28c]" : "text-[#ffb27a]"}`}>
+          Замечания автопроверки
+        </div>
+        <div className={`text-[11px] font-semibold ${allAccepted ? "text-[#54d28c]" : "text-[#ffb27a]"}`}>
+          {allAccepted ? `${issues.length} принято` : blocking.length}
+        </div>
       </div>
       <div className="mt-1 text-[11px] leading-relaxed text-[#b8c7df]">
-        Пока замечания не устранены, кейс нельзя пометить готовым. Черновик сохраняется свободно.
+        {allAccepted
+          ? "Все замечания приняты автором: кейс не блокируется, но замечания остаются видимыми."
+          : "Каждое замечание объясняет, чем оно вредит оценке участника. Если в этом кейсе так и задумано — примите его с обоснованием."}
       </div>
-      <div className="mt-3 space-y-3">
-        {grouped.map(([check, checkIssues]) => (
-          <div key={check} className="rounded-lg border border-[#243244] bg-[#0d1522]/70 px-3 py-2">
-            <div className="flex items-baseline justify-between gap-2">
-              <div className="text-xs font-semibold text-white">{CHECK_LABELS[check]}</div>
-              <div className="text-[10px] text-[#70829d]">{checkIssues.length}</div>
-            </div>
-            <div className="mt-1 text-[10px] leading-relaxed text-[#70829d]">{CHECK_HINTS[check]}</div>
-            <ul className="mt-2 space-y-1">
-              {checkIssues.slice(0, 5).map((issue, issueIndex) => (
-                <li key={`${check}-${issueIndex}`} className="text-[11px] leading-relaxed text-[#b8c7df]">
-                  • {issue.message}
-                </li>
-              ))}
-            </ul>
-            {checkIssues.length > 5 && (
-              <div className="mt-1 text-[10px] text-[#70829d]">…и ещё {checkIssues.length - 5}</div>
-            )}
-          </div>
+
+      <div className="mt-3 space-y-2">
+        {issues.map((issue, issueIndex) => (
+          <IssueCard
+            key={`${issue.check}-${issue.cycleId || ""}-${issue.optionId || ""}-${issueIndex}`}
+            issue={issue}
+            accepted={accepted}
+            onAccept={acceptIssue}
+            onRevoke={revokeIssue}
+          />
         ))}
       </div>
     </div>

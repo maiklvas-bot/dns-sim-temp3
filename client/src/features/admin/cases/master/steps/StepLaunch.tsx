@@ -83,7 +83,7 @@ export function StepLaunch({
         onChange={(value) => onChange({ sortOrder: Number(value) })}
       />
 
-      <CaseValidationPanel caseInput={entity} />
+      <CaseValidationPanel caseInput={entity} onChange={onChange} />
     </div>
   );
 }

@@ -142,6 +142,31 @@ assertCondition(
   caseUi.includes("validateCase"),
   "Автор кейса должен видеть замечания автопроверки до сохранения",
 );
+
+// Обучающий слой: замечание объясняет себя и может быть осознанно принято.
+// Компонент карточки мало создать — он должен быть подключён, иначе принять негде.
+const validationPanel = readText("client/src/features/admin/cases/CaseValidationPanel.tsx");
+assertCondition(
+  /<IssueCard[\s/>]/.test(validationPanel),
+  "Замечания показываются карточкой с объяснением, а не сухим списком",
+);
+assertCondition(
+  validationPanel.includes("acceptedIssues"),
+  "Панель замечаний должна уметь принимать замечание с обоснованием",
+);
+const issueCard = readText("client/src/features/admin/cases/master/IssueCard.tsx");
+assertCondition(
+  issueCard.includes("explainIssue") && issueCard.includes(".why"),
+  "Карточка замечания объясняет, чем оно вредит оценке, а не только что не так",
+);
+assertCondition(
+  issueCard.includes("issue.cycleId") && issueCard.includes("issue.optionId"),
+  "Запись принятия обязана копировать привязку из замечания — иначе принятие не сработает",
+);
+assertCondition(
+  readText("client/src/features/admin/cases/master/steps/StepLaunch.tsx").includes("onChange={onChange}"),
+  "Панель замечаний должна получать обработчик изменения — без него принятие некуда сохранить",
+);
 assertCondition(
   caseUi.includes("MASTER_STEPS") && caseUi.includes("CaseSummaryCard"),
   "Кейс редактируется через мастер с этапами и карточкой-хабом",
