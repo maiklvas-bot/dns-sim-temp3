@@ -1,5 +1,10 @@
-import type { CompetencyDefinition, SimCase } from "@shared/simulation-content";
+import { useMemo } from "react";
+import type { AcceptedIssue, CompetencyDefinition, SimCase } from "@shared/simulation-content";
+import { isIssueAccepted, validateCase, type CaseValidationIssue } from "@shared/case-validation";
 import { StructuredCyclesEditor } from "../../CaseEditors";
+import { issuesForStep } from "../case-master-support";
+import { CompetencyLadderHint } from "../CompetencyLadderHint";
+import { IssueCard } from "../IssueCard";
 import { MasterHelp } from "../MasterHelp";
 import { HELP } from "../master-help-topics";
 
@@ -14,6 +19,8 @@ export function StepDecisions({
   selectedCycleIndex,
   onSelectedCycleIndexChange,
   onChange,
+  onAcceptIssue,
+  onRevokeIssue,
 }: {
   entity: SimCase;
   competencies: CompetencyDefinition[];
@@ -25,7 +32,15 @@ export function StepDecisions({
   selectedCycleIndex?: number;
   onSelectedCycleIndexChange?: (index: number) => void;
   onChange: (patch: Partial<SimCase>) => void;
+  onAcceptIssue: (entry: AcceptedIssue) => void;
+  onRevokeIssue: (issue: CaseValidationIssue) => void;
 }) {
+  const stepIssues = useMemo(
+    () => issuesForStep("decisions", validateCase(entity)),
+    [entity],
+  );
+  const activeIssues = stepIssues.filter((issue) => !isIssueAccepted(issue, entity.acceptedIssues));
+
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
@@ -50,6 +65,24 @@ export function StepDecisions({
           </span>
         </div>
       </div>
+
+      {(entity.cycles || []).map((cycle) => (
+        <CompetencyLadderHint key={`ladder-${cycle.id}`} cycle={cycle} competencies={competencies} />
+      ))}
+
+      {activeIssues.length > 0 && (
+        <div className="space-y-2">
+          {activeIssues.map((issue, index) => (
+            <IssueCard
+              key={`decisions-issue-${index}`}
+              issue={issue}
+              accepted={entity.acceptedIssues || []}
+              onAccept={onAcceptIssue}
+              onRevoke={onRevokeIssue}
+            />
+          ))}
+        </div>
+      )}
 
       <StructuredCyclesEditor
         cycles={entity.cycles || []}

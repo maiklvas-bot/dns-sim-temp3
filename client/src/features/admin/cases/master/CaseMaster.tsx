@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { CompetencyDefinition, SimCase } from "@shared/simulation-content";
+import type { AcceptedIssue, CompetencyDefinition, SimCase } from "@shared/simulation-content";
+import { type CaseValidationIssue } from "@shared/case-validation";
 import { Button } from "@/components/ui/button";
 import { CaseSummaryCard } from "./CaseSummaryCard";
 import { CompetencyGuideDialog } from "./CompetencyGuideDialog";
@@ -64,6 +65,23 @@ export function CaseMaster({
   const [guideOpen, setGuideOpen] = useState(false);
 
   const patch = (partial: Partial<SimCase>) => onChange({ ...entity, ...partial });
+
+  const acceptIssue = (entry: AcceptedIssue) => {
+    patch({ acceptedIssues: [...(entity.acceptedIssues || []), entry] });
+  };
+
+  const revokeIssue = (issue: CaseValidationIssue) => {
+    patch({
+      acceptedIssues: (entity.acceptedIssues || []).filter(
+        (item) =>
+          !(
+            item.check === issue.check
+            && (item.cycleId || null) === (issue.cycleId || null)
+            && (item.optionId || null) === (issue.optionId || null)
+          ),
+      ),
+    });
+  };
 
   const stepIndex = view.kind === "step" ? MASTER_STEPS.findIndex((step) => step.id === view.stepId) : -1;
   const currentStep = stepIndex >= 0 ? MASTER_STEPS[stepIndex] : null;
@@ -137,6 +155,8 @@ export function CaseMaster({
               selectedCycleIndex={selectedCycleIndex}
               onSelectedCycleIndexChange={onSelectedCycleIndexChange}
               onChange={patch}
+              onAcceptIssue={acceptIssue}
+              onRevokeIssue={revokeIssue}
             />
           )}
           {currentStep.id === "launch" && (

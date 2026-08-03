@@ -119,6 +119,11 @@ export function StepStructure({
                   <div className="shrink-0 text-[11px] text-[#7d9bc9]">
                     вариантов: {(cycle.options || []).length}
                   </div>
+                  {(cycle.options || []).length === 0 && (
+                    <div className="shrink-0 text-[11px] font-semibold text-[#ffb27a]">
+                      тупик: участнику некуда пойти
+                    </div>
+                  )}
                   <Button
                     type="button"
                     size="sm"
