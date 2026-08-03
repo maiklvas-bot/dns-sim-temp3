@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { SimCase } from "@shared/simulation-content";
-import { validateCase } from "@shared/case-validation";
+import { isIssueAccepted, validateCase } from "@shared/case-validation";
 import { buildStepSummaries, type MasterStepId, type StepSummary } from "./case-master-support";
 import { CaseStructureMiniMap } from "./CaseStructureMiniMap";
 
@@ -62,7 +62,11 @@ export function CaseSummaryCard({
   caseInput: SimCase;
   onOpenStep: (stepId: MasterStepId) => void;
 }) {
-  const issues = useMemo(() => validateCase(caseInput), [caseInput]);
+  const issues = useMemo(
+    () => validateCase(caseInput).filter((issue) => !isIssueAccepted(issue, caseInput.acceptedIssues)),
+    [caseInput],
+  );
+  const acceptedCount = (caseInput.acceptedIssues || []).length;
   const summaries = useMemo(() => buildStepSummaries(caseInput, issues), [caseInput, issues]);
 
   return (
@@ -72,6 +76,11 @@ export function CaseSummaryCard({
         <div className="dns-master-hint mt-1">
           Карточка кейса. Нажмите на любой блок, чтобы вернуться к его настройке.
         </div>
+        {acceptedCount > 0 && (
+          <div className="mt-2 text-[11px] text-[#8aa2c4]">
+            Замечаний принято автором: {acceptedCount}
+          </div>
+        )}
       </div>
 
       {/* Плитки одного размера: auto-rows-fr выравнивает высоту ряда, h-full тянет карточку. */}
