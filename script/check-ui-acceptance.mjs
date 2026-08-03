@@ -151,4 +151,49 @@ assertCondition(
   "Старый визард создания кейса заменён мастером",
 );
 
+// Нейтральный серый в кабинете запрещён (см. CLAUDE.md, «Правила интерфейса»):
+// серый текст на сером фоне — то, из-за чего интерфейс выглядит нечитаемо.
+// Считаем настоящую насыщенность HSL, а не разброс каналов: у #8b929c разброс 17,
+// но насыщенность 8% — это серый. Чистый белый и чёрный исключены по светлоте:
+// они читаются как поверхность, а не как оттенок серого.
+const adminCss = readText("client/src/styles/admin.css");
+// Атрибутные селекторы вида [class*="text-[#8890a8]"] адресуют классы разметки,
+// а не задают цвет — их из проверки убираем, иначе ловим ремап вместо палитры.
+const adminCssDeclarations = adminCss.replace(/\[[^\]]*\]/g, "");
+const isNeutralColor = (hex) => {
+  const [r, g, b] = [0, 2, 4].map((offset) => parseInt(hex.slice(offset, offset + 2), 16) / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const lightness = (max + min) / 2;
+  const chromaRange = 1 - Math.abs(2 * lightness - 1);
+  const saturation = chromaRange === 0 ? 0 : (max - min) / chromaRange;
+  return saturation < 0.2 && lightness > 0.1 && lightness < 0.92;
+};
+const neutralHexes = [...adminCssDeclarations.matchAll(/#([0-9a-fA-F]{6})\b/g)]
+  .map((match) => match[1].toLowerCase())
+  .filter((hex) => {
+    return isNeutralColor(hex);
+  });
+assertCondition(
+  neutralHexes.length === 0,
+  `В кабинете не должно быть нейтральных серых, найдены: ${[...new Set(neutralHexes)].map((hex) => `#${hex}`).join(", ")}`,
+);
+assertCondition(
+  !/--(muted-foreground|foreground|border|input|card-border):\s*0 0%/.test(adminCss),
+  "Токены темы кабинета не должны иметь нулевую насыщенность — серый запрещён",
+);
+
+// Плитки набора выкладываются равной сеткой, а не блоками вразнобой со span.
+// Ищем класс в разметке, а не слово в тексте: упоминание в комментарии
+// не должно удерживать проверку зелёной.
+const summaryCard = readText("client/src/features/admin/cases/master/CaseSummaryCard.tsx");
+assertCondition(
+  /className=(?:"|\{`)grid auto-rows-fr/.test(summaryCard),
+  "Плитки карточки кейса должны быть одного размера (grid auto-rows-fr)",
+);
+assertCondition(
+  !/md:col-span-2/.test(summaryCard),
+  "Плитки карточки кейса не растягиваются на несколько колонок — набор должен быть равномерным",
+);
+
 console.log("UI acceptance checks passed: shared themes, responsive admin editor, assessor workspace and simulation scrolling verified.");

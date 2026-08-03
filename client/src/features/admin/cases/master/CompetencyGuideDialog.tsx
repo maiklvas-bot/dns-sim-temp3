@@ -177,7 +177,7 @@ export function CompetencyGuideDialog({
             <div className="mt-3 space-y-3">
               {Object.entries(byCategory).map(([category, items]) => (
                 <div key={category}>
-                  <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#70829d]">
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#7d9bc9]">
                     {competencyCategoryLabel(category)}
                   </div>
                   <div className="mt-1.5 grid gap-1.5 md:grid-cols-2">

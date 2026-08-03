@@ -116,7 +116,7 @@ export function StepStructure({
               >
                 <div className="flex items-center gap-3">
                   <div className="text-xs font-semibold text-white">Шаг {cycle.cycle}</div>
-                  <div className="shrink-0 text-[11px] text-[#70829d]">
+                  <div className="shrink-0 text-[11px] text-[#7d9bc9]">
                     вариантов: {(cycle.options || []).length}
                   </div>
                   <Button

@@ -25,7 +25,7 @@ export function StepSituation({
       </div>
 
       <div className="flex items-center gap-1.5">
-        <span className="text-xs font-semibold text-[#8890a8]">Сигнал участнику</span>
+        <span className="text-xs font-semibold text-[#8fa8cf]">Сигнал участнику</span>
         <MasterHelp topic={HELP.signal} />
       </div>
 

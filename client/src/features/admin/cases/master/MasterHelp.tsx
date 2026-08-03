@@ -69,7 +69,7 @@ export function MasterHelp({ topic }: { topic: HelpTopic }) {
 export function MasterFieldLabel({ label, topic }: { label: string; topic: HelpTopic }) {
   return (
     <span className="mb-1.5 flex items-center gap-1.5">
-      <span className="text-xs font-semibold text-[#8890a8]">{label}</span>
+      <span className="text-xs font-semibold text-[#8fa8cf]">{label}</span>
       <MasterHelp topic={topic} />
     </span>
   );

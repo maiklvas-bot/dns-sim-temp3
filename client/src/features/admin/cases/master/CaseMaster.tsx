@@ -160,7 +160,7 @@ export function CaseMaster({
             >
               Назад
             </Button>
-            <div className="text-[11px] text-[#70829d]">
+            <div className="text-[11px] text-[#7d9bc9]">
               Шаг {stepIndex + 1} из {MASTER_STEPS.length}
             </div>
             {stepIndex < MASTER_STEPS.length - 1 ? (
