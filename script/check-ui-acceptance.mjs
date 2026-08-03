@@ -121,7 +121,9 @@ const caseUi = [
   "client/src/features/admin/cases/StructuredOptionsEditor.tsx",
   "client/src/features/admin/cases/CaseDossierEditor.tsx",
   "client/src/features/admin/cases/CaseValidationPanel.tsx",
-  "client/src/features/admin/components/EntityEditor.tsx",
+  "client/src/features/admin/cases/master/CaseMaster.tsx",
+  "client/src/features/admin/cases/master/CaseSummaryCard.tsx",
+  "client/src/features/admin/cases/master/case-master-support.ts",
 ].map(readText).join("\n");
 
 assertCondition(
@@ -141,8 +143,12 @@ assertCondition(
   "Автор кейса должен видеть замечания автопроверки до сохранения",
 );
 assertCondition(
-  caseUi.includes('"dossier"'),
-  "В редакторе кейса должна быть отдельная вкладка паспорта",
+  caseUi.includes("MASTER_STEPS") && caseUi.includes("CaseSummaryCard"),
+  "Кейс редактируется через мастер с этапами и карточкой-хабом",
+);
+assertCondition(
+  !existsSync("client/src/features/admin/cases/CaseCreationWizard.tsx"),
+  "Старый визард создания кейса заменён мастером",
 );
 
 console.log("UI acceptance checks passed: shared themes, responsive admin editor, assessor workspace and simulation scrolling verified.");

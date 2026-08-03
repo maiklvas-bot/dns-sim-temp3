@@ -87,12 +87,12 @@ import { CompetencyRoleSelector, Field, FieldArea, MultiSelectField, SelectField
 import { CompetencyHorizontalImpactChart, type CompetencyImpactDatum } from "./components/CompetencyHorizontalImpactChart";
 import { EntityEditor } from "./components/EntityEditor";
 import {
-  CaseCreationWizard,
   CaseMediaPanel,
   SignalCreationWizard,
   StructuredCyclesEditor,
   StructuredOptionsEditor,
 } from "./cases/CaseEditors";
+import { CaseMaster } from "./cases/master/CaseMaster";
 import { CASE_AUTHORING_WIKI } from "./admin-wiki-content";
 import { clearDraftFromStorage, deepClone, readDraftFromStorage, writeDraftToStorage } from "./hooks/useAdminDrafts";
 import { useAdminPermissions } from "./hooks/useAdminPermissions";
@@ -312,7 +312,6 @@ const STORE_EFFECT_FIELDS = [
 ] as const;
 
 const DRAFT_STORAGE_KEYS = {
-  caseWizard: "dns-simcenter.admin.caseWizardDraft",
   signalWizard: "dns-simcenter.admin.signalWizardDraft",
 } as const;
 
@@ -1132,13 +1131,11 @@ export default function AdminPage() {
   const [caseEditorOpen, setCaseEditorOpen] = useState(false);
   const [flowPreviewOpen, setFlowPreviewOpen] = useState(false);
   const [showAdminWiki, setShowAdminWiki] = useState(false);
-  const [caseWizardOpen, setCaseWizardOpen] = useState(false);
   const [signalWizardOpen, setSignalWizardOpen] = useState(false);
   const [adminWikiOpen, setAdminWikiOpen] = useState(false);
   const [auditHistoryOpen, setAuditHistoryOpen] = useState(false);
   const [signalWizardStep, setSignalWizardStep] = useState(0);
   const [signalWizardMode, setSignalWizardMode] = useState<ChannelTab>("email");
-  const [caseWizardStep, setCaseWizardStep] = useState(0);
   const [caseDraft, setCaseDraft] = useState<SimCase | null>(null);
   const [emailDraft, setEmailDraft] = useState<EmailCase | null>(null);
   const [messengerDraft, setMessengerDraft] = useState<MessengerCase | null>(null);
@@ -1158,7 +1155,6 @@ export default function AdminPage() {
   const [deleteResultLoading, setDeleteResultLoading] = useState(false);
   const [activePreviewKey, setActivePreviewKey] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
-  const [caseWizardDraft, setCaseWizardDraft] = useState<SimCase>(() => createEmptyCase(1));
   const [signalWizardDraft, setSignalWizardDraft] = useState<EmailCase | MessengerCase | VideoCase>(() => createEmptyEmail(1));
   const [scheduleDraft, setScheduleDraft] = useState<ScheduleRow[]>([]);
   const [comparisonSelection, setComparisonSelection] = useState<number[]>([]);
@@ -1184,7 +1180,9 @@ export default function AdminPage() {
   useAdminPermissions(staffQuery.data, staffQuery.isLoading);
 
   useEffect(() => {
-    if (contentQuery.data?.cases && !selectedCaseId && contentQuery.data.cases[0]) {
+    // "" — сигнал "автор создаёт новый кейс" из startCaseCreation: осознанно нет выбора
+    // среди сохранённых. null — стартовое "ничего ещё не выбирали", тут можно подставить первый.
+    if (contentQuery.data?.cases && selectedCaseId === null && contentQuery.data.cases[0]) {
       setSelectedCaseId(contentQuery.data.cases[0].id);
     }
     if (contentQuery.data?.emailCases && !selectedEmailId && contentQuery.data.emailCases[0]) {
@@ -1211,6 +1209,11 @@ export default function AdminPage() {
   }, [contentQuery.data, resultsQuery.data, selectedCaseId, selectedChatId, selectedEmailId, selectedMessengerId, selectedResultId, selectedVideoId]);
 
   useEffect(() => {
+    // Пустая строка — черновик уже выставлен явно в startCaseCreation, синхронизация
+    // со списком сохранённых кейсов должна его не трогать, а не сбрасывать в null.
+    if (selectedCaseId === "") {
+      return;
+    }
     const found = contentQuery.data?.cases?.find((item: SimCase) => item.id === selectedCaseId);
     setCaseDraft(found ? deepClone(found) : null);
     setSelectedCaseCycleIndex(0);
@@ -1246,12 +1249,6 @@ export default function AdminPage() {
       setSelectedResultId(resultsQuery.data[0].id);
     }
   }, [resultsQuery.data, selectedResultId]);
-
-  useEffect(() => {
-    if (caseWizardOpen) {
-      writeDraftToStorage(DRAFT_STORAGE_KEYS.caseWizard, caseWizardDraft);
-    }
-  }, [caseWizardDraft, caseWizardOpen]);
 
   useEffect(() => {
     if (signalWizardOpen) {
@@ -1554,7 +1551,7 @@ export default function AdminPage() {
         setSelectedCaseId(payload.id);
         const issueCount = Array.isArray(payload.validationIssues) ? payload.validationIssues.length : 0;
         if (issueCount > 0) {
-          setNotice(`Кейс сохранён как черновик. Автопроверка нашла замечаний: ${issueCount}. Откройте вкладку «Паспорт», чтобы посмотреть список.`);
+          setNotice(`Кейс сохранён как черновик. Автопроверка нашла замечаний: ${issueCount}. Откройте карточку кейса или этап «Оформление и запуск», чтобы посмотреть список.`);
         }
       }
       if (tab === "channels" && channelTab === "email" && emailDraft) {
@@ -1608,7 +1605,7 @@ export default function AdminPage() {
       // Но администратор должен видеть, что выпускает участникам кейс с известными дефектами.
       const issueCount = Array.isArray(payload.validationIssues) ? payload.validationIssues.length : 0;
       if (issueCount > 0) {
-        setNotice(`Кейс опубликован, но автопроверка нашла замечаний: ${issueCount}. Участники увидят его в текущем виде — проверьте вкладку «Паспорт».`);
+        setNotice(`Кейс опубликован, но автопроверка нашла замечаний: ${issueCount}. Участники увидят его в текущем виде — проверьте карточку кейса или этап «Оформление и запуск».`);
       }
     } catch (err: any) {
       setError(err.message || "Не удалось опубликовать кейс");
@@ -1773,11 +1770,16 @@ export default function AdminPage() {
     }
   };
 
-  const openCaseWizard = () => {
-    const nextOrder = (contentQuery.data?.cases?.length || 0) + 1;
-    setCaseWizardDraft(readDraftFromStorage(DRAFT_STORAGE_KEYS.caseWizard, createEmptyCase(nextOrder)));
-    setCaseWizardStep(0);
-    setCaseWizardOpen(true);
+  const startCaseCreation = () => {
+    const draft = createEmptyCase((contentQuery.data?.cases?.length || 0) + 1);
+    setCaseDraft(draft);
+    setSelectedCaseId("");
+    setSelectedCaseCycleIndex(0);
+    setCaseEditorOpen(true);
+    // Диалог редактора кейса рендерится только пока активна вкладка «Кейсы» (см. ниже
+    // `{tab === "cases" && (...)}`) — иначе клик на дашборде откроет состояние диалога,
+    // но сам диалог не попадёт в дерево.
+    setTab("cases");
   };
 
   const openSignalWizard = (mode: ChannelTab) => {
@@ -1803,43 +1805,6 @@ export default function AdminPage() {
     setSignalWizardStep(0);
     setSignalWizardDraft(stored?.mode === mode ? stored.draft : fallbackDraft);
     setSignalWizardOpen(true);
-  };
-
-  const confirmCaseWizard = async () => {
-    const nextDraft = deepClone(caseWizardDraft);
-    nextDraft.id = nextDraft.id || `CASE-${String((contentQuery.data?.cases?.length || 0) + 1).padStart(2, "0")}`;
-    nextDraft.cycles = (nextDraft.cycles || []).map((cycle, index) => ({
-      ...cycle,
-      id: cycle.id || `${nextDraft.id}-C${index + 1}`,
-      cycle: index + 1,
-      options: (cycle.options || []).map((option: any, optionIndex: number) => ({
-        ...option,
-        id: option.id || `${nextDraft.id}-C${index + 1}-O${optionIndex + 1}`,
-        level: optionIndex + 1,
-      })),
-    }));
-
-    setSaving(true);
-    setError("");
-    setNotice("");
-    try {
-      const response = await apiRequest("POST", "/api/admin/cases", nextDraft);
-      const payload = await response.json();
-      const savedId = payload.id || nextDraft.id;
-      clearDraftFromStorage(DRAFT_STORAGE_KEYS.caseWizard);
-      await invalidateRuntimeContent();
-      setSelectedCaseId(savedId);
-      setCaseDraft({ ...nextDraft, id: savedId });
-      setCaseWizardOpen(false);
-      const issueCount = Array.isArray(payload.validationIssues) ? payload.validationIssues.length : 0;
-      if (issueCount > 0) {
-        setNotice(`Кейс создан как черновик. Автопроверка нашла замечаний: ${issueCount}. Откройте вкладку «Паспорт», чтобы посмотреть список.`);
-      }
-    } catch (err: any) {
-      setError(err.message || "Не удалось создать кейс. Черновик сохранён в браузере.");
-    } finally {
-      setSaving(false);
-    }
   };
 
   const confirmSignalWizard = async () => {
@@ -2314,7 +2279,7 @@ export default function AdminPage() {
                   </p>
                   <div className="mt-4 flex flex-wrap gap-3">
                     <Button onClick={() => setTab("cases")} className="bg-[#FF6B00] text-white hover:bg-[#FF6B00]/90">Перейти к кейсам</Button>
-                    <Button variant="outline" onClick={openCaseWizard}>Создать кейс</Button>
+                    <Button variant="outline" onClick={startCaseCreation}>Создать кейс</Button>
                   </div>
                 </div>
                 <img src={ADMIN_VISUALS.dashboard.primarySrc} alt={ADMIN_VISUALS.dashboard.primaryAlt}
@@ -2409,7 +2374,7 @@ export default function AdminPage() {
                   <Button size="sm" variant="outline" className="dns-admin-case-nav-action border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={() => selectedCaseId && reorderCase(selectedCaseId, 1)} disabled={!selectedCaseId} aria-label="Опустить выбранный кейс ниже" title="Опустить выбранный кейс ниже">
                     <ArrowDown className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" onClick={openCaseWizard}>Новый</Button>
+                  <Button size="sm" onClick={startCaseCreation}>Новый</Button>
                 </div>
               </div>
               <div className="dns-admin-case-list space-y-2 max-h-[70vh] overflow-y-auto pr-1">
@@ -2443,27 +2408,18 @@ export default function AdminPage() {
               <div className="dns-admin-case-workspace grid flex-1 gap-5 overflow-hidden p-5 lg:grid-cols-[minmax(0,1fr),360px]">
                 <div className="dns-admin-case-editor-panel min-w-0 overflow-y-auto rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 custom-scroll">
                 {caseDraft && (
-                  <EntityEditor
-                    title="Редактор кейса"
+                  <CaseMaster
                     entity={caseDraft}
-                    assets={assets}
                     competencies={competencies}
+                    assets={assets}
                     caseSourceOptions={caseSourceOptions}
-                    emailSenderOptions={emailSenderOptions}
-                    emailDepartmentOptions={emailDepartmentOptions}
-                    messengerSenderOptions={messengerSenderOptions}
-                    messengerRoleOptions={messengerRoleOptions}
-                    videoSenderOptions={videoSenderOptions}
-                    videoRoleOptions={videoRoleOptions}
-                    onChange={setCaseDraft}
+                    isNew={!selectedCaseId}
                     onUploadAsset={handleUploadAsset}
-                    chats={[]}
-                    mode="case"
-                    onAddOption={() => addOption(setCaseDraft)}
                     onTogglePreviewAudio={togglePreviewAudio}
                     activePreviewKey={activePreviewKey}
                     selectedCycleIndex={selectedCaseCycleIndex}
                     onSelectedCycleIndexChange={setSelectedCaseCycleIndex}
+                    onChange={setCaseDraft}
                   />
                 )}
               </div>
@@ -3880,17 +3836,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        <CaseCreationWizard
-          open={caseWizardOpen}
-          step={caseWizardStep}
-          draft={caseWizardDraft}
-          competencies={competencies}
-          caseSourceOptions={caseSourceOptions}
-          onOpenChange={setCaseWizardOpen}
-          onStepChange={setCaseWizardStep}
-          onDraftChange={setCaseWizardDraft}
-          onConfirm={confirmCaseWizard}
-        />
         <SignalCreationWizard
           open={signalWizardOpen}
           mode={signalWizardMode}
