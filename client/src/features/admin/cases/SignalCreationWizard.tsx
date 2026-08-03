@@ -196,7 +196,7 @@ export function SignalCreationWizard({
                 Далее
               </Button>
             ) : (
-              <Button type="button" className="bg-[#FF6B00] hover:bg-[#e06000]" onClick={onConfirm}>
+              <Button type="button" className="bg-[#f68b1f] hover:bg-[#e06000]" onClick={onConfirm}>
                 Создать и сохранить
               </Button>
             )}

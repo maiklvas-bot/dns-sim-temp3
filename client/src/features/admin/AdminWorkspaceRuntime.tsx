@@ -2249,7 +2249,7 @@ export default function AdminPage() {
             <section className="dns-admin-overview-hero relative overflow-hidden rounded-2xl border border-border p-6 2xl:p-7">
               <div className="relative flex items-center gap-6">
                 <div className="flex-1">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#FF6B00]">Центр управления симуляцией</div>
+                  <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#f68b1f]">Центр управления симуляцией</div>
                   <h2 className="mt-2 text-2xl 2xl:text-[27px] font-black leading-tight text-foreground">
                     Здравствуйте, {staffQuery.data?.displayName || "Администратор"}.
                   </h2>
@@ -2257,7 +2257,7 @@ export default function AdminPage() {
                     Базовый профиль компетенций задан. Дальше вы настраиваете кейсы, веса и параметры — и сразу видите, как это меняет оценку.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-3">
-                    <Button onClick={() => setTab("cases")} className="bg-[#FF6B00] text-white hover:bg-[#FF6B00]/90">Перейти к кейсам</Button>
+                    <Button onClick={() => setTab("cases")} className="bg-[#f68b1f] text-white hover:bg-[#f68b1f]/90">Перейти к кейсам</Button>
                     <Button variant="outline" onClick={startCaseCreation}>Создать кейс</Button>
                   </div>
                 </div>
@@ -2287,7 +2287,7 @@ export default function AdminPage() {
             <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.4fr_1fr] items-stretch">
               <section className="flex flex-col rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-5 backdrop-blur">
                 <div className="flex items-center gap-2">
-                  <ClipboardCheck className="h-4 w-4 text-[#FF6B00]" />
+                  <ClipboardCheck className="h-4 w-4 text-[#f68b1f]" />
                   <h3 className="text-sm font-black text-white">Что проверить до запуска</h3>
                   <span className="ml-auto rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-2.5 py-0.5 text-[10px] font-semibold text-[#8aa2c4]">{overviewReadinessItems.length} пунктов</span>
                 </div>
@@ -2302,7 +2302,7 @@ export default function AdminPage() {
                         <div className="text-[11.5px] text-[#8aa2c4]">{it.note}</div>
                       </div>
                       {it.tab && (
-                        <button type="button" onClick={() => setTab(it.tab as TabKey)} className="ml-auto flex-none text-[11.5px] font-bold text-[#FF6B00] hover:underline">Открыть →</button>
+                        <button type="button" onClick={() => setTab(it.tab as TabKey)} className="ml-auto flex-none text-[11.5px] font-bold text-[#f68b1f] hover:underline">Открыть →</button>
                       )}
                     </div>
                   ))}
@@ -2364,7 +2364,7 @@ export default function AdminPage() {
                   const draftTitle = isOpenInEditor ? caseDraft?.title : "";
                   const hasUnsavedTitle = Boolean(draftTitle?.trim()) && draftTitle !== item.title;
                   return (
-                  <div key={item.id} className={`dns-admin-case-list-item w-full rounded-lg border px-3 py-2 ${selectedCaseId === item.id ? "dns-admin-case-list-item--active border-[#FF6B00] bg-[#FF6B00]/10" : "border-[#2a3a4e]"}`}>
+                  <div key={item.id} className={`dns-admin-case-list-item w-full rounded-lg border px-3 py-2 ${selectedCaseId === item.id ? "dns-admin-case-list-item--active border-[#f68b1f] bg-[#f68b1f]/10" : "border-[#2a3a4e]"}`}>
                     <div className="dns-admin-case-order-index" aria-hidden="true">{index + 1}</div>
                     <button onClick={() => { setSelectedCaseId(item.id); setCaseEditorOpen(true); }} className="dns-admin-case-list-main w-full text-left" title="Открыть редактор кейса">
                       <div className="dns-admin-case-list-title text-sm text-white">{draftTitle?.trim() || item.title || item.id}</div>
@@ -2448,7 +2448,7 @@ export default function AdminPage() {
                           onClick={() => setCaseImpactTab(key)}
                           className={`flex-1 rounded-md border px-2 py-1.5 text-[11px] font-semibold transition ${
                             caseImpactTab === key
-                              ? "border-[#FF6B00] bg-[#FF6B00]/15 text-white"
+                              ? "border-[#f68b1f] bg-[#f68b1f]/15 text-white"
                               : "border-transparent text-[#9aabc6] hover:border-[#3b5878]"
                           }`}
                         >
@@ -2737,7 +2737,7 @@ export default function AdminPage() {
                 </Button>
                 <Button
                   type="button"
-                  className="bg-[#FF6B00] hover:bg-[#e06000]"
+                  className="bg-[#f68b1f] hover:bg-[#e06000]"
                   onClick={saveSchedule}
                   disabled={saving}
                 >
@@ -2752,7 +2752,7 @@ export default function AdminPage() {
                   <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-[#FF6B00]/35 bg-[#FF6B00]/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
+                        <span className="rounded-full border border-[#f68b1f]/35 bg-[#f68b1f]/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
                           {index + 1}
                         </span>
                         <span className="rounded-full border border-[#4a9eff]/35 bg-[#4a9eff]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8ec5ff]">
@@ -3864,14 +3864,14 @@ export default function AdminPage() {
                       <ul className="mt-3 space-y-2 text-xs leading-relaxed text-[#b8c5db]">
                         {section.items.map((item) => (
                           <li key={item} className="flex gap-2">
-                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF6B00]" />
+                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f68b1f]" />
                             <span>{item}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                   ))}
-                  <div className="rounded-xl border border-[#FF6B00]/30 bg-[#FF6B00]/10 p-3 text-xs leading-relaxed text-[#ffd9bf]">
+                  <div className="rounded-xl border border-[#f68b1f]/30 bg-[#f68b1f]/10 p-3 text-xs leading-relaxed text-[#ffd9bf]">
                     Пример: вариант “провести планёрку и перераспределить людей” может дать Команда / мораль +5,
                     Выдача / скорость +3 и Финансы / выручка +3. Если решение грубое и без контроля, ставьте отрицательные
                     значения там, где магазин реально проседает.
@@ -3903,7 +3903,7 @@ export default function AdminPage() {
 
         {tab !== "dashboard" && tab !== "results" && tab !== "schedule" && tab !== "comparison" && (
           <div className="dns-admin-action-block mt-6 justify-start">
-            <Button className="bg-[#FF6B00] hover:bg-[#e06000]" onClick={saveCurrent} disabled={saving || uploading}>
+            <Button className="bg-[#f68b1f] hover:bg-[#e06000]" onClick={saveCurrent} disabled={saving || uploading}>
               {saving ? "Сохранение..." : "Сохранить"}
             </Button>
             {(tab === "cases" || tab === "channels") && (

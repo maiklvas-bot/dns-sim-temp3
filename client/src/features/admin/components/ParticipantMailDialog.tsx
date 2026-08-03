@@ -69,7 +69,7 @@ export function ParticipantMailDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(8,12,22,0.7)", backdropFilter: "blur(4px)" }} role="dialog" aria-modal="true" aria-label={meta.title}>
       <div className="flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border" style={{ background: "#101725", borderColor: "rgba(255,255,255,0.09)" }}>
         <header className="flex items-center gap-3 border-b px-5 py-4" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: "rgba(255,107,0,0.14)", color: "#FF6B00" }}>
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: "rgba(255,107,0,0.14)", color: "#f68b1f" }}>
             <Icon className="h-4 w-4" aria-hidden />
           </span>
           <div className="leading-tight">

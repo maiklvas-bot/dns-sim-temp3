@@ -64,7 +64,7 @@ export function StepStructure({
       <div className="grid gap-2 md:grid-cols-2">
         <div
           className={`rounded-xl border p-3 ${
-            branching ? "border-[#243244] bg-[#0d1522]/60" : "border-[#FF6B00]/50 bg-[#FF6B00]/8"
+            branching ? "border-[#243244] bg-[#0d1522]/60" : "border-[#f68b1f]/50 bg-[#f68b1f]/8"
           }`}
         >
           <div className="text-xs font-semibold text-white">
@@ -77,7 +77,7 @@ export function StepStructure({
         </div>
         <div
           className={`rounded-xl border p-3 ${
-            branching ? "border-[#FF6B00]/50 bg-[#FF6B00]/8" : "border-[#243244] bg-[#0d1522]/60"
+            branching ? "border-[#f68b1f]/50 bg-[#f68b1f]/8" : "border-[#243244] bg-[#0d1522]/60"
           }`}
         >
           <div className="text-xs font-semibold text-white">

@@ -18,7 +18,7 @@ function StepTile({ summary, index, onOpen }: { summary: StepSummary; index: num
       onClick={onOpen}
       className={`dns-master-tile flex h-full flex-col rounded-xl border p-3 text-left transition ${
         hasIssues
-          ? "border-[#ffb27a]/50 bg-[#FF6B00]/10 hover:border-[#ffb27a]"
+          ? "border-[#ffb27a]/50 bg-[#f68b1f]/10 hover:border-[#ffb27a]"
           : summary.isFilled
             ? "border-[#54d28c]/35 bg-[#101826]/70 hover:border-[#54d28c]"
             : "border-[#243244] bg-[#101826]/70 hover:border-[#3b5878]"

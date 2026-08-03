@@ -90,14 +90,14 @@ export function EntityEditor({
     <div className="space-y-4">
       <div className="text-sm font-semibold text-white">{title}</div>
       <Field label="Порядок показа" value={entity.sortOrder} onChange={(value) => update({ sortOrder: Number(value) })} />
-      <div className="rounded-2xl border border-[#FF6B00]/35 bg-gradient-to-br from-[#FF6B00]/14 via-[#1a2537]/88 to-[#101826]/92 p-4 shadow-[0_18px_45px_rgba(255,107,0,0.12)]">
+      <div className="rounded-2xl border border-[#f68b1f]/35 bg-gradient-to-br from-[#f68b1f]/14 via-[#1a2537]/88 to-[#101826]/92 p-4 shadow-[0_18px_45px_rgba(255,107,0,0.12)]">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#ffb27a]">Настройки хода симуляции</div>
             <div className="mt-1 text-base font-bold text-white">{timingTitle}</div>
             <div className="mt-1 max-w-2xl text-xs leading-relaxed text-[#b8c7df]">{timingHelper}</div>
           </div>
-          <div className="rounded-full border border-[#FF6B00]/35 bg-[#FF6B00]/12 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
+          <div className="rounded-full border border-[#f68b1f]/35 bg-[#f68b1f]/12 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
             Видно сразу
           </div>
         </div>

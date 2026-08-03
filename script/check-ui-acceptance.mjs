@@ -183,6 +183,25 @@ assertCondition(
   "Токены темы кабинета не должны иметь нулевую насыщенность — серый запрещён",
 );
 
+// Бренд DNS: акцент и радиус берутся из общих токенов, а не подбираются на месте.
+assertCondition(
+  !/#FF6B00/i.test(readText("client/src/features/admin/AdminWorkspaceRuntime.tsx")),
+  "Кабинет использует брендовый оранжевый #f68b1f, а не #FF6B00",
+);
+assertCondition(
+  /--dns-admin-radius-panel:\s*calc\(var\(--radius\)/.test(adminCss),
+  "Радиус панелей кабинета должен наследоваться от брендового --radius, а не быть фиксированным",
+);
+assertCondition(
+  !/--radius:\s*0\.375rem/.test(adminCss),
+  "Кабинет не должен переопределять брендовый --radius",
+);
+
+assertCondition(
+  /--roadmap-dim-fill/.test(adminCss) && /dns-theme-light[\s\S]{0,400}--roadmap-dim-fill/.test(adminCss),
+  "Цвета дерева кейса должны быть заданы переменными для обеих тем",
+);
+
 // Плитки набора выкладываются равной сеткой, а не блоками вразнобой со span.
 // Ищем класс в разметке, а не слово в тексте: упоминание в комментарии
 // не должно удерживать проверку зелёной.
@@ -210,6 +229,12 @@ assertCondition(
 assertCondition(
   roadmap.includes("onMouseEnter") && roadmap.includes(".hint"),
   "При наведении на блок дерева должно появляться объяснение, за что он отвечает",
+);
+// Дерево рисуется атрибутами SVG — ремап хексов по классам их не ловит, поэтому
+// цвета обязаны идти переменными: иначе в светлой теме дерево остаётся тёмным.
+assertCondition(
+  !/fill="#[0-9a-fA-F]{6}"/.test(roadmap),
+  "В дереве кейса не должно быть хардкод-заливок — они не переключаются вместе с темой",
 );
 assertCondition(
   readText("client/src/features/admin/AdminWorkspaceRuntime.tsx").includes("<CaseRoadmap"),

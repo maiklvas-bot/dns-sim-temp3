@@ -199,7 +199,7 @@ export function StructuredOptionsEditor({
                           <div className="text-[10px] uppercase tracking-[0.16em] text-[#70829d]">{competencyCategoryLabel(competency.category)}</div>
                         </div>
                         {currentLevel === "off_scale" && (
-                          <div className="shrink-0 rounded-full border border-[#ffb27a]/40 bg-[#FF6B00]/12 px-2 py-1 text-[10px] font-semibold text-[#ffb27a]">
+                          <div className="shrink-0 rounded-full border border-[#ffb27a]/40 bg-[#f68b1f]/12 px-2 py-1 text-[10px] font-semibold text-[#ffb27a]">
                             {scoreValue} — вне шкалы
                           </div>
                         )}

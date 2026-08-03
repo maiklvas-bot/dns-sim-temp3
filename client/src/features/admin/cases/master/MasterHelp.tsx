@@ -54,7 +54,7 @@ export function MasterHelp({ topic }: { topic: HelpTopic }) {
             )}
 
             {topic.mistake && (
-              <span className="mt-2 block rounded-lg border border-[#ffb27a]/30 bg-[#FF6B00]/8 px-2.5 py-2 text-[11px] leading-relaxed text-[#b8c7df]">
+              <span className="mt-2 block rounded-lg border border-[#ffb27a]/30 bg-[#f68b1f]/8 px-2.5 py-2 text-[11px] leading-relaxed text-[#b8c7df]">
                 <b className="text-[#ffb27a]">Частая ошибка:</b> {topic.mistake}
               </span>
             )}

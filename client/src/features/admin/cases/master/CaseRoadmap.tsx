@@ -15,10 +15,27 @@ import type { MasterStepId } from "./case-master-support";
  * это карта, а не навигация.
  */
 
+// Цвета берутся из переменных темы: SVG-заливки задаются атрибутами, а ремап
+// хардкод-хексов в admin.css работает по классам и до них не дотягивается.
 const STATE_STYLE: Record<NodeState, { fill: string; stroke: string; text: string; opacity: number }> = {
-  dim: { fill: "#0d1728", stroke: "#2b4568", text: "#6f8db5", opacity: 0.5 },
-  partial: { fill: "#2a1a10", stroke: "#FF6B00", text: "#ffd9bf", opacity: 1 },
-  bright: { fill: "#0f2a24", stroke: "#54d28c", text: "#c8f5e2", opacity: 1 },
+  dim: {
+    fill: "var(--roadmap-dim-fill)",
+    stroke: "var(--roadmap-dim-stroke)",
+    text: "var(--roadmap-dim-text)",
+    opacity: 0.65,
+  },
+  partial: {
+    fill: "var(--roadmap-partial-fill)",
+    stroke: "var(--dns-orange-hex)",
+    text: "var(--roadmap-partial-text)",
+    opacity: 1,
+  },
+  bright: {
+    fill: "var(--roadmap-bright-fill)",
+    stroke: "#54d28c",
+    text: "var(--roadmap-bright-text)",
+    opacity: 1,
+  },
 };
 
 /** Длина строки в узле зависит от его ширины: обрезаем, чтобы текст не выезжал. */
@@ -76,7 +93,7 @@ export function CaseRoadmap({
               key={edge.key}
               d={edge.path}
               fill="none"
-              stroke="#4a9eff"
+              stroke="var(--roadmap-edge)"
               strokeWidth={1.2}
               opacity={edge.dimmed ? 0.25 : 0.7}
             />
@@ -107,7 +124,7 @@ export function CaseRoadmap({
                   height={node.height}
                   rx={node.depth === 0 ? node.height / 2 : 5}
                   fill={style.fill}
-                  stroke={active ? "#FF6B00" : style.stroke}
+                  stroke={active ? "var(--dns-orange-hex)" : style.stroke}
                   strokeWidth={active ? 2 : 1}
                 />
 
@@ -129,7 +146,7 @@ export function CaseRoadmap({
                       width={12}
                       height={12}
                       rx={3}
-                      fill="#0d1728"
+                      fill="var(--roadmap-dim-fill)"
                       stroke={style.stroke}
                       strokeWidth={1}
                     />

@@ -76,7 +76,7 @@ export function CaseMaster({
           onClick={() => setView({ kind: "summary" })}
           className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
             view.kind === "summary"
-              ? "border-[#FF6B00] bg-[#FF6B00]/15 text-white"
+              ? "border-[#f68b1f] bg-[#f68b1f]/15 text-white"
               : "border-[#2a3a4e] bg-[#0d1522]/70 text-[#9aabc6] hover:border-[#3b5878]"
           }`}
         >
@@ -89,7 +89,7 @@ export function CaseMaster({
             onClick={() => setView({ kind: "step", stepId: step.id })}
             className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
               view.kind === "step" && view.stepId === step.id
-                ? "border-[#FF6B00] bg-[#FF6B00]/15 text-white"
+                ? "border-[#f68b1f] bg-[#f68b1f]/15 text-white"
                 : "border-[#2a3a4e] bg-[#0d1522]/70 text-[#9aabc6] hover:border-[#3b5878]"
             }`}
           >
@@ -166,7 +166,7 @@ export function CaseMaster({
             {stepIndex < MASTER_STEPS.length - 1 ? (
               <Button
                 type="button"
-                className="bg-[#FF6B00] text-white hover:bg-[#FF6B00]/90"
+                className="bg-[#f68b1f] text-white hover:bg-[#f68b1f]/90"
                 onClick={() => setView({ kind: "step", stepId: MASTER_STEPS[stepIndex + 1].id })}
               >
                 Далее
@@ -174,7 +174,7 @@ export function CaseMaster({
             ) : (
               <Button
                 type="button"
-                className="bg-[#FF6B00] text-white hover:bg-[#FF6B00]/90"
+                className="bg-[#f68b1f] text-white hover:bg-[#f68b1f]/90"
                 onClick={() => setView({ kind: "summary" })}
               >
                 К карточке кейса

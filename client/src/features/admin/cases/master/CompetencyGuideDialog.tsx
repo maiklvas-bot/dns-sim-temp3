@@ -113,7 +113,7 @@ export function CompetencyGuideDialog({
             </ol>
           </section>
 
-          <section className="rounded-xl border border-[#ffb27a]/35 bg-[#FF6B00]/8 p-4">
+          <section className="rounded-xl border border-[#ffb27a]/35 bg-[#f68b1f]/8 p-4">
             <h3 className="text-sm font-semibold text-[#ffb27a]">Что ломается при неаккуратной разметке</h3>
             <div className="mt-2 space-y-2.5 text-[12px] leading-relaxed text-[#b8c7df]">
               <p>

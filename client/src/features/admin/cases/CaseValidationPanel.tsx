@@ -45,7 +45,7 @@ export function CaseValidationPanel({ caseInput }: { caseInput: SimCase | null }
   }
 
   return (
-    <div className="rounded-xl border border-[#ffb27a]/35 bg-[#FF6B00]/8 p-4">
+    <div className="rounded-xl border border-[#ffb27a]/35 bg-[#f68b1f]/8 p-4">
       <div className="flex items-baseline justify-between gap-3">
         <div className="text-sm font-semibold text-[#ffb27a]">Замечания автопроверки</div>
         <div className="text-[11px] font-semibold text-[#ffb27a]">{issues.length}</div>

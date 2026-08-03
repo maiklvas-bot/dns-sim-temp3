@@ -43,7 +43,7 @@ export function CompetencyHorizontalImpactChart({ data, series, emptyText = "ÐŸÐ
               key={row.name}
               onMouseEnter={() => setHover(row.name)}
               onMouseLeave={() => setHover((prev) => (prev === row.name ? null : prev))}
-              className={`rounded-lg border px-3 py-2 transition-colors ${isActive ? "border-[#FF6B00] bg-[#16233a]/80" : "border-[#1f3045] bg-[#0d1522]/80"}`}
+              className={`rounded-lg border px-3 py-2 transition-colors ${isActive ? "border-[#f68b1f] bg-[#16233a]/80" : "border-[#1f3045] bg-[#0d1522]/80"}`}
             >
               <div className="mb-1.5 flex items-center justify-between gap-2">
                 <div className="min-w-0 truncate text-[12px] font-semibold leading-4 text-[#f3f7ff]" title={row.name}>{row.name}</div>

@@ -104,7 +104,7 @@ export function CompetencyRoleSelector({ label = "Компетенции кей�
                 </div>
                 <div className="grid grid-cols-3 gap-1">
                   {([["none", "Нет"], ["primary", "Первичная"], ["secondary", "Вторичная"]] as const).map(([targetRole, title]) => (
-                    <button key={targetRole} type="button" onClick={() => setRole(competency.id, targetRole)} className={`rounded-md border px-2 py-1.5 text-[11px] transition ${role === targetRole ? "border-[#FF6B00] bg-[#FF6B00]/15 text-white" : "border-[#2a3a4e] bg-[#0d1522]/70 text-[#91a2bd] hover:border-[#3b5878]"}`}>{title}</button>
+                    <button key={targetRole} type="button" onClick={() => setRole(competency.id, targetRole)} className={`rounded-md border px-2 py-1.5 text-[11px] transition ${role === targetRole ? "border-[#f68b1f] bg-[#f68b1f]/15 text-white" : "border-[#2a3a4e] bg-[#0d1522]/70 text-[#91a2bd] hover:border-[#3b5878]"}`}>{title}</button>
                   ))}
                 </div>
               </div>

@@ -202,7 +202,7 @@
 .dns-product-shell.dns-theme-light .dns-admin-case-list-item--active,
 .dns-product-shell.dns-theme-light .dns-admin-side-list button[class*="bg-[#4a9eff"],
 .dns-product-shell.dns-theme-light .dns-admin-side-list button[class*="bg-[#00d4aa"],
-.dns-product-shell.dns-theme-light .dns-admin-side-list button[class*="bg-[#FF6B00"] {
+.dns-product-shell.dns-theme-light .dns-admin-side-list button[class*="bg-[#f68b1f"] {
   background: linear-gradient(135deg, rgba(255, 107, 0, 0.16), rgba(255, 246, 238, 0.98)) !important;
   border-color: rgba(255, 107, 0, 0.7) !important;
   color: #142033 !important;

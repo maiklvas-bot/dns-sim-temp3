@@ -31,7 +31,7 @@ export function AdminWikiDialog({
       <DialogContent className="max-h-[88vh] max-w-4xl overflow-y-auto border-[#2a3a4e] bg-[#101826] text-white custom-scroll">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
-            <BookOpen className="h-5 w-5 text-[#FF6B00]" />
+            <BookOpen className="h-5 w-5 text-[#f68b1f]" />
             {wiki.title}
           </DialogTitle>
           <DialogDescription className="text-[#9fb0ca]">{wiki.purpose}</DialogDescription>
@@ -43,7 +43,7 @@ export function AdminWikiDialog({
               <ul className="mt-3 space-y-2 text-sm leading-relaxed text-[#d5e2f4]">
                 {section.items.map((item) => (
                   <li key={item} className="flex gap-2">
-                    <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-[#FF6B00]" />
+                    <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-[#f68b1f]" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -51,7 +51,7 @@ export function AdminWikiDialog({
             </div>
           ))}
         </div>
-        <div className="rounded-xl border border-[#FF6B00]/35 bg-[#FF6B00]/10 p-4 text-sm leading-relaxed text-[#ffe1cb]">
+        <div className="rounded-xl border border-[#f68b1f]/35 bg-[#f68b1f]/10 p-4 text-sm leading-relaxed text-[#ffe1cb]">
           <div className="mb-1 font-semibold text-[#ffb27a]">Пример настройки</div>
           {wiki.example}
         </div>
