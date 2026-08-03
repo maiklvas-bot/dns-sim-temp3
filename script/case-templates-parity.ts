@@ -2,8 +2,16 @@ import assert from "node:assert/strict";
 import { CASE_TEMPLATES, instantiateTemplate } from "../shared/case-templates";
 import { spearmanRho, validateCase } from "../shared/case-validation";
 
-// Библиотека непустая и покрывает разные ситуации розницы
-assert.ok(CASE_TEMPLATES.length >= 2, "в библиотеке минимум два эталона на этом этапе");
+// Библиотека содержит ровно пять эталонов
+assert.equal(CASE_TEMPLATES.length, 5, "библиотека содержит пять эталонов");
+
+// Сюжеты не повторяются: каждый эталон учит своему
+const lessons = CASE_TEMPLATES.map((template) => template.teaches);
+assert.equal(new Set(lessons).size, lessons.length, "каждый эталон учит своему");
+
+// Разные эталоны опираются на разные ведущие компетенции
+const primary = CASE_TEMPLATES.map((template) => template.caseData.primaryCompetencies[0]);
+assert.ok(new Set(primary).size >= 3, "эталоны покрывают минимум три разные ведущие компетенции");
 
 const ids = CASE_TEMPLATES.map((template) => template.id);
 assert.equal(new Set(ids).size, ids.length, "идентификаторы эталонов уникальны");
