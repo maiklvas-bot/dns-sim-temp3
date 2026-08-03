@@ -9,6 +9,7 @@ import {
   signalTypeLabel,
 } from "../client/src/features/admin/cases/master/case-master-support";
 import { buildRoadmapLayout, defaultCollapsedKeys } from "../client/src/features/admin/cases/master/case-roadmap-layout";
+import { explainIssue } from "../shared/case-issue-explanations";
 import { validateCase } from "../shared/case-validation";
 import type { SimCase } from "../shared/simulation-content";
 
@@ -78,6 +79,19 @@ const brokenCase = buildCase({ hiddenCause: null, dataPoints: [], falseTrails: [
 const brokenIssues = validateCase(brokenCase);
 assert.equal(issuesForStep("situation", brokenIssues).length, 3);
 assert.equal(issuesForStep("decisions", brokenIssues).length, 0);
+
+// Отображение «проверка → этап» живёт в одном месте: issuesForStep обязан
+// повторять то, что говорит объяснение замечания, иначе клик по замечанию и
+// счётчик на плитке разойдутся.
+for (const issue of brokenIssues) {
+  const step = explainIssue(issue).stepId;
+  assert.ok(
+    issuesForStep(step, [issue]).length === 1,
+    `замечание ${issue.check} должно попадать на тот этап, который называет его объяснение`,
+  );
+  const otherStep = step === "situation" ? "decisions" : "situation";
+  assert.equal(issuesForStep(otherStep, [issue]).length, 0, "и только на него");
+}
 
 const badScores = buildCase();
 badScores.cycles[0].options[0].competency_scores = { org_control: 2 };

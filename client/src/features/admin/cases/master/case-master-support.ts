@@ -1,5 +1,6 @@
 import type { SimCase } from "@shared/simulation-content";
 import { hasMeaningfulText, type CaseValidationIssue } from "@shared/case-validation";
+import { explainIssue } from "@shared/case-issue-explanations";
 import { buildCaseDossierSummary } from "../case-editor-support";
 
 export type MasterStepId = "intent" | "situation" | "structure" | "decisions" | "launch";
@@ -20,15 +21,10 @@ export const MASTER_STEPS: ReadonlyArray<MasterStep> = [
 ];
 
 /** Замечания каждой проверки принадлежат тому этапу, где их можно исправить. */
-const STEP_BY_CHECK: Record<CaseValidationIssue["check"], MasterStepId> = {
-  diagnostics: "situation",
-  bars_conformance: "decisions",
-  antigaming: "decisions",
-  effect_reality: "decisions",
-};
-
 export function issuesForStep(stepId: MasterStepId, issues: CaseValidationIssue[]): CaseValidationIssue[] {
-  return issues.filter((issue) => STEP_BY_CHECK[issue.check] === stepId);
+  // Этап берётся из объяснения замечания — единственного источника этого
+  // отображения. Раньше здесь была вторая копия, которая могла с ним разойтись.
+  return issues.filter((issue) => explainIssue(issue).stepId === stepId);
 }
 
 const SIGNAL_TYPE_LABELS: Record<string, string> = {
