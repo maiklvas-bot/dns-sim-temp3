@@ -458,7 +458,7 @@ export function StepSituation({
   onChange,
 }: {
   entity: SimCase;
-  caseSourceOptions: Array<{ value: string; label: string }>;
+  caseSourceOptions: string[];
   onChange: (patch: Partial<SimCase>) => void;
 }) {
   return (
@@ -859,7 +859,7 @@ export function CaseMaster({
   entity: SimCase;
   competencies: CompetencyDefinition[];
   assets: any[];
-  caseSourceOptions: Array<{ value: string; label: string }>;
+  caseSourceOptions: string[];
   isNew: boolean;
   onUploadAsset: (file: File, kind: string) => Promise<any>;
   onTogglePreviewAudio: (key: string, url: string) => void;
