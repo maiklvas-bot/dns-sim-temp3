@@ -11,6 +11,10 @@ import { StepLaunch } from "./steps/StepLaunch";
 
 type MasterView = { kind: "summary" } | { kind: "step"; stepId: MasterStepId };
 
+function initialView(isNew: boolean): MasterView {
+  return isNew ? { kind: "step", stepId: "intent" } : { kind: "summary" };
+}
+
 export function CaseMaster({
   entity,
   competencies,
@@ -36,9 +40,15 @@ export function CaseMaster({
   onSelectedCycleIndexChange: (index: number) => void;
   onChange: (next: SimCase) => void;
 }) {
-  const [view, setView] = useState<MasterView>(() =>
-    isNew ? { kind: "step", stepId: "intent" } : { kind: "summary" },
-  );
+  const [view, setView] = useState<MasterView>(() => initialView(isNew));
+
+  // Открыли другой кейс в том же окне — мастер должен начаться заново,
+  // иначе автор увидит этап от предыдущего кейса.
+  const [openedCaseId, setOpenedCaseId] = useState(entity.id);
+  if (openedCaseId !== entity.id) {
+    setOpenedCaseId(entity.id);
+    setView(initialView(isNew));
+  }
 
   const patch = (partial: Partial<SimCase>) => onChange({ ...entity, ...partial });
 
