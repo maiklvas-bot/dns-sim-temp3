@@ -123,6 +123,112 @@
   background-color: rgba(34, 38, 45, 0.86) !important;
 }
 
+/* ============================================================
+   ЧИТАЕМОСТЬ ТЕКСТА (обе темы)
+
+   Фоны выше ремапятся на Gravity-поверхности, а цвета текста в разметке
+   остались хардкод-hex из тёмного макета. В светлой теме это давало
+   серо-синий текст на белом фоне (нечитаемо), в тёмной — слишком тусклый
+   текст на charcoal. Ремапим по трём уровням яркости + акцентам.
+   ============================================================ */
+
+/* Уровень 1 — основной читаемый текст (был почти белым в тёмном макете) */
+.dns-admin-shell [class*="text-[#dbe2f0]"],
+.dns-admin-shell [class*="text-[#cbd8ef]"],
+.dns-admin-shell [class*="text-[#c7d3e7]"],
+.dns-admin-shell [class*="text-[#c9d2e6]"],
+.dns-admin-shell [class*="text-[#d9e2f3]"],
+.dns-admin-shell [class*="text-[#d3deee]"],
+.dns-admin-shell [class*="text-[#d5e2f4]"],
+.dns-admin-shell [class*="text-[#d6e3f7]"],
+.dns-admin-shell [class*="text-[#f3f7ff]"],
+.dns-admin-shell [class*="text-[#e9f1ff]"],
+.dns-admin-shell [class*="text-[#b8c7df]"],
+.dns-admin-shell [class*="text-[#b8c5db]"] {
+  color: var(--dns-admin-text-soft) !important;
+}
+
+/* Уровень 2 — подписи и вспомогательный текст */
+.dns-admin-shell [class*="text-[#8890a8]"],
+.dns-admin-shell [class*="text-[#8aa2c4]"],
+.dns-admin-shell [class*="text-[#9aabc6]"],
+.dns-admin-shell [class*="text-[#9fb0ca]"],
+.dns-admin-shell [class*="text-[#9fb4d1]"],
+.dns-admin-shell [class*="text-[#93a7c3]"],
+.dns-admin-shell [class*="text-[#91a2bd]"],
+.dns-admin-shell [class*="text-[#8fa0b8]"],
+.dns-admin-shell [class*="text-[#8fa6c7]"],
+.dns-admin-shell [class*="text-[#aebbd2]"],
+.dns-admin-shell [class*="text-[#aab2c5]"] {
+  color: var(--dns-admin-text-muted) !important;
+}
+
+/* Уровень 3 — самый тихий текст. Именно он был «серым на тёмном». */
+.dns-admin-shell [class*="text-[#70829d]"],
+.dns-admin-shell [class*="text-[#71839d]"],
+.dns-admin-shell [class*="text-[#6f829e]"],
+.dns-admin-shell [class*="text-[#7f91ad]"],
+.dns-admin-shell [class*="text-[#7f90ad]"],
+.dns-admin-shell [class*="text-[#4a607e]"],
+.dns-admin-shell [class*="text-[#64748B]"] {
+  color: var(--dns-admin-text-dim) !important;
+}
+
+/* Акценты. В тёмном макете они светлые — на белом фоне такие не видны,
+   поэтому в светлой теме берём затемнённые версии тех же оттенков. */
+.dns-admin-shell {
+  --dns-admin-accent-info: #8ec5ff;
+  --dns-admin-accent-warn: #ffb27a;
+  --dns-admin-accent-ok: #54d28c;
+  --dns-admin-accent-danger: #ff9999;
+}
+.dns-admin-shell.dns-theme-light {
+  --dns-admin-accent-info: #1a5fb4;
+  --dns-admin-accent-warn: #9a4f06;
+  --dns-admin-accent-ok: #0f7048;
+  --dns-admin-accent-danger: #b3261e;
+}
+
+.dns-product-shell.dns-admin-shell [class*="text-[#6fa0ff]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#8ec5ff]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#4a9eff]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#b7d9ff]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#cfe6ff]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#d7e7ff]"] {
+  color: var(--dns-admin-accent-info) !important;
+}
+.dns-product-shell.dns-admin-shell [class*="text-[#ffb27a]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffd9bf]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffe1cb]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffd36e]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffd77a]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffe6a6]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffc107]"] {
+  color: var(--dns-admin-accent-warn) !important;
+}
+.dns-product-shell.dns-admin-shell [class*="text-[#00d4aa]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#7fffd4]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#54d28c]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#9fe8c6]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#8ff5de]"] {
+  color: var(--dns-admin-accent-ok) !important;
+}
+.dns-product-shell.dns-admin-shell [class*="text-[#ff9999]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffb3b3]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffc2c8]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ff8080]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ff4444]"] {
+  color: var(--dns-admin-accent-danger) !important;
+}
+
+/* Подсказки мастера кейсов — это обучающий слой, а не мелкий шрифт.
+   11px для связного текста слишком мелко, поднимаем до 12px. */
+.dns-admin-shell .dns-master-hint {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--dns-admin-text-muted);
+}
+
 /* Gravity-радиус для контролов кабинета */
 .dns-admin-shell .rounded-lg,
 .dns-admin-shell .rounded-xl,

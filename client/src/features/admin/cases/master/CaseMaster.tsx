@@ -9,9 +9,9 @@ import { StepStructure } from "./steps/StepStructure";
 import { StepDecisions } from "./steps/StepDecisions";
 import { StepLaunch } from "./steps/StepLaunch";
 
-type MasterView = { kind: "summary" } | { kind: "step"; stepId: MasterStepId };
+export type MasterView = { kind: "summary" } | { kind: "step"; stepId: MasterStepId };
 
-function initialView(isNew: boolean): MasterView {
+export function initialMasterView(isNew: boolean): MasterView {
   return isNew ? { kind: "step", stepId: "intent" } : { kind: "summary" };
 }
 
@@ -27,6 +27,8 @@ export function CaseMaster({
   selectedCycleIndex,
   onSelectedCycleIndexChange,
   onChange,
+  view: controlledView,
+  onViewChange,
 }: {
   entity: SimCase;
   competencies: CompetencyDefinition[];
@@ -39,15 +41,20 @@ export function CaseMaster({
   selectedCycleIndex: number;
   onSelectedCycleIndexChange: (index: number) => void;
   onChange: (next: SimCase) => void;
+  /** Вид можно вести снаружи — тогда замечания в соседней панели умеют открывать нужный этап. */
+  view?: MasterView;
+  onViewChange?: (next: MasterView) => void;
 }) {
-  const [view, setView] = useState<MasterView>(() => initialView(isNew));
+  const [ownView, setOwnView] = useState<MasterView>(() => initialMasterView(isNew));
+  const view = controlledView ?? ownView;
+  const setView = onViewChange ?? setOwnView;
 
   // Открыли другой кейс в том же окне — мастер должен начаться заново,
   // иначе автор увидит этап от предыдущего кейса.
   const [openedCaseId, setOpenedCaseId] = useState(entity.id);
   if (openedCaseId !== entity.id) {
     setOpenedCaseId(entity.id);
-    setView(initialView(isNew));
+    setView(initialMasterView(isNew));
   }
 
   const patch = (partial: Partial<SimCase>) => onChange({ ...entity, ...partial });

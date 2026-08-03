@@ -92,7 +92,8 @@ import {
   StructuredCyclesEditor,
   StructuredOptionsEditor,
 } from "./cases/CaseEditors";
-import { CaseMaster } from "./cases/master/CaseMaster";
+import { CaseMaster, initialMasterView, type MasterView } from "./cases/master/CaseMaster";
+import { buildCaseSetupIssues, MASTER_STEP_TITLES } from "./cases/master/case-master-support";
 import { CASE_AUTHORING_WIKI } from "./admin-wiki-content";
 import { clearDraftFromStorage, deepClone, readDraftFromStorage, writeDraftToStorage } from "./hooks/useAdminDrafts";
 import { useAdminPermissions } from "./hooks/useAdminPermissions";
@@ -399,37 +400,6 @@ function buildEntityCompetencyProfile(entity: any) {
   }
 
   return {};
-}
-
-function buildCaseSetupIssues(caseItem: SimCase | null | undefined) {
-  if (!caseItem) {
-    return [];
-  }
-
-  const issues: string[] = [];
-  if (!caseItem.title?.trim()) issues.push("Не заполнено название кейса.");
-  if (!caseItem.trigger?.text?.trim()) issues.push("Не заполнен стартовый сигнал кейса.");
-  if (!caseItem.trigger?.source?.trim()) issues.push("Не заполнен источник сигнала.");
-  if (!caseItem.timing?.decisionDeadlineSeconds) issues.push("Не задан срок решения.");
-  if (!caseItem.cycles?.length) issues.push("Не создан ни один цикл.");
-
-  (caseItem.cycles || []).forEach((cycle, cycleIndex) => {
-    if (!cycle.situation?.trim()) issues.push(`Цикл ${cycleIndex + 1}: не заполнена ситуация.`);
-    if (!cycle.signal?.content?.trim()) issues.push(`Цикл ${cycleIndex + 1}: не заполнен текст сигнала.`);
-    const activeOptions = (cycle.options || []).filter((option: any) => (option.status || "active") === "active");
-    if (activeOptions.length === 0) issues.push(`Цикл ${cycleIndex + 1}: нет активных вариантов ответа.`);
-    activeOptions.forEach((option: any, optionIndex: number) => {
-      if (!option.text?.trim()) issues.push(`Цикл ${cycleIndex + 1}, ответ ${optionIndex + 1}: не заполнен текст ответа.`);
-      if (Object.keys(option.competency_scores || {}).length === 0) {
-        issues.push(`Цикл ${cycleIndex + 1}, ответ ${optionIndex + 1}: нет влияния на компетенции.`);
-      }
-      if (option.nextCycleId && option.nextCycleId !== "__complete" && !(caseItem.cycles || []).some((item) => item.id === option.nextCycleId)) {
-        issues.push(`Цикл ${cycleIndex + 1}, ответ ${optionIndex + 1}: ссылка ведёт на несуществующий цикл.`);
-      }
-    });
-  });
-
-  return issues;
 }
 
 function buildCaseRouteRows(caseItem: SimCase | null | undefined) {
@@ -1129,6 +1099,11 @@ export default function AdminPage() {
   const [selectedWeightCaseId, setSelectedWeightCaseId] = useState<string | null>(null);
   const [selectedCaseCycleIndex, setSelectedCaseCycleIndex] = useState(0);
   const [caseEditorOpen, setCaseEditorOpen] = useState(false);
+  // Вид мастера живёт здесь, а не внутри него: правая панель должна уметь открыть
+  // этап, на котором чинится замечание.
+  const [masterView, setMasterView] = useState<MasterView>(() => initialMasterView(false));
+  // Правая панель раньше шла одной длинной лентой. Разделы переключаются, а не громоздятся.
+  const [caseImpactTab, setCaseImpactTab] = useState<"impact" | "routes" | "issues">("impact");
   const [flowPreviewOpen, setFlowPreviewOpen] = useState(false);
   const [showAdminWiki, setShowAdminWiki] = useState(false);
   const [signalWizardOpen, setSignalWizardOpen] = useState(false);
@@ -1615,6 +1590,9 @@ export default function AdminPage() {
   };
 
   const focusCaseLogicPreview = () => {
+    // Раньше просто скроллило к блоку. Теперь разделы переключаются, поэтому сначала
+    // открываем нужный: замечания, если они есть, иначе переходы.
+    setCaseImpactTab(caseSetupIssues.length > 0 ? "issues" : "routes");
     document.getElementById("admin-case-logic-preview")?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
@@ -2420,43 +2398,66 @@ export default function AdminPage() {
                     selectedCycleIndex={selectedCaseCycleIndex}
                     onSelectedCycleIndexChange={setSelectedCaseCycleIndex}
                     onChange={setCaseDraft}
+                    view={masterView}
+                    onViewChange={setMasterView}
                   />
                 )}
               </div>
               <div className="dns-admin-case-impact-panel min-w-0 overflow-y-auto rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4 2xl:p-5 custom-scroll">
-                <div className="text-sm font-semibold text-white">Влияние выбранного кейса</div>
-                <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
-                  Этот блок фиксирован рядом с редактором и показывает, как текущая настройка кейса влияет на ожидаемый профиль компетенций.
-                </div>
                 {caseDraft ? (
                   <>
-                    <div className="mt-3 rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
-                      <div className="text-xs uppercase tracking-[0.18em] text-[#6fa0ff]">{caseDraft.id || "Новый кейс"}</div>
-                      <div className="mt-1 text-sm font-semibold text-white">{caseDraft.title || "Без названия"}</div>
-                      <div className="mt-2 text-[11px] text-[#cbd8ef]">Вес кейса в симуляции: {caseDraftWeight}%</div>
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <span className="text-[11px] uppercase tracking-[0.16em] text-[#6fa0ff]">{caseDraft.id || "Новый кейс"}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{caseDraft.title || "Без названия"}</span>
+                      <span className="text-[11px] text-[#cbd8ef]">вес {caseDraftWeight}%</span>
                     </div>
-                    <div className="mt-4">
-                      <CompetencyHorizontalImpactChart
-                        data={caseDraftBarData}
-                        series={[
-                          { key: "aggregate", label: "Профиль кейса", color: "#4a9eff" },
-                          { key: "selected", label: "Регулируемый вклад", color: "#00d4aa" },
-                        ]}
-                      />
+
+                    <div id="admin-case-logic-preview" className="mt-3 flex gap-1 rounded-lg border border-[#243244] bg-[#101826]/60 p-1">
+                      {([
+                        ["impact", "Влияние", 0],
+                        ["routes", "Переходы", caseRouteRows.length],
+                        ["issues", "Замечания", caseSetupIssues.length],
+                      ] as const).map(([key, label, count]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setCaseImpactTab(key)}
+                          className={`flex-1 rounded-md border px-2 py-1.5 text-[11px] font-semibold transition ${
+                            caseImpactTab === key
+                              ? "border-[#FF6B00] bg-[#FF6B00]/15 text-white"
+                              : "border-transparent text-[#9aabc6] hover:border-[#3b5878]"
+                          }`}
+                        >
+                          {label}
+                          {count > 0 && (
+                            <span className={key === "issues" ? "ml-1 text-[#ffd36e]" : "ml-1 text-[#8aa2c4]"}>{count}</span>
+                          )}
+                        </button>
+                      ))}
                     </div>
-                    <div id="admin-case-logic-preview" className="mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-semibold text-white">Предпросмотр логики</div>
-                          <div className="mt-1 text-[11px] leading-relaxed text-[#8aa2c4]">
-                            Проверка связей «ответ → цикл» без запуска реальной сессии.
-                          </div>
+
+                    {caseImpactTab === "impact" && (
+                      <div className="mt-3">
+                        <div className="text-[11px] leading-relaxed text-[#8aa2c4]">
+                          Синий — базовый профиль кейса, бирюзовый — фактический вклад с учётом веса.
                         </div>
-                        <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${caseSetupIssues.length === 0 ? "border-[#00d4aa]/40 text-[#7fffd4]" : "border-[#ffb000]/40 text-[#ffd36e]"}`}>
-                          {caseSetupIssues.length === 0 ? "Готово" : `${caseSetupIssues.length} замеч.`}
-                        </span>
+                        <div className="mt-2">
+                          <CompetencyHorizontalImpactChart
+                            data={caseDraftBarData}
+                            series={[
+                              { key: "aggregate", label: "Профиль кейса", color: "#4a9eff" },
+                              { key: "selected", label: "Регулируемый вклад", color: "#00d4aa" },
+                            ]}
+                          />
+                        </div>
                       </div>
-                      <div className="mt-3 max-h-48 space-y-2 overflow-y-auto pr-1 custom-scroll">
+                    )}
+
+                    {caseImpactTab === "routes" && (
+                      <div className="mt-3 space-y-2">
+                        <div className="text-[11px] leading-relaxed text-[#8aa2c4]">
+                          Куда ведёт каждый ответ — без запуска сессии.
+                        </div>
                         {caseRouteRows.length === 0 && (
                           <div className="rounded-lg border border-dashed border-[#31455f] px-3 py-3 text-[11px] text-[#8aa2c4]">
                             Добавьте активные варианты ответа, чтобы увидеть переходы.
@@ -2473,15 +2474,36 @@ export default function AdminPage() {
                           </div>
                         ))}
                       </div>
-                      {caseSetupIssues.length > 0 && (
-                        <div className="mt-3 rounded-lg border border-[#ffb000]/25 bg-[#ffb000]/8 p-3">
-                          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ffd36e]">Что исправить до запуска</div>
-                          <ul className="mt-2 space-y-1 text-[11px] leading-relaxed text-[#ffe6a6]">
-                            {caseSetupIssues.slice(0, 5).map((issue) => <li key={issue}>• {issue}</li>)}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
+                    )}
+
+                    {caseImpactTab === "issues" && (
+                      <div className="mt-3 space-y-2">
+                        {caseSetupIssues.length === 0 ? (
+                          <div className="rounded-lg border border-[#00d4aa]/35 bg-[#00d4aa]/8 px-3 py-3 text-[11px] text-[#7fffd4]">
+                            Всё необходимое заполнено — кейс можно публиковать.
+                          </div>
+                        ) : (
+                          <>
+                            <div className="text-[11px] leading-relaxed text-[#8aa2c4]">
+                              Нажмите на замечание — откроется этап, где оно чинится.
+                            </div>
+                            {caseSetupIssues.map((issue, issueIndex) => (
+                              <button
+                                key={`${issue.step}-${issueIndex}`}
+                                type="button"
+                                onClick={() => setMasterView({ kind: "step", stepId: issue.step })}
+                                className="flex w-full items-start gap-2 rounded-lg border border-[#ffb000]/25 bg-[#ffb000]/8 px-3 py-2 text-left text-[11px] leading-relaxed text-[#ffe6a6] transition hover:border-[#ffd36e]"
+                              >
+                                <span className="mt-0.5 shrink-0 rounded border border-[#ffb000]/40 px-1 text-[9px] uppercase tracking-wide text-[#ffd36e]">
+                                  {MASTER_STEP_TITLES[issue.step]}
+                                </span>
+                                <span className="min-w-0">{issue.text}</span>
+                              </button>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    )}
                     <div className="dns-admin-case-control-panel mt-4">
                       <div className="dns-admin-case-control-head">
                         <div>

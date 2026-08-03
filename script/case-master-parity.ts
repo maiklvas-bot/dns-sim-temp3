@@ -1,9 +1,12 @@
 import assert from "node:assert/strict";
 import {
+  buildCaseSetupIssues,
   buildStepSummaries,
+  findBrokenTransitions,
   isCaseStructureBranching,
   issuesForStep,
   MASTER_STEPS,
+  signalTypeLabel,
 } from "../client/src/features/admin/cases/master/case-master-support";
 import { validateCase } from "../shared/case-validation";
 import type { SimCase } from "../shared/simulation-content";
@@ -85,5 +88,59 @@ assert.equal(issuesForStep("situation", scoreIssues).length, 0);
 const withIssues = buildStepSummaries(brokenCase, brokenIssues);
 assert.equal(withIssues.find((item) => item.stepId === "situation")?.issueCount, 3);
 assert.equal(withIssues.find((item) => item.stepId === "intent")?.issueCount, 0);
+
+// «Готово» на карточке должно что-то означать. Раньше структура и запуск были готовы всегда.
+const emptyShapeCase = buildCase();
+emptyShapeCase.cycles[0].situation = "   ";
+const emptyShape = buildStepSummaries(emptyShapeCase, []);
+assert.equal(
+  emptyShape.find((item) => item.stepId === "structure")?.isFilled,
+  false,
+  "шаг без описания не делает структуру готовой",
+);
+
+const withValidationIssues = buildStepSummaries(brokenCase, brokenIssues);
+assert.equal(
+  withValidationIssues.find((item) => item.stepId === "launch")?.isFilled,
+  false,
+  "«готово» на запуске означает чистую автопроверку, а не факт открытия экрана",
+);
+assert.equal(
+  buildStepSummaries(buildCase(), []).find((item) => item.stepId === "launch")?.isFilled,
+  true,
+);
+
+// Тип сигнала показывается человеку словом, а не машинным ключом
+assert.equal(signalTypeLabel("zone_signal"), "сигнал зоны");
+assert.ok(
+  buildStepSummaries(buildCase(), [])
+    .find((item) => item.stepId === "situation")
+    ?.lines.some((line) => line.includes("сообщение")),
+  "в сводке ситуации тип сигнала читается словом",
+);
+
+// Обрыв ветки: переход на шаг, которого нет в кейсе
+assert.equal(findBrokenTransitions(buildCase()), 0);
+assert.equal(findBrokenTransitions(terminal), 0, "__complete — не обрыв");
+assert.equal(findBrokenTransitions(branching), 1, "переход на несуществующий C2 — обрыв");
+
+// Замечания готовности знают свой этап, иначе клик по ним некуда вести
+const setupIssues = buildCaseSetupIssues(buildCase({ title: "  " }));
+assert.ok(setupIssues.some((issue) => issue.step === "intent" && issue.text.includes("название")));
+assert.equal(buildCaseSetupIssues(null).length, 0);
+
+const noSituation = buildCase();
+noSituation.cycles[0].situation = "";
+assert.ok(
+  buildCaseSetupIssues(noSituation).some(
+    (issue) => issue.step === "decisions" && issue.text.includes("ситуация шага"),
+  ),
+  "ситуация шага чинится на этапе «Решения», а не на «Ситуации» — иначе клик ведёт не туда",
+);
+
+assert.ok(
+  buildCaseSetupIssues(branching).some((issue) => issue.step === "structure"),
+  "оборванный переход адресуется на этап структуры",
+);
 
 console.log("case-master parity checks passed");

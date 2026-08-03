@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import type { SimCase } from "@shared/simulation-content";
 import { validateCase } from "@shared/case-validation";
 import { buildStepSummaries, type MasterStepId } from "./case-master-support";
+import { CaseStructureMiniMap } from "./CaseStructureMiniMap";
 
 export function CaseSummaryCard({
   caseInput,
@@ -17,20 +18,21 @@ export function CaseSummaryCard({
     <div className="space-y-3">
       <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
         <div className="text-sm font-semibold text-white">{caseInput.title || "Новый кейс"}</div>
-        <div className="mt-1 text-[11px] leading-relaxed text-[#8890a8]">
+        <div className="dns-master-hint mt-1">
           Карточка кейса. Нажмите на любой блок, чтобы вернуться к его настройке.
         </div>
       </div>
 
       <div className="grid gap-3 md:grid-cols-2">
         {summaries.map((summary, index) => {
-          const isLast = index === summaries.length - 1;
+          // Структура несёт мини-схему, запуск — итог по кейсу: обоим нужна вся ширина.
+          const isWide = summary.stepId === "structure" || summary.stepId === "launch";
           return (
             <button
               key={summary.stepId}
               type="button"
               onClick={() => onOpenStep(summary.stepId)}
-              className={`rounded-xl border p-3 text-left transition ${isLast ? "md:col-span-2" : ""} ${
+              className={`rounded-xl border p-3 text-left transition ${isWide ? "md:col-span-2" : ""} ${
                 summary.issueCount > 0
                   ? "border-[#ffb27a]/40 bg-[#FF6B00]/8 hover:border-[#ffb27a]"
                   : "border-[#243244] bg-[#101826]/60 hover:border-[#3b5878]"
@@ -55,6 +57,11 @@ export function CaseSummaryCard({
                   </div>
                 ))}
               </div>
+              {summary.stepId === "structure" && (
+                <div className="mt-2.5">
+                  <CaseStructureMiniMap caseInput={caseInput} />
+                </div>
+              )}
             </button>
           );
         })}

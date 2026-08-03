@@ -1,5 +1,7 @@
 import type { CompetencyDefinition, SimCase } from "@shared/simulation-content";
 import { StructuredCyclesEditor } from "../../CaseEditors";
+import { MasterHelp } from "../MasterHelp";
+import { HELP } from "../master-help-topics";
 
 export function StepDecisions({
   entity,
@@ -26,10 +28,24 @@ export function StepDecisions({
     <div className="space-y-4">
       <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
         <div className="text-sm font-semibold text-white">Что может сделать участник?</div>
-        <div className="mt-1 text-[11px] leading-relaxed text-[#8890a8]">
+        <div className="dns-master-hint mt-1">
           Варианты должны быть похожи по форме: если «правильный» длиннее и звучит грамотнее остальных,
           участник выберет его не думая. Уровень проявления компетенции задаётся отдельно от текста —
           именно он идёт в оценку.
+        </div>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
+          <span className="flex items-center gap-1.5 text-[11px] text-[#8aa2c4]">
+            <MasterHelp topic={HELP.cycleSituation} /> Ситуация шага
+          </span>
+          <span className="flex items-center gap-1.5 text-[11px] text-[#8aa2c4]">
+            <MasterHelp topic={HELP.optionLevels} /> Уровни компетенций
+          </span>
+          <span className="flex items-center gap-1.5 text-[11px] text-[#8aa2c4]">
+            <MasterHelp topic={HELP.optionTransition} /> Переход после ответа
+          </span>
+          <span className="flex items-center gap-1.5 text-[11px] text-[#8aa2c4]">
+            <MasterHelp topic={HELP.effects} /> Эффекты на метрики
+          </span>
         </div>
       </div>
 

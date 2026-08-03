@@ -2,6 +2,8 @@ import type { SimCase } from "@shared/simulation-content";
 import { Field } from "../../../components/AdminFields";
 import { CaseMediaPanel } from "../../CaseEditors";
 import { CaseValidationPanel } from "../../CaseValidationPanel";
+import { MasterHelp } from "../MasterHelp";
+import { HELP } from "../master-help-topics";
 
 export function StepLaunch({
   entity,
@@ -26,9 +28,17 @@ export function StepLaunch({
     <div className="space-y-4">
       <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
         <div className="text-sm font-semibold text-white">Готов ли кейс к участникам?</div>
-        <div className="mt-1 text-[11px] leading-relaxed text-[#8890a8]">
+        <div className="dns-master-hint mt-1">
           Последний шаг: как кейс выглядит и когда приходит. Ниже — результат автопроверки: пока есть
           замечания, кейс нельзя пометить готовым, но черновик сохраняется свободно.
+        </div>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1.5">
+          <span className="flex items-center gap-1.5 text-[11px] text-[#8aa2c4]">
+            <MasterHelp topic={HELP.defaultMedia} /> Медиа по умолчанию
+          </span>
+          <span className="flex items-center gap-1.5 text-[11px] text-[#8aa2c4]">
+            <MasterHelp topic={HELP.timing} /> Тайминги
+          </span>
         </div>
       </div>
 

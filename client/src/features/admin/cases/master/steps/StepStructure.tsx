@@ -2,7 +2,10 @@ import type { SimCase } from "@shared/simulation-content";
 import { Button } from "@/components/ui/button";
 import { CaseFlowDiagram } from "../../../components/CaseFlowDiagram";
 import { createEmptyCycle } from "../../case-editor-support";
-import { isCaseStructureBranching } from "../case-master-support";
+import { findBrokenTransitions, isCaseStructureBranching } from "../case-master-support";
+import { CaseStructureMiniMap } from "../CaseStructureMiniMap";
+import { MasterHelp } from "../MasterHelp";
+import { HELP } from "../master-help-topics";
 
 export function StepStructure({
   entity,
@@ -13,6 +16,7 @@ export function StepStructure({
 }) {
   const cycles = entity.cycles || [];
   const branching = isCaseStructureBranching(entity);
+  const brokenTransitions = findBrokenTransitions(entity);
 
   const addCycle = () => {
     const nextNumber = cycles.length + 1;
@@ -38,19 +42,53 @@ export function StepStructure({
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
-        <div className="text-sm font-semibold text-white">Как кейс разворачивается?</div>
-        <div className="mt-1 text-[11px] leading-relaxed text-[#8890a8]">
-          Кейс может идти одной линией — шаг за шагом, — или ветвиться, когда ответ участника определяет,
-          что случится дальше. Ветвление задаётся на этапе «Решения»: у каждого варианта можно выбрать,
-          какой шаг он запускает.
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-semibold text-white">Как кейс разворачивается?</span>
+          <MasterHelp topic={HELP.structureShape} />
+        </div>
+        <div className="dns-master-hint mt-1">
+          Форма кейса не выбирается переключателем — она получается из того, куда ведут ответы.
+          Переходы задаются на этапе «Решения», а здесь видно, что вышло.
+        </div>
+      </div>
+
+      {/* Два типа сценария словами, а не терминами: автор должен узнать свой случай. */}
+      <div className="grid gap-2 md:grid-cols-2">
+        <div
+          className={`rounded-xl border p-3 ${
+            branching ? "border-[#243244] bg-[#0d1522]/60" : "border-[#FF6B00]/50 bg-[#FF6B00]/8"
+          }`}
+        >
+          <div className="text-xs font-semibold text-white">
+            Линейный путь {!branching && <span className="text-[#ffb27a]">· сейчас так</span>}
+          </div>
+          <div className="dns-master-hint mt-1">
+            Шаги идут подряд, одинаково для всех. Ответ меняет оценку и метрики магазина, но не маршрут.
+            Подходит, когда важно, <b>как</b> человек решает, а не куда его заводит решение.
+          </div>
+        </div>
+        <div
+          className={`rounded-xl border p-3 ${
+            branching ? "border-[#FF6B00]/50 bg-[#FF6B00]/8" : "border-[#243244] bg-[#0d1522]/60"
+          }`}
+        >
+          <div className="text-xs font-semibold text-white">
+            С ветвлением · «матрёшка» {branching && <span className="text-[#ffb27a]">· сейчас так</span>}
+          </div>
+          <div className="dns-master-hint mt-1">
+            Ответ определяет следующий шаг: слабое решение заводит в осложнившуюся ситуацию, сильное —
+            дальше по плану. Появляется само, как только у варианта задан переход «после ответа запустить».
+          </div>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[#243244] bg-[#101826]/60 p-3">
-        <div className="text-xs font-semibold text-white">
-          Сейчас: {branching ? "кейс с ветвлением" : "линейный путь"}
-        </div>
-        <div className="text-[11px] text-[#8890a8]">Шагов: {cycles.length}</div>
+        <div className="text-xs font-semibold text-white">Шагов: {cycles.length}</div>
+        {brokenTransitions > 0 && (
+          <div className="text-[11px] font-semibold text-[#ff9999]">
+            Оборванных переходов: {brokenTransitions} — ответ ведёт на шаг, которого нет
+          </div>
+        )}
         <Button type="button" size="sm" className="ml-auto shrink-0" onClick={addCycle}>
           Добавить шаг
         </Button>
@@ -58,6 +96,7 @@ export function StepStructure({
 
       {cycles.length > 0 ? (
         <>
+          <CaseStructureMiniMap caseInput={entity} />
           <CaseFlowDiagram caseItem={entity} />
           <div className="space-y-2">
             {cycles.map((cycle, index) => (
