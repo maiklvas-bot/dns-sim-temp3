@@ -76,6 +76,14 @@ export interface CaseDataPoint {
   costToRequest?: string | null;
 }
 
+export interface AcceptedIssue {
+  check: "bars_conformance" | "antigaming" | "diagnostics" | "effect_reality";
+  cycleId?: string | null;
+  optionId?: string | null;
+  /** Почему автор считает, что в этом кейсе так и задумано. Обязательно. */
+  reason: string;
+}
+
 export type CaseQaStatus =
   | "draft"
   | "auto_check_failed"
@@ -97,6 +105,7 @@ export interface SimCase {
   dataPoints?: CaseDataPoint[];
   falseTrails?: string[];
   qaStatus?: CaseQaStatus;
+  acceptedIssues?: AcceptedIssue[];
   imageAssetId: string | null;
   imageUrl: string | null;
   audioAssetId: string | null;

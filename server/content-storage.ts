@@ -319,6 +319,7 @@ export class ContentStorage {
         dataPoints: parseJsonArray<NonNullable<SimCase["dataPoints"]>[number]>(row.dataPointsJson, []),
         falseTrails: parseJsonArray<string>(row.falseTrailsJson, []),
         qaStatus: (row.qaStatus as SimCase["qaStatus"]) || "draft",
+        acceptedIssues: parseJsonArray<NonNullable<SimCase["acceptedIssues"]>[number]>(row.acceptedIssuesJson, []),
         imageAssetId: row.imageAssetId,
         imageUrl: image?.publicUrl || null,
         audioAssetId: row.audioAssetId,
