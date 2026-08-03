@@ -1,4 +1,4 @@
-import type { SimCase } from "@shared/simulation-content";
+import type { SimCase, ZoneType } from "@shared/simulation-content";
 import { FieldArea, MultiSelectField, SelectField, SuggestField } from "../../../components/AdminFields";
 import { CASE_SIGNAL_TYPE_OPTIONS, STORE_ZONE_OPTIONS } from "../../case-editor-support";
 import { CaseDossierEditor } from "../../CaseDossierEditor";
@@ -9,7 +9,7 @@ export function StepSituation({
   onChange,
 }: {
   entity: SimCase;
-  caseSourceOptions: Array<{ value: string; label: string }>;
+  caseSourceOptions: string[];
   onChange: (patch: Partial<SimCase>) => void;
 }) {
   return (
@@ -27,19 +27,29 @@ export function StepSituation({
           label="Источник сигнала"
           value={entity.trigger.source}
           onChange={(value) => onChange({ trigger: { ...entity.trigger, source: value } })}
-          options={caseSourceOptions.map((o) => o.value)}
+          options={caseSourceOptions}
         />
         <SelectField
           label="Тип сигнала"
           value={entity.trigger.type}
-          onChange={(value) => onChange({ trigger: { ...entity.trigger, type: value as "message" | "zone_signal" | "email" | "call" | "visitor" } })}
-          options={CASE_SIGNAL_TYPE_OPTIONS as unknown as Array<{ value: string; label: string }>}
+          onChange={(value) => {
+            const nextType = CASE_SIGNAL_TYPE_OPTIONS.find((option) => option.value === value)?.value;
+            if (!nextType) return;
+            onChange({ trigger: { ...entity.trigger, type: nextType } });
+          }}
+          options={[...CASE_SIGNAL_TYPE_OPTIONS]}
         />
         <MultiSelectField
           label="Зоны магазина"
           values={entity.zones_affected || []}
-          onChange={(values) => onChange({ zones_affected: values as Array<"торговый_зал" | "склад" | "выдача" | "начальство"> })}
-          options={STORE_ZONE_OPTIONS as unknown as Array<{ value: string; label: string }>}
+          onChange={(values) =>
+            onChange({
+              zones_affected: values.filter((value): value is ZoneType =>
+                STORE_ZONE_OPTIONS.some((option) => option.value === value),
+              ),
+            })
+          }
+          options={[...STORE_ZONE_OPTIONS]}
         />
       </div>
 
