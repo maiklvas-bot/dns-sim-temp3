@@ -93,6 +93,7 @@ import {
   StructuredOptionsEditor,
 } from "./cases/CaseEditors";
 import { CaseMaster, initialMasterView, type MasterView } from "./cases/master/CaseMaster";
+import { CaseRoadmap } from "./cases/master/CaseRoadmap";
 import { buildCaseSetupIssues, MASTER_STEP_TITLES } from "./cases/master/case-master-support";
 import { CASE_AUTHORING_WIKI } from "./admin-wiki-content";
 import { clearDraftFromStorage, deepClone, readDraftFromStorage, writeDraftToStorage } from "./hooks/useAdminDrafts";
@@ -2393,7 +2394,17 @@ export default function AdminPage() {
                 <DialogTitle className="text-[15px]">Редактор кейса · {caseDraft?.title || caseDraft?.id || "Новый кейс"}</DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">Слева — настройка кейса, справа — влияние на профиль компетенций (меняется в моменте).</DialogDescription>
               </DialogHeader>
-              <div className="dns-admin-case-workspace grid flex-1 gap-5 overflow-hidden p-5 lg:grid-cols-[minmax(0,1fr),360px]">
+              <div className="dns-admin-case-workspace grid flex-1 gap-5 overflow-hidden p-5 lg:grid-cols-[minmax(0,1fr),360px] xl:grid-cols-[280px,minmax(0,1fr),360px]">
+                {/* Дерево кейса — постоянная левая полоса. Не зависит от текущего этапа
+                    и не исчезает при переключении: автор всё время видит кейс целиком. */}
+                {caseDraft && (
+                  <div className="dns-admin-case-roadmap-panel hidden min-w-0 overflow-y-auto rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-3 custom-scroll xl:block">
+                    <CaseRoadmap
+                      caseInput={caseDraft}
+                      activeStepId={masterView.kind === "step" ? masterView.stepId : null}
+                    />
+                  </div>
+                )}
                 <div className="dns-admin-case-editor-panel min-w-0 overflow-y-auto rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 custom-scroll">
                 {caseDraft && (
                   <CaseMaster

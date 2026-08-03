@@ -196,4 +196,15 @@ assertCondition(
   "Плитки карточки кейса не растягиваются на несколько колонок — набор должен быть равномерным",
 );
 
+// Дерево кейса — постоянная карта, а не навигация: клик по узлу не предусмотрен.
+const roadmap = readText("client/src/features/admin/cases/master/CaseRoadmap.tsx");
+assertCondition(
+  !roadmap.includes("onClick") && !roadmap.includes("<button"),
+  "Дерево кейса не кликабельно — это карта, а не навигация",
+);
+assertCondition(
+  readText("client/src/features/admin/AdminWorkspaceRuntime.tsx").includes("<CaseRoadmap"),
+  "Дерево кейса должно быть постоянной панелью рабочей области, а не частью этапа",
+);
+
 console.log("UI acceptance checks passed: shared themes, responsive admin editor, assessor workspace and simulation scrolling verified.");
