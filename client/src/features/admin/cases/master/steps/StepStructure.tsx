@@ -1,7 +1,8 @@
 import type { SimCase } from "@shared/simulation-content";
 import { Button } from "@/components/ui/button";
 import { CaseFlowDiagram } from "../../../components/CaseFlowDiagram";
-import { createEmptyCycle } from "../../case-editor-support";
+import { Field, FieldArea, SelectField } from "../../../components/AdminFields";
+import { CASE_SIGNAL_TYPE_OPTIONS, createEmptyCycle } from "../../case-editor-support";
 import { findBrokenTransitions, isCaseStructureBranching } from "../case-master-support";
 import { CaseStructureMiniMap } from "../CaseStructureMiniMap";
 import { MasterHelp } from "../MasterHelp";
@@ -10,9 +11,12 @@ import { HELP } from "../master-help-topics";
 export function StepStructure({
   entity,
   onChange,
+  onEditDecisions,
 }: {
   entity: SimCase;
   onChange: (patch: Partial<SimCase>) => void;
+  /** Открыть этап «Решения» на конкретном шаге — варианты ответа живут там. */
+  onEditDecisions: (cycleIndex: number) => void;
 }) {
   const cycles = entity.cycles || [];
   const branching = isCaseStructureBranching(entity);
@@ -23,6 +27,10 @@ export function StepStructure({
     onChange({
       cycles: [...cycles, createEmptyCycle(`${entity.id || "CASE"}-C${nextNumber}`, nextNumber)],
     });
+  };
+
+  const updateCycle = (index: number, patch: Partial<(typeof cycles)[number]>) => {
+    onChange({ cycles: cycles.map((cycle, cycleIndex) => (cycleIndex === index ? { ...cycle, ...patch } : cycle)) });
   };
 
   // Кейс без единого шага пройти нельзя — последний шаг не удаляем, как и в редакторе циклов.
@@ -98,30 +106,73 @@ export function StepStructure({
         <>
           <CaseStructureMiniMap caseInput={entity} />
           <CaseFlowDiagram caseItem={entity} />
+          {/* Шаг заполняется здесь же: добавить и тут же описать, не уходя на другой этап.
+              Варианты ответа остаются на «Решениях» — там для них есть уровни и эффекты. */}
           <div className="space-y-2">
             {cycles.map((cycle, index) => (
               <div
                 key={cycle.id || `cycle-${index}`}
-                className="flex items-center gap-3 rounded-lg border border-[#243244] bg-[#0d1522]/70 px-3 py-2"
+                className="rounded-lg border border-[#243244] bg-[#0d1522]/70 px-3 py-2.5"
               >
-                <div className="text-xs font-semibold text-white">Шаг {cycle.cycle}</div>
-                <div className="min-w-0 flex-1 truncate text-[11px] text-[#8aa2c4]">
-                  {cycle.situation || "Ситуация не описана"}
+                <div className="flex items-center gap-3">
+                  <div className="text-xs font-semibold text-white">Шаг {cycle.cycle}</div>
+                  <div className="shrink-0 text-[11px] text-[#70829d]">
+                    вариантов: {(cycle.options || []).length}
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="ml-auto shrink-0 border-[#3b5878] bg-transparent text-[#8ec5ff]"
+                    onClick={() => onEditDecisions(index)}
+                  >
+                    Варианты ответа
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="shrink-0 border-[#ff4444]/30 bg-transparent text-[#ff9999]"
+                    disabled={!canRemoveCycle}
+                    title={canRemoveCycle ? undefined : "Последний шаг удалить нельзя — кейс без шагов не пройти"}
+                    onClick={() => removeCycle(index)}
+                  >
+                    Удалить
+                  </Button>
                 </div>
-                <div className="shrink-0 text-[11px] text-[#70829d]">
-                  вариантов: {(cycle.options || []).length}
+
+                <div className="mt-2 grid gap-3 md:grid-cols-2">
+                  <Field
+                    label="Название шага"
+                    value={cycle.title || ""}
+                    onChange={(value) => updateCycle(index, { title: value })}
+                  />
+                  <SelectField
+                    label="Тип сигнала шага"
+                    value={cycle.signal?.type}
+                    onChange={(value) => {
+                      const nextType = CASE_SIGNAL_TYPE_OPTIONS.find((option) => option.value === value)?.value;
+                      if (!nextType) return;
+                      updateCycle(index, { signal: { ...(cycle.signal || { content: "" }), type: nextType } });
+                    }}
+                    options={[...CASE_SIGNAL_TYPE_OPTIONS]}
+                  />
                 </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="shrink-0 border-[#ff4444]/30 bg-transparent text-[#ff9999]"
-                  disabled={!canRemoveCycle}
-                  title={canRemoveCycle ? undefined : "Последний шаг удалить нельзя — кейс без шагов не пройти"}
-                  onClick={() => removeCycle(index)}
-                >
-                  Удалить
-                </Button>
+
+                <div className="mt-2 grid gap-3 md:grid-cols-2">
+                  <FieldArea
+                    label="Ситуация шага"
+                    value={cycle.situation || ""}
+                    onChange={(value) => updateCycle(index, { situation: value })}
+                  />
+                  <FieldArea
+                    label="Текст сигнала шага"
+                    value={cycle.signal?.content || ""}
+                    onChange={(value) =>
+                      updateCycle(index, { signal: { ...(cycle.signal || { type: "message" }), content: value } })
+                    }
+                  />
+                </div>
               </div>
             ))}
           </div>

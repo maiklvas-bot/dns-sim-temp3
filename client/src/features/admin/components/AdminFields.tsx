@@ -1,4 +1,4 @@
-import { useId } from "react";
+import { useId, type ReactNode } from "react";
 import type { CompetencyDefinition } from "@shared/simulation-content";
 import { competencyCategoryLabel } from "@/data/competencies";
 import { Input } from "@/components/ui/input";
@@ -66,12 +66,14 @@ export function MultiSelectField({ label, values, onChange, options }: {
   );
 }
 
-export function CompetencyRoleSelector({ label = "Компетенции кейса", primaryValues, secondaryValues, onChange, competencies }: {
+export function CompetencyRoleSelector({ label = "Компетенции кейса", primaryValues, secondaryValues, onChange, competencies, labelAction }: {
   label?: string;
   primaryValues: string[];
   secondaryValues: string[];
   onChange: (next: { primaryCompetencies: string[]; secondaryCompetencies: string[] }) => void;
   competencies: CompetencyDefinition[];
+  /** Кнопка справки рядом с заголовком. Отдельного заголовка снаружи быть не должно — он задвоится. */
+  labelAction?: ReactNode;
 }) {
   const primarySet = new Set(primaryValues || []);
   const secondarySet = new Set(secondaryValues || []);
@@ -85,7 +87,10 @@ export function CompetencyRoleSelector({ label = "Компетенции кей�
 
   return (
     <div>
-      <Label className="mb-1.5 block text-xs text-[#8890a8]">{label}</Label>
+      <div className="mb-1.5 flex items-center gap-2">
+        <Label className="block text-xs text-[#8890a8]">{label}</Label>
+        {labelAction}
+      </div>
       <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/45 p-3">
         <div className="mb-3 text-[11px] leading-relaxed text-[#9fb0ca]">Один список вместо двух блоков: первичная компетенция задаёт главный фокус кейса, вторичная добавляет дополнительный вес в оценке.</div>
         <div className="grid gap-2 lg:grid-cols-2">

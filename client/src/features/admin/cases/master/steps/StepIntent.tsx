@@ -7,10 +7,12 @@ export function StepIntent({
   entity,
   competencies,
   onChange,
+  onOpenCompetencyGuide,
 }: {
   entity: SimCase;
   competencies: CompetencyDefinition[];
   onChange: (patch: Partial<SimCase>) => void;
+  onOpenCompetencyGuide: () => void;
 }) {
   return (
     <div className="space-y-4">
@@ -52,19 +54,25 @@ export function StepIntent({
       </div>
 
       <div>
-        <div className="mb-1.5 flex items-center gap-1.5">
-          <span className="text-xs font-semibold text-[#8890a8]">Компетенции кейса</span>
-          <MasterHelp topic={HELP.competencies} />
-        </div>
         <CompetencyRoleSelector
           primaryValues={entity.primaryCompetencies || []}
           secondaryValues={entity.secondaryCompetencies || []}
           onChange={(next) => onChange(next)}
           competencies={competencies}
+          labelAction={
+            <button
+              type="button"
+              onClick={onOpenCompetencyGuide}
+              className="rounded-md border border-[#3b5878] px-2 py-0.5 text-[11px] font-semibold text-[#8ec5ff] transition hover:border-[#6fa0ff] hover:bg-[#6fa0ff]/10"
+            >
+              Как это работает
+            </button>
+          }
         />
         <div className="dns-master-hint mt-1">
           Первичные — то, ради чего кейс существует, они дают основной вес в оценке. Вторичные проявятся
           попутно. Держитесь 1–2 первичных: если отметить половину списка, кейс не проверяет ничего конкретного.
+          Полный разбор — по кнопке «Как это работает».
         </div>
       </div>
     </div>

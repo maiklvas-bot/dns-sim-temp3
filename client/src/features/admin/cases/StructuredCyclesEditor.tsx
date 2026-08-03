@@ -33,6 +33,7 @@ export function StructuredCyclesEditor({
   activePreviewKey,
   selectedCycleIndex: controlledSelectedCycleIndex,
   onSelectedCycleIndexChange,
+  caseSourceOptions = [],
 }: {
   cycles: any[];
   onChange: (cycles: any[]) => void;
@@ -43,6 +44,8 @@ export function StructuredCyclesEditor({
   activePreviewKey: string | null;
   selectedCycleIndex?: number;
   onSelectedCycleIndexChange?: (index: number) => void;
+  /** Готовые источники сигнала. Без них поле обещает выбор, а список пустой. */
+  caseSourceOptions?: string[];
 }) {
   const [internalSelectedCycleIndex, setInternalSelectedCycleIndex] = useState(0);
   const normalizedCycles = cycles || [];
@@ -152,7 +155,7 @@ export function StructuredCyclesEditor({
 
             <div className="dns-admin-cycle-meta-grid">
               <Field label="Название цикла" value={selectedCycle.title || ""} onChange={(value) => updateCycle(selectedCycleIndex, { title: value })} />
-              <SuggestField label="Источник сигнала" value={selectedCycle.source || ""} onChange={(value) => updateCycle(selectedCycleIndex, { source: value })} options={[]} />
+              <SuggestField label="Источник сигнала" value={selectedCycle.source || ""} onChange={(value) => updateCycle(selectedCycleIndex, { source: value })} options={caseSourceOptions} />
               <SelectField
                 label="Статус"
                 value={selectedCycle.status || "active"}

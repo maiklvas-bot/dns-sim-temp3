@@ -6,6 +6,7 @@ import { HELP } from "../master-help-topics";
 export function StepDecisions({
   entity,
   competencies,
+  caseSourceOptions,
   assets,
   onUploadAsset,
   onTogglePreviewAudio,
@@ -16,6 +17,7 @@ export function StepDecisions({
 }: {
   entity: SimCase;
   competencies: CompetencyDefinition[];
+  caseSourceOptions: string[];
   assets: any[];
   onUploadAsset: (file: File) => Promise<string | null>;
   onTogglePreviewAudio: (previewKey: string, url: string | null) => void;
@@ -51,6 +53,7 @@ export function StepDecisions({
 
       <StructuredCyclesEditor
         cycles={entity.cycles || []}
+        caseSourceOptions={caseSourceOptions}
         competencies={competencies}
         assets={assets}
         onUploadAsset={onUploadAsset}

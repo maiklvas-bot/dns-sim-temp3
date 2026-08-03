@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { CompetencyDefinition, SimCase } from "@shared/simulation-content";
 import { Button } from "@/components/ui/button";
 import { CaseSummaryCard } from "./CaseSummaryCard";
+import { CompetencyGuideDialog } from "./CompetencyGuideDialog";
 import { MASTER_STEPS, type MasterStepId } from "./case-master-support";
 import { StepIntent } from "./steps/StepIntent";
 import { StepSituation } from "./steps/StepSituation";
@@ -29,6 +30,7 @@ export function CaseMaster({
   onChange,
   view: controlledView,
   onViewChange,
+  themeClass,
 }: {
   entity: SimCase;
   competencies: CompetencyDefinition[];
@@ -44,6 +46,8 @@ export function CaseMaster({
   /** Вид можно вести снаружи — тогда замечания в соседней панели умеют открывать нужный этап. */
   view?: MasterView;
   onViewChange?: (next: MasterView) => void;
+  /** Класс темы для вложенных диалогов: они рендерятся вне поддерева админки. */
+  themeClass: string;
 }) {
   const [ownView, setOwnView] = useState<MasterView>(() => initialMasterView(isNew));
   const view = controlledView ?? ownView;
@@ -56,6 +60,8 @@ export function CaseMaster({
     setOpenedCaseId(entity.id);
     setView(initialMasterView(isNew));
   }
+
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const patch = (partial: Partial<SimCase>) => onChange({ ...entity, ...partial });
 
@@ -99,16 +105,31 @@ export function CaseMaster({
       {view.kind === "step" && currentStep && (
         <>
           {currentStep.id === "intent" && (
-            <StepIntent entity={entity} competencies={competencies} onChange={patch} />
+            <StepIntent
+              entity={entity}
+              competencies={competencies}
+              onChange={patch}
+              onOpenCompetencyGuide={() => setGuideOpen(true)}
+            />
           )}
           {currentStep.id === "situation" && (
             <StepSituation entity={entity} caseSourceOptions={caseSourceOptions} onChange={patch} />
           )}
-          {currentStep.id === "structure" && <StepStructure entity={entity} onChange={patch} />}
+          {currentStep.id === "structure" && (
+            <StepStructure
+              entity={entity}
+              onChange={patch}
+              onEditDecisions={(cycleIndex) => {
+                onSelectedCycleIndexChange(cycleIndex);
+                setView({ kind: "step", stepId: "decisions" });
+              }}
+            />
+          )}
           {currentStep.id === "decisions" && (
             <StepDecisions
               entity={entity}
               competencies={competencies}
+              caseSourceOptions={caseSourceOptions}
               assets={assets}
               onUploadAsset={onUploadAsset}
               onTogglePreviewAudio={onTogglePreviewAudio}
@@ -162,6 +183,13 @@ export function CaseMaster({
           </div>
         </>
       )}
+
+      <CompetencyGuideDialog
+        open={guideOpen}
+        onOpenChange={setGuideOpen}
+        competencies={competencies}
+        themeClass={themeClass}
+      />
     </div>
   );
 }

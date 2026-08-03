@@ -2356,15 +2356,25 @@ export default function AdminPage() {
                 </div>
               </div>
               <div className="dns-admin-case-list space-y-2 max-h-[70vh] overflow-y-auto pr-1">
-                {contentQuery.data.cases.map((item: SimCase, index: number) => (
+                {contentQuery.data.cases.map((item: SimCase, index: number) => {
+                  // Список читает сохранённые кейсы. Пока открыт редактор, показываем название
+                  // из черновика — иначе автор переименовал кейс, а в списке висит старое.
+                  const isOpenInEditor = caseEditorOpen && caseDraft?.id === item.id;
+                  const draftTitle = isOpenInEditor ? caseDraft?.title : "";
+                  const hasUnsavedTitle = Boolean(draftTitle?.trim()) && draftTitle !== item.title;
+                  return (
                   <div key={item.id} className={`dns-admin-case-list-item w-full rounded-lg border px-3 py-2 ${selectedCaseId === item.id ? "dns-admin-case-list-item--active border-[#FF6B00] bg-[#FF6B00]/10" : "border-[#2a3a4e]"}`}>
                     <div className="dns-admin-case-order-index" aria-hidden="true">{index + 1}</div>
                     <button onClick={() => { setSelectedCaseId(item.id); setCaseEditorOpen(true); }} className="dns-admin-case-list-main w-full text-left" title="Открыть редактор кейса">
-                      <div className="dns-admin-case-list-title text-sm text-white">{item.title || item.id}</div>
-                      <div className="dns-admin-case-list-meta text-xs text-[#8890a8]">{item.id}</div>
+                      <div className="dns-admin-case-list-title text-sm text-white">{draftTitle?.trim() || item.title || item.id}</div>
+                      <div className="dns-admin-case-list-meta text-xs text-[#8890a8]">
+                        {item.id}
+                        {hasUnsavedTitle && <span className="ml-1.5 text-[#ffd36e]">не сохранено</span>}
+                      </div>
                     </button>
                   </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="dns-admin-case-note mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">Методическое пояснение</div>
@@ -2400,6 +2410,7 @@ export default function AdminPage() {
                     onChange={setCaseDraft}
                     view={masterView}
                     onViewChange={setMasterView}
+                    themeClass={themeClass}
                   />
                 )}
               </div>
