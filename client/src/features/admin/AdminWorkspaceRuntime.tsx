@@ -2398,7 +2398,7 @@ export default function AdminPage() {
                 {/* Дерево кейса — постоянная левая полоса. Не зависит от текущего этапа
                     и не исчезает при переключении: автор всё время видит кейс целиком. */}
                 {caseDraft && (
-                  <div className="dns-admin-case-roadmap-panel hidden min-w-0 overflow-y-auto rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-3 custom-scroll xl:block">
+                  <div className="dns-admin-case-roadmap-panel hidden min-w-0 overflow-y-auto rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4 custom-scroll xl:block">
                     <CaseRoadmap
                       caseInput={caseDraft}
                       activeStepId={masterView.kind === "step" ? masterView.stepId : null}

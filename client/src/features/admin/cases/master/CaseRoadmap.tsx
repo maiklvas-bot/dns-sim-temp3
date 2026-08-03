@@ -107,18 +107,21 @@ function buildNodes(caseInput: SimCase): RoadmapNode[] {
   return nodes;
 }
 
-const STATE_STYLE: Record<RoadmapNode["state"], { badge: string; card: string }> = {
+const STATE_STYLE: Record<RoadmapNode["state"], { badge: string; card: string; rail: string }> = {
   empty: {
-    badge: "border-[#3b5878] bg-[#0d1522] text-[#7d9bc9]",
-    card: "border-[#243244] bg-[#0d1522]/70",
+    badge: "border-[#3b5878] bg-[#122031] text-[#7d9bc9]",
+    card: "border-[#243244] bg-[#0d1522]/80",
+    rail: "text-[#3b5878]",
   },
   partial: {
-    badge: "border-[#ffb27a] bg-[#FF6B00]/20 text-[#ffb27a]",
-    card: "border-[#ffb27a]/35 bg-[#FF6B00]/8",
+    badge: "border-[#FF6B00] bg-[#FF6B00] text-white",
+    card: "border-[#ffb27a]/40 bg-[#FF6B00]/10",
+    rail: "text-[#FF6B00]",
   },
   filled: {
-    badge: "border-[#54d28c] bg-[#54d28c]/15 text-[#54d28c]",
-    card: "border-[#54d28c]/30 bg-[#101826]/70",
+    badge: "border-[#54d28c] bg-[#54d28c] text-[#062018]",
+    card: "border-[#54d28c]/35 bg-[#101826]/80",
+    rail: "text-[#54d28c]",
   },
 };
 
@@ -141,42 +144,37 @@ export function CaseRoadmap({
         Как кейс выглядит целиком. Достраивается по мере заполнения.
       </div>
 
-      <ol className="relative mt-3 space-y-2">
-        {/* Линия маршрута за кружками — она и делает список дорожной картой. */}
-        <span
-          aria-hidden="true"
-          className="absolute bottom-3 left-[13px] top-3 w-px bg-gradient-to-b from-[#3b5878] via-[#3b5878] to-transparent"
-        />
+      <ol className="dns-master-roadmap-track mt-3 space-y-2.5">
         {nodes.map((node) => {
           const style = STATE_STYLE[node.state];
           const isActive = node.stepId !== null && node.stepId === activeStepId;
           return (
-            <li key={node.key} className="relative flex gap-2.5">
-              <span
-                className={`z-10 mt-0.5 flex h-[27px] w-[27px] flex-none items-center justify-center rounded-full border text-[11px] font-bold ${style.badge}`}
-              >
-                {node.badge}
-              </span>
+            <li key={node.key} className={`dns-master-roadmap-node ${style.rail}`}>
+              <span className={`dns-master-roadmap-badge ${style.badge}`}>{node.badge}</span>
               <div
-                className={`min-w-0 flex-1 rounded-lg border px-2.5 py-2 ${style.card} ${
-                  isActive ? "ring-1 ring-[#FF6B00]" : ""
+                className={`rounded-xl border px-3 py-2.5 ${style.card} ${
+                  isActive ? "ring-2 ring-[#FF6B00]" : ""
                 }`}
               >
-                <div className="flex items-center gap-1.5">
-                  <span className="min-w-0 truncate text-[12px] font-semibold text-white">{node.title}</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="min-w-0 flex-1 truncate text-[12px] font-bold text-white">{node.title}</span>
                   {node.tone === "step" && (
-                    <span className="flex-none text-[9px] uppercase tracking-[0.12em] text-[#7d9bc9]">шаг</span>
+                    <span className="flex-none text-[9px] font-semibold uppercase tracking-[0.14em] text-[#7d9bc9]">
+                      шаг
+                    </span>
                   )}
                 </div>
-                {node.lines.map((line, lineIndex) => (
-                  <div
-                    key={`${node.key}-${lineIndex}`}
-                    className="mt-0.5 truncate text-[11px] leading-4 text-[#8aa2c4]"
-                    title={line}
-                  >
-                    {line}
-                  </div>
-                ))}
+                <ul className="mt-1 space-y-0.5">
+                  {node.lines.map((line, lineIndex) => (
+                    <li
+                      key={`${node.key}-${lineIndex}`}
+                      className="truncate text-[11px] leading-4 text-[#8aa2c4]"
+                      title={line}
+                    >
+                      {line}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </li>
           );

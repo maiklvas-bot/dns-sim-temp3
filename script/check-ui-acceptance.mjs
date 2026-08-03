@@ -206,5 +206,32 @@ assertCondition(
   readText("client/src/features/admin/AdminWorkspaceRuntime.tsx").includes("<CaseRoadmap"),
   "Дерево кейса должно быть постоянной панелью рабочей области, а не частью этапа",
 );
+// Рабочая область кейса — три колонки. Правило для широких экранов раньше
+// задавало две, и панель влияния уезжала вниз левой колонки под дерево.
+const wideWorkspaceRule = adminCss.match(
+  /@media \(min-width: 1536px\)\s*\{[^}]*\.dns-admin-case-workspace\s*\{[^}]*grid-template-columns:([^;]*);/,
+);
+// Колонки считаем по-настоящему: пробелы внутри minmax(...) не разделяют колонки,
+// иначе проверка зелёная при любом значении и ничего не стережёт.
+const countColumns = (value) => {
+  let depth = 0;
+  let columns = 0;
+  let inToken = false;
+  for (const char of value.trim()) {
+    if (char === "(") depth += 1;
+    else if (char === ")") depth -= 1;
+    if (depth === 0 && /\s/.test(char)) {
+      inToken = false;
+    } else if (!inToken) {
+      inToken = true;
+      columns += 1;
+    }
+  }
+  return columns;
+};
+assertCondition(
+  Boolean(wideWorkspaceRule) && countColumns(wideWorkspaceRule[1]) === 3,
+  "На широких экранах рабочая область кейса должна быть трёхколоночной: дерево, редактор, влияние",
+);
 
 console.log("UI acceptance checks passed: shared themes, responsive admin editor, assessor workspace and simulation scrolling verified.");
