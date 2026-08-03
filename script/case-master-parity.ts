@@ -169,31 +169,52 @@ treeCase.cycles = [
 ];
 
 const tree = buildRoadmapLayout(treeCase);
-assert.ok(tree.nodes.some((node) => node.shape === "step"), "шаги кейса есть в дереве");
-assert.equal(
-  tree.nodes.filter((node) => node.shape === "option").length,
-  3,
-  "каждый активный вариант ответа — отдельная ветка",
+
+// Дерево описывает мастер целиком: карточка, пять этапов и подблоки каждого
+assert.equal(tree.nodes.find((node) => node.depth === 0)?.key, "root", "корень дерева — карточка кейса");
+assert.deepEqual(
+  tree.nodes.filter((node) => node.depth === 1).map((node) => node.key),
+  ["intent", "situation", "structure", "decisions", "launch"],
+  "первый уровень — пять этапов мастера",
 );
-assert.ok(tree.nodes.some((node) => node.shape === "finish"), "дерево заканчивается финалом");
+for (const subKey of ["intent-comp", "sit-cause", "sit-data", "sit-trails", "launch-media", "launch-timing"]) {
+  assert.ok(tree.nodes.some((node) => node.key === subKey), `подблок ${subKey} есть в дереве`);
+}
 
-// Ветки уходят вправо от ствола — иначе это колонка, а не дерево
-const trunkNode = tree.nodes.find((node) => node.shape === "step");
-const optionNode = tree.nodes.find((node) => node.shape === "option");
-assert.ok(trunkNode && optionNode && optionNode.x > trunkNode.x + trunkNode.width, "ветки отходят вправо от ствола");
+// Добавленные автором шаги и варианты ответа появляются в дереве
+assert.equal(
+  tree.nodes.filter((node) => node.key.startsWith("structure-cycle-")).length,
+  2,
+  "каждый добавленный шаг — своя ветка структуры",
+);
+assert.equal(
+  tree.nodes.filter((node) => node.key.startsWith("decisions-option-")).length,
+  3,
+  "каждый добавленный вариант ответа — своя ветка решений",
+);
 
-// Переход ответа на другой шаг рисуется отдельным ребром
-assert.ok(tree.edges.some((edge) => edge.kind === "jump"), "переход на шаг — отдельное ребро");
-assert.ok(tree.edges.some((edge) => edge.kind === "finish"), "переход в финал — отдельное ребро");
-assert.ok(tree.edges.some((edge) => edge.kind === "trunk"), "ствол связывает этапы");
+// Дерево растёт вправо по уровням, а не колонкой
+const stageNode = tree.nodes.find((node) => node.key === "decisions");
+const optionNode = tree.nodes.find((node) => node.key.startsWith("decisions-option-"));
+const rootNode = tree.nodes.find((node) => node.key === "root");
+assert.ok(rootNode && stageNode && stageNode.x > rootNode.x + rootNode.width, "этапы правее карточки");
+assert.ok(stageNode && optionNode && optionNode.x > stageNode.x + stageNode.width, "варианты правее своего этапа");
 
-// Незаполненное уходит в тень, заполненное светится
-const emptyTree = buildRoadmapLayout(buildCase({ title: "  ", primaryCompetencies: [], secondaryCompetencies: [] }));
+// Незаполненное уходит в тень, заполненное светится, частичное — промежуточное
+const emptyTree = buildRoadmapLayout(buildCase({ title: "  ", description: "", businessProblem: null, primaryCompetencies: [], secondaryCompetencies: [] }));
 assert.equal(emptyTree.nodes.find((node) => node.key === "intent")?.state, "dim", "пустой замысел в тени");
 assert.equal(tree.nodes.find((node) => node.key === "intent")?.state, "bright", "заполненный замысел светится");
+assert.equal(
+  buildRoadmapLayout(buildCase({ businessProblem: null })).nodes.find((node) => node.key === "intent")?.state,
+  "partial",
+  "частично заполненный этап — не тень и не полный свет",
+);
 
 // Узлы знают свой этап — по этому полю подсвечивается активное окно мастера
-assert.equal(tree.nodes.find((node) => node.key === "situation")?.stepId, "situation");
+assert.equal(tree.nodes.find((node) => node.key === "sit-cause")?.stepId, "situation");
 assert.equal(optionNode?.stepId, "decisions");
+
+// Каждый узел, кроме корня, связан ребром — иначе ветка висит в воздухе
+assert.equal(tree.edges.length, tree.nodes.length - 1, "каждый узел кроме корня связан с родителем");
 
 console.log("case-master parity checks passed");

@@ -1,26 +1,36 @@
 import type { SimCase } from "@shared/simulation-content";
 import { hasMeaningfulText } from "@shared/case-validation";
-import { signalTypeLabel, type MasterStepId } from "./case-master-support";
+import type { MasterStepId } from "./case-master-support";
 
 /**
- * Раскладка дерева кейса. Чистая геометрия — считает координаты узлов и рёбер,
- * рисование отдельно. Дерево ветвящееся: по стволу идут этапы и шаги, вправо от
- * каждого шага отходят варианты ответа, а от варианта — ребро на тот шаг, который
- * он запускает.
+ * Раскладка дерева кейса. Чистая геометрия: строит иерархию «карточка → этапы →
+ * подблоки → варианты» и раскладывает её слева направо.
+ *
+ * Дерево описывает мастер целиком, а не только пять этапов: у каждого этапа свои
+ * подблоки, а шаги и варианты ответа автор добавляет сам — они появляются в дереве
+ * по мере добавления.
+ *
+ * Размер холста считается по содержимому; вписывание в панель — задача рендера
+ * (viewBox), поэтому полос прокрутки не возникает.
  */
 
-export type NodeShape = "stage" | "step" | "option" | "finish";
 /** Тень — то, чего автор ещё не закрыл. Свет — заполненное. */
 export type NodeState = "dim" | "partial" | "bright";
 
+interface TreeSeed {
+  key: string;
+  title: string;
+  state?: NodeState;
+  stepId: MasterStepId | null;
+  children?: TreeSeed[];
+}
+
 export interface RoadmapNode {
   key: string;
-  shape: NodeShape;
-  state: NodeState;
-  /** Этап мастера, которому принадлежит узел: по нему подсвечивается активный. */
-  stepId: MasterStepId | null;
   title: string;
-  subtitle: string;
+  state: NodeState;
+  stepId: MasterStepId | null;
+  depth: number;
   x: number;
   y: number;
   width: number;
@@ -30,8 +40,6 @@ export interface RoadmapNode {
 export interface RoadmapEdge {
   key: string;
   path: string;
-  /** Возврат на другой шаг рисуется иначе, чем спуск по стволу. */
-  kind: "trunk" | "branch" | "jump" | "finish";
   dimmed: boolean;
 }
 
@@ -42,213 +50,204 @@ export interface RoadmapLayout {
   height: number;
 }
 
-const PAD = 8;
-const TRUNK_W = 148;
-const TRUNK_X = PAD;
-const TRUNK_CX = TRUNK_X + TRUNK_W / 2;
-const STAGE_H = 42;
-const STEP_H = 46;
-const OPT_W = 104;
-const OPT_H = 28;
-const OPT_X = TRUNK_X + TRUNK_W + 26;
-const OPT_CX = OPT_X + OPT_W / 2;
-const ROW_GAP = 18;
-const OPT_GAP = 8;
+const NODE_H = 20;
+const ROW_GAP = 6;
+const COL_X = [6, 88, 196, 300];
+const COL_W = [74, 100, 96, 92];
+const PAD = 6;
 
-function clip(text: string, limit: number): string {
-  const value = (text || "").trim();
-  if (value.length <= limit) return value;
-  return `${value.slice(0, Math.max(0, limit - 1))}…`;
+const columnX = (depth: number) => COL_X[Math.min(depth, COL_X.length - 1)];
+const columnW = (depth: number) => COL_W[Math.min(depth, COL_W.length - 1)];
+
+const flag = (filled: boolean): NodeState => (filled ? "bright" : "dim");
+
+/** Состояние ветки собирается из листьев: пусто, частично или всё закрыто. */
+function rollUp(children: NodeState[]): NodeState {
+  if (children.length === 0) return "dim";
+  if (children.every((state) => state === "bright")) return "bright";
+  if (children.every((state) => state === "dim")) return "dim";
+  return "partial";
 }
 
-export function buildRoadmapLayout(caseInput: SimCase): RoadmapLayout {
+function buildSeed(caseInput: SimCase, validationIssueCount: number): TreeSeed {
   const cycles = [...(caseInput.cycles || [])].sort((a, b) => a.cycle - b.cycle);
-  const cycleIndexById = new Map<string, number>();
-  cycles.forEach((cycle, index) => {
-    if (cycle.id) cycleIndexById.set(cycle.id, index);
-  });
+  const competencyCount =
+    (caseInput.primaryCompetencies || []).length + (caseInput.secondaryCompetencies || []).length;
+
+  const intent: TreeSeed = {
+    key: "intent",
+    title: "1 · Замысел",
+    stepId: "intent",
+    children: [
+      { key: "intent-title", title: "Название", state: flag(hasMeaningfulText(caseInput.title)), stepId: "intent" },
+      { key: "intent-desc", title: "Описание", state: flag(hasMeaningfulText(caseInput.description)), stepId: "intent" },
+      { key: "intent-problem", title: "Бизнес-проблема", state: flag(hasMeaningfulText(caseInput.businessProblem)), stepId: "intent" },
+      { key: "intent-comp", title: `Компетенции · ${competencyCount}`, state: flag(competencyCount > 0), stepId: "intent" },
+    ],
+  };
+
+  const situation: TreeSeed = {
+    key: "situation",
+    title: "2 · Ситуация",
+    stepId: "situation",
+    children: [
+      { key: "sit-signal", title: "Сигнал", state: flag(hasMeaningfulText(caseInput.trigger?.text) && hasMeaningfulText(caseInput.trigger?.source)), stepId: "situation" },
+      { key: "sit-zones", title: `Зоны · ${(caseInput.zones_affected || []).length}`, state: flag((caseInput.zones_affected || []).length > 0), stepId: "situation" },
+      { key: "sit-cause", title: "Скрытая причина", state: flag(hasMeaningfulText(caseInput.hiddenCause)), stepId: "situation" },
+      { key: "sit-data", title: `Данные · ${(caseInput.dataPoints || []).length}`, state: flag((caseInput.dataPoints || []).length > 0), stepId: "situation" },
+      { key: "sit-trails", title: `Ложные следы · ${(caseInput.falseTrails || []).length}`, state: flag((caseInput.falseTrails || []).length > 0), stepId: "situation" },
+    ],
+  };
+
+  // Шаги добавляет автор — сколько добавил, столько веток и появится.
+  const structure: TreeSeed = {
+    key: "structure",
+    title: "3 · Структура",
+    stepId: "structure",
+    children:
+      cycles.length === 0
+        ? [{ key: "structure-empty", title: "Шагов нет", state: "dim", stepId: "structure" }]
+        : cycles.map((cycle, index) => ({
+            key: `structure-cycle-${cycle.id || index}`,
+            title: cycle.title?.trim() || `Шаг ${cycle.cycle}`,
+            state: flag(hasMeaningfulText(cycle.situation) && hasMeaningfulText(cycle.signal?.content)),
+            stepId: "structure",
+          })),
+  };
+
+  // Варианты ответа тоже добавляет автор: третий уровень дерева.
+  const decisions: TreeSeed = {
+    key: "decisions",
+    title: "4 · Решения",
+    stepId: "decisions",
+    children:
+      cycles.length === 0
+        ? [{ key: "decisions-empty", title: "Вариантов нет", state: "dim", stepId: "decisions" }]
+        : cycles.map((cycle, index) => {
+            const options = (cycle.options || []).filter((option) => (option.status || "active") === "active");
+            return {
+              key: `decisions-cycle-${cycle.id || index}`,
+              title: `Шаг ${cycle.cycle} · ${options.length}`,
+              stepId: "decisions",
+              children:
+                options.length === 0
+                  ? [{ key: `decisions-cycle-${cycle.id || index}-empty`, title: "нет ответов", state: "dim" as NodeState, stepId: "decisions" as MasterStepId }]
+                  : options.map((option, optionIndex) => {
+                      const target = option.nextCycleId;
+                      const targetCycle = target && target !== "__complete"
+                        ? cycles.find((item) => item.id === target)
+                        : undefined;
+                      const where = target === "__complete"
+                        ? " → финал"
+                        : targetCycle
+                          ? ` → ш${targetCycle.cycle}`
+                          : target
+                            ? " → обрыв"
+                            : "";
+                      const scored = Object.keys(option.competency_scores || {}).length > 0;
+                      return {
+                        key: `decisions-option-${cycle.id || index}-${option.id || optionIndex}`,
+                        title: `${hasMeaningfulText(option.text) ? option.text : `ответ ${optionIndex + 1}`}${where}`,
+                        state: flag(hasMeaningfulText(option.text) && scored),
+                        stepId: "decisions" as MasterStepId,
+                      };
+                    }),
+            };
+          }),
+  };
+
+  const launch: TreeSeed = {
+    key: "launch",
+    title: "5 · Запуск",
+    stepId: "launch",
+    children: [
+      { key: "launch-media", title: "Медиа", state: flag(Boolean(caseInput.imageAssetId || caseInput.audioAssetId)), stepId: "launch" },
+      { key: "launch-timing", title: "Тайминги", state: flag(Boolean(caseInput.timing?.decisionDeadlineSeconds)), stepId: "launch" },
+      { key: "launch-order", title: `Порядок · ${caseInput.sortOrder ?? 0}`, state: "bright", stepId: "launch" },
+      { key: "launch-qa", title: validationIssueCount > 0 ? `Автопроверка · ${validationIssueCount}` : "Автопроверка чиста", state: validationIssueCount > 0 ? "partial" : "bright", stepId: "launch" },
+    ],
+  };
+
+  return {
+    key: "root",
+    title: caseInput.title?.trim() || "Новый кейс",
+    stepId: null,
+    children: [intent, situation, structure, decisions, launch],
+  };
+}
+
+interface PlacedNode extends RoadmapNode {
+  children: PlacedNode[];
+}
+
+/** Аккуратное дерево: лист занимает свою строку, родитель встаёт по центру детей. */
+function place(seed: TreeSeed, depth: number, cursor: { y: number }): PlacedNode {
+  const width = columnW(depth);
+  const x = columnX(depth);
+
+  if (!seed.children || seed.children.length === 0) {
+    const node: PlacedNode = {
+      key: seed.key,
+      title: seed.title,
+      state: seed.state ?? "dim",
+      stepId: seed.stepId,
+      depth,
+      x,
+      y: cursor.y,
+      width,
+      height: NODE_H,
+      children: [],
+    };
+    cursor.y += NODE_H + ROW_GAP;
+    return node;
+  }
+
+  const children = seed.children.map((child) => place(child, depth + 1, cursor));
+  const first = children[0];
+  const last = children[children.length - 1];
+  const centerY = (first.y + last.y + last.height) / 2 - NODE_H / 2;
+
+  return {
+    key: seed.key,
+    title: seed.title,
+    state: seed.state ?? rollUp(children.map((child) => child.state)),
+    stepId: seed.stepId,
+    depth,
+    x,
+    y: centerY,
+    width,
+    height: NODE_H,
+    children,
+  };
+}
+
+export function buildRoadmapLayout(caseInput: SimCase, validationIssueCount = 0): RoadmapLayout {
+  const cursor = { y: PAD };
+  const root = place(buildSeed(caseInput, validationIssueCount), 0, cursor);
 
   const nodes: RoadmapNode[] = [];
   const edges: RoadmapEdge[] = [];
-  let cursorY = PAD;
-  let maxX = OPT_X + OPT_W;
 
-  const competencyCount =
-    (caseInput.primaryCompetencies || []).length + (caseInput.secondaryCompetencies || []).length;
-  const intentReady = hasMeaningfulText(caseInput.title) && competencyCount > 0;
-  const situationReady =
-    hasMeaningfulText(caseInput.trigger?.text) && hasMeaningfulText(caseInput.hiddenCause);
-
-  const pushTrunk = (node: Omit<RoadmapNode, "x" | "y" | "width" | "height">, height: number) => {
-    const placed: RoadmapNode = { ...node, x: TRUNK_X, y: cursorY, width: TRUNK_W, height };
-    nodes.push(placed);
-    return placed;
+  const walk = (node: PlacedNode) => {
+    const { children, ...rest } = node;
+    nodes.push(rest);
+    children.forEach((child) => {
+      const fromX = node.x + node.width;
+      const fromY = node.y + node.height / 2;
+      const toX = child.x;
+      const toY = child.y + child.height / 2;
+      const bend = fromX + (toX - fromX) / 2;
+      edges.push({
+        key: `edge-${node.key}-${child.key}`,
+        path: `M ${fromX} ${fromY} C ${bend} ${fromY}, ${bend} ${toY}, ${toX} ${toY}`,
+        dimmed: child.state === "dim",
+      });
+      walk(child);
+    });
   };
+  walk(root);
 
-  const intent = pushTrunk(
-    {
-      key: "intent",
-      shape: "stage",
-      state: intentReady ? "bright" : "dim",
-      stepId: "intent",
-      title: "1 · Замысел",
-      subtitle: hasMeaningfulText(caseInput.title) ? clip(caseInput.title, 20) : "название не задано",
-    },
-    STAGE_H,
-  );
-  cursorY += STAGE_H + ROW_GAP;
-
-  const situation = pushTrunk(
-    {
-      key: "situation",
-      shape: "stage",
-      state: situationReady ? "bright" : hasMeaningfulText(caseInput.trigger?.text) ? "partial" : "dim",
-      stepId: "situation",
-      title: "2 · Ситуация",
-      subtitle: hasMeaningfulText(caseInput.trigger?.text)
-        ? clip(signalTypeLabel(caseInput.trigger?.type), 20)
-        : "сигнал не описан",
-    },
-    STAGE_H,
-  );
-  cursorY += STAGE_H + ROW_GAP;
-
-  edges.push({
-    key: "trunk-intent-situation",
-    path: `M ${TRUNK_CX} ${intent.y + intent.height} L ${TRUNK_CX} ${situation.y}`,
-    kind: "trunk",
-    dimmed: !intentReady,
-  });
-
-  const stepNodes: RoadmapNode[] = [];
-  let previous: RoadmapNode = situation;
-
-  cycles.forEach((cycle, index) => {
-    const options = (cycle.options || []).filter((option) => (option.status || "active") === "active");
-    const described = hasMeaningfulText(cycle.situation);
-    const branchHeight = options.length * OPT_H + Math.max(0, options.length - 1) * OPT_GAP;
-    const rowHeight = Math.max(STEP_H, branchHeight);
-
-    const step: RoadmapNode = {
-      key: `step-${cycle.id || index}`,
-      shape: "step",
-      state: described && options.length > 0 ? "bright" : described || options.length > 0 ? "partial" : "dim",
-      stepId: "structure",
-      title: `Шаг ${cycle.cycle}`,
-      subtitle: described ? clip(cycle.situation, 20) : "шаг не описан",
-      x: TRUNK_X,
-      y: cursorY + (rowHeight - STEP_H) / 2,
-      width: TRUNK_W,
-      height: STEP_H,
-    };
-    nodes.push(step);
-    stepNodes.push(step);
-
-    edges.push({
-      key: `trunk-${previous.key}-${step.key}`,
-      path: `M ${TRUNK_CX} ${previous.y + previous.height} L ${TRUNK_CX} ${step.y}`,
-      kind: "trunk",
-      dimmed: previous.state === "dim",
-    });
-
-    // Варианты ответа отходят вправо от шага — это и есть ветвление.
-    options.forEach((option, optionIndex) => {
-      const optionY = cursorY + (rowHeight - branchHeight) / 2 + optionIndex * (OPT_H + OPT_GAP);
-      const target = option.nextCycleId;
-      const targetIndex = target && target !== "__complete" ? cycleIndexById.get(target) : undefined;
-      const hasText = hasMeaningfulText(option.text);
-
-      const optionNode: RoadmapNode = {
-        key: `${step.key}-option-${option.id || optionIndex}`,
-        shape: "option",
-        state: hasText ? "bright" : "dim",
-        stepId: "decisions",
-        title: hasText ? clip(option.text, 16) : `ответ ${optionIndex + 1}`,
-        subtitle:
-          target === "__complete"
-            ? "финал"
-            : targetIndex !== undefined
-              ? `шаг ${cycles[targetIndex].cycle}`
-              : target
-                ? "обрыв"
-                : "далее",
-        x: OPT_X,
-        y: optionY,
-        width: OPT_W,
-        height: OPT_H,
-      };
-      nodes.push(optionNode);
-      maxX = Math.max(maxX, OPT_X + OPT_W);
-
-      const stepRight = step.x + step.width;
-      const stepMidY = step.y + step.height / 2;
-      const optionMidY = optionY + OPT_H / 2;
-      edges.push({
-        key: `branch-${optionNode.key}`,
-        path: `M ${stepRight} ${stepMidY} C ${stepRight + 14} ${stepMidY}, ${OPT_X - 14} ${optionMidY}, ${OPT_X} ${optionMidY}`,
-        kind: "branch",
-        dimmed: !hasText,
-      });
-    });
-
-    cursorY += rowHeight + ROW_GAP;
-    previous = step;
-  });
-
-  const finish = pushTrunk(
-    {
-      key: "finish",
-      shape: "finish",
-      state: "bright",
-      stepId: null,
-      title: "Финал кейса",
-      subtitle: "оценка компетенций",
-    },
-    STAGE_H,
-  );
-  edges.push({
-    key: `trunk-${previous.key}-finish`,
-    path: `M ${TRUNK_CX} ${previous.y + previous.height} L ${TRUNK_CX} ${finish.y}`,
-    kind: "trunk",
-    dimmed: previous.state === "dim",
-  });
-  cursorY += STAGE_H + PAD;
-
-  // Переходы: от варианта — к шагу, который он запускает, или к финалу.
-  // Рисуются последними, потому что им нужны координаты всех шагов.
-  cycles.forEach((cycle, index) => {
-    const options = (cycle.options || []).filter((option) => (option.status || "active") === "active");
-    options.forEach((option, optionIndex) => {
-      const target = option.nextCycleId;
-      if (!target) return;
-      const source = nodes.find(
-        (node) => node.key === `step-${cycle.id || index}-option-${option.id || optionIndex}`,
-      );
-      if (!source) return;
-
-      const targetNode =
-        target === "__complete"
-          ? finish
-          : (() => {
-              const targetIndex = cycleIndexById.get(target);
-              return targetIndex === undefined ? null : stepNodes[targetIndex];
-            })();
-      if (!targetNode) return;
-
-      const fromX = source.x + source.width;
-      const fromY = source.y + source.height / 2;
-      const toX = targetNode.x + targetNode.width;
-      const toY = targetNode.y + targetNode.height / 2;
-      const sweep = maxX + 16;
-      maxX = Math.max(maxX, sweep);
-      edges.push({
-        key: `jump-${source.key}`,
-        path: `M ${fromX} ${fromY} C ${sweep} ${fromY}, ${sweep} ${toY}, ${toX} ${toY}`,
-        kind: target === "__complete" ? "finish" : "jump",
-        dimmed: source.state === "dim",
-      });
-    });
-  });
-
-  return { nodes, edges, width: maxX + PAD, height: cursorY };
+  const width = Math.max(...nodes.map((node) => node.x + node.width)) + PAD;
+  const height = cursor.y + PAD;
+  return { nodes, edges, width, height };
 }

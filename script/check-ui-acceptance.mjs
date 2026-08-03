@@ -206,6 +206,15 @@ assertCondition(
   readText("client/src/features/admin/AdminWorkspaceRuntime.tsx").includes("<CaseRoadmap"),
   "Дерево кейса должно быть постоянной панелью рабочей области, а не частью этапа",
 );
+// Дерево вписывается в панель целиком: никаких полос прокрутки.
+assertCondition(
+  roadmap.includes("viewBox") && roadmap.includes("preserveAspectRatio"),
+  "Дерево кейса должно масштабироваться в панель через viewBox, а не прокручиваться",
+);
+assertCondition(
+  !/overflow-(x|y)-auto|overflow-auto|overflow-x-scroll/.test(roadmap),
+  "У дерева кейса не должно быть полос прокрутки — оно помещается на один экран",
+);
 // Рабочая область кейса — три колонки. Правило для широких экранов раньше
 // задавало две, и панель влияния уезжала вниз левой колонки под дерево.
 const wideWorkspaceRule = adminCss.match(
