@@ -196,11 +196,20 @@ assertCondition(
   "Плитки карточки кейса не растягиваются на несколько колонок — набор должен быть равномерным",
 );
 
-// Дерево кейса — постоянная карта, а не навигация: клик по узлу не предусмотрен.
+// Дерево кейса — карта, а не навигация. Единственное действие в нём: раскрыть
+// или свернуть набор. Переходов на этапы мастера из дерева быть не должно.
 const roadmap = readText("client/src/features/admin/cases/master/CaseRoadmap.tsx");
 assertCondition(
-  !roadmap.includes("onClick") && !roadmap.includes("<button"),
-  "Дерево кейса не кликабельно — это карта, а не навигация",
+  !roadmap.includes("onOpenStep") && !roadmap.includes("setView"),
+  "Из дерева кейса нельзя переходить на этапы — это карта, а не навигация",
+);
+assertCondition(
+  roadmap.includes("expandedKeys") && roadmap.includes("toggle"),
+  "Наборы в дереве должны раскрываться и сворачиваться автором",
+);
+assertCondition(
+  roadmap.includes("onMouseEnter") && roadmap.includes(".hint"),
+  "При наведении на блок дерева должно появляться объяснение, за что он отвечает",
 );
 assertCondition(
   readText("client/src/features/admin/AdminWorkspaceRuntime.tsx").includes("<CaseRoadmap"),

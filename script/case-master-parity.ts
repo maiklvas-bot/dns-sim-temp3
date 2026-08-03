@@ -8,7 +8,7 @@ import {
   MASTER_STEPS,
   signalTypeLabel,
 } from "../client/src/features/admin/cases/master/case-master-support";
-import { buildRoadmapLayout } from "../client/src/features/admin/cases/master/case-roadmap-layout";
+import { buildRoadmapLayout, defaultCollapsedKeys } from "../client/src/features/admin/cases/master/case-roadmap-layout";
 import { validateCase } from "../shared/case-validation";
 import type { SimCase } from "../shared/simulation-content";
 
@@ -181,45 +181,89 @@ for (const subKey of ["intent-comp", "sit-cause", "sit-data", "sit-trails", "lau
   assert.ok(tree.nodes.some((node) => node.key === subKey), `подблок ${subKey} есть в дереве`);
 }
 
-// Добавленные автором шаги и варианты ответа появляются в дереве
+// Наборы свёрнуты: сразу виден только счётчик, элементы прячутся под «+»
 assert.equal(
   tree.nodes.filter((node) => node.key.startsWith("structure-cycle-")).length,
+  0,
+  "шаги свёрнуты, пока автор их не раскрыл",
+);
+const cyclesNode = tree.nodes.find((node) => node.key === "structure-cycles");
+assert.equal(cyclesNode?.collapsed, true, "набор шагов свёрнут по умолчанию");
+assert.equal(cyclesNode?.childCount, 2, "свёрнутый набор знает, сколько в нём элементов");
+assert.ok(cyclesNode?.title.includes("2"), "счётчик виден в заголовке свёрнутого набора");
+
+// Раскрытие показывает содержимое набора
+const expandedTree = buildRoadmapLayout(treeCase, 0, ["structure-cycles"]);
+assert.equal(
+  expandedTree.nodes.filter((node) => node.key.startsWith("structure-cycle-")).length,
   2,
-  "каждый добавленный шаг — своя ветка структуры",
+  "раскрытый набор показывает каждый добавленный шаг",
 );
 assert.equal(
+  expandedTree.nodes.find((node) => node.key === "structure-cycles")?.collapsed,
+  false,
+  "раскрытый набор помечен как раскрытый",
+);
+
+// Варианты ответа — такой же набор внутри своего шага
+const decisionsKey = tree.nodes.find((node) => node.key.startsWith("decisions-cycle-"))?.key;
+assert.ok(decisionsKey, "у шага есть набор вариантов ответа");
+assert.equal(
   tree.nodes.filter((node) => node.key.startsWith("decisions-option-")).length,
-  3,
-  "каждый добавленный вариант ответа — своя ветка решений",
+  0,
+  "варианты ответа свёрнуты по умолчанию",
+);
+assert.equal(
+  buildRoadmapLayout(treeCase, 0, [decisionsKey!]).nodes.filter((node) =>
+    node.key.startsWith("decisions-option-"),
+  ).length,
+  2,
+  "раскрытый шаг показывает свои варианты ответа",
+);
+
+// Свёрнутые наборы перечислены отдельно — по ним строится начальное состояние
+const collapsedKeys = defaultCollapsedKeys(treeCase);
+assert.ok(collapsedKeys.includes("structure-cycles"), "шаги входят в свёрнутые по умолчанию");
+assert.ok(collapsedKeys.includes("sit-trails"), "ложные следы входят в свёрнутые по умолчанию");
+
+// У каждого узла есть объяснение для всплывающей подсказки
+assert.ok(
+  tree.nodes.every((node) => node.hint.trim().length > 0),
+  "каждый блок дерева объясняет, за что отвечает",
+);
+assert.ok(
+  tree.nodes.find((node) => node.key === "sit-trails")?.hint.includes("неверные"),
+  "подсказка набора объясняет смысл, а не повторяет заголовок",
 );
 
 // Дерево вертикальное: узлы идут сверху вниз, вложенность показана отступом.
 // Горизонтальная раскладка упиралась в ширину узкой панели и ужимала текст.
-const stageNode = tree.nodes.find((node) => node.key === "decisions");
-const optionNode = tree.nodes.find((node) => node.key.startsWith("decisions-option-"));
-const rootNode = tree.nodes.find((node) => node.key === "root");
+// Для геометрии берём раскрытое дерево: у свёрнутого глубоких узлов просто нет
+const openTree = buildRoadmapLayout(treeCase, 0, defaultCollapsedKeys(treeCase));
+const stageNode = openTree.nodes.find((node) => node.key === "decisions");
+const optionNode = openTree.nodes.find((node) => node.key.startsWith("decisions-option-"));
+const rootNode = openTree.nodes.find((node) => node.key === "root");
 assert.ok(rootNode && stageNode && stageNode.y > rootNode.y, "этапы ниже карточки");
 assert.ok(rootNode && stageNode && stageNode.x > rootNode.x, "этапы смещены отступом вправо");
 assert.ok(stageNode && optionNode && optionNode.y > stageNode.y, "варианты ниже своего этапа");
 assert.ok(stageNode && optionNode && optionNode.x > stageNode.x, "варианты смещены глубже этапа");
 // Каждый узел занимает собственную строку — это и отличает вертикальное дерево
 // от колоночного, где несколько узлов делят одну высоту.
-const ys = tree.nodes.map((node) => node.y);
-assert.equal(new Set(ys).size, tree.nodes.length, "каждый узел на своей строке");
+const ys = openTree.nodes.map((node) => node.y);
+assert.equal(new Set(ys).size, openTree.nodes.length, "каждый узел на своей строке");
 assert.deepEqual(ys, [...ys].sort((a, b) => a - b), "узлы идут строго сверху вниз");
 
 // Вложенность показана небольшим отступом, а не переносом в отдельную колонку.
 // Крупный шаг по x означает горизонтальное дерево — оно упрётся в ширину панели.
 const xByDepth = new Map<number, number>();
-tree.nodes.forEach((node) => xByDepth.set(node.depth, node.x));
+openTree.nodes.forEach((node) => xByDepth.set(node.depth, node.x));
 const depths = [...xByDepth.keys()].sort((a, b) => a - b);
 for (let index = 1; index < depths.length; index += 1) {
   const step = xByDepth.get(depths[index])! - xByDepth.get(depths[index - 1])!;
   assert.ok(step > 0 && step <= 20, `отступ уровня ${depths[index]} должен быть небольшим, получено ${step}`);
 }
 
-// Схема без прокрутки: на большом кейсе варианты сворачиваются в счётчик,
-// иначе холст растёт и текст ужимается до нечитаемого
+// Схема без прокрутки: свёрнутые наборы держат её компактной даже на большом кейсе
 const bigCase = buildCase();
 bigCase.cycles = Array.from({ length: 8 }, (_, cycleIndex) => ({
   id: `B${cycleIndex + 1}`,
@@ -239,13 +283,21 @@ const bigTree = buildRoadmapLayout(bigCase);
 assert.equal(
   bigTree.nodes.filter((node) => node.key.startsWith("decisions-option-")).length,
   0,
-  "на большом кейсе варианты свёрнуты в счётчик",
+  "на большом кейсе варианты не разворачиваются сами",
 );
 assert.ok(
-  bigTree.nodes.some((node) => node.title.includes("ответов 5")),
-  "свёрнутый шаг показывает, сколько в нём ответов",
+  bigTree.nodes.length < 30,
+  `свёрнутая схема остаётся компактной, получено узлов: ${bigTree.nodes.length}`,
 );
-assert.ok(bigTree.nodes.length < 45, "свёрнутая схема остаётся компактной");
+
+// Свёрнутый набор всё равно показывает состояние содержимого, а не «пусто»
+const halfDone = buildCase();
+halfDone.falseTrails = ["Кажется, виновата техника", "   "];
+assert.equal(
+  buildRoadmapLayout(halfDone).nodes.find((node) => node.key === "sit-trails")?.state,
+  "partial",
+  "свёрнутый набор с частично заполненным содержимым не выглядит готовым",
+);
 
 // Незаполненное уходит в тень, заполненное светится, частичное — промежуточное
 const emptyTree = buildRoadmapLayout(buildCase({ title: "  ", description: "", businessProblem: null, primaryCompetencies: [], secondaryCompetencies: [] }));
