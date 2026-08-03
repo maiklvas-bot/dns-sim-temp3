@@ -2,17 +2,20 @@ import type { CompetencyDefinition, SimCase } from "@shared/simulation-content";
 import { CompetencyRoleSelector, Field, FieldArea } from "../../../components/AdminFields";
 import { MasterHelp } from "../MasterHelp";
 import { HELP } from "../master-help-topics";
+import { TemplatePicker } from "../TemplatePicker";
 
 export function StepIntent({
   entity,
   competencies,
   onChange,
   onOpenCompetencyGuide,
+  onReplaceCase,
 }: {
   entity: SimCase;
   competencies: CompetencyDefinition[];
   onChange: (patch: Partial<SimCase>) => void;
   onOpenCompetencyGuide: () => void;
+  onReplaceCase: (next: SimCase) => void;
 }) {
   return (
     <div className="space-y-4">
@@ -24,6 +27,8 @@ export function StepIntent({
           У каждого блока есть знак вопроса: там объяснение и готовый пример.
         </div>
       </div>
+
+      <TemplatePicker caseId={entity.id} onApply={onReplaceCase} />
 
       <div>
         <Field label="Название кейса" value={entity.title} onChange={(value) => onChange({ title: value })} />

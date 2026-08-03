@@ -128,6 +128,7 @@ export function CaseMaster({
               competencies={competencies}
               onChange={patch}
               onOpenCompetencyGuide={() => setGuideOpen(true)}
+              onReplaceCase={onChange}
             />
           )}
           {currentStep.id === "situation" && (
