@@ -8,6 +8,7 @@ import {
   MASTER_STEPS,
   signalTypeLabel,
 } from "../client/src/features/admin/cases/master/case-master-support";
+import { buildRoadmapLayout } from "../client/src/features/admin/cases/master/case-roadmap-layout";
 import { validateCase } from "../shared/case-validation";
 import type { SimCase } from "../shared/simulation-content";
 
@@ -142,5 +143,57 @@ assert.ok(
   buildCaseSetupIssues(branching).some((issue) => issue.step === "structure"),
   "оборванный переход адресуется на этап структуры",
 );
+
+// Дерево кейса: ветвящаяся схема всего кейса, а не колонка этапов
+const treeCase = buildCase();
+treeCase.cycles = [
+  {
+    id: "C1",
+    cycle: 1,
+    situation: "Очередь растёт",
+    signal: { type: "message", content: "Сигнал" },
+    options: [
+      { id: "O1", level: 1, text: "Открыть кассу", score: 1, nextCycleId: "C2", effects: { ...baseEffects }, competency_scores: { org_control: 3 } },
+      { id: "O2", level: 2, text: "Ничего не делать", score: 1, nextCycleId: "__complete", effects: { ...baseEffects }, competency_scores: { org_control: 1 } },
+    ],
+  },
+  {
+    id: "C2",
+    cycle: 2,
+    situation: "Приёмка встала",
+    signal: { type: "message", content: "Сигнал" },
+    options: [
+      { id: "O3", level: 1, text: "Предупредить кладовщика", score: 1, effects: { ...baseEffects }, competency_scores: { org_control: 5 } },
+    ],
+  },
+];
+
+const tree = buildRoadmapLayout(treeCase);
+assert.ok(tree.nodes.some((node) => node.shape === "step"), "шаги кейса есть в дереве");
+assert.equal(
+  tree.nodes.filter((node) => node.shape === "option").length,
+  3,
+  "каждый активный вариант ответа — отдельная ветка",
+);
+assert.ok(tree.nodes.some((node) => node.shape === "finish"), "дерево заканчивается финалом");
+
+// Ветки уходят вправо от ствола — иначе это колонка, а не дерево
+const trunkNode = tree.nodes.find((node) => node.shape === "step");
+const optionNode = tree.nodes.find((node) => node.shape === "option");
+assert.ok(trunkNode && optionNode && optionNode.x > trunkNode.x + trunkNode.width, "ветки отходят вправо от ствола");
+
+// Переход ответа на другой шаг рисуется отдельным ребром
+assert.ok(tree.edges.some((edge) => edge.kind === "jump"), "переход на шаг — отдельное ребро");
+assert.ok(tree.edges.some((edge) => edge.kind === "finish"), "переход в финал — отдельное ребро");
+assert.ok(tree.edges.some((edge) => edge.kind === "trunk"), "ствол связывает этапы");
+
+// Незаполненное уходит в тень, заполненное светится
+const emptyTree = buildRoadmapLayout(buildCase({ title: "  ", primaryCompetencies: [], secondaryCompetencies: [] }));
+assert.equal(emptyTree.nodes.find((node) => node.key === "intent")?.state, "dim", "пустой замысел в тени");
+assert.equal(tree.nodes.find((node) => node.key === "intent")?.state, "bright", "заполненный замысел светится");
+
+// Узлы знают свой этап — по этому полю подсвечивается активное окно мастера
+assert.equal(tree.nodes.find((node) => node.key === "situation")?.stepId, "situation");
+assert.equal(optionNode?.stepId, "decisions");
 
 console.log("case-master parity checks passed");
