@@ -554,6 +554,7 @@ export class ContentStorage {
         hiddenCause: input.hiddenCause || null,
         dataPointsJson: JSON.stringify(input.dataPoints || []),
         falseTrailsJson: JSON.stringify(input.falseTrails || []),
+        acceptedIssuesJson: JSON.stringify(input.acceptedIssues || []),
         qaStatus: input.qaStatus || "draft",
         imageAssetId: input.imageAssetId,
         audioAssetId: input.audioAssetId,
