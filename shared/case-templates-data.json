@@ -1,0 +1,240 @@
+{
+  "templates": [
+    {
+      "id": "tpl-queue",
+      "title": "Очередь на кассе в час пик",
+      "summary": "Линейный кейс: три шага без ветвления, участник ищет причину затора",
+      "teaches": "Отделять симптом от причины и не бросаться чинить видимое",
+      "caseData": {
+        "id": "TPL-QUEUE",
+        "title": "Очередь на кассе в час пик",
+        "description": "Пятница, вечер. У касс собралась очередь, клиенты недовольны.",
+        "primaryCompetencies": ["management_basics"],
+        "secondaryCompetencies": ["communication"],
+        "trigger": {
+          "type": "message",
+          "source": "Старший продавец Артём",
+          "text": "У касс очередь на десять человек, клиенты начинают ругаться. Что делаем?"
+        },
+        "zones_affected": ["торговый_зал"],
+        "businessProblem": "Клиенты уходят из очереди, выручка вечера проседает",
+        "hiddenCause": "Вторая касса закрыта: кассир ушёл разбирать поставку, потому что кладовщик не вышел",
+        "dataPoints": [
+          { "label": "График смены на сегодня", "costToRequest": "минута" },
+          { "label": "Отчёт по скорости обслуживания за час", "costToRequest": "две минуты" }
+        ],
+        "falseTrails": [
+          "Кажется, что касса тормозит из-за сбоя программы",
+          "Похоже, кассир работает медленно и его надо поторопить"
+        ],
+        "qaStatus": "ready_launch",
+        "cycles": [
+          {
+            "id": "TPL-QUEUE-C1",
+            "cycle": 1,
+            "situation": "Очередь растёт, работает одна касса из двух.",
+            "signal": { "type": "message", "content": "Артём ждёт решения, клиенты смотрят на вас." },
+            "options": [
+              {
+                "id": "TPL-QUEUE-C1-O1",
+                "level": 1,
+                "text": "Встать на вторую кассу самому",
+                "score": 1,
+                "effects": { "queue": -3, "conversion": 0, "morale": -2, "revenue_impact": 0, "delivery_status": -3 },
+                "competency_scores": { "management_basics": 1, "communication": 3 }
+              },
+              {
+                "id": "TPL-QUEUE-C1-O2",
+                "level": 2,
+                "text": "Поторопить кассира по громкой связи",
+                "score": 2,
+                "effects": { "queue": -1, "conversion": 0, "morale": -4, "revenue_impact": 0, "delivery_status": 0 },
+                "competency_scores": { "management_basics": 3, "communication": 1 }
+              },
+              {
+                "id": "TPL-QUEUE-C1-O3",
+                "level": 3,
+                "text": "Посмотреть график смены и отчёт",
+                "score": 3,
+                "effects": { "queue": 1, "conversion": 0, "morale": 0, "revenue_impact": 0, "delivery_status": 1 },
+                "competency_scores": { "management_basics": 5, "communication": 3 }
+              }
+            ]
+          },
+          {
+            "id": "TPL-QUEUE-C2",
+            "cycle": 2,
+            "situation": "Выяснилось: вторая касса закрыта, кассир разбирает поставку вместо кладовщика.",
+            "signal": { "type": "message", "content": "Кассир пишет: «Я на складе, некому принимать»." },
+            "options": [
+              {
+                "id": "TPL-QUEUE-C2-O1",
+                "level": 1,
+                "text": "Оставить как есть до конца смены",
+                "score": 1,
+                "effects": { "queue": 5, "conversion": -3, "morale": -2, "revenue_impact": -4, "delivery_status": 2 },
+                "competency_scores": { "management_basics": 1, "communication": 3 }
+              },
+              {
+                "id": "TPL-QUEUE-C2-O2",
+                "level": 2,
+                "text": "Вернуть кассира и отложить поставку",
+                "score": 2,
+                "effects": { "queue": -4, "conversion": 2, "morale": 1, "revenue_impact": 3, "delivery_status": -4 },
+                "competency_scores": { "management_basics": 3, "communication": 1 }
+              },
+              {
+                "id": "TPL-QUEUE-C2-O3",
+                "level": 3,
+                "text": "Вернуть кассира, поставку передать продавцу зала",
+                "score": 3,
+                "effects": { "queue": -5, "conversion": 3, "morale": 1, "revenue_impact": 4, "delivery_status": -1 },
+                "competency_scores": { "management_basics": 5, "communication": 5 }
+              }
+            ]
+          }
+        ],
+        "imageAssetId": null,
+        "imageUrl": null,
+        "audioAssetId": null,
+        "audioUrl": null,
+        "sortOrder": 0,
+        "isActive": false
+      }
+    },
+    {
+      "id": "tpl-claim",
+      "title": "Претензия клиента на выдаче",
+      "summary": "Кейс с ветвлением: первый ответ определяет, каким будет разговор дальше",
+      "teaches": "Выбирать уместный ресурс: решить самому, поднять по регламенту или подключить руководителя",
+      "caseData": {
+        "id": "TPL-CLAIM",
+        "title": "Претензия клиента на выдаче",
+        "description": "Клиент забрал заказ и вернулся через час: товар с царапиной.",
+        "primaryCompetencies": ["communication"],
+        "secondaryCompetencies": ["business_processes"],
+        "trigger": {
+          "type": "visitor",
+          "source": "Клиент на выдаче",
+          "text": "Мне выдали товар с царапиной. Я хочу вернуть деньги прямо сейчас."
+        },
+        "zones_affected": ["выдача"],
+        "businessProblem": "Неверно закрытая претензия возвращается жалобой и потерей лояльности",
+        "hiddenCause": "Царапина была до выдачи: сотрудник не проверил товар при клиенте и не отметил это в акте",
+        "dataPoints": [
+          { "label": "Акт приёма-передачи заказа", "costToRequest": "минута" },
+          { "label": "Запись камеры зоны выдачи", "costToRequest": "десять минут" }
+        ],
+        "falseTrails": [
+          "Кажется, что клиент повредил товар сам и теперь хитрит",
+          "Похоже, брак пришёл со склада и виноват поставщик"
+        ],
+        "qaStatus": "ready_launch",
+        "cycles": [
+          {
+            "id": "TPL-CLAIM-C1",
+            "cycle": 1,
+            "situation": "Клиент настроен решительно, рядом ждут другие покупатели.",
+            "signal": { "type": "visitor", "content": "Клиент повышает голос, очередь на выдаче слушает." },
+            "options": [
+              {
+                "id": "TPL-CLAIM-C1-O1",
+                "level": 1,
+                "text": "Пообещать возврат денег сразу",
+                "score": 1,
+                "effects": { "queue": -1, "conversion": 0, "morale": -1, "revenue_impact": -4, "delivery_status": 0 },
+                "competency_scores": { "communication": 3, "business_processes": 1 },
+                "nextCycleId": "TPL-CLAIM-C2"
+              },
+              {
+                "id": "TPL-CLAIM-C1-O2",
+                "level": 2,
+                "text": "Сказать, что это не наша вина",
+                "score": 2,
+                "effects": { "queue": 2, "conversion": -2, "morale": -3, "revenue_impact": -1, "delivery_status": 0 },
+                "competency_scores": { "communication": 1, "business_processes": 3 },
+                "nextCycleId": "TPL-CLAIM-C3"
+              },
+              {
+                "id": "TPL-CLAIM-C1-O3",
+                "level": 3,
+                "text": "Выслушать, поднять акт приёма-передачи",
+                "score": 3,
+                "effects": { "queue": 1, "conversion": 1, "morale": 1, "revenue_impact": 0, "delivery_status": 1 },
+                "competency_scores": { "communication": 5, "business_processes": 5 },
+                "nextCycleId": "TPL-CLAIM-C2"
+              }
+            ]
+          },
+          {
+            "id": "TPL-CLAIM-C2",
+            "cycle": 2,
+            "situation": "В акте нет отметки о проверке товара при клиенте. Формально претензия обоснована.",
+            "signal": { "type": "message", "content": "Сотрудник выдачи признаёт: товар при клиенте не разворачивал." },
+            "options": [
+              {
+                "id": "TPL-CLAIM-C2-O1",
+                "level": 1,
+                "text": "Отчитать сотрудника при клиенте",
+                "score": 1,
+                "effects": { "queue": 1, "conversion": -1, "morale": -5, "revenue_impact": -1, "delivery_status": 0 },
+                "competency_scores": { "communication": 1, "business_processes": 3 },
+                "nextCycleId": "__complete"
+              },
+              {
+                "id": "TPL-CLAIM-C2-O2",
+                "level": 2,
+                "text": "Оформить возврат и закрыть вопрос",
+                "score": 2,
+                "effects": { "queue": -2, "conversion": 1, "morale": 0, "revenue_impact": -3, "delivery_status": 1 },
+                "competency_scores": { "communication": 3, "business_processes": 3 },
+                "nextCycleId": "__complete"
+              },
+              {
+                "id": "TPL-CLAIM-C2-O3",
+                "level": 3,
+                "text": "Оформить возврат, с сотрудником разобрать после",
+                "score": 3,
+                "effects": { "queue": -2, "conversion": 2, "morale": 3, "revenue_impact": -3, "delivery_status": 2 },
+                "competency_scores": { "communication": 5, "business_processes": 5 },
+                "nextCycleId": "__complete"
+              }
+            ]
+          },
+          {
+            "id": "TPL-CLAIM-C3",
+            "cycle": 3,
+            "situation": "Клиент требует книгу отзывов и говорит, что напишет жалобу.",
+            "signal": { "type": "visitor", "content": "Клиент достаёт телефон и начинает снимать." },
+            "options": [
+              {
+                "id": "TPL-CLAIM-C3-O1",
+                "level": 1,
+                "text": "Настаивать на своей позиции",
+                "score": 1,
+                "effects": { "queue": 3, "conversion": -3, "morale": -3, "revenue_impact": -2, "delivery_status": 0 },
+                "competency_scores": { "communication": 1, "business_processes": 1 },
+                "nextCycleId": "__complete"
+              },
+              {
+                "id": "TPL-CLAIM-C3-O2",
+                "level": 2,
+                "text": "Извиниться и поднять акт приёма",
+                "score": 2,
+                "effects": { "queue": -1, "conversion": 1, "morale": 1, "revenue_impact": 0, "delivery_status": 1 },
+                "competency_scores": { "communication": 5, "business_processes": 3 },
+                "nextCycleId": "TPL-CLAIM-C2"
+              }
+            ]
+          }
+        ],
+        "imageAssetId": null,
+        "imageUrl": null,
+        "audioAssetId": null,
+        "audioUrl": null,
+        "sortOrder": 0,
+        "isActive": false
+      }
+    }
+  ]
+}
