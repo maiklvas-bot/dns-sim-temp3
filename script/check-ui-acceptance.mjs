@@ -128,6 +128,7 @@ const caseUi = [
   "client/src/features/admin/cases/master/CompetencyLadderHint.tsx",
   "client/src/features/admin/cases/master/steps/StepDecisions.tsx",
   "client/src/features/admin/cases/master/TemplatePicker.tsx",
+  "client/src/features/admin/cases/master/TemplatePeek.tsx",
   "client/src/features/admin/cases/master/CaseRoadmap.tsx",
 ].map(readText).join("\n");
 
@@ -189,6 +190,16 @@ assertCondition(
 );
 // Вердикт лестницы обязан приходить из автопроверки: своя формула означала бы,
 // что картинка и механика расходятся.
+// Библиотека эталонов: обе роли — точка старта и учебник.
+assertCondition(
+  caseUi.includes("instantiateTemplate"),
+  "Эталон можно взять за основу нового кейса",
+);
+assertCondition(
+  existsSync("shared/case-templates-data.json"),
+  "Библиотека эталонов хранится в репозитории, а не в базе — это версионируемый учебный материал",
+);
+
 // Эталон как учебник: «как в образце» доступно на каждом содержательном этапе.
 for (const step of ["StepIntent", "StepSituation", "StepStructure", "StepDecisions"]) {
   assertCondition(
