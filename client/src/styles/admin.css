@@ -1004,7 +1004,7 @@
   /* Три колонки: дерево кейса — редактор — влияние. Раньше здесь было две,
      и третья панель уезжала вниз левой колонки вместо своего места. */
   .dns-product-shell .dns-admin-case-workspace {
-    grid-template-columns: 20rem minmax(0, 1.618fr) minmax(22rem, 0.618fr);
+    grid-template-columns: 23rem minmax(0, 1.618fr) minmax(22rem, 0.618fr);
   }
 }
 

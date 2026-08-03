@@ -2389,7 +2389,9 @@ export default function AdminPage() {
           </div>
 
           <Dialog open={caseEditorOpen} onOpenChange={setCaseEditorOpen}>
-            <DialogContent className={`dns-product-shell dns-admin-shell ${themeClass} flex h-[92vh] max-h-[92vh] w-[96vw] max-w-[1500px] flex-col gap-0 overflow-hidden p-0`}>
+            {/* Окно мастера занимает экран: при 1500px на широком мониторе по краям
+                оставалось больше 400px пустоты, а колонкам не хватало ширины. */}
+            <DialogContent className={`dns-product-shell dns-admin-shell ${themeClass} flex h-[94vh] max-h-[94vh] w-[98vw] max-w-[2400px] flex-col gap-0 overflow-hidden p-0`}>
               <DialogHeader className="space-y-0.5 border-b border-border px-5 py-3.5 text-left">
                 <DialogTitle className="text-[15px]">Редактор кейса · {caseDraft?.title || caseDraft?.id || "Новый кейс"}</DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">Слева — настройка кейса, справа — влияние на профиль компетенций (меняется в моменте).</DialogDescription>

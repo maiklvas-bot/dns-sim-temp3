@@ -55,7 +55,7 @@ export function CaseRoadmap({
           width="100%"
           height="100%"
           viewBox={`0 0 ${layout.width} ${layout.height}`}
-          preserveAspectRatio="xMidYMin meet"
+          preserveAspectRatio="xMinYMin meet"
           role="img"
           aria-label="Дерево кейса: этапы мастера, их подблоки, шаги и варианты ответа"
         >
@@ -73,7 +73,7 @@ export function CaseRoadmap({
           {layout.nodes.map((node) => {
             const style = STATE_STYLE[node.state];
             const active = node.stepId !== null && node.stepId === activeStepId;
-            const fontSize = node.depth <= 1 ? 9 : 8;
+            const fontSize = node.depth === 0 ? 12 : node.depth === 1 ? 11 : 10;
             return (
               <g key={node.key} opacity={style.opacity}>
                 <rect
@@ -87,14 +87,13 @@ export function CaseRoadmap({
                   strokeWidth={active ? 2 : 1}
                 />
                 <text
-                  x={node.x + node.width / 2}
+                  x={node.x + 7}
                   y={node.y + node.height / 2 + fontSize / 3}
-                  textAnchor="middle"
                   fontSize={fontSize}
                   fontWeight={node.depth <= 1 ? 700 : 500}
                   fill={style.text}
                 >
-                  {clipToWidth(node.title, node.width, fontSize)}
+                  {clipToWidth(node.title, node.width - 6, fontSize)}
                 </text>
               </g>
             );

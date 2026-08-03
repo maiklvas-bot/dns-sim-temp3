@@ -50,14 +50,27 @@ export interface RoadmapLayout {
   height: number;
 }
 
-const NODE_H = 20;
-const ROW_GAP = 6;
-const COL_X = [6, 88, 196, 300];
-const COL_W = [74, 100, 96, 92];
+/**
+ * Дерево вертикальное с отступами: узлы идут сверху вниз, дети смещены вправо.
+ * Раньше оно росло вправо четырьмя колонками — в узкой высокой панели такая схема
+ * упирается в ширину и ужимается до нечитаемого (текст 8px превращался в 6px),
+ * а больше половины высоты пустовало. Вертикальная раскладка расходует высоту,
+ * которой много, и остаётся узкой.
+ */
+const NODE_H = 22;
+const ROW_GAP = 4;
+const INDENT = 15;
+const CANVAS_W = 268;
 const PAD = 6;
-
-const columnX = (depth: number) => COL_X[Math.min(depth, COL_X.length - 1)];
-const columnW = (depth: number) => COL_W[Math.min(depth, COL_W.length - 1)];
+/** Минимальная ширина узла: даже самый глубокий уровень должен вмещать подпись. */
+const MIN_NODE_W = 120;
+/**
+ * Схема обязана помещаться на экран целиком, без прокрутки. Значит высота
+ * ограничена, и чем больше узлов, тем мельче текст. Дальше этого порога
+ * варианты ответа сворачиваются в счётчик на своём шаге: структура кейса
+ * остаётся видна, а подписи остаются читаемыми.
+ */
+const MAX_NODES_BEFORE_COMPACT = 34;
 
 const flag = (filled: boolean): NodeState => (filled ? "bright" : "dim");
 
@@ -69,7 +82,7 @@ function rollUp(children: NodeState[]): NodeState {
   return "partial";
 }
 
-function buildSeed(caseInput: SimCase, validationIssueCount: number): TreeSeed {
+function buildSeed(caseInput: SimCase, validationIssueCount: number, compactOptions: boolean): TreeSeed {
   const cycles = [...(caseInput.cycles || [])].sort((a, b) => a.cycle - b.cycle);
   const competencyCount =
     (caseInput.primaryCompetencies || []).length + (caseInput.secondaryCompetencies || []).length;
@@ -125,6 +138,20 @@ function buildSeed(caseInput: SimCase, validationIssueCount: number): TreeSeed {
         ? [{ key: "decisions-empty", title: "Вариантов нет", state: "dim", stepId: "decisions" }]
         : cycles.map((cycle, index) => {
             const options = (cycle.options || []).filter((option) => (option.status || "active") === "active");
+            const scoredCount = options.filter(
+              (option) =>
+                hasMeaningfulText(option.text) && Object.keys(option.competency_scores || {}).length > 0,
+            ).length;
+
+            if (compactOptions) {
+              return {
+                key: `decisions-cycle-${cycle.id || index}`,
+                title: `Шаг ${cycle.cycle} · ответов ${options.length}`,
+                state: options.length > 0 && scoredCount === options.length ? "bright" : options.length > 0 ? "partial" : "dim",
+                stepId: "decisions" as MasterStepId,
+              };
+            }
+
             return {
               key: `decisions-cycle-${cycle.id || index}`,
               title: `Шаг ${cycle.cycle} · ${options.length}`,
@@ -180,50 +207,50 @@ interface PlacedNode extends RoadmapNode {
   children: PlacedNode[];
 }
 
-/** Аккуратное дерево: лист занимает свою строку, родитель встаёт по центру детей. */
+/**
+ * Родитель занимает свою строку, дети идут следом со сдвигом вправо.
+ * Порядок сверху вниз совпадает с порядком чтения — это и делает схему
+ * читаемой без масштабирования.
+ */
 function place(seed: TreeSeed, depth: number, cursor: { y: number }): PlacedNode {
-  const width = columnW(depth);
-  const x = columnX(depth);
+  const x = PAD + depth * INDENT;
+  const width = Math.max(MIN_NODE_W, CANVAS_W - x - PAD);
 
-  if (!seed.children || seed.children.length === 0) {
-    const node: PlacedNode = {
-      key: seed.key,
-      title: seed.title,
-      state: seed.state ?? "dim",
-      stepId: seed.stepId,
-      depth,
-      x,
-      y: cursor.y,
-      width,
-      height: NODE_H,
-      children: [],
-    };
-    cursor.y += NODE_H + ROW_GAP;
-    return node;
-  }
-
-  const children = seed.children.map((child) => place(child, depth + 1, cursor));
-  const first = children[0];
-  const last = children[children.length - 1];
-  const centerY = (first.y + last.y + last.height) / 2 - NODE_H / 2;
-
-  return {
+  const node: PlacedNode = {
     key: seed.key,
     title: seed.title,
-    state: seed.state ?? rollUp(children.map((child) => child.state)),
+    state: seed.state ?? "dim",
     stepId: seed.stepId,
     depth,
     x,
-    y: centerY,
+    y: cursor.y,
     width,
     height: NODE_H,
-    children,
+    children: [],
   };
+  cursor.y += NODE_H + ROW_GAP;
+
+  node.children = (seed.children || []).map((child) => place(child, depth + 1, cursor));
+  if (seed.state === undefined && node.children.length > 0) {
+    node.state = rollUp(node.children.map((child) => child.state));
+  }
+  return node;
+}
+
+function countNodes(seed: TreeSeed): number {
+  return 1 + (seed.children || []).reduce((sum, child) => sum + countNodes(child), 0);
 }
 
 export function buildRoadmapLayout(caseInput: SimCase, validationIssueCount = 0): RoadmapLayout {
+  // Сначала пробуем показать всё. Если узлов слишком много, сворачиваем варианты —
+  // иначе схема ужмётся до нечитаемой, а прокрутки у неё быть не должно.
+  const full = buildSeed(caseInput, validationIssueCount, false);
+  const seed = countNodes(full) > MAX_NODES_BEFORE_COMPACT
+    ? buildSeed(caseInput, validationIssueCount, true)
+    : full;
+
   const cursor = { y: PAD };
-  const root = place(buildSeed(caseInput, validationIssueCount), 0, cursor);
+  const root = place(seed, 0, cursor);
 
   const nodes: RoadmapNode[] = [];
   const edges: RoadmapEdge[] = [];
@@ -232,14 +259,13 @@ export function buildRoadmapLayout(caseInput: SimCase, validationIssueCount = 0)
     const { children, ...rest } = node;
     nodes.push(rest);
     children.forEach((child) => {
-      const fromX = node.x + node.width;
-      const fromY = node.y + node.height / 2;
-      const toX = child.x;
+      // Уголок как в проводнике: вниз по стойке родителя, затем вбок к ребёнку.
+      const railX = node.x + INDENT / 2;
+      const fromY = node.y + node.height;
       const toY = child.y + child.height / 2;
-      const bend = fromX + (toX - fromX) / 2;
       edges.push({
         key: `edge-${node.key}-${child.key}`,
-        path: `M ${fromX} ${fromY} C ${bend} ${fromY}, ${bend} ${toY}, ${toX} ${toY}`,
+        path: `M ${railX} ${fromY} L ${railX} ${toY} L ${child.x} ${toY}`,
         dimmed: child.state === "dim",
       });
       walk(child);

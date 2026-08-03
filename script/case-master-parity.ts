@@ -193,12 +193,59 @@ assert.equal(
   "каждый добавленный вариант ответа — своя ветка решений",
 );
 
-// Дерево растёт вправо по уровням, а не колонкой
+// Дерево вертикальное: узлы идут сверху вниз, вложенность показана отступом.
+// Горизонтальная раскладка упиралась в ширину узкой панели и ужимала текст.
 const stageNode = tree.nodes.find((node) => node.key === "decisions");
 const optionNode = tree.nodes.find((node) => node.key.startsWith("decisions-option-"));
 const rootNode = tree.nodes.find((node) => node.key === "root");
-assert.ok(rootNode && stageNode && stageNode.x > rootNode.x + rootNode.width, "этапы правее карточки");
-assert.ok(stageNode && optionNode && optionNode.x > stageNode.x + stageNode.width, "варианты правее своего этапа");
+assert.ok(rootNode && stageNode && stageNode.y > rootNode.y, "этапы ниже карточки");
+assert.ok(rootNode && stageNode && stageNode.x > rootNode.x, "этапы смещены отступом вправо");
+assert.ok(stageNode && optionNode && optionNode.y > stageNode.y, "варианты ниже своего этапа");
+assert.ok(stageNode && optionNode && optionNode.x > stageNode.x, "варианты смещены глубже этапа");
+// Каждый узел занимает собственную строку — это и отличает вертикальное дерево
+// от колоночного, где несколько узлов делят одну высоту.
+const ys = tree.nodes.map((node) => node.y);
+assert.equal(new Set(ys).size, tree.nodes.length, "каждый узел на своей строке");
+assert.deepEqual(ys, [...ys].sort((a, b) => a - b), "узлы идут строго сверху вниз");
+
+// Вложенность показана небольшим отступом, а не переносом в отдельную колонку.
+// Крупный шаг по x означает горизонтальное дерево — оно упрётся в ширину панели.
+const xByDepth = new Map<number, number>();
+tree.nodes.forEach((node) => xByDepth.set(node.depth, node.x));
+const depths = [...xByDepth.keys()].sort((a, b) => a - b);
+for (let index = 1; index < depths.length; index += 1) {
+  const step = xByDepth.get(depths[index])! - xByDepth.get(depths[index - 1])!;
+  assert.ok(step > 0 && step <= 20, `отступ уровня ${depths[index]} должен быть небольшим, получено ${step}`);
+}
+
+// Схема без прокрутки: на большом кейсе варианты сворачиваются в счётчик,
+// иначе холст растёт и текст ужимается до нечитаемого
+const bigCase = buildCase();
+bigCase.cycles = Array.from({ length: 8 }, (_, cycleIndex) => ({
+  id: `B${cycleIndex + 1}`,
+  cycle: cycleIndex + 1,
+  situation: "Ситуация",
+  signal: { type: "message" as const, content: "Сигнал" },
+  options: Array.from({ length: 5 }, (_, optionIndex) => ({
+    id: `B${cycleIndex + 1}O${optionIndex + 1}`,
+    level: optionIndex + 1,
+    text: "Ответ",
+    score: 1,
+    effects: { ...baseEffects },
+    competency_scores: { org_control: 3 },
+  })),
+}));
+const bigTree = buildRoadmapLayout(bigCase);
+assert.equal(
+  bigTree.nodes.filter((node) => node.key.startsWith("decisions-option-")).length,
+  0,
+  "на большом кейсе варианты свёрнуты в счётчик",
+);
+assert.ok(
+  bigTree.nodes.some((node) => node.title.includes("ответов 5")),
+  "свёрнутый шаг показывает, сколько в нём ответов",
+);
+assert.ok(bigTree.nodes.length < 45, "свёрнутая схема остаётся компактной");
 
 // Незаполненное уходит в тень, заполненное светится, частичное — промежуточное
 const emptyTree = buildRoadmapLayout(buildCase({ title: "  ", description: "", businessProblem: null, primaryCompetencies: [], secondaryCompetencies: [] }));
