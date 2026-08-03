@@ -67,7 +67,12 @@ export function StepDecisions({
       </div>
 
       {(entity.cycles || []).map((cycle) => (
-        <CompetencyLadderHint key={`ladder-${cycle.id}`} cycle={cycle} competencies={competencies} />
+        <CompetencyLadderHint
+          key={`ladder-${cycle.id}`}
+          cycle={cycle}
+          competencies={competencies}
+          issues={stepIssues}
+        />
       ))}
 
       {activeIssues.length > 0 && (

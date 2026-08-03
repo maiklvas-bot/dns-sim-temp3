@@ -9,6 +9,7 @@ import {
   signalTypeLabel,
 } from "../client/src/features/admin/cases/master/case-master-support";
 import { buildRoadmapLayout, defaultCollapsedKeys } from "../client/src/features/admin/cases/master/case-roadmap-layout";
+import { buildLadderView, findLadderIssue } from "../client/src/features/admin/cases/master/competency-ladder";
 import { explainIssue } from "../shared/case-issue-explanations";
 import { validateCase } from "../shared/case-validation";
 import type { SimCase } from "../shared/simulation-content";
@@ -329,5 +330,39 @@ assert.equal(optionNode?.stepId, "decisions");
 
 // Каждый узел, кроме корня, связан ребром — иначе ветка висит в воздухе
 assert.equal(tree.edges.length, tree.nodes.length - 1, "каждый узел кроме корня связан с родителем");
+
+// Лестница компетенций: картинка обязана совпадать с механикой. Если визуализация
+// скажет «всё хорошо» там, где автопроверка выдаёт замечание, обучающий слой врёт.
+const ladderCase = buildCase();
+ladderCase.cycles[0].options = [
+  { id: "L1", level: 1, text: "Подождать и посмотреть", score: 1, effects: { ...baseEffects, queue: 5 }, competency_scores: { org_control: 1, communication: 1 } },
+  { id: "L2", level: 2, text: "Спросить у коллеги совет", score: 2, effects: { ...baseEffects, queue: 3 }, competency_scores: { org_control: 3, communication: 3 } },
+  { id: "L3", level: 3, text: "Собрать смену на минуту", score: 3, effects: { ...baseEffects, queue: -2 }, competency_scores: { org_control: 5, communication: 5 } },
+];
+const ladderIssues = validateCase(ladderCase);
+assert.ok(
+  ladderIssues.some((issue) => issue.check === "antigaming" && issue.message.includes("шкала хорошести")),
+  "фикстура действительно даёт замечание про шкалу хорошести",
+);
+assert.ok(
+  findLadderIssue(ladderCase.cycles[0].id, ladderIssues),
+  "визуализация показывает проблему там, где её нашла автопроверка",
+);
+
+// Обратная сторона: на кейсе без замечания подсветки быть не должно
+const cleanIssues = validateCase(buildCase());
+assert.equal(
+  findLadderIssue(buildCase().cycles[0].id, cleanIssues),
+  null,
+  "на чистом кейсе визуализация не пугает автора несуществующим дефектом",
+);
+
+// Таблица показывает реальные уровни по вариантам, а не пересчитывает вердикт
+const ladderView = buildLadderView(ladderCase.cycles[0], []);
+assert.ok(ladderView, "таблица строится, когда вариантов больше одного");
+assert.equal(ladderView?.rows.length, 2, "строка на каждую размеченную компетенцию");
+assert.deepEqual(ladderView?.rows[0].scores, [1, 3, 5], "уровни идут в порядке вариантов");
+assert.equal(buildLadderView(buildCase({ cycles: [{ ...buildCase().cycles[0], options: [] }] }).cycles[0], []), null,
+  "без вариантов таблицу показывать нечего");
 
 console.log("case-master parity checks passed");
