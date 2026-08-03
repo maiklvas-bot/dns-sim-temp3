@@ -124,6 +124,9 @@ const caseUi = [
   "client/src/features/admin/cases/master/CaseMaster.tsx",
   "client/src/features/admin/cases/master/CaseSummaryCard.tsx",
   "client/src/features/admin/cases/master/case-master-support.ts",
+  "client/src/features/admin/cases/master/IssueCard.tsx",
+  "client/src/features/admin/cases/master/CompetencyLadderHint.tsx",
+  "client/src/features/admin/cases/master/steps/StepDecisions.tsx",
 ].map(readText).join("\n");
 
 assertCondition(
@@ -166,6 +169,25 @@ assertCondition(
 assertCondition(
   readText("client/src/features/admin/cases/master/steps/StepLaunch.tsx").includes("onChange={onChange}"),
   "Панель замечаний должна получать обработчик изменения — без него принятие некуда сохранить",
+);
+assertCondition(
+  caseUi.includes("explainIssue"),
+  "Замечание должно объясняться автору, а не показываться технической строкой",
+);
+assertCondition(
+  caseUi.includes("isIssueAccepted"),
+  "Автор должен иметь возможность осознанно принять замечание",
+);
+// Лестница мало что объясняет, если её не показать на этапе решений.
+assertCondition(
+  /<CompetencyLadderHint[\s/>]/.test(readText("client/src/features/admin/cases/master/steps/StepDecisions.tsx")),
+  "Единая «шкала хорошести» показывается наглядно на этапе решений",
+);
+// Вердикт лестницы обязан приходить из автопроверки: своя формула означала бы,
+// что картинка и механика расходятся.
+assertCondition(
+  readText("client/src/features/admin/cases/master/CompetencyLadderHint.tsx").includes("findLadderIssue"),
+  "Лестница берёт вердикт из автопроверки, а не считает его заново",
 );
 assertCondition(
   caseUi.includes("MASTER_STEPS") && caseUi.includes("CaseSummaryCard"),
