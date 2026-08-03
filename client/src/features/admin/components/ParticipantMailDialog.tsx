@@ -73,7 +73,7 @@ export function ParticipantMailDialog({
             <Icon className="h-4 w-4" aria-hidden />
           </span>
           <div className="leading-tight">
-            <div className="text-base font-extrabold text-white">{meta.title}</div>
+            <div className="text-base font-bold text-white">{meta.title}</div>
             <div className="text-xs text-white/50">{participantName}</div>
           </div>
           <button type="button" onClick={onClose} aria-label="Закрыть" className="ml-auto rounded-lg border p-1.5 text-white/60" style={{ borderColor: "rgba(255,255,255,0.12)", cursor: "pointer" }}>

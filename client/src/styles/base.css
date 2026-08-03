@@ -5,10 +5,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Все три начертания DNS RotondaC. Раньше был объявлен только Regular, и любой
+   font-weight ≥ 600 браузер синтезировал сам — искусственное утолщение выглядит
+   грубее настоящего Bold, особенно на крупных заголовках. */
 @font-face {
   font-family: "DNS RotondaC";
   src: url("/fonts/DNS RotondaC.ttf") format("truetype");
   font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DNS RotondaC";
+  src: url("/fonts/DNS RotondaC-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DNS RotondaC";
+  src: url("/fonts/DNS RotondaC-Black.ttf") format("truetype");
+  font-weight: 900;
   font-style: normal;
   font-display: swap;
 }

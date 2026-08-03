@@ -197,6 +197,23 @@ assertCondition(
   "Кабинет не должен переопределять брендовый --radius",
 );
 
+// Типографика: все начертания DNS RotondaC подключены. Если объявлен только
+// Regular, браузер синтезирует жирность сам — заголовки выглядят грубо жирными.
+const baseCss = readText("client/src/styles/base.css");
+const rotondaFaces = (baseCss.match(/font-family:\s*"DNS RotondaC";/g) || []).length;
+assertCondition(
+  rotondaFaces >= 3,
+  `Должны быть подключены Regular, Bold и Black — объявлено начертаний: ${rotondaFaces}`,
+);
+assertCondition(
+  /DNS RotondaC-Bold\.ttf/.test(baseCss) && /DNS RotondaC-Black\.ttf/.test(baseCss),
+  "Файлы Bold и Black должны быть подключены, а не лежать без дела",
+);
+assertCondition(
+  !/font-weight:\s*(800|900)/.test(adminCss),
+  "В кабинете не используются веса 800/900 — на мелком тексте они читаются грязно",
+);
+
 assertCondition(
   /--roadmap-dim-fill/.test(adminCss) && /dns-theme-light[\s\S]{0,400}--roadmap-dim-fill/.test(adminCss),
   "Цвета дерева кейса должны быть заданы переменными для обеих тем",

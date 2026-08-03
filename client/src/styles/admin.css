@@ -593,7 +593,7 @@
   overflow: hidden;
   color: #f7fbff;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.22;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -752,7 +752,7 @@
 .dns-product-shell .dns-admin-structure-nav-head span {
   color: #ff9b52;
   font-size: 0.62rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -840,7 +840,7 @@
   border-radius: 0.45rem;
   background: #ff6b00;
   color: white;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .dns-product-shell .dns-admin-structure-profile div {
@@ -1112,7 +1112,7 @@
   gap: 0.5rem;
   padding: 0.55rem 1.15rem;
   border-radius: 999px;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 0.85rem;
 }
 .dns-flow-terminal--start {
@@ -1152,7 +1152,7 @@
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 0.82rem;
   color: #fff;
   background: var(--dns-admin-scene-accent, #ff6b00);
@@ -1173,12 +1173,12 @@
   gap: 0.5rem;
 }
 .dns-flow-node-badge {
-  font-weight: 800;
+  font-weight: 700;
   font-size: 0.82rem;
 }
 .dns-flow-prio {
   font-size: 0.6rem;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 0.12rem 0.45rem;
@@ -1196,7 +1196,7 @@
 .dns-flow-gateway {
   margin: 0.5rem 0 0.5rem 0.4rem;
   font-size: 0.64rem;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
   opacity: 0.55;
@@ -1230,7 +1230,7 @@
   border-radius: 0.4rem;
   display: grid;
   place-items: center;
-  font-weight: 800;
+  font-weight: 700;
   font-size: 0.74rem;
   color: #fff;
   background: rgb(var(--t));
@@ -1249,7 +1249,7 @@
   font-weight: 700;
 }
 .dns-flow-score {
-  font-weight: 900;
+  font-weight: 700;
   color: rgb(var(--t));
 }
 .dns-flow-target {

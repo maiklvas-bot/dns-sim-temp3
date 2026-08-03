@@ -2250,7 +2250,7 @@ export default function AdminPage() {
               <div className="relative flex items-center gap-6">
                 <div className="flex-1">
                   <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#f68b1f]">Центр управления симуляцией</div>
-                  <h2 className="mt-2 text-2xl 2xl:text-[27px] font-black leading-tight text-foreground">
+                  <h2 className="mt-2 text-2xl 2xl:text-[27px] font-bold leading-tight text-foreground">
                     Здравствуйте, {staffQuery.data?.displayName || "Администратор"}.
                   </h2>
                   <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-muted-foreground">
@@ -2277,7 +2277,7 @@ export default function AdminPage() {
                 <div key={kpi.label} className="relative overflow-hidden rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-4 backdrop-blur">
                   <div className="absolute -right-7 -top-7 h-28 w-28 rounded-full opacity-50" style={{ background: `radial-gradient(circle, ${kpi.accent}, transparent 70%)` }} />
                   <div className="relative text-[11px] font-semibold uppercase tracking-[0.06em] text-[#8890a8]">{kpi.label}</div>
-                  <div className="relative mt-2 text-[30px] font-black leading-none tabular-nums text-white">{kpi.value}</div>
+                  <div className="relative mt-2 text-[30px] font-bold leading-none tabular-nums text-white">{kpi.value}</div>
                   <div className="relative mt-1.5 text-[11px] font-semibold text-[#8aa2c4]">{kpi.hint}</div>
                 </div>
               ))}
@@ -2288,13 +2288,13 @@ export default function AdminPage() {
               <section className="flex flex-col rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-5 backdrop-blur">
                 <div className="flex items-center gap-2">
                   <ClipboardCheck className="h-4 w-4 text-[#f68b1f]" />
-                  <h3 className="text-sm font-black text-white">Что проверить до запуска</h3>
+                  <h3 className="text-sm font-bold text-white">Что проверить до запуска</h3>
                   <span className="ml-auto rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-2.5 py-0.5 text-[10px] font-semibold text-[#8aa2c4]">{overviewReadinessItems.length} пунктов</span>
                 </div>
                 <div className="mt-4 flex flex-col gap-2.5">
                   {overviewReadinessItems.map((it, i) => (
                     <div key={i} className="flex items-center gap-3 rounded-lg border border-[#243244] bg-[#101826]/55 px-3 py-2.5">
-                      <span className={`flex h-6 w-6 flex-none items-center justify-center rounded-md text-[13px] font-black ${
+                      <span className={`flex h-6 w-6 flex-none items-center justify-center rounded-md text-[13px] font-bold ${
                         it.tone === "ok" ? "bg-[#00d4aa]/16 text-[#00d4aa]" : it.tone === "warn" ? "bg-[#ffc107]/16 text-[#ffc107]" : "bg-[#ff4444]/16 text-[#ff4444]"
                       }`}>{it.tone === "ok" ? "✓" : it.tone === "warn" ? "▲" : "!"}</span>
                       <div className="min-w-0">
@@ -2312,7 +2312,7 @@ export default function AdminPage() {
               <section className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-5 backdrop-blur">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-[#00d4aa]" />
-                  <h3 className="text-sm font-black text-white">Профиль компетенций</h3>
+                  <h3 className="text-sm font-bold text-white">Профиль компетенций</h3>
                   <span className="ml-auto rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-2.5 py-0.5 text-[10px] font-semibold text-[#8aa2c4]">НАДО / ФАКТ</span>
                 </div>
                 <p className="mt-1.5 text-[11.5px] leading-relaxed text-[#8aa2c4]">
