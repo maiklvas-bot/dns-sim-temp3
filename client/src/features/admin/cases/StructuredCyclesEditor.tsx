@@ -21,7 +21,7 @@ import {
 } from "./case-editor-support";
 import { CaseMediaPanel } from "./CaseMediaPanel";
 import { StructuredOptionsEditor } from "./StructuredOptionsEditor";
-import { createEmptyStructuredOption } from "./case-editor-support";
+import { createEmptyCycle, createEmptyStructuredOption } from "./case-editor-support";
 
 export function StructuredCyclesEditor({
   cycles,
@@ -66,26 +66,7 @@ export function StructuredCyclesEditor({
   const addCycle = () => {
     onChange([
       ...(cycles || []),
-      {
-        id: `draft-cycle-${Date.now()}`,
-        cycle: (cycles?.length || 0) + 1,
-        title: `Цикл ${(cycles?.length || 0) + 1}`,
-        description: "",
-        source: "",
-        situation: "",
-        signal: { type: "message", content: "" },
-        zonesAffected: [],
-        timing: { decisionDeadlineSeconds: 180, reminderIntervalSeconds: 180 },
-        status: "draft",
-        isFinal: false,
-        priority: "normal",
-        criticality: "normal",
-        options: [createEmptyStructuredOption(1)],
-        imageAssetId: null,
-        imageUrl: null,
-        audioAssetId: null,
-        audioUrl: null,
-      },
+      createEmptyCycle(`draft-cycle-${Date.now()}`, (cycles?.length || 0) + 1),
     ]);
     setSelectedCycleIndex(cycles?.length || 0);
   };

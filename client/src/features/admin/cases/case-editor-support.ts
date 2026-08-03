@@ -1,4 +1,4 @@
-import type { CompetencyDefinition, SimCase } from "@shared/simulation-content";
+import type { CaseCycle, CaseOption, CompetencyDefinition, SimCase } from "@shared/simulation-content";
 import { BARS_LEVEL_SCORES, hasMeaningfulText } from "@shared/case-validation";
 
 export const CASE_SIGNAL_TYPE_OPTIONS = [
@@ -92,7 +92,7 @@ export function createEmptyCase(order: number): SimCase {
   };
 }
 
-export function createEmptyStructuredOption(level: number) {
+export function createEmptyStructuredOption(level: number): CaseOption {
   return {
     id: "",
     level,
@@ -105,6 +105,31 @@ export function createEmptyStructuredOption(level: number) {
     status: "active",
     effects: { queue: 0, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 },
     competency_scores: {},
+  };
+}
+
+// Новый шаг создаётся из двух мест — этап «Структура» мастера и редактор циклов.
+// Форма одна, иначе шаги получаются с разными умолчаниями (например, без тайминга).
+export function createEmptyCycle(id: string, order: number): CaseCycle {
+  return {
+    id,
+    cycle: order,
+    title: `Цикл ${order}`,
+    description: "",
+    source: "",
+    situation: "",
+    signal: { type: "message" as const, content: "" },
+    zonesAffected: [],
+    timing: { decisionDeadlineSeconds: 180, reminderIntervalSeconds: 180 },
+    status: "draft",
+    isFinal: false,
+    priority: "normal",
+    criticality: "normal",
+    options: [createEmptyStructuredOption(1)],
+    imageAssetId: null,
+    imageUrl: null,
+    audioAssetId: null,
+    audioUrl: null,
   };
 }
 

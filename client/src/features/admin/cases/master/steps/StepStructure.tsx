@@ -1,6 +1,7 @@
 import type { SimCase } from "@shared/simulation-content";
 import { Button } from "@/components/ui/button";
 import { CaseFlowDiagram } from "../../../components/CaseFlowDiagram";
+import { createEmptyCycle } from "../../case-editor-support";
 import { isCaseStructureBranching } from "../case-master-support";
 
 export function StepStructure({
@@ -16,20 +17,17 @@ export function StepStructure({
   const addCycle = () => {
     const nextNumber = cycles.length + 1;
     onChange({
-      cycles: [
-        ...cycles,
-        {
-          id: `${entity.id || "CASE"}-C${nextNumber}`,
-          cycle: nextNumber,
-          situation: "",
-          signal: { type: "message" as const, content: "" },
-          options: [],
-        },
-      ],
+      cycles: [...cycles, createEmptyCycle(`${entity.id || "CASE"}-C${nextNumber}`, nextNumber)],
     });
   };
 
+  // Кейс без единого шага пройти нельзя — последний шаг не удаляем, как и в редакторе циклов.
+  const canRemoveCycle = cycles.length > 1;
+
   const removeCycle = (index: number) => {
+    if (!canRemoveCycle) {
+      return;
+    }
     onChange({
       cycles: cycles
         .filter((_, cycleIndex) => cycleIndex !== index)
@@ -79,6 +77,8 @@ export function StepStructure({
                   size="sm"
                   variant="outline"
                   className="shrink-0 border-[#ff4444]/30 bg-transparent text-[#ff9999]"
+                  disabled={!canRemoveCycle}
+                  title={canRemoveCycle ? undefined : "Последний шаг удалить нельзя — кейс без шагов не пройти"}
                   onClick={() => removeCycle(index)}
                 >
                   Удалить
