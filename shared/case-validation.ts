@@ -190,12 +190,22 @@ const BLOCKING_QA_STATUSES: ReadonlySet<string> = new Set([
  * Замечание считается принятым, если автор отметил ровно его — с обоснованием.
  * Пустое обоснование не принимается: отказ должен быть осознанным, а не кликом.
  */
+/**
+ * Принятие адресное: покрывает ровно то замечание, к которому его написали.
+ *
+ * Привязка сравнивается с обеих сторон. Раньше пустой `cycleId` в принятии
+ * означал «подходит к любому», и одно обоснование по одному варианту молча
+ * снимало все замечания этого типа во всём кейсе — то есть отключало проверку.
+ * Замечания без привязки (диагностика — она про кейс целиком) принимаются
+ * записью тоже без привязки.
+ */
 export function isIssueAccepted(issue: CaseValidationIssue, accepted: AcceptedIssue[] | undefined): boolean {
   return (accepted || []).some((item) => {
     if (item.check !== issue.check) return false;
+    // Обоснование обязательно: без него принятия нет.
     if (!item.reason || !item.reason.trim()) return false;
-    if (item.cycleId && item.cycleId !== issue.cycleId) return false;
-    if (item.optionId && item.optionId !== issue.optionId) return false;
+    if ((item.cycleId ?? null) !== (issue.cycleId ?? null)) return false;
+    if ((item.optionId ?? null) !== (issue.optionId ?? null)) return false;
     return true;
   });
 }

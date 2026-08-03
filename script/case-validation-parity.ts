@@ -213,4 +213,36 @@ assert.equal(shouldBlockCaseSave("ready_launch", acceptedIssues, [allAccepted[0]
 // Без списка принятых поведение прежнее (обратная совместимость)
 assert.equal(shouldBlockCaseSave("ready_launch", acceptedIssues), true);
 
+// Принятие адресное: обоснование по одному варианту не должно снимать
+// замечания того же типа по другим вариантам — иначе одна запись молча
+// отключает проверку по всему кейсу.
+const adressCase = buildCase();
+adressCase.cycles[0].options[0].effects = { queue: 0, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 };
+adressCase.cycles[0].options[1].effects = { queue: 0, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 };
+const adressIssues = validateCase(adressCase).filter((item) => item.check === "effect_reality");
+assert.ok(adressIssues.length >= 2, "два варианта без эффектов дают два замечания");
+assert.notEqual(adressIssues[0].optionId, adressIssues[1].optionId, "замечания адресованы разным вариантам");
+
+const acceptedFirstOnly = [
+  {
+    check: "effect_reality" as const,
+    cycleId: adressIssues[0].cycleId,
+    optionId: adressIssues[0].optionId,
+    reason: "в этом варианте бездействие и должно быть без последствий",
+  },
+];
+assert.equal(isIssueAccepted(adressIssues[0], acceptedFirstOnly), true, "принятое замечание снято");
+assert.equal(
+  isIssueAccepted(adressIssues[1], acceptedFirstOnly),
+  false,
+  "соседний вариант остаётся с замечанием: принятие адресное, а не на всю проверку",
+);
+
+// Запись без привязки не должна покрывать замечание, у которого привязка есть
+assert.equal(
+  isIssueAccepted(adressIssues[0], [{ check: "effect_reality" as const, reason: "так задумано" }]),
+  false,
+  "принятие без указания варианта не снимает замечание по конкретному варианту",
+);
+
 console.log("case-validation parity checks passed");
