@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { hasMeaningfulText, spearmanRho, validateCase, shouldBlockCaseSave } from "../shared/case-validation";
-import type { SimCase } from "../shared/simulation-content";
+import { hasMeaningfulText, spearmanRho, validateCase, shouldBlockCaseSave, isIssueAccepted } from "../shared/case-validation";
+import type { AcceptedIssue, SimCase } from "../shared/simulation-content";
 
 const baseEffects = { queue: 0, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 };
 
@@ -188,5 +188,29 @@ assert.equal(
   0,
   "a gap drops the competency from the set — documented limitation, not silent behaviour",
 );
+
+// Осознанный отказ: автор может принять замечание с обоснованием, и оно перестаёт
+// блокировать сохранение — но только ровно то замечание, которое принято.
+const acceptedCase = buildCase({ hiddenCause: null });
+const acceptedIssues = validateCase(acceptedCase);
+assert.ok(acceptedIssues.length > 0, "кейс без скрытой причины даёт замечания");
+
+const accepted = [{ check: "diagnostics" as const, reason: "Причина очевидна из сигнала, расследование не нужно" }];
+assert.equal(isIssueAccepted(acceptedIssues[0], accepted), true);
+assert.equal(isIssueAccepted(acceptedIssues[0], []), false);
+// Принятие без обоснования не считается принятием
+assert.equal(isIssueAccepted(acceptedIssues[0], [{ check: "diagnostics" as const, reason: "  " }]), false);
+
+// Принятое замечание другой проверки не влияет
+const barsIssue = { check: "bars_conformance" as const, message: "деталь", cycleId: "C1", optionId: "O1" };
+assert.equal(isIssueAccepted(barsIssue, accepted), false);
+
+// Гейт: все замечания приняты -> не блокирует даже при статусе готовности
+const allAccepted = acceptedIssues.map((item) => ({ check: item.check, cycleId: item.cycleId, optionId: item.optionId, reason: "осознанно" }));
+assert.equal(shouldBlockCaseSave("ready_launch", acceptedIssues, allAccepted), false);
+// Часть принята, часть нет -> блокирует
+assert.equal(shouldBlockCaseSave("ready_launch", acceptedIssues, [allAccepted[0]]), acceptedIssues.length > 1);
+// Без списка принятых поведение прежнее (обратная совместимость)
+assert.equal(shouldBlockCaseSave("ready_launch", acceptedIssues), true);
 
 console.log("case-validation parity checks passed");

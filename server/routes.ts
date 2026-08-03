@@ -1460,7 +1460,7 @@ export async function registerRoutes(
   app.post("/api/admin/cases", requireAdmin, adminRateLimiter, validateBody(editableSimCaseSchema), (req, res) => {
     const body = req.validatedBody as z.infer<typeof editableSimCaseSchema>;
     const validationIssues = validateCase(body as EditableSimCase);
-    if (shouldBlockCaseSave(body.qaStatus, validationIssues)) {
+    if (shouldBlockCaseSave(body.qaStatus, validationIssues, body.acceptedIssues)) {
       return res.status(400).json({ error: "case_validation_failed", issues: validationIssues });
     }
     const before = body.id ? getCaseSnapshot(body.id) : null;
