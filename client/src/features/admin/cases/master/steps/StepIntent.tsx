@@ -2,6 +2,7 @@ import type { CompetencyDefinition, SimCase } from "@shared/simulation-content";
 import { CompetencyRoleSelector, Field, FieldArea } from "../../../components/AdminFields";
 import { MasterHelp } from "../MasterHelp";
 import { HELP } from "../master-help-topics";
+import { TemplatePeek } from "../TemplatePeek";
 import { TemplatePicker } from "../TemplatePicker";
 
 export function StepIntent({
@@ -27,6 +28,8 @@ export function StepIntent({
           У каждого блока есть знак вопроса: там объяснение и готовый пример.
         </div>
       </div>
+
+      <TemplatePeek stepId="intent" />
 
       <TemplatePicker caseId={entity.id} onApply={onReplaceCase} />
 

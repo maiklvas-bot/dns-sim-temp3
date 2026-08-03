@@ -24,6 +24,38 @@ function peekContent(stepId: MasterStepId, templateIndex: number): Array<{ label
     }));
   }
 
+  if (stepId === "intent") {
+    return [
+      { label: "Название", value: caseData.title },
+      { label: "Бизнес-проблема", value: caseData.businessProblem || "" },
+      {
+        label: "Компетенции",
+        value: [
+          (caseData.primaryCompetencies || []).map((id) => `${id} — первичная`).join(", "),
+          (caseData.secondaryCompetencies || []).map((id) => `${id} — вторичная`).join(", "),
+        ]
+          .filter(Boolean)
+          .join("; "),
+      },
+      { label: "Чему учит образец", value: template.teaches },
+    ];
+  }
+
+  if (stepId === "structure") {
+    // Форму кейса видно по переходам: куда ведёт каждый ответ.
+    return caseData.cycles.map((cycle) => {
+      const targets = (cycle.options || []).map((option) => {
+        if (option.nextCycleId === "__complete") return "финал";
+        const target = caseData.cycles.find((item) => item.id === option.nextCycleId);
+        return target ? `шаг ${target.cycle}` : "дальше по порядку";
+      });
+      return {
+        label: `Шаг ${cycle.cycle}`,
+        value: `${cycle.situation} → ${targets.join(" / ")}`,
+      };
+    });
+  }
+
   return [];
 }
 

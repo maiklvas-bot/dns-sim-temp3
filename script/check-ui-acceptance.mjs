@@ -189,6 +189,22 @@ assertCondition(
 );
 // Вердикт лестницы обязан приходить из автопроверки: своя формула означала бы,
 // что картинка и механика расходятся.
+// Эталон как учебник: «как в образце» доступно на каждом содержательном этапе.
+for (const step of ["StepIntent", "StepSituation", "StepStructure", "StepDecisions"]) {
+  assertCondition(
+    /<TemplatePeek[\s/>]/.test(readText(`client/src/features/admin/cases/master/steps/${step}.tsx`)),
+    `Просмотр образца должен быть доступен на этапе ${step}`,
+  );
+}
+// Просмотр образца — только чтение: он не должен уметь менять кейс автора.
+// Проверяем сигнатуру, а не тело: onChange у select внутри — это переключение
+// образца, а не правка кейса. Опасно другое — обработчик, приходящий снаружи.
+const templatePeek = readText("client/src/features/admin/cases/master/TemplatePeek.tsx");
+const peekProps = templatePeek.match(/export function TemplatePeek\(\{([^}]*)\}/)?.[1] || "";
+assertCondition(
+  !/on[A-Z]/.test(peekProps),
+  `Просмотр образца не должен получать обработчиков снаружи — он затрёт работу автора. Пропсы: ${peekProps.trim()}`,
+);
 assertCondition(
   readText("client/src/features/admin/cases/master/CompetencyLadderHint.tsx").includes("findLadderIssue"),
   "Лестница берёт вердикт из автопроверки, а не считает его заново",

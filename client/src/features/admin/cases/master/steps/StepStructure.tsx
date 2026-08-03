@@ -7,6 +7,7 @@ import { findBrokenTransitions, isCaseStructureBranching } from "../case-master-
 import { CaseStructureMiniMap } from "../CaseStructureMiniMap";
 import { MasterHelp } from "../MasterHelp";
 import { HELP } from "../master-help-topics";
+import { TemplatePeek } from "../TemplatePeek";
 
 export function StepStructure({
   entity,
@@ -59,6 +60,8 @@ export function StepStructure({
           Переходы задаются на этапе «Решения», а здесь видно, что вышло.
         </div>
       </div>
+
+      <TemplatePeek stepId="structure" />
 
       {/* Два типа сценария словами, а не терминами: автор должен узнать свой случай. */}
       <div className="grid gap-2 md:grid-cols-2">
