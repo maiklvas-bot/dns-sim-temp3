@@ -61,8 +61,8 @@ export function StepLaunch({
           onChange={(value) => updateTiming({ decisionDeadlineSeconds: value ? Number(value) : null })}
         />
         <Field
-          label="Интервал напоминания, сек"
-          value={entity.timing?.reminderIntervalSeconds ?? ""}
+          label="Повтор напоминания, сек"
+          value={entity.timing?.reminderIntervalSeconds ?? 180}
           onChange={(value) => updateTiming({ reminderIntervalSeconds: value ? Number(value) : null })}
         />
       </div>
