@@ -4,6 +4,7 @@ import { CASE_SIGNAL_TYPE_OPTIONS, STORE_ZONE_OPTIONS } from "../../case-editor-
 import { CaseDossierEditor } from "../../CaseDossierEditor";
 import { MasterHelp } from "../MasterHelp";
 import { HELP } from "../master-help-topics";
+import { TemplatePeek } from "../TemplatePeek";
 
 export function StepSituation({
   entity,
@@ -23,6 +24,8 @@ export function StepSituation({
           кейс в расследование, а не в угадывание правильной кнопки.
         </div>
       </div>
+
+      <TemplatePeek stepId="situation" />
 
       <div className="flex items-center gap-1.5">
         <span className="text-xs font-semibold text-[#8fa8cf]">Сигнал участнику</span>

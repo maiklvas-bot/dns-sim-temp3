@@ -7,6 +7,7 @@ import { CompetencyLadderHint } from "../CompetencyLadderHint";
 import { IssueCard } from "../IssueCard";
 import { MasterHelp } from "../MasterHelp";
 import { HELP } from "../master-help-topics";
+import { TemplatePeek } from "../TemplatePeek";
 
 export function StepDecisions({
   entity,
@@ -65,6 +66,8 @@ export function StepDecisions({
           </span>
         </div>
       </div>
+
+      <TemplatePeek stepId="decisions" />
 
       {(entity.cycles || []).map((cycle) => (
         <CompetencyLadderHint
