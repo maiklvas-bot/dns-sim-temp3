@@ -16,16 +16,17 @@ function StepTile({ summary, index, onOpen }: { summary: StepSummary; index: num
     <button
       type="button"
       onClick={onOpen}
-      className={`dns-master-tile flex h-full flex-col rounded-xl border p-3 text-left transition ${
+      className={`dns-master-tile flex h-full flex-col rounded-xl border text-left transition ${
         hasIssues
-          ? "border-[#ffb27a]/50 bg-[#f68b1f]/10 hover:border-[#ffb27a]"
+          ? "border-[#ffb27a]/50 hover:border-[#ffb27a]"
           : summary.isFilled
-            ? "border-[#54d28c]/35 bg-[#101826]/70 hover:border-[#54d28c]"
-            : "border-[#243244] bg-[#101826]/70 hover:border-[#3b5878]"
+            ? "border-[#54d28c]/35 hover:border-[#54d28c]"
+            : "border-transparent hover:border-[#3b5878]"
       }`}
     >
+      {/* Номер и статус — служебная строка, она тише заголовка. */}
       <div className="flex items-center justify-between gap-2">
-        <span className="flex h-5 w-5 flex-none items-center justify-center rounded-md border border-[#3b5878] text-[11px] font-bold text-[#8ec5ff]">
+        <span className="flex h-6 w-6 flex-none items-center justify-center rounded-md border border-[#3b5878] text-[11px] font-bold text-[#8ec5ff]">
           {index + 1}
         </span>
         {hasIssues ? (
@@ -37,15 +38,15 @@ function StepTile({ summary, index, onOpen }: { summary: StepSummary; index: num
         )}
       </div>
 
-      <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8aa2c4]">
-        {summary.title}
-      </div>
+      {/* Заголовок этапа — главная ступень плитки. Раньше он был мельче
+          собственного содержания, и иерархия читалась перевёрнутой. */}
+      <div className="mt-2.5 text-[13px] font-bold text-white">{summary.title}</div>
 
-      <div className="mt-1.5 space-y-0.5">
+      <div className="mt-2 space-y-1">
         {lines.map((line, lineIndex) => (
           <div
             key={`${summary.stepId}-${lineIndex}`}
-            className="truncate text-[12px] leading-5 text-[#b8c7df]"
+            className="truncate text-[12px] leading-5 text-[#8aa2c4]"
           >
             {line || " "}
           </div>
