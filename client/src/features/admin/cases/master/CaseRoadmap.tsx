@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { FloatingCard } from "@/components/floating-card";
 import type { SimCase } from "@shared/simulation-content";
 import { validateCase } from "@shared/case-validation";
 import { buildRoadmapLayout, type NodeState, type RoadmapNode } from "./case-roadmap-layout";
@@ -110,11 +111,8 @@ export function CaseRoadmap({
                 key={node.key}
                 opacity={style.opacity}
                 onMouseEnter={(event) =>
-                  setHovered({
-                    node,
-                    x: event.nativeEvent.offsetX,
-                    y: event.nativeEvent.offsetY,
-                  })
+                  // Координаты окна, а не контейнера: карточка живёт в портале.
+                  setHovered({ node, x: event.clientX, y: event.clientY })
                 }
               >
                 <rect
@@ -178,23 +176,17 @@ export function CaseRoadmap({
         </svg>
 
         {hovered && (
-          <div
-            className="pointer-events-none absolute z-30 w-[16rem] rounded-lg border border-[#3b5878] bg-[#101826] p-2.5 shadow-[0_14px_36px_rgba(0,0,0,0.5)]"
-            style={{
-              left: Math.min(hovered.x + 12, 40),
-              top: hovered.y + 16,
-            }}
-          >
-            <div className="text-[11px] font-bold text-white">{hovered.node.title}</div>
-            <div className="mt-1 text-[11px] leading-relaxed text-[#b8c7df]">{hovered.node.hint}</div>
+          <FloatingCard anchor={{ x: hovered.x, y: hovered.y }}>
+            <div className="text-[12px] font-bold text-white">{hovered.node.title}</div>
+            <div className="mt-1 text-[12px] leading-relaxed text-[#b8c7df]">{hovered.node.hint}</div>
             {hovered.node.hasChildren && (
-              <div className="mt-1.5 text-[10px] text-[#8ec5ff]">
+              <div className="mt-1.5 text-[11px] text-[#8ec5ff]">
                 {hovered.node.collapsed
                   ? `Внутри элементов: ${hovered.node.childCount}. Нажмите «+», чтобы раскрыть.`
                   : `Раскрыто, элементов: ${hovered.node.childCount}.`}
               </div>
             )}
-          </div>
+          </FloatingCard>
         )}
       </div>
     </div>

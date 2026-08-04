@@ -172,6 +172,33 @@ assertCondition(
   "Теория должна показываться схемами, а не только текстом",
 );
 
+// Всплывающие окна — только порталом (см. CLAUDE.md, «Правила интерфейса»).
+// Панели кабинета обрезают содержимое, поэтому absolute-подсказка внутри панели
+// прячется под её краем, и z-index этого не лечит.
+const floatingCard = readText("client/src/components/floating-card.tsx");
+assertCondition(
+  /createPortal\(/.test(floatingCard) && /document\.body/.test(floatingCard) && floatingCard.includes("fixed"),
+  "Всплывающая карточка должна рендериться порталом в body с фиксированным позиционированием",
+);
+assertCondition(
+  floatingCard.includes("window.innerWidth") && floatingCard.includes("window.innerHeight"),
+  "Всплывающая карточка должна подстраиваться под края окна",
+);
+for (const popoverFile of [
+  "client/src/features/admin/cases/master/MasterHelp.tsx",
+  "client/src/features/admin/cases/master/CaseRoadmap.tsx",
+]) {
+  const source = readText(popoverFile);
+  assertCondition(
+    /<FloatingCard[\s/>]/.test(source),
+    `${popoverFile}: всплывающее окно должно использовать FloatingCard, а не absolute внутри панели`,
+  );
+  assertCondition(
+    !/absolute[^"]*\bz-\d/.test(source),
+    `${popoverFile}: всплывающее окно не должно позиционироваться absolute внутри обрезающего контейнера`,
+  );
+}
+
 const releaseHistory = readText("client/src/data/release-history.ts");
 assertCondition(
   releaseHistory.includes("problems") && releaseHistory.includes("solved"),
