@@ -211,7 +211,15 @@ assertCondition(
   adminWorkspace.includes("setCorrectionsCaseId"),
   "В списке кейсов должна быть кнопка, открывающая разбор правок исправленного кейса",
 );
+assertCondition(
+  /<CaseCorrectionsDialog[\s\S]{0,400}themeClass=\{themeClass\}/.test(adminWorkspace),
+  "Разбору правок нужно передавать тему: диалог рендерится порталом и наследовать её не от кого",
+);
 const correctionsDialog = readText("client/src/features/admin/cases/CaseCorrectionsDialog.tsx");
+assertCondition(
+  correctionsDialog.includes("${themeClass}"),
+  "Разбор правок должен применять переданную тему к содержимому диалога",
+);
 for (const field of ["item.was", "item.became", "item.why"]) {
   assertCondition(
     correctionsDialog.includes(field),

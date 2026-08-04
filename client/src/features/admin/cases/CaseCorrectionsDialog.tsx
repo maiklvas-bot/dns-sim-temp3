@@ -31,11 +31,17 @@ export function CaseCorrectionsDialog({
   onOpenChange,
   correctedCase,
   originalCase,
+  themeClass,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   correctedCase: SimCase;
   originalCase: SimCase | null;
+  /**
+   * Диалог рендерится порталом за пределы оболочки кабинета, поэтому тему
+   * наследовать не от кого — её передают явно, как и остальным диалогам.
+   */
+  themeClass: string;
 }) {
   const corrections = correctedCase.corrections || [];
   const originalIssues = originalCase ? validateCase(originalCase) : [];
@@ -43,7 +49,9 @@ export function CaseCorrectionsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="dns-admin-shell max-h-[88vh] w-[min(96vw,60rem)] max-w-none overflow-y-auto">
+      <DialogContent
+        className={`dns-product-shell dns-admin-shell ${themeClass} max-h-[88vh] w-[min(96vw,60rem)] max-w-none overflow-y-auto`}
+      >
         <DialogHeader>
           <DialogTitle className="text-lg text-white">Что исправлено в этом кейсе</DialogTitle>
         </DialogHeader>

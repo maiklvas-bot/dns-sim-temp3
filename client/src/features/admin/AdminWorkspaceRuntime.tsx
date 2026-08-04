@@ -2388,6 +2388,7 @@ export default function AdminPage() {
                 onOpenChange={(next) => { if (!next) setCorrectionsCaseId(null); }}
                 correctedCase={correctedCase}
                 originalCase={cases.find((item) => item.id === correctedCase.correctionOfCaseId) || null}
+                themeClass={themeClass}
               />
             );
           })()}
