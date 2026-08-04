@@ -96,6 +96,7 @@ import {
 import { CaseMaster, initialMasterView, type MasterView } from "./cases/master/CaseMaster";
 import { CaseRoadmap } from "./cases/master/CaseRoadmap";
 import { buildCaseSetupIssues, MASTER_STEP_TITLES } from "./cases/master/case-master-support";
+import { CaseCorrectionsDialog } from "./cases/CaseCorrectionsDialog";
 import { CASE_AUTHORING_WIKI } from "./admin-wiki-content";
 import { clearDraftFromStorage, deepClone, readDraftFromStorage, writeDraftToStorage } from "./hooks/useAdminDrafts";
 import { useAdminPermissions } from "./hooks/useAdminPermissions";
@@ -1100,6 +1101,8 @@ export default function AdminPage() {
   const [selectedResultId, setSelectedResultId] = useState<number | null>(null);
   const [selectedCaseCycleIndex, setSelectedCaseCycleIndex] = useState(0);
   const [caseEditorOpen, setCaseEditorOpen] = useState(false);
+  // id кейса-исправления, для которого открыт разбор правок.
+  const [correctionsCaseId, setCorrectionsCaseId] = useState<string | null>(null);
   // Вид мастера живёт здесь, а не внутри него: правая панель должна уметь открыть
   // этап, на котором чинится замечание.
   const [masterView, setMasterView] = useState<MasterView>(() => initialMasterView(false));
@@ -2347,6 +2350,18 @@ export default function AdminPage() {
                         {hasUnsavedTitle && <span className="ml-1.5 text-[#ffd36e]">не сохранено</span>}
                       </div>
                     </button>
+                    {/* У дубля-исправления разбор правок открывается прямо из списка:
+                        решение «верить ли этой версии» принимают до входа в редактор. */}
+                    {item.correctionOfCaseId && (
+                      <button
+                        type="button"
+                        onClick={() => setCorrectionsCaseId(item.id)}
+                        className="mt-1.5 rounded-md border border-[#54d28c]/40 bg-[#54d28c]/10 px-2 py-0.5 text-[11px] font-semibold text-[#54d28c] transition hover:bg-[#54d28c]/20"
+                        title={`Показать, что исправлено относительно ${item.correctionOfCaseId}`}
+                      >
+                        Исправление · что изменено ({(item.corrections || []).length})
+                      </button>
+                    )}
                   </div>
                   );
                 })}
@@ -2361,6 +2376,21 @@ export default function AdminPage() {
               </div>
             </div>
           </div>
+
+          {/* Разбор правок кейса-исправления: что было в оригинале, что стало и почему. */}
+          {(() => {
+            const cases = contentQuery.data.cases as SimCase[];
+            const correctedCase = cases.find((item) => item.id === correctionsCaseId);
+            if (!correctedCase) return null;
+            return (
+              <CaseCorrectionsDialog
+                open
+                onOpenChange={(next) => { if (!next) setCorrectionsCaseId(null); }}
+                correctedCase={correctedCase}
+                originalCase={cases.find((item) => item.id === correctedCase.correctionOfCaseId) || null}
+              />
+            );
+          })()}
 
           <Dialog open={caseEditorOpen} onOpenChange={setCaseEditorOpen}>
             {/* Окно мастера занимает экран: при 1500px на широком мониторе по краям

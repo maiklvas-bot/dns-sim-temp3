@@ -199,6 +199,26 @@ for (const popoverFile of [
   );
 }
 
+// Разбор правок кейса-исправления должен быть доступен из списка кейсов.
+// Компонент, который не подключён, не показывает пользователю ничего —
+// такое уже случалось с карточкой замечания.
+const adminWorkspace = readText("client/src/features/admin/AdminWorkspaceRuntime.tsx");
+assertCondition(
+  /<CaseCorrectionsDialog[\s/>]/.test(adminWorkspace),
+  "Разбор правок исправленного кейса должен быть подключён в кабинете администратора",
+);
+assertCondition(
+  adminWorkspace.includes("setCorrectionsCaseId"),
+  "В списке кейсов должна быть кнопка, открывающая разбор правок исправленного кейса",
+);
+const correctionsDialog = readText("client/src/features/admin/cases/CaseCorrectionsDialog.tsx");
+for (const field of ["item.was", "item.became", "item.why"]) {
+  assertCondition(
+    correctionsDialog.includes(field),
+    `Разбор правок должен показывать поле ${field}: без него непонятно, что именно изменено`,
+  );
+}
+
 const releaseHistory = readText("client/src/data/release-history.ts");
 assertCondition(
   releaseHistory.includes("problems") && releaseHistory.includes("solved"),

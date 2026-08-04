@@ -100,6 +100,8 @@ export const simulationCases = sqliteTable("simulation_cases", {
   falseTrailsJson: text("false_trails_json").notNull().default("[]"),
   qaStatus: text("qa_status").notNull().default("draft"),
   acceptedIssuesJson: text("accepted_issues_json").notNull().default("[]"),
+  correctionOfCaseId: text("correction_of_case_id"),
+  correctionsJson: text("corrections_json").notNull().default("[]"),
   imageAssetId: text("image_asset_id"),
   audioAssetId: text("audio_asset_id"),
   sortOrder: integer("sort_order").notNull().default(0),
