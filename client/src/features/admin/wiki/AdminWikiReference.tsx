@@ -1,5 +1,5 @@
 import type React from "react";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, BookOpen, Info, Lightbulb, Sparkles } from "lucide-react";
 import { WIKI_THEORY } from "./wiki-theory";
 import { WikiDiagram, type WikiDiagramId } from "./WikiDiagrams";
@@ -34,6 +34,41 @@ interface ProcessStep {
 
 type Selection = { kind: "theory"; id: string } | { kind: "block"; id: string } | { kind: "process" };
 
+/**
+ * Высота, которая реально осталась под колонки — от их верхней кромки до низа окна.
+ *
+ * Раньше здесь стояло `calc(100dvh - 19rem)`: вычитаемое подобрано на глаз под
+ * шапку кабинета и заголовок справочника. На другом окне шапка занимает больше,
+ * и низ колонок уезжал за экран. Меряем фактическую позицию, а не угадываем.
+ */
+function useAvailableHeight(ref: React.RefObject<HTMLElement | null>) {
+  const [height, setHeight] = useState<number | null>(null);
+
+  useLayoutEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const measure = () => {
+      const top = element.getBoundingClientRect().top;
+      const BOTTOM_GAP = 16;
+      setHeight(Math.max(320, window.innerHeight - top - BOTTOM_GAP));
+    };
+
+    measure();
+    window.addEventListener("resize", measure);
+    // Шапка меняет высоту при переносе строк — следим и за ней, а не только за окном.
+    const observer = new ResizeObserver(measure);
+    if (element.parentElement) observer.observe(element.parentElement);
+
+    return () => {
+      window.removeEventListener("resize", measure);
+      observer.disconnect();
+    };
+  }, [ref]);
+
+  return height;
+}
+
 export function AdminWikiReference({
   onBack,
   blocks,
@@ -49,6 +84,8 @@ export function AdminWikiReference({
   // Описание раздела прячется под «+»: в дереве нужны названия, а не абзацы.
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const columnsRef = useRef<HTMLDivElement | null>(null);
+  const columnsHeight = useAvailableHeight(columnsRef);
 
   const openSection = (next: Selection) => {
     setSelection(next);
@@ -120,7 +157,11 @@ export function AdminWikiReference({
 
       {/* Колонки прокручиваются каждая сама: раньше страница ехала целиком,
           и при открытии длинного раздела дерево уезжало вверх вместе с ним. */}
-      <div className="grid gap-4 lg:h-[calc(100dvh-19rem)] lg:min-h-[30rem] lg:grid-cols-[17.5rem,minmax(0,1fr)]">
+      <div
+        ref={columnsRef}
+        style={columnsHeight ? { height: columnsHeight } : undefined}
+        className="grid gap-4 lg:grid-cols-[17.5rem,minmax(0,1fr)]"
+      >
         <nav className="dns-admin-wiki-menu min-h-0 overflow-y-auto rounded-xl border border-[#243244] bg-[#101826]/70 p-3 custom-scroll">
           <div className="mb-2 flex items-center gap-2 px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8fa8cf]">
             <Lightbulb className="h-3.5 w-3.5" />
