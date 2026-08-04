@@ -130,6 +130,26 @@ for (const [name, source] of [["administrator", admin], ["assessor", assessor]])
     `${name}: номер версии должен открывать историю изменений`,
   );
 }
+// Справочник: разделы открываются из меню, а не вываливаются одной лентой,
+// и в нём есть теория — зачем симуляция и почему её оценке можно верить.
+const wikiReference = readText("client/src/features/admin/wiki/AdminWikiReference.tsx");
+assertCondition(
+  /\bWIKI_THEORY\b/.test(wikiReference) && wikiReference.includes("setSelection"),
+  "Wiki должна быть справочником с выбором раздела, а не сплошным списком карточек",
+);
+const wikiTheory = readText("client/src/features/admin/wiki/wiki-theory.ts");
+for (const topic of ["Зачем симуляция", "Откуда взялась оценка", "Как устроен кейс", "Риски механики"]) {
+  assertCondition(wikiTheory.includes(topic), `В теории симуляции должен быть раздел «${topic}»`);
+}
+assertCondition(
+  wikiTheory.includes("sources"),
+  "Утверждения теории должны ссылаться на матчасть, иначе их нечем проверить",
+);
+assertCondition(
+  /diagram:/.test(wikiTheory) && readText("client/src/features/admin/wiki/WikiDiagrams.tsx").includes("<svg"),
+  "Теория должна показываться схемами, а не только текстом",
+);
+
 const releaseHistory = readText("client/src/data/release-history.ts");
 assertCondition(
   releaseHistory.includes("problems") && releaseHistory.includes("solved"),

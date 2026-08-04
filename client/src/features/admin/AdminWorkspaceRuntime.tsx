@@ -2192,7 +2192,7 @@ export default function AdminPage() {
               </button>
               <button type="button" className="dns-admin-structure-nav-item" onClick={() => setAuditHistoryOpen(true)}>
                 <History aria-hidden="true" />
-                <span>История</span>
+                <span>Журнал действий</span>
               </button>
               <div className="dns-admin-structure-profile">
                 <span>{staffQuery.data?.displayName?.slice(0, 1) || "A"}</span>

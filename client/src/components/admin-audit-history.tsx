@@ -204,10 +204,11 @@ export function AdminAuditHistory({ open, onOpenChange }: AdminAuditHistoryProps
               <span className="flex h-10 w-10 items-center justify-center rounded-md border border-[#4a9eff]/35 bg-[#4a9eff]/10 text-[#8ec5ff]">
                 <ShieldCheck className="h-5 w-5" />
               </span>
-              История изменений
+              Журнал действий
             </DialogTitle>
             <DialogDescription className="text-[#9fb0c7]">
-              Защищенный журнал действий, событий безопасности и изменений данных симуляции.
+              Кто и когда что менял: входы, события безопасности и правки данных симуляции.
+              История развития самого продукта — по клику на номер версии внизу экрана.
             </DialogDescription>
           </DialogHeader>
 
