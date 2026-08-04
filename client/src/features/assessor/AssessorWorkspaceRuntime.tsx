@@ -94,6 +94,7 @@ import { useSetupValidation } from "./hooks/useSetupValidation";
 import { BRAND_ASSETS } from "@/lib/brand-assets";
 import { FeedbackButton } from "@/components/feedback-dialog";
 import { ProductFooter } from "@/components/product-footer";
+import { ReleaseHistoryDialog } from "@/components/release-history-dialog";
 
 // ═══════════════════════════════════════════════════════════
 // Main component
@@ -117,6 +118,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   const [wizardStep, setWizardStep] = useState(1);
   // ЗРД v2: мастер запуска матча (4 РРС, люди+ИИ) — открывается кнопкой «Запустить ЗРД»
   const [zrdWizardOpen, setZrdWizardOpen] = useState(false);
+  const [releaseHistoryOpen, setReleaseHistoryOpen] = useState(false);
 
   // ── Basic fields ──
   const [assessorName, setAssessorName] = useState("");
@@ -1879,7 +1881,8 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
             </div>
           );
         })()}
-        <ProductFooter />
+        <ProductFooter onVersionClick={() => setReleaseHistoryOpen(true)} />
+        <ReleaseHistoryDialog open={releaseHistoryOpen} onOpenChange={setReleaseHistoryOpen} themeClass={themeClass} />
       </div>
     </div>
   );

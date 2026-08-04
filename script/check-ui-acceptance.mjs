@@ -117,6 +117,35 @@ for (const forbiddenReference of [
   );
 }
 
+// История изменений продукта доступна из обоих кабинетов по клику на версию.
+// Это пользовательский журнал: что менялось на экранах и какие задачи закрывал
+// релиз — без кода и коммитов.
+for (const [name, source] of [["administrator", admin], ["assessor", assessor]]) {
+  assertCondition(
+    /<ReleaseHistoryDialog[\s/>]/.test(source),
+    `${name}: история изменений должна открываться из кабинета`,
+  );
+  assertCondition(
+    source.includes("onVersionClick"),
+    `${name}: номер версии должен открывать историю изменений`,
+  );
+}
+const releaseHistory = readText("client/src/data/release-history.ts");
+assertCondition(
+  releaseHistory.includes("problems") && releaseHistory.includes("solved"),
+  "История релизов должна показывать, какие задачи закрыты, а какие остались открытыми",
+);
+// Запись журнала — про экраны и задачи, а не про репозиторий. Проверяем сами
+// записи, а не комментарии файла: иначе правило спотыкается о собственный текст.
+const releaseEntries = releaseHistory
+  .split("\n")
+  .filter((line) => /^\s*(what|before|detail|title|scope):/.test(line))
+  .join("\n");
+assertCondition(
+  !/коммит|commit|pull request|рефактор|TypeScript|tsc\b/i.test(releaseEntries),
+  "История изменений пишется для пользователя: в записях не должно быть разработческих терминов",
+);
+
 const caseUi = [
   "client/src/features/admin/cases/StructuredOptionsEditor.tsx",
   "client/src/features/admin/cases/CaseDossierEditor.tsx",

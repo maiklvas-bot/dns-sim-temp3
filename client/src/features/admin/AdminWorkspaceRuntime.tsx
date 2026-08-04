@@ -76,6 +76,7 @@ import {
 import { BRAND_ASSETS } from "@/lib/brand-assets";
 import { FeedbackButton } from "@/components/feedback-dialog";
 import { ProductFooter } from "@/components/product-footer";
+import { ReleaseHistoryDialog } from "@/components/release-history-dialog";
 import { autoAssignScheduleTimes, buildScheduleRows, getScheduleSourceLabel, type ScheduleRow } from "./schedule/schedule-utils";
 import { ADMIN_NAV_ICONS, ADMIN_VISUALS } from "./admin-constants";
 import type { AdminChannelTab as ChannelTab, AdminTabKey as TabKey, SystemSoundSettingKey } from "./admin-types";
@@ -1097,7 +1098,6 @@ export default function AdminPage() {
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [selectedResultId, setSelectedResultId] = useState<number | null>(null);
-  const [selectedWeightCaseId, setSelectedWeightCaseId] = useState<string | null>(null);
   const [selectedCaseCycleIndex, setSelectedCaseCycleIndex] = useState(0);
   const [caseEditorOpen, setCaseEditorOpen] = useState(false);
   // Вид мастера живёт здесь, а не внутри него: правая панель должна уметь открыть
@@ -1109,6 +1109,7 @@ export default function AdminPage() {
   const [showAdminWiki, setShowAdminWiki] = useState(false);
   const [signalWizardOpen, setSignalWizardOpen] = useState(false);
   const [adminWikiOpen, setAdminWikiOpen] = useState(false);
+  const [releaseHistoryOpen, setReleaseHistoryOpen] = useState(false);
   const [auditHistoryOpen, setAuditHistoryOpen] = useState(false);
   const [signalWizardStep, setSignalWizardStep] = useState(0);
   const [signalWizardMode, setSignalWizardMode] = useState<ChannelTab>("email");
@@ -1277,15 +1278,6 @@ export default function AdminPage() {
     () => normalizeCaseWeightsDraft(settingsDraft),
     [settingsDraft],
   );
-  const selectedWeightCase = useMemo(
-    () => activeCases.find((item) => item.id === selectedWeightCaseId) || activeCases[0] || null,
-    [activeCases, selectedWeightCaseId],
-  );
-  const selectedCaseWeight = selectedWeightCase ? getCaseWeightValue(caseWeightsDraft, selectedWeightCase.id) : 100;
-  const selectedCaseProfile = useMemo(
-    () => buildEntityCompetencyProfile(selectedWeightCase),
-    [selectedWeightCase],
-  );
   const aggregateCompetencyProfile = useMemo(
     () => buildWeightedCompetencyProfile(activeCases, {}),
     [activeCases],
@@ -1293,13 +1285,6 @@ export default function AdminPage() {
   const factCompetencyProfile = useMemo(
     () => (resultDetailQuery.data?.result?.competencyAverages || {}) as Record<string, number>,
     [resultDetailQuery.data],
-  );
-  // Синий («Профиль кейса» / статичная база) = базовый (невзвешенный) профиль ВЫБРАННОГО кейса.
-  // Бирюзовый («Регулируемый вклад») = тот же профиль × регулируемый вес (что настроил пользователь).
-  // При весе 100% они совпадают; снижая вес, пользователь видит, как падает фактический вклад.
-  const aggregateBarData = useMemo(
-    () => buildCompetencyBarData(competencies, selectedCaseProfile, selectedCaseProfile, selectedCaseWeight),
-    [competencies, selectedCaseProfile, selectedCaseWeight],
   );
   const radarChartData = useMemo(
     () => buildCompetencyRadarData(competencies, aggregateCompetencyProfile, factCompetencyProfile),
@@ -1481,17 +1466,6 @@ export default function AdminPage() {
       }
     };
   }, []);
-
-  useEffect(() => {
-    if (!activeCases.length) {
-      setSelectedWeightCaseId(null);
-      return;
-    }
-
-    if (!selectedWeightCaseId || !activeCases.some((item) => item.id === selectedWeightCaseId)) {
-      setSelectedWeightCaseId(activeCases[0].id);
-    }
-  }, [activeCases, selectedWeightCaseId]);
 
   const handleUploadAsset = async (file: File) => {
     setUploading(true);
@@ -2462,7 +2436,34 @@ export default function AdminPage() {
 
                     {caseImpactTab === "impact" && (
                       <div className="mt-3">
-                        <div className="text-[11px] leading-relaxed text-[#8aa2c4]">
+                        {/* Вес кейса живёт рядом с графиком, который показывает его действие.
+                            Раньше он был в «Настройках», отдельно от кейса и от результата. */}
+                        {caseDraft && (
+                          <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
+                            <div className="flex items-baseline justify-between gap-2">
+                              <div className="text-[12px] font-semibold text-white">Вес кейса в симуляции</div>
+                              <div className="text-[13px] font-bold text-[#ffb27a]">{caseDraftWeight}%</div>
+                            </div>
+                            <div className="mt-1 text-[11px] leading-relaxed text-[#8aa2c4]">
+                              Чем выше вес, тем сильнее этот кейс влияет на итоговый портрет кандидата.
+                            </div>
+                            <div className="mt-3 px-1">
+                              <Slider
+                                value={[caseDraftWeight]}
+                                onValueChange={([nextValue]) => updateCaseWeight(caseDraft.id, nextValue)}
+                                min={0}
+                                max={100}
+                                step={10}
+                              />
+                              <div className="mt-2 flex justify-between text-[10px] uppercase tracking-[0.16em] text-[#7d9bc9]">
+                                <span>0</span>
+                                <span>50</span>
+                                <span>100</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <div className="mt-3 text-[11px] leading-relaxed text-[#8aa2c4]">
                           Синий — базовый профиль кейса, бирюзовый — фактический вклад с учётом веса.
                         </div>
                         <div className="mt-2">
@@ -3422,75 +3423,6 @@ export default function AdminPage() {
                 )}
               </div>
 
-              <div className="mt-4 rounded-xl border border-[#243244] bg-[#141c2b]/45 p-4">
-                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-white">Вес каждого кейса</div>
-                    <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
-                      Вместо ручной настройки каждой компетенции для всей симуляции вы задаёте вес кейса целиком.
-                      Чем выше вес, тем сильнее именно этот кейс влияет на итоговый портрет кандидата.
-                    </div>
-                  </div>
-                  <label className="flex items-center gap-2 rounded-full border border-[#2a3a4e] bg-[#101826]/70 px-3 py-2 text-xs text-[#dbe2f0]">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(settingsDraft.timeInfluenceEnabled)}
-                      onChange={(e) => setSettingsDraft((current) => ({
-                        ...current,
-                        timeInfluenceEnabled: e.target.checked,
-                      }))}
-                      className="h-4 w-4 rounded border-[#3b4b61] bg-[#141c2b]"
-                    />
-                    Влияние времени на итоговую оценку
-                  </label>
-                </div>
-
-                <div className="space-y-3">
-                  {activeCases.map((caseItem) => {
-                    const weightValue = getCaseWeightValue(caseWeightsDraft, caseItem.id);
-                    const isSelected = selectedWeightCase?.id === caseItem.id;
-
-                    return (
-                      <div
-                        key={caseItem.id}
-                        onClick={() => setSelectedWeightCaseId(caseItem.id)}
-                        className={`w-full rounded-xl border p-3 text-left transition ${
-                          isSelected
-                            ? "border-[#4a9eff]/50 bg-[#4a9eff]/10"
-                            : "border-[#243244] bg-[#101826]/70 hover:border-[#34506f]"
-                        }`}
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-xs uppercase tracking-[0.18em] text-[#6fa0ff]">{caseItem.id}</div>
-                            <div className="mt-1 text-sm font-semibold text-white">{caseItem.title}</div>
-                            <div className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8aa2c4]">
-                              {caseItem.description}
-                            </div>
-                          </div>
-                          <div className="rounded-full border border-[#2a3a4e] bg-[#141c2b]/70 px-3 py-1 text-sm font-semibold text-white">
-                            {weightValue}%
-                          </div>
-                        </div>
-                        <div className="mt-3 px-1">
-                          <Slider
-                            value={[weightValue]}
-                            onValueChange={([nextValue]) => updateCaseWeight(caseItem.id, nextValue)}
-                            min={0}
-                            max={100}
-                            step={10}
-                          />
-                          <div className="mt-2 flex justify-between text-[10px] uppercase tracking-[0.16em] text-[#71839d]">
-                            <span>0</span>
-                            <span>50</span>
-                            <span>100</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
 
               <div className="mt-4 rounded-xl border border-[#243244] bg-[#141c2b]/45 p-4">
                 <div className="text-sm font-semibold text-white mb-4">Системные медиа</div>
@@ -3741,32 +3673,6 @@ export default function AdminPage() {
             </div>
 
             <div className="space-y-4 xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:self-start xl:overflow-y-auto xl:overflow-x-hidden xl:pr-2 custom-scroll">
-              <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-white">Влияние выбранного кейса</div>
-                    <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
-                      График показывает статичный профиль симуляции по контенту и регулируемый вклад кейса, который вы сейчас настраиваете.
-                    </div>
-                  </div>
-                  {selectedWeightCase && (
-                    <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-3 py-1.5 text-[11px] font-semibold text-[#dbe2f0]">
-                      <span className="font-mono tracking-[0.06em] text-[#8ec5ff]">{selectedWeightCase.id}</span>
-                      <span className="text-[#4a607e]">·</span>
-                      <span>{selectedCaseWeight}%</span>
-                    </div>
-                  )}
-                </div>
-                <div className="mt-4">
-                  <CompetencyHorizontalImpactChart
-                    data={aggregateBarData}
-                    series={[
-                      { key: "aggregate", label: "Статичный профиль", color: "#4a9eff" },
-                      { key: "selected", label: "Регулируемый вклад", color: "#00d4aa" },
-                    ]}
-                  />
-                </div>
-              </div>
 
               <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4">
                 <div className="text-sm font-semibold text-white">Автоматическая оценка ожиданий</div>
@@ -3917,7 +3823,8 @@ export default function AdminPage() {
         )}
           </main>
         </div>
-        <ProductFooter />
+        <ProductFooter onVersionClick={() => setReleaseHistoryOpen(true)} />
+        <ReleaseHistoryDialog open={releaseHistoryOpen} onOpenChange={setReleaseHistoryOpen} themeClass={themeClass} />
       </div>
       {mailDialog && (() => {
         const row = comparisonRows.find((r) => r.id === mailDialog.rowId);
