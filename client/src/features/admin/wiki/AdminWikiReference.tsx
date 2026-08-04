@@ -1,6 +1,6 @@
 import type React from "react";
-import { useState } from "react";
-import { ArrowLeft, ArrowRight, BookOpen, ChevronRight, Info, Lightbulb, Sparkles } from "lucide-react";
+import { useRef, useState } from "react";
+import { ArrowLeft, ArrowRight, BookOpen, Info, Lightbulb, Sparkles } from "lucide-react";
 import { WIKI_THEORY } from "./wiki-theory";
 import { WikiDiagram, type WikiDiagramId } from "./WikiDiagrams";
 
@@ -46,29 +46,60 @@ export function AdminWikiReference({
   Shot: React.ComponentType<{ id: string }>;
 }) {
   const [selection, setSelection] = useState<Selection>({ kind: "theory", id: WIKI_THEORY[0]?.id || "" });
+  // Описание раздела прячется под «+»: в дереве нужны названия, а не абзацы.
+  const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  const openSection = (next: Selection) => {
+    setSelection(next);
+    // Новый раздел должен открыться с начала, а не с той позиции, где стоял предыдущий.
+    contentRef.current?.scrollTo({ top: 0 });
+  };
 
   const isActive = (candidate: Selection) =>
     selection.kind === candidate.kind
     && (candidate.kind === "process" || ("id" in candidate && "id" in selection && selection.id === candidate.id));
 
-  const menuButton = (candidate: Selection, title: string, subtitle?: string) => (
-    <button
-      key={`${candidate.kind}-${"id" in candidate ? candidate.id : "process"}`}
-      type="button"
-      onClick={() => setSelection(candidate)}
-      className={`mb-1 flex w-full items-start gap-2 rounded-lg px-3 py-2 text-left transition ${
-        isActive(candidate)
-          ? "bg-[#f68b1f]/15 text-white ring-1 ring-[#f68b1f]"
-          : "text-[#8aa2c4] hover:bg-[#6fa0ff]/10"
-      }`}
-    >
-      <ChevronRight className={`mt-0.5 h-3.5 w-3.5 flex-none ${isActive(candidate) ? "text-[#ffb27a]" : "opacity-50"}`} />
-      <span className="min-w-0">
-        <span className="block text-[13px] font-semibold leading-snug">{title}</span>
-        {subtitle && <span className="mt-0.5 block text-[11px] leading-snug opacity-80">{subtitle}</span>}
-      </span>
-    </button>
-  );
+  const menuButton = (candidate: Selection, title: string, subtitle?: string) => {
+    const key = `${candidate.kind}-${"id" in candidate ? candidate.id : "process"}`;
+    const active = isActive(candidate);
+    const expanded = expandedKeys.includes(key);
+
+    return (
+      <div key={key} className="mb-0.5">
+        <div
+          className={`flex items-center gap-1 rounded-lg pr-1 transition ${
+            active ? "bg-[#f68b1f]/15 text-white ring-1 ring-[#f68b1f]" : "text-[#8aa2c4] hover:bg-[#6fa0ff]/10"
+          }`}
+        >
+          <button
+            type="button"
+            onClick={() => openSection(candidate)}
+            className="min-w-0 flex-1 px-2.5 py-1.5 text-left"
+          >
+            <span className="block truncate text-[13px] font-semibold leading-snug" title={title}>
+              {title}
+            </span>
+          </button>
+          {subtitle && (
+            <button
+              type="button"
+              onClick={() => setExpandedKeys((keys) => (expanded ? keys.filter((item) => item !== key) : [...keys, key]))}
+              aria-label={expanded ? `Свернуть описание: ${title}` : `Что в разделе: ${title}`}
+              className="flex h-5 w-5 flex-none items-center justify-center rounded border border-[#3b5878] text-[11px] leading-none opacity-70 transition hover:opacity-100"
+            >
+              {expanded ? "−" : "+"}
+            </button>
+          )}
+        </div>
+        {expanded && subtitle && (
+          <div className="mb-1 ml-2.5 mt-1 border-l border-[#3b5878] pl-2.5 text-[11.5px] leading-snug text-[#8fa8cf]">
+            {subtitle}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="dns-admin-wiki-reference space-y-4">
@@ -87,8 +118,10 @@ export function AdminWikiReference({
         </button>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-[17rem,minmax(0,1fr)]">
-        <nav className="dns-admin-wiki-menu rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
+      {/* Колонки прокручиваются каждая сама: раньше страница ехала целиком,
+          и при открытии длинного раздела дерево уезжало вверх вместе с ним. */}
+      <div className="grid gap-4 lg:h-[calc(100dvh-19rem)] lg:min-h-[30rem] lg:grid-cols-[17.5rem,minmax(0,1fr)]">
+        <nav className="dns-admin-wiki-menu min-h-0 overflow-y-auto rounded-xl border border-[#243244] bg-[#101826]/70 p-3 custom-scroll">
           <div className="mb-2 flex items-center gap-2 px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8fa8cf]">
             <Lightbulb className="h-3.5 w-3.5" />
             Теория симуляции
@@ -106,7 +139,7 @@ export function AdminWikiReference({
           </div>
         </nav>
 
-        <div className="dns-admin-wiki-content min-w-0">
+        <div ref={contentRef} className="dns-admin-wiki-content min-h-0 min-w-0 overflow-y-auto pr-1 custom-scroll">
           {selection.kind === "theory" && <TheoryView sectionId={selection.id} />}
           {selection.kind === "block" && <BlockView blocks={blocks} blockId={selection.id} Shot={Shot} />}
           {selection.kind === "process" && <ProcessView steps={processSteps} />}

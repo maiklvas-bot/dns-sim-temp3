@@ -137,6 +137,21 @@ assertCondition(
   /\bWIKI_THEORY\b/.test(wikiReference) && wikiReference.includes("setSelection"),
   "Wiki должна быть справочником с выбором раздела, а не сплошным списком карточек",
 );
+// Колонки справочника прокручиваются каждая сама: иначе при открытии длинного
+// раздела дерево уезжает вверх и до нижних пунктов приходится мотать обратно.
+assertCondition(
+  (wikiReference.match(/overflow-y-auto/g) || []).length >= 2,
+  "Дерево и содержание справочника должны прокручиваться независимо друг от друга",
+);
+assertCondition(
+  /lg:h-\[calc\(100dvh/.test(wikiReference),
+  "Справочнику нужна ограниченная высота, иначе прокручивается страница целиком",
+);
+// Дерево остаётся компактным: описание раздела прячется под «+».
+assertCondition(
+  wikiReference.includes("expandedKeys"),
+  "Описание раздела в дереве должно раскрываться по «+», а не занимать место всегда",
+);
 const wikiTheory = readText("client/src/features/admin/wiki/wiki-theory.ts");
 for (const topic of ["Зачем симуляция", "Откуда взялась оценка", "Как устроен кейс", "Риски механики"]) {
   assertCondition(wikiTheory.includes(topic), `В теории симуляции должен быть раздел «${topic}»`);
