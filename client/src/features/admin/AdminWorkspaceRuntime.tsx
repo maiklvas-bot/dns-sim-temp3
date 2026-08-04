@@ -2446,7 +2446,7 @@ export default function AdminPage() {
                           key={key}
                           type="button"
                           onClick={() => setCaseImpactTab(key)}
-                          className={`flex-1 rounded-md border px-2 py-1.5 text-[11px] font-semibold transition ${
+                          className={`flex-1 whitespace-nowrap rounded-md border px-1.5 py-1.5 text-[11px] font-semibold transition ${
                             caseImpactTab === key
                               ? "border-[#f68b1f] bg-[#f68b1f]/15 text-white"
                               : "border-transparent text-[#9aabc6] hover:border-[#3b5878]"

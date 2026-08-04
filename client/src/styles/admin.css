@@ -284,6 +284,30 @@
   box-shadow: 0 1px 2px rgba(24, 52, 92, 0.08);
 }
 
+/* Тот же приём для повторяющихся списков кабинета: карточка кейса и строки
+   правой панели лежали в панели с рамкой и сами были обведены рамкой.
+   Оставляем поверхность, границу гасим — кроме выбранного элемента, где
+   она несёт смысл. */
+.dns-admin-shell .dns-admin-case-list-item {
+  border-color: transparent;
+}
+.dns-admin-shell.dns-theme-light .dns-admin-case-list-item {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(24, 52, 92, 0.08);
+}
+.dns-admin-shell .dns-admin-case-list-item:hover {
+  border-color: rgba(142, 197, 255, 0.46);
+}
+
+/* Строки переходов и замечаний в панели влияния — та же логика. */
+.dns-admin-shell .dns-admin-case-impact-panel [class*="border-[#223245]"],
+.dns-admin-shell .dns-admin-case-impact-panel [class*="border-[#1f3045]"] {
+  border-color: transparent;
+}
+.dns-admin-shell.dns-theme-dark .dns-admin-case-impact-panel [class*="bg-[#0d1522]"] {
+  background: rgba(23, 40, 64, 0.85) !important;
+}
+
 /* Радиус панелей задаётся ниже одним правилом через --dns-admin-radius-panel,
    который привязан к брендовому --radius. Отдельного блока здесь быть не должно:
    раньше их было два, и нижний молча перебивал верхний. */
