@@ -291,6 +291,31 @@ assertCondition(
   "Подразделы должны вести к своим местам в содержимом справочника",
 );
 
+// Обе роли открывают один и тот же справочник: у оценщика была своя старая
+// сетка карточек, от которой в кабинете администратора уже отказались.
+const assessorWiki = readText("client/src/features/assessor/components/AssessorWiki.tsx");
+assertCondition(
+  /<AdminWikiReference[\s/>]/.test(assessorWiki),
+  "Справочник оценщика должен быть тем же компонентом, что и у администратора",
+);
+assertCondition(
+  !/dns-assessor-wiki-grid/.test(assessorWiki),
+  "Старая сетка карточек в справочнике оценщика не должна остаться",
+);
+// Схемы справочника и его шапка обязаны получать цвета в обеих оболочках:
+// переменные объявлялись только для админской, и в кабинете оценщика SVG
+// рисовался чёрным по чёрному.
+assertCondition(
+  readText("client/src/styles/admin.css")
+    .split("}")
+    .some((block) => /\.dns-assessor-shell\s*[,{]/.test(block) && /--roadmap-dim-fill\s*:/.test(block)),
+  "Переменные схем справочника должны объявляться и для оболочки оценщика",
+);
+assertCondition(
+  /dns-admin-wiki-reference \.dns-assessor-wiki-hero/.test(assessorCss),
+  "Шапка справочника должна оформляться и там, где нет обёртки .dns-admin-wiki",
+);
+
 const releaseHistory = readText("client/src/data/release-history.ts");
 assertCondition(
   releaseHistory.includes("problems") && releaseHistory.includes("solved"),

@@ -3007,3 +3007,63 @@
     min-height: 44px;
   }
 }
+
+/* ============================================================
+   Справочник открывается и в кабинете оценщика, где обёртки
+   .dns-admin-wiki нет: там корень — сам .dns-admin-wiki-reference.
+   Без этих правил в светлой теме его шапка оставалась тёмной
+   плашкой с белым текстом на белой странице.
+   ============================================================ */
+.dns-admin-wiki-reference .dns-assessor-wiki-hero h2 {
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.dns-admin-wiki-reference .dns-assessor-wiki-hero {
+  border-radius: 1.1rem;
+  backdrop-filter: none;
+}
+.dns-admin-wiki-reference .dns-assessor-wiki-back {
+  border-radius: 0.85rem;
+}
+
+.dns-theme-light .dns-admin-wiki-reference .dns-assessor-wiki-hero {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(20, 34, 56, 0.06), 0 8px 24px rgba(20, 34, 56, 0.05);
+}
+.dns-theme-light .dns-admin-wiki-reference .dns-assessor-wiki-hero h2 {
+  color: #1c1c1e !important;
+}
+.dns-theme-light .dns-admin-wiki-reference .dns-assessor-wiki-hero p {
+  color: rgba(60, 60, 67, 0.74) !important;
+}
+.dns-theme-light .dns-admin-wiki-reference .dns-assessor-wiki-back {
+  background: #f2f2f7 !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  color: #007aff !important;
+}
+
+.dns-theme-dark .dns-admin-wiki-reference .dns-assessor-wiki-hero {
+  background: rgba(34, 38, 45, 0.92) !important;
+}
+.dns-theme-dark .dns-admin-wiki-reference .dns-assessor-wiki-back {
+  background: rgba(0, 0, 0, 0.24) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Меню справочника в светлой теме: подписи и подразделы шли светло-синим
+   из тёмного макета — на белой панели контраст падал до 1.9 при норме 4.5. */
+.dns-theme-light .dns-admin-wiki-menu {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(24, 52, 92, 0.16) !important;
+}
+.dns-theme-light .dns-admin-wiki-menu ul button {
+  color: #2b4568 !important;
+}
+.dns-theme-light .dns-admin-wiki-menu ul button:hover {
+  color: #0e1c30 !important;
+}
+.dns-theme-light .dns-admin-wiki-menu > div > div > div:first-child {
+  color: #41618c !important;
+}

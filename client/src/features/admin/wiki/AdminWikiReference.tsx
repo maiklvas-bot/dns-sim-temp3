@@ -23,7 +23,8 @@ export interface WikiBlock {
   summary: string;
   controls: string[];
   dynamics: Dynamic[];
-  example: string;
+  /** Пример есть не у каждого экрана — блок примера тогда не рисуется. */
+  example?: string;
 }
 
 interface ProcessStep {
@@ -74,11 +75,20 @@ export function AdminWikiReference({
   blocks,
   processSteps,
   Shot,
+  title = "Симуляция: теория и устройство кабинета",
+  lead = "Слева — разделы. Начните с теории, если нужно объяснить, зачем симуляция и почему её оценке можно верить. Дальше — разбор каждого экрана кабинета.",
+  backLabel = "Вернуться в кабинет",
+  blocksLabel = "Экраны кабинета",
 }: {
   onBack: () => void;
   blocks: WikiBlock[];
   processSteps: ProcessStep[];
   Shot: React.ComponentType<{ id: string }>;
+  /** Заголовки параметризованы: справочник один и тот же у администратора и оценщика. */
+  title?: string;
+  lead?: string;
+  backLabel?: string;
+  blocksLabel?: string;
 }) {
   const [selection, setSelection] = useState<Selection>({ kind: "theory", id: WIKI_THEORY[0]?.id || "" });
   // Состав раздела прячется под «+», но раздел, который открыт сейчас, показывает
@@ -195,15 +205,12 @@ export function AdminWikiReference({
       <section className="dns-assessor-wiki-hero">
         <div>
           <div className="dns-assessor-wiki-kicker">Справочник</div>
-          <h2>Симуляция: теория и устройство кабинета</h2>
-          <p>
-            Слева — разделы. Начните с теории, если нужно объяснить, зачем симуляция и почему её
-            оценке можно верить. Дальше — разбор каждого экрана кабинета.
-          </p>
+          <h2>{title}</h2>
+          <p>{lead}</p>
         </div>
         <button type="button" onClick={onBack} className="dns-assessor-wiki-back">
           <ArrowLeft className="h-4 w-4" />
-          Вернуться в кабинет
+          {backLabel}
         </button>
       </section>
 
@@ -230,13 +237,14 @@ export function AdminWikiReference({
 
           <div className="mb-2 mt-4 flex items-center gap-2 px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8fa8cf]">
             <BookOpen className="h-3.5 w-3.5" />
-            Экраны кабинета
+            {blocksLabel}
           </div>
           {blocks.map((block) =>
             menuButton({ kind: "block", id: block.id }, block.title, block.label, [
               { id: partId(block.id, 0), title: "Как менять" },
               { id: partId(block.id, 1), title: "К чему это приводит" },
-              { id: partId(block.id, 2), title: "Пример" },
+              // Пример показываем в составе только там, где он написан.
+              ...(block.example ? [{ id: partId(block.id, 2), title: "Пример" }] : []),
             ]),
           )}
 
@@ -378,12 +386,14 @@ function BlockView({
         </div>
       </section>
 
-      <section id={`wiki-part-${block.id}-2`} className="flex items-start gap-2 rounded-xl border border-[#54d28c]/30 bg-[#54d28c]/8 p-4">
-        <Sparkles className="mt-0.5 h-4 w-4 flex-none text-[#54d28c]" />
-        <div className="text-[13px] leading-relaxed text-[#dbe2f0]">
-          <b className="text-[#54d28c]">Пример:</b> {block.example}
-        </div>
-      </section>
+      {block.example && (
+        <section id={`wiki-part-${block.id}-2`} className="flex items-start gap-2 rounded-xl border border-[#54d28c]/30 bg-[#54d28c]/8 p-4">
+          <Sparkles className="mt-0.5 h-4 w-4 flex-none text-[#54d28c]" />
+          <div className="text-[13px] leading-relaxed text-[#dbe2f0]">
+            <b className="text-[#54d28c]">Пример:</b> {block.example}
+          </div>
+        </section>
+      )}
     </article>
   );
 }
