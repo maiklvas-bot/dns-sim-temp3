@@ -212,9 +212,47 @@ function seedVideoCases(cases: VideoCase[] = []) {
   });
 }
 
+/**
+ * Сколько содержимого уже лежит в базе.
+ *
+ * Сид пересобирает контент с нуля: он чистит таблицы и заливает их заново.
+ * На пустой базе это разворачивание, на рабочей — потеря всего, что автор
+ * успел настроить руками. Поэтому непустую базу трогаем только по явному
+ * требованию человека, а не «за компанию» с обновлением.
+ */
+function countExistingContent() {
+  const content = contentStorage.getPublicContent(true);
+  return {
+    cases: content.cases.length,
+    competencies: content.competencies.length,
+    channels: content.emailCases.length + content.messengerCases.length + content.videoCases.length,
+  };
+}
+
 function main() {
-  const sourcePath = process.argv[2] || path.resolve("script/bootstrap-content.json");
+  const args = process.argv.slice(2);
+  const force = args.includes("--force");
+  const sourcePath = args.find((arg) => !arg.startsWith("--")) || path.resolve("script/bootstrap-content.json");
   const content = loadBootstrapContent(sourcePath);
+
+  const existing = countExistingContent();
+  const hasContent = existing.cases > 0 || existing.competencies > 0 || existing.channels > 0;
+  if (hasContent && !force) {
+    console.error(
+      [
+        "В базе уже есть контент — сид остановлен, чтобы не потерять настроенное.",
+        `  кейсов: ${existing.cases}, компетенций: ${existing.competencies}, событий каналов: ${existing.channels}`,
+        "",
+        "Обновление приложения контент не трогает: миграции доливают структуру, данные остаются.",
+        "Эта команда нужна только для первого разворачивания на пустой базе.",
+        "",
+        "Если вы действительно хотите стереть весь контент и залить заново:",
+        "  npm run db:seed-simulation -- --force",
+        "Перед этим сделайте резервную копию: ./scripts/backup.sh",
+      ].join("\n"),
+    );
+    process.exit(1);
+  }
 
   clearContentTables();
   seedDefaultAssets();
