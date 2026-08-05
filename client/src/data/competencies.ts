@@ -6,6 +6,18 @@ export interface CompetencyUiDefinition extends CompetencyDefinition {
   maxScore: number;
 }
 
+/** Сквозной русский ярлык уровня компетенции (без англицизмов на всех экранах). */
+export const COMPETENCY_CATEGORY_LABEL: Record<string, string> = {
+  basic: "Базовый",
+  advanced: "Продвинутый",
+  leadership: "Лидерский",
+};
+
+export function competencyCategoryLabel(category?: string | null): string {
+  const key = (category || "").toLowerCase();
+  return COMPETENCY_CATEGORY_LABEL[key] || category || "";
+}
+
 function toShortName(name: string): string {
   const parts = name.split(" ");
   if (parts.length === 1) {

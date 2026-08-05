@@ -1,8 +1,472 @@
 /* Admin UI review: shared surface rhythm, kept outside Tailwind layers so it can normalize arbitrary utilities. */
+
+/* Корпоративный дашборд-фон должен просвечивать вверху (за шапкой) — оверлей чуть прозрачнее.
+   Scoped строго на .dns-admin-shell, чтобы не задеть кабинет оценщика. Спецификсность 4 класса —
+   гарантированно перекрывает базовое правило .dns-product-shell.dns-theme-light .dns-theme-overlay. */
+.dns-product-shell.dns-admin-shell.dns-theme-light .dns-theme-overlay {
+  background: linear-gradient(180deg, rgba(246, 249, 253, 0.55), rgba(236, 242, 249, 0.74), rgba(229, 236, 246, 0.86)) !important;
+}
+
+/* Реселл, слой 2: «стекло» крупных поверхностей админа — frosted backdrop-blur.
+   Scoped строго на .dns-admin-shell, чтобы кабинет оценщика остался прежним.
+   Прозрачность повышаем только в тёмной теме (светлую тему не трогаем). */
+.dns-admin-shell .dns-admin-structure-nav,
+.dns-admin-shell .dns-admin-case-nav,
+.dns-admin-shell .dns-admin-visual-panel {
+  backdrop-filter: blur(16px) saturate(112%);
+  -webkit-backdrop-filter: blur(16px) saturate(112%);
+}
+.dns-admin-shell.dns-theme-dark .dns-admin-structure-nav {
+  background:
+    radial-gradient(circle at 50% 0, rgba(var(--dns-admin-scene-accent-rgb), 0.14), transparent 11rem),
+    linear-gradient(180deg, rgba(10, 18, 30, 0.74), rgba(7, 15, 26, 0.78));
+}
+.dns-admin-shell.dns-theme-dark .dns-admin-case-nav {
+  background: rgba(20, 28, 43, 0.6) !important;
+}
+
+/* Типографика: крупные заголовки админа — плотнее трекинг, стабильные цифры в метриках. */
+.dns-admin-shell .dns-brand-heading,
+.dns-admin-shell .dns-admin-visual-title {
+  letter-spacing: -0.012em;
+}
+.dns-admin-shell .tabular-nums,
+.dns-admin-shell [class*="text-["] {
+  font-feature-settings: "tnum" 1, "kern" 1;
+}
+
+/* Меньше «лишних блоков»: фирменная панель раздела («Фирменный контекст» + маскот) —
+   компактная полоска, а не высокий декор-блок. Заголовок/подзаголовок/маскот сохранены. */
+.dns-admin-shell .dns-admin-visual-panel {
+  min-height: clamp(3.1rem, 3.6vw, 4.25rem);
+  margin-bottom: 0.7rem;
+  grid-template-columns: minmax(0, 1fr) clamp(4rem, 6.5vw, 5.75rem);
+}
+
+/* ============================================================
+   Примитивы кабинета администратора (scoped на .dns-admin-shell).
+   light = белые поверхности + тёмно-синий текст, dark = тёмно-синий графит.
+   Нейтральный серый не применяется. Не затрагивает оценщика/симуляцию.
+   Работает через семантические токены (Button/Input/Select/Dialog/Tabs) +
+   нормализующие --dns-admin-* + ремап доминирующих фонов панелей.
+   ============================================================ */
+
+/* Нейтральный серый в кабинете не используется: ни фоны, ни текст, ни границы.
+   Палитра — фирменная: тёмно-синий графит, светлый холодный текст, оранжевый акцент.
+   Все нейтрали (saturation 0%) заменены на синие с той же светлотой. */
+
+/* — Светлая тема — */
+.dns-product-shell.dns-admin-shell.dns-theme-light {
+  --background: 213 40% 98%;
+  --foreground: 214 55% 12%;
+  --card: 0 0% 100%;
+  --card-foreground: 214 55% 12%;
+  --card-border: 213 32% 87%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 214 55% 12%;
+  --popover-border: 213 32% 87%;
+  --muted: 213 40% 96%;
+  --muted-foreground: 214 30% 34%;
+  --secondary: 213 40% 96%;
+  --secondary-foreground: 214 45% 20%;
+  --border: 213 30% 86%;
+  --input: 213 30% 80%;
+  --dns-admin-border: rgba(24, 52, 92, 0.20);
+  --dns-admin-border-soft: rgba(24, 52, 92, 0.12);
+  --dns-admin-text-soft: #0e1c30;
+  --dns-admin-text-muted: #2b4568;
+  --dns-admin-text-dim: #41618c;
+}
+/* — Тёмная тема — */
+.dns-product-shell.dns-admin-shell.dns-theme-dark {
+  --foreground: 213 60% 94%;
+  --card: 214 38% 13%;
+  --card-foreground: 213 60% 94%;
+  --card-border: 214 30% 28%;
+  --popover: 214 38% 13%;
+  --popover-foreground: 213 60% 94%;
+  --popover-border: 214 30% 28%;
+  --muted: 214 34% 18%;
+  --muted-foreground: 213 40% 78%;
+  --secondary: 214 32% 21%;
+  --border: 214 30% 28%;
+  --input: 214 30% 30%;
+  --dns-admin-border: rgba(150, 185, 235, 0.22);
+  --dns-admin-border-soft: rgba(150, 185, 235, 0.14);
+  --dns-admin-text-soft: #eaf1fb;
+  --dns-admin-text-muted: #c6d6ee;
+  --dns-admin-text-dim: #a7bcda;
+}
+
+/* Ремап доминирующих фонов панелей (хардкод-hex) на поверхности темы.
+   Подстрочные селекторы ловят все варианты прозрачности (bg-[#hex], bg-[#hex]/NN).
+   Light → белые; Dark → тёмно-синий графит. */
+.dns-admin-shell.dns-theme-light [class*="bg-[#141c2b]"],
+.dns-admin-shell.dns-theme-light [class*="bg-[#1e2a3a"],
+.dns-admin-shell.dns-theme-light [class*="bg-[#101826]"],
+.dns-admin-shell.dns-theme-light [class*="bg-[#0d1522]"],
+.dns-admin-shell.dns-theme-light [class*="bg-[#0d1421"],
+.dns-admin-shell.dns-theme-light [class*="bg-[#16233a"],
+.dns-admin-shell.dns-theme-light [class*="bg-[#0f1923]"],
+.dns-admin-shell.dns-theme-light [class*="bg-[#122031]"],
+.dns-admin-shell.dns-theme-light [class*="bg-[#0d1522"],
+.dns-admin-shell.dns-theme-light [class*="bg-[#0d1117]"] {
+  background-color: #ffffff !important;
+}
+.dns-admin-shell.dns-theme-dark [class*="bg-[#141c2b]"],
+.dns-admin-shell.dns-theme-dark [class*="bg-[#1e2a3a"],
+.dns-admin-shell.dns-theme-dark [class*="bg-[#101826]"],
+.dns-admin-shell.dns-theme-dark [class*="bg-[#0d1522]"],
+.dns-admin-shell.dns-theme-dark [class*="bg-[#0d1421"],
+.dns-admin-shell.dns-theme-dark [class*="bg-[#16233a"],
+.dns-admin-shell.dns-theme-dark [class*="bg-[#0f1923]"],
+.dns-admin-shell.dns-theme-dark [class*="bg-[#122031]"],
+.dns-admin-shell.dns-theme-dark [class*="bg-[#0d1117]"] {
+  /* Был нейтральный charcoal — он и давал «серое на сером». Тёмно-синий графит. */
+  background-color: rgba(15, 27, 45, 0.92) !important;
+}
+
+/* ============================================================
+   ЧИТАЕМОСТЬ ТЕКСТА (обе темы)
+
+   Фоны выше ремапятся на поверхности темы, а цвета текста в разметке
+   остались хардкод-hex из тёмного макета. Ремапим по трём уровням яркости
+   плюс акценты. Все три уровня — синие, не серые: нейтраль на тёмном фоне
+   и давала «серое на сером».
+   ============================================================ */
+
+/* Уровень 1 — основной читаемый текст (был почти белым в тёмном макете) */
+.dns-product-shell.dns-admin-shell [class*="text-[#dbe2f0]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#cbd8ef]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#c7d3e7]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#c9d2e6]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#d9e2f3]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#d3deee]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#d5e2f4]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#d6e3f7]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#f3f7ff]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#e9f1ff]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#b8c7df]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#b8c5db]"] {
+  color: var(--dns-admin-text-soft) !important;
+}
+
+/* Уровень 2 — подписи и вспомогательный текст */
+.dns-product-shell.dns-admin-shell [class*="text-[#8890a8]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#8aa2c4]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#9aabc6]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#9fb0ca]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#9fb4d1]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#93a7c3]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#91a2bd]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#8fa0b8]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#8fa6c7]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#aebbd2]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#aab2c5]"] {
+  color: var(--dns-admin-text-muted) !important;
+}
+
+/* Уровень 3 — самый тихий текст. Именно он был «серым на тёмном». */
+.dns-product-shell.dns-admin-shell [class*="text-[#70829d]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#71839d]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#6f829e]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#7f91ad]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#7f90ad]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#4a607e]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#64748B]"] {
+  color: var(--dns-admin-text-dim) !important;
+}
+
+/* Акценты. В тёмном макете они светлые — на белом фоне такие не видны,
+   поэтому в светлой теме берём затемнённые версии тех же оттенков. */
+.dns-admin-shell {
+  --dns-admin-accent-info: #8ec5ff;
+  --dns-admin-accent-warn: #ffb27a;
+  --dns-admin-accent-ok: #54d28c;
+  --dns-admin-accent-danger: #ff9999;
+}
+.dns-admin-shell.dns-theme-light {
+  --dns-admin-accent-info: #1a5fb4;
+  --dns-admin-accent-warn: #9a4f06;
+  --dns-admin-accent-ok: #0f7048;
+  --dns-admin-accent-danger: #b3261e;
+}
+
+.dns-product-shell.dns-admin-shell [class*="text-[#6fa0ff]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#8ec5ff]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#4a9eff]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#b7d9ff]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#cfe6ff]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#d7e7ff]"] {
+  color: var(--dns-admin-accent-info) !important;
+}
+.dns-product-shell.dns-admin-shell [class*="text-[#ffb27a]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffd9bf]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffe1cb]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffd36e]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffd77a]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffe6a6]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffc107]"] {
+  color: var(--dns-admin-accent-warn) !important;
+}
+.dns-product-shell.dns-admin-shell [class*="text-[#00d4aa]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#7fffd4]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#54d28c]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#9fe8c6]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#8ff5de]"] {
+  color: var(--dns-admin-accent-ok) !important;
+}
+.dns-product-shell.dns-admin-shell [class*="text-[#ff9999]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffb3b3]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ffc2c8]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ff8080]"],
+.dns-product-shell.dns-admin-shell [class*="text-[#ff4444]"] {
+  color: var(--dns-admin-accent-danger) !important;
+}
+
+/* ============================================================
+   ТИПОГРАФИКА КАБИНЕТА: воздух и иерархия
+
+   Кабинет был набран из тёмного макета почти целиком 10–12px: из 72
+   объявлений размера в мастере 71 попадало в этот диапазон. Такой текст
+   читается как сплошная мелкая сетка — иерархии не видно, экран выглядит
+   плотным и дешёвым.
+
+   Поднимаем шкалу разом по классам, а не по файлам: разметка кабинета
+   набрана хардкод-размерами, и ремап — единственный способ выправить её
+   целиком, не переписывая тысячу мест.
+   ============================================================ */
+.dns-product-shell.dns-admin-shell [class*="text-[10px]"] {
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+}
+.dns-product-shell.dns-admin-shell [class*="text-[11px]"],
+.dns-product-shell.dns-admin-shell [class*="text-[11.5px]"] {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+.dns-product-shell.dns-admin-shell [class*="text-[12px]"] {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.dns-product-shell.dns-admin-shell [class*="text-[13px]"] {
+  font-size: 0.9375rem;
+}
+
+/* Подсказки мастера — обучающий слой, а не сноска мелким шрифтом. */
+.dns-admin-shell .dns-master-hint {
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--dns-admin-text-muted);
+}
+
+/* ============================================================
+   ВОЗДУХ: убираем вложенные коробки
+
+   Панели мастера складывались по три рамки друг в друге: блок с рамкой,
+   внутри блок с рамкой, внутри ещё один. Внутренние границы не несут
+   информации — они только дробят экран. Оставляем внешнюю рамку и фон,
+   внутренние гасим и разделяем содержимое отступом.
+   ============================================================ */
+.dns-admin-shell .dns-master-tile,
+.dns-admin-shell .dns-master-roadmap,
+.dns-admin-shell .dns-admin-cycle-detail {
+  padding: 1rem;
+}
+
+/* Плитка отделяется от панели поверхностью, а не ещё одной рамкой:
+   вложенные границы дробят экран и не несут информации. */
+.dns-admin-shell.dns-theme-dark .dns-master-tile {
+  background: rgba(23, 40, 64, 0.92);
+}
+.dns-admin-shell.dns-theme-light .dns-master-tile {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(24, 52, 92, 0.08);
+}
+
+/* Тот же приём для повторяющихся списков кабинета: карточка кейса и строки
+   правой панели лежали в панели с рамкой и сами были обведены рамкой.
+   Оставляем поверхность, границу гасим — кроме выбранного элемента, где
+   она несёт смысл. */
+.dns-admin-shell .dns-admin-case-list-item {
+  border-color: transparent;
+}
+.dns-admin-shell.dns-theme-light .dns-admin-case-list-item {
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(24, 52, 92, 0.08);
+}
+.dns-admin-shell .dns-admin-case-list-item:hover {
+  border-color: rgba(142, 197, 255, 0.46);
+}
+
+/* Строки переходов и замечаний в панели влияния — та же логика. */
+.dns-admin-shell .dns-admin-case-impact-panel [class*="border-[#223245]"],
+.dns-admin-shell .dns-admin-case-impact-panel [class*="border-[#1f3045]"] {
+  border-color: transparent;
+}
+.dns-admin-shell.dns-theme-dark .dns-admin-case-impact-panel [class*="bg-[#0d1522]"] {
+  background: rgba(23, 40, 64, 0.85) !important;
+}
+
+/* Радиус панелей задаётся ниже одним правилом через --dns-admin-radius-panel,
+   который привязан к брендовому --radius. Отдельного блока здесь быть не должно:
+   раньше их было два, и нижний молча перебивал верхний. */
+
+/* Редактор кейса вынесен в отдельное окно (Dialog). Список кейсов — основной вид на всю ширину,
+   карточки в адаптивной сетке. Клик по кейсу открывает окно редактора. */
+.dns-admin-shell .dns-admin-cases-list-view .dns-admin-case-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: 0.6rem;
+  max-height: none;
+}
+.dns-admin-shell .dns-admin-cases-list-view .dns-admin-case-list > * + * {
+  margin-top: 0;
+}
+/* Внутри окна редактора колонки фиксированы, каждая скроллится сама — раскладка не «прыгает» при зуме. */
+.dns-admin-shell .dns-admin-case-workspace {
+  min-height: 0;
+}
+.dns-admin-shell .dns-admin-case-workspace > .dns-admin-case-roadmap-panel,
+.dns-admin-shell .dns-admin-case-workspace > .dns-admin-case-editor-panel,
+.dns-admin-shell .dns-admin-case-workspace > .dns-admin-case-impact-panel {
+  min-height: 0;
+  max-height: 100%;
+}
+
+/* ============================================================
+   ДЕРЕВО КЕЙСА — схема мастера целиком, вписанная в панель.
+   Полос прокрутки быть не должно: холст масштабируется viewBox.
+   ============================================================ */
+.dns-admin-shell .dns-master-roadmap-canvas {
+  overflow: hidden;
+}
+
+/* Цвета дерева — переменными, а не хексами в разметке: заливки SVG задаются
+   атрибутами и ремапом по классам не ловятся, поэтому в светлой теме дерево
+   оставалось тёмным пятном на белой панели. */
+/* Справочник со схемами открывается и в кабинете оценщика, поэтому переменные
+   объявлены для обеих оболочек: иначе SVG остаётся без цвета и рисует чёрные
+   прямоугольники с чёрным текстом. */
+.dns-admin-shell,
+.dns-assessor-shell {
+  /* Брендовый оранжевый готовым цветом: --dns-orange хранит компоненты HSL
+     и в атрибут SVG напрямую не подставляется. */
+  --dns-orange-hex: hsl(var(--dns-orange));
+  --roadmap-dim-fill: #0d1728;
+  --roadmap-dim-stroke: #2b4568;
+  --roadmap-dim-text: #6f8db5;
+  --roadmap-partial-fill: #2a1a10;
+  --roadmap-bright-fill: #0f2a24;
+  --roadmap-bright-text: #c8f5e2;
+  --roadmap-partial-text: #ffd9bf;
+  --roadmap-edge: #4a9eff;
+}
+.dns-admin-shell.dns-theme-light,
+.dns-assessor-shell.dns-theme-light {
+  --roadmap-dim-fill: #f2f6fb;
+  --roadmap-dim-stroke: #b9c9de;
+  --roadmap-dim-text: #52708f;
+  --roadmap-partial-fill: #fdf1e4;
+  --roadmap-bright-fill: #eafaf3;
+  --roadmap-bright-text: #0f6b4a;
+  --roadmap-partial-text: #9a4f06;
+  --roadmap-edge: #4a7fbf;
+}
+.dns-admin-shell .dns-master-roadmap-canvas svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Wiki администратора: мини-мокап интерфейса в карточке (тёмный «скриншот» в обеих темах). */
+.dns-admin-wiki .dns-admin-wiki-shot {
+  height: 6.5rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(120, 150, 190, 0.18);
+  background: linear-gradient(160deg, rgba(20, 28, 43, 0.94), rgba(13, 20, 33, 0.96));
+  padding: 0.5rem;
+  margin: 0.15rem 0 0.4rem;
+  overflow: hidden;
+}
+
+/* Wiki администратора: блок «живого примера» в карточке элемента. */
+.dns-admin-wiki .dns-admin-wiki-example {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0.1rem 0 0.2rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(0, 212, 170, 0.24);
+  background: rgba(0, 212, 170, 0.08);
+  padding: 0.5rem 0.7rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--dns-admin-text-soft);
+}
+.dns-admin-wiki .dns-admin-wiki-example svg {
+  margin-top: 0.15rem;
+  flex: none;
+  color: #19d3ae;
+}
+.dns-admin-wiki .dns-admin-wiki-example b {
+  color: #19d3ae;
+}
+
+/* Кнопки шапки админа — один ряд на десктопе (Gravity: единый размер sm/outline). */
+@media (min-width: 1024px) {
+  .dns-admin-shell .dns-admin-header-actions {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+}
+
+/* Редактор кейса: меньше рамок — вложенность передаём ЧЕРЕДОВАНИЕМ оттенков по глубине.
+   Один уровень = один цвет; глубже — чередуется (темнее → светлее → темнее).
+   Уровень 1 = .dns-admin-cycle-detail; уровень 2 = вложенные карточки; уровень 3 = контролы. */
+.dns-admin-shell .dns-admin-cycle-detail {
+  border-color: var(--dns-admin-border-soft);
+}
+/* Уровень 2 — светлее уровня 1 (контраст), без рамок. */
+.dns-admin-shell .dns-admin-cycle-detail .dns-admin-media-panel,
+.dns-admin-shell .dns-admin-cycle-detail .dns-admin-media-card {
+  border-color: transparent !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+/* Уровень 3 — снова темнее (контроллы/пикеры внутри уровня 2). */
+.dns-admin-shell .dns-admin-cycle-detail .dns-admin-media-picker > select {
+  border-color: transparent !important;
+  background: rgba(0, 0, 0, 0.24) !important;
+}
+/* Светлая тема — то же чередование, мягче. */
+.dns-admin-shell.dns-theme-light .dns-admin-cycle-detail .dns-admin-media-panel,
+.dns-admin-shell.dns-theme-light .dns-admin-cycle-detail .dns-admin-media-card {
+  background: rgba(0, 0, 0, 0.04) !important;
+}
+.dns-admin-shell.dns-theme-light .dns-admin-cycle-detail .dns-admin-media-picker > select {
+  border-color: rgba(0, 0, 0, 0.1) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Hero обзора — тема-зависимый Gravity-вид (текст внутри через text-foreground/muted). */
+.dns-admin-shell.dns-theme-light .dns-admin-overview-hero {
+  background:
+    radial-gradient(72% 130% at 92% -25%, rgba(255, 107, 0, 0.12), transparent 60%),
+    radial-gradient(60% 120% at 4% 130%, rgba(0, 212, 170, 0.08), transparent 58%),
+    #ffffff;
+}
+.dns-admin-shell.dns-theme-dark .dns-admin-overview-hero {
+  background:
+    radial-gradient(72% 130% at 92% -25%, rgba(255, 107, 0, 0.16), transparent 60%),
+    radial-gradient(60% 120% at 4% 130%, rgba(0, 212, 170, 0.10), transparent 58%),
+    linear-gradient(120deg, #16243a, #0f1b2d);
+}
+
 .dns-product-shell {
   --dns-admin-border: rgba(76, 96, 125, 0.74);
   --dns-admin-border-soft: rgba(65, 86, 116, 0.64);
-  --dns-admin-radius-panel: 0.5rem;
+  /* Радиус панелей = 0.75 от брендового --radius (16px по Figma) → 12px. */
+  --dns-admin-radius-panel: calc(var(--radius) * 0.75);
   --dns-admin-text-muted: #b8c6dc;
   --dns-admin-text-soft: #c5d2e6;
   --dns-admin-text-dim: #a9bad4;
@@ -210,7 +674,7 @@
   overflow: hidden;
   color: #f7fbff;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1.22;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -344,7 +808,9 @@
   position: sticky;
   top: 1rem;
   display: flex;
+  align-self: stretch;
   max-height: calc(100vh - 2rem);
+  min-height: 0;
   flex-direction: column;
   overflow-y: auto;
   padding: 0.75rem;
@@ -367,7 +833,7 @@
 .dns-product-shell .dns-admin-structure-nav-head span {
   color: #ff9b52;
   font-size: 0.62rem;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -455,7 +921,7 @@
   border-radius: 0.45rem;
   background: #ff6b00;
   color: white;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .dns-product-shell .dns-admin-structure-profile div {
@@ -474,6 +940,19 @@
 .dns-product-shell .dns-admin-structure-profile small {
   color: #7fffd4;
   font-size: 0.58rem;
+}
+
+/* Светлая тема: профиль рейла администратора — читаемые тёмные тексты
+   (раньше белый strong и аквамарин small сливались со светлым фоном). */
+.dns-admin-shell.dns-theme-light .dns-admin-structure-profile {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+}
+.dns-admin-shell.dns-theme-light .dns-admin-structure-profile strong {
+  color: #1a2433;
+}
+.dns-admin-shell.dns-theme-light .dns-admin-structure-profile small {
+  color: #11774a;
 }
 
 .dns-product-shell .dns-admin-case-control-panel {
@@ -626,8 +1105,10 @@
 }
 
 @media (min-width: 1536px) {
+  /* Три колонки: дерево кейса — редактор — влияние. Раньше здесь было две,
+     и третья панель уезжала вниз левой колонки вместо своего места. */
   .dns-product-shell .dns-admin-case-workspace {
-    grid-template-columns: minmax(0, 1.618fr) minmax(22rem, 0.618fr);
+    grid-template-columns: 23rem minmax(0, 1.618fr) minmax(22rem, 0.618fr);
   }
 }
 
@@ -635,4 +1116,250 @@
   .dns-product-shell .dns-admin-case-list-item {
     grid-template-columns: auto minmax(0, 1fr);
   }
+}
+
+/* ============================================================
+   Цветовая градация редактора кейса (iOS-grouped depth):
+   группы — утопленный фон, карточки — приподнятые с акцентом,
+   под-поля — снова утоплены. Чёткая вложенность вместо «всё плоское».
+   ============================================================ */
+
+/* — Светлая тема — */
+.dns-admin-shell.dns-theme-light .dns-admin-options-card,
+.dns-admin-shell.dns-theme-light .dns-admin-cycle-detail {
+  background: #eceef3 !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+.dns-admin-shell.dns-theme-light .dns-admin-option-card {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.09) !important;
+  border-left: 3px solid var(--dns-admin-scene-accent, #ff6b00) !important;
+  box-shadow: 0 2px 8px rgba(20, 34, 56, 0.07);
+}
+.dns-admin-shell.dns-theme-light .dns-admin-option-routing-grid,
+.dns-admin-shell.dns-theme-light .dns-admin-store-effects-grid,
+.dns-admin-shell.dns-theme-light .dns-admin-cycle-meta-grid {
+  background: #f4f5f8;
+  border-radius: 0.6rem;
+  padding: 0.7rem;
+}
+
+/* — Тёмная тема — */
+.dns-admin-shell.dns-theme-dark .dns-admin-options-card,
+.dns-admin-shell.dns-theme-dark .dns-admin-cycle-detail {
+  background: rgba(0, 0, 0, 0.24) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+.dns-admin-shell.dns-theme-dark .dns-admin-option-card {
+  background: rgba(255, 255, 255, 0.055) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  border-left: 3px solid var(--dns-admin-scene-accent, #ff6b00) !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
+}
+.dns-admin-shell.dns-theme-dark .dns-admin-option-routing-grid,
+.dns-admin-shell.dns-theme-dark .dns-admin-store-effects-grid,
+.dns-admin-shell.dns-theme-dark .dns-admin-cycle-meta-grid {
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 0.6rem;
+  padding: 0.7rem;
+}
+
+/* Номер варианта — акцентный бейдж, чтобы карточки читались как список шагов */
+.dns-admin-shell .dns-admin-option-card > div:first-child {
+  align-items: center;
+}
+
+/* ============================================================
+   Схема путей кейса (дерево/BPMN предпросмотра) — отдельное окно.
+   ============================================================ */
+.dns-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.dns-flow-empty {
+  border: 1px dashed var(--dns-admin-border, rgba(255, 255, 255, 0.16));
+  border-radius: 0.85rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  opacity: 0.75;
+}
+.dns-flow-terminal {
+  display: inline-flex;
+  align-self: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 1.15rem;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.dns-flow-terminal--start {
+  background: rgba(74, 158, 255, 0.16);
+  color: #4a9eff;
+  border: 1px solid rgba(74, 158, 255, 0.45);
+}
+.dns-flow-terminal--finish {
+  margin-top: 0.4rem;
+  background: rgba(0, 184, 148, 0.16);
+  color: #00a884;
+  border: 1px solid rgba(0, 184, 148, 0.45);
+}
+.dns-flow-cycle {
+  display: grid;
+  grid-template-columns: 2.6rem minmax(0, 1fr);
+}
+.dns-flow-rail {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+.dns-flow-rail::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--dns-admin-border, rgba(120, 140, 170, 0.3));
+}
+.dns-flow-rail-dot {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.9rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: #fff;
+  background: var(--dns-admin-scene-accent, #ff6b00);
+  box-shadow: 0 0 0 4px rgba(var(--dns-admin-scene-accent-rgb, 255, 107, 0), 0.18);
+}
+.dns-flow-cycle-body {
+  min-width: 0;
+  padding: 0.85rem 0 1.15rem 0.4rem;
+}
+.dns-flow-node {
+  border-radius: 0.85rem;
+  border: 1px solid var(--dns-admin-border, rgba(120, 140, 170, 0.28));
+  padding: 0.7rem 0.9rem;
+}
+.dns-flow-node-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.dns-flow-node-badge {
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+.dns-flow-prio {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+}
+.dns-flow-prio[data-p="critical"] { background: rgba(255, 68, 68, 0.16); color: #ff7a7a; }
+.dns-flow-prio[data-p="high"] { background: rgba(255, 179, 0, 0.18); color: #d99400; }
+.dns-flow-prio[data-p="final"] { background: rgba(0, 184, 148, 0.16); color: #00a884; }
+.dns-flow-node-signal {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+.dns-flow-gateway {
+  margin: 0.5rem 0 0.5rem 0.4rem;
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.55;
+}
+.dns-flow-options {
+  display: grid;
+  gap: 0.5rem;
+}
+.dns-flow-noopt {
+  font-size: 0.78rem;
+  opacity: 0.6;
+  padding: 0.5rem 0.2rem;
+}
+.dns-flow-option {
+  --t: 120, 140, 170;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: start;
+  border: 1px solid rgba(var(--t), 0.4);
+  border-left-width: 3px;
+  border-radius: 0.7rem;
+  padding: 0.6rem 0.75rem;
+}
+.dns-flow-option[data-tone="pos"] { --t: 0, 184, 148; }
+.dns-flow-option[data-tone="neg"] { --t: 255, 68, 68; }
+.dns-flow-option[data-tone="neutral"] { --t: 217, 148, 0; }
+.dns-flow-letter {
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 0.4rem;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 0.74rem;
+  color: #fff;
+  background: rgb(var(--t));
+}
+.dns-flow-option-text {
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+.dns-flow-option-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.dns-flow-score {
+  font-weight: 700;
+  color: rgb(var(--t));
+}
+.dns-flow-target {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  opacity: 0.85;
+}
+.dns-flow-target[data-terminal="true"] { color: #00a884; opacity: 1; }
+.dns-flow-delay {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  opacity: 0.7;
+}
+
+/* — Тёмная тема — */
+.dns-admin-shell.dns-theme-dark .dns-flow-node { background: rgba(255, 255, 255, 0.05); }
+.dns-admin-shell.dns-theme-dark .dns-flow-option { background: rgba(255, 255, 255, 0.03); }
+.dns-admin-shell.dns-theme-dark .dns-flow { color: #e6edf3; }
+/* — Светлая тема — */
+.dns-admin-shell.dns-theme-light .dns-flow { color: #0e1c30; }
+.dns-admin-shell.dns-theme-light .dns-flow-node { background: #f2f2f7; }
+.dns-admin-shell.dns-theme-light .dns-flow-option { background: #ffffff; box-shadow: 0 1px 4px rgba(20, 34, 56, 0.06); }
+.dns-admin-shell.dns-theme-light .dns-flow-rail::before { background: rgba(0, 0, 0, 0.12); }
+.dns-admin-shell.dns-theme-light .dns-flow-node { border-color: rgba(0, 0, 0, 0.08); }
+
+/* Подложка схемы справочника берёт цвет темы, а не жёсткий тёмный тон:
+   справочник открывается в обеих оболочках и в обеих темах. */
+.dns-wiki-diagram {
+  background: var(--roadmap-dim-fill, #0d1522);
 }

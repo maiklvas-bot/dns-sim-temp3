@@ -33,8 +33,35 @@ import {
   MousePointerClick, ListChecks, Settings2, Target, GitBranch,
   ArrowUpRight, ArrowDownRight, SlidersHorizontal, ClipboardCheck, Map,
   Activity, Gauge, Copy, ShieldCheck,
-  LogOut, Save,
+  LogOut, Save, HeartPulse, X,
 } from "lucide-react";
+
+// Иконка «активные сессии» — сердечный ритм (мягкая пульсация).
+function SessionsHeartIcon({ className }: { className?: string }) {
+  return <HeartPulse className={`dns-assessor-v2-rail-heart ${className ?? ""}`} />;
+}
+// Иконка «результаты» — прыгающие красные/зелёные столбики (анимированный график).
+function ResultsBarsIcon({ className }: { className?: string }) {
+  return (
+    <span className={`dns-assessor-v2-rail-bars ${className ?? ""}`} aria-hidden="true">
+      <i /><i /><i /><i />
+    </span>
+  );
+}
+
+// Грейс-период административной сессии: после подтверждения админ-доступом
+// возврат в кабинет администратора без повторного пароля доступен 10 минут.
+const ADMIN_GRACE_MS = 10 * 60 * 1000;
+const ADMIN_CONFIRM_KEY = "dns-admin-confirmed-at";
+function markAdminConfirmed() {
+  try { localStorage.setItem(ADMIN_CONFIRM_KEY, String(Date.now())); } catch { /* нет доступа к storage */ }
+}
+function isAdminSessionFresh() {
+  try {
+    const ts = Number(localStorage.getItem(ADMIN_CONFIRM_KEY) || 0);
+    return Number.isFinite(ts) && ts > 0 && Date.now() - ts < ADMIN_GRACE_MS;
+  } catch { return false; }
+}
 import { primeAudioPlayback } from "@/data/audio-map";
 import {
   createRemoteLiveSimulation,
@@ -58,10 +85,16 @@ import type {
 } from "./assessor-types";
 import { cloneChannelItemIds, cloneMetrics, createAssessorParticipantId, createDefaultParticipantSetup } from "./assessor-utils";
 import { AssessorWiki } from "./components/AssessorWiki";
+import { ZrdLaunchWizard, ZrdMatchCodesAndMonitor } from "./ZrdLaunchWizard";
+import { fetchZrdMatchList } from "../zrd/zrd-match-api";
+import { SCENARIOS } from "@shared/zrd/content-scenarios";
 import { AssessorTooltip as Tooltip } from "./components/AssessorTooltip";
 import { WizardSteps } from "./components/WizardSteps";
 import { useSetupValidation } from "./hooks/useSetupValidation";
-import storeBg from "@assets/store_bg.png";
+import { BRAND_ASSETS } from "@/lib/brand-assets";
+import { FeedbackButton } from "@/components/feedback-dialog";
+import { ProductFooter } from "@/components/product-footer";
+import { ReleaseHistoryDialog } from "@/components/release-history-dialog";
 
 // ═══════════════════════════════════════════════════════════
 // Main component
@@ -83,6 +116,9 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
 
   // ── Wizard state ──
   const [wizardStep, setWizardStep] = useState(1);
+  // ЗРД v2: мастер запуска матча (4 РРС, люди+ИИ) — открывается кнопкой «Запустить ЗРД»
+  const [zrdWizardOpen, setZrdWizardOpen] = useState(false);
+  const [releaseHistoryOpen, setReleaseHistoryOpen] = useState(false);
 
   // ── Basic fields ──
   const [assessorName, setAssessorName] = useState("");
@@ -141,6 +177,13 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     queryFn: getQueryFn<LiveSimulationMonitorSummary[]>({ on401: "throw" }),
     refetchInterval: 2500,
   });
+  // матчи ЗРД — отдельный листинг (выдан код → сессия должна быть видна независимо от типа симуляции)
+  const zrdMatchesQuery = useQuery({
+    queryKey: ["/api/staff/zrd-matches"],
+    queryFn: () => fetchZrdMatchList(),
+    refetchInterval: 2500,
+  });
+  const [zrdObserveMatchId, setZrdObserveMatchId] = useState<number | null>(null);
   const staffPrincipalQuery = useQuery({
     queryKey: ["/api/staff/me"],
     queryFn: getQueryFn<{ username: string; displayName: string; role: "admin" | "evaluator" }>({ on401: "throw" }),
@@ -153,11 +196,14 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   };
 
   const handleAdminAccess = () => {
-    if (staffRole === "admin") {
+    // Свежая админ-сессия (вход/подтверждение < 10 мин назад) — переход без пароля.
+    if (staffRole === "admin" && isAdminSessionFresh()) {
+      markAdminConfirmed();
       navigate("/admin");
       return;
     }
 
+    // Иначе (оценщик ИЛИ админ с истёкшим грейсом) — требуем пароль администратора.
     setAdminPassword("");
     setAdminAccessError("");
     setAdminAccessOpen(true);
@@ -180,6 +226,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       const response = await apiRequest("POST", "/api/staff/elevate", { password: adminPassword });
       const principal = await response.json();
       queryClient.setQueryData(["/api/staff/me"], principal);
+      markAdminConfirmed();
       setAdminAccessOpen(false);
       navigate("/admin");
     } catch (error: any) {
@@ -205,6 +252,10 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   const monitorSessions = useMemo(
     () => liveSessionsQuery.data || [],
     [liveSessionsQuery.data],
+  );
+  const monitorZrdMatches = useMemo(
+    () => zrdMatchesQuery.data || [],
+    [zrdMatchesQuery.data],
   );
 
   const captureCurrentParticipantSetup = (): AssessorParticipantConfig => ({
@@ -424,6 +475,11 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   };
 
   const handleStart = async () => {
+    // ЗРД — отдельный поток: мастер запуска матча (сценарий, состав стола, миссии, лебеди, темп).
+    if (simulationRole === "regional-deputy") {
+      setZrdWizardOpen(true);
+      return;
+    }
     const savedActive = saveActiveParticipantSetup();
     const launchSetups = participantSetups
       .map((item) => (item.id === activeParticipantId ? savedActive : item))
@@ -500,6 +556,13 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     visibleParticipantSetups.findIndex((item) => item.id === activeParticipantId),
   );
   const activeParticipantLabel = participantName.trim() || `Участник ${activeParticipantIndex + 1}`;
+  // имена, уже введённые на шаге 1 («Кто проходит оценку») — ЗРД-мастер выбирает из них, а не переспрашивает
+  const knownParticipantNames = useMemo(() => {
+    const names = [participantName, ...visibleParticipantSetups.map((p) => p.name)]
+      .map((n) => n.trim())
+      .filter(Boolean);
+    return Array.from(new Set(names));
+  }, [participantName, visibleParticipantSetups]);
   const isSetupReadyToLaunch = (setup: AssessorParticipantConfig) => getSetupValidation(setup).readyToLaunch;
   const readyParticipantSetups = visibleParticipantSetups.filter(isSetupReadyToLaunch);
 
@@ -614,7 +677,9 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     },
   ];
   const setupProgress = reviewItems.filter((item) => item.done).length;
-  const completedSessionCount = monitorSessions.filter((item) => item.status === "completed").length;
+  const completedSessionCount = monitorSessions.filter((item) => item.status === "completed").length
+    + monitorZrdMatches.filter((item) => item.status === "completed").length;
+  const activeZrdMatchCount = monitorZrdMatches.filter((item) => item.status !== "completed").length;
 
   const copyAccessCode = async (code: string) => {
     try {
@@ -764,7 +829,17 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   };
 
   const isSetupPanel = activePanel === "scenario" || activePanel === "composition" || activePanel === "review";
-  const railItems: Array<{
+  // Гид по заполнению: порядок шагов настройки и их готовность.
+  // «Настройка оценки» завершена, только когда состав подтверждён И всё готово к запуску
+  // (гид ведёт пользователя через под-шаги, а не загорается раньше времени).
+  const setupStepReady = compositionConfirmed && activeSetupValidation.readyToLaunch;
+  const readyByPanel: Partial<Record<AssessorPanel, boolean>> = {
+    participant: participantReady,
+    scenario: setupStepReady,
+  };
+  const fillOrder: AssessorPanel[] = ["participant", "scenario"];
+  const nextToFill = fillOrder.find((id) => !readyByPanel[id]);
+  const baseRailItems: Array<{
     id: AssessorPanel;
     title: string;
     state: string;
@@ -773,9 +848,41 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   }> = [
     { id: "participant", title: "Кандидаты", state: `${visibleParticipantSetups.length}`, icon: Users, active: activePanel === "participant" },
     { id: "scenario", title: "Настройка оценки", state: `${setupProgress}/4`, icon: Settings2, active: isSetupPanel },
-    { id: "sessions", title: "Активные сессии", state: `${monitorSessions.filter((item) => item.status !== "completed").length}`, icon: Activity, active: activePanel === "sessions" },
-    { id: "results", title: "Результаты", state: `${completedSessionCount}`, icon: BarChart3, active: activePanel === "results" },
+    { id: "sessions", title: "Активные сессии", state: `${monitorSessions.filter((item) => item.status !== "completed").length + activeZrdMatchCount}`, icon: SessionsHeartIcon, active: activePanel === "sessions" },
+    { id: "results", title: "Результаты", state: `${completedSessionCount}`, icon: ResultsBarsIcon, active: activePanel === "results" },
   ];
+  const railItems = baseRailItems.map((item) => ({
+    ...item,
+    ready: readyByPanel[item.id] === true,
+    // Пульс — у следующего незаполненного шага, если пользователь не находится на нём.
+    pulse: item.id === nextToFill && !item.active,
+  }));
+
+  const renderRailItem = (item: (typeof railItems)[number]) => {
+    const Icon = item.icon;
+    const className = [
+      "dns-assessor-v2-rail-item",
+      item.active ? "dns-assessor-v2-rail-item--active" : "",
+      item.ready ? "dns-assessor-v2-rail-item--ready" : "",
+      item.pulse ? "dns-assessor-v2-rail-item--pulse" : "",
+    ].filter(Boolean).join(" ");
+    return (
+      <button
+        key={item.id}
+        type="button"
+        className={className}
+        onClick={() => openPanel(item.id)}
+        aria-current={item.active ? "page" : undefined}
+      >
+        <Icon className="dns-assessor-v2-rail-icon" />
+        <span className="dns-assessor-v2-rail-title">{item.title}</span>
+        <span className="dns-assessor-v2-rail-count">{item.state}</span>
+      </button>
+    );
+  };
+
+  const setupRailItems = railItems.filter((item) => item.id === "participant" || item.id === "scenario");
+  const monitorRailItems = railItems.filter((item) => item.id === "sessions" || item.id === "results");
 
   const renderRail = () => (
     <nav className="dns-assessor-v2-rail" aria-label="Разделы меню оценщика">
@@ -783,41 +890,26 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         <span>D</span>
         <div><strong>DNS SIM</strong><small>Кабинет оценщика</small></div>
       </div>
+      {/* Шаги запуска: заполнить и подтвердить два блока */}
+      <div className="dns-assessor-v2-rail-group-label">Запуск симуляции</div>
       <div className="dns-assessor-v2-rail-nav">
-      {railItems.map((item) => {
-        const Icon = item.icon;
-        const className = [
-          "dns-assessor-v2-rail-item",
-          item.active ? "dns-assessor-v2-rail-item--active" : "",
-        ].filter(Boolean).join(" ");
-
-        return (
-          <button
-            key={item.id}
-            type="button"
-            className={className}
-            onClick={() => openPanel(item.id)}
-            aria-current={item.active ? "page" : undefined}
-          >
-            <Icon className="dns-assessor-v2-rail-icon" />
-            <span className="dns-assessor-v2-rail-title">{item.title}</span>
-            <span className="dns-assessor-v2-rail-count">{item.state}</span>
-          </button>
-        );
-      })}
-      <button type="button" className="dns-assessor-v2-rail-item" onClick={() => setShowWiki(true)}>
-        <BookOpen className="dns-assessor-v2-rail-icon" />
-        <span className="dns-assessor-v2-rail-title">Wiki</span>
-        <ArrowRight className="dns-assessor-v2-rail-arrow" />
-      </button>
+        {setupRailItems.map(renderRailItem)}
+      </div>
+      {/* Мониторинг и отчётность — отделены и сдвинуты ниже */}
+      <div className="dns-assessor-v2-rail-group-label dns-assessor-v2-rail-group-label--monitor">Мониторинг</div>
+      <div className="dns-assessor-v2-rail-nav dns-assessor-v2-rail-nav--monitor">
+        {monitorRailItems.map(renderRailItem)}
       </div>
       <div className="dns-assessor-v2-rail-footer">
         <div className="dns-assessor-v2-rail-profile">
           <span>{(staffPrincipalQuery.data?.displayName || "О").slice(0, 1).toUpperCase()}</span>
-          <div><strong>{staffPrincipalQuery.data?.displayName || "Оценщик"}</strong><small>{staffRole === "admin" ? "Администратор" : "Оценщик"}</small></div>
+          <div><strong>{staffPrincipalQuery.data?.displayName || "Оценщик"}</strong><small>Кабинет оценщика</small></div>
         </div>
-        <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={handleAdminAccess} title="В администратора">
-          <ShieldCheck className="h-4 w-4" /><span>Администратор</span>
+        <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={() => setShowWiki(true)} title="База знаний">
+          <BookOpen className="h-4 w-4" /><span>Wiki</span>
+        </button>
+        <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={handleAdminAccess} title="Перейти в кабинет администратора (нужен пароль администратора)">
+          <ShieldCheck className="h-4 w-4" /><span>В администратора</span>
         </button>
         <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={handleLogout} title="Выйти">
           <LogOut className="h-4 w-4" /><span>Выйти</span>
@@ -848,19 +940,38 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     );
   };
 
-  const renderSetupNavigation = () => (
-    <div className="dns-assessor-v2-setup-tabs" role="tablist" aria-label="Настройка запуска">
-      {([
-        ["scenario", "Режим", Target],
-        ["composition", "Состав", ListChecks],
-        ["review", "Проверка", ClipboardCheck],
-      ] as const).map(([id, title, Icon]) => (
-        <button key={id} type="button" className={activePanel === id ? "dns-assessor-v2-setup-tab dns-assessor-v2-setup-tab--active" : "dns-assessor-v2-setup-tab"} onClick={() => setActivePanel(id)}>
-          <Icon className="h-4 w-4" />{title}
-        </button>
-      ))}
-    </div>
-  );
+  const renderSetupNavigation = () => {
+    // Готовность под-шагов настройки и подсказка «куда дальше».
+    const tabReady: Record<"scenario" | "composition" | "review", boolean> = {
+      scenario: scenarioConfirmed,
+      composition: compositionConfirmed,
+      review: compositionConfirmed && activeSetupValidation.readyToLaunch,
+    };
+    const tabOrder: Array<"scenario" | "composition" | "review"> = ["scenario", "composition", "review"];
+    const nextTab = tabOrder.find((id) => !tabReady[id]);
+    return (
+      <div className="dns-assessor-v2-setup-tabs" role="tablist" aria-label="Настройка запуска">
+        {([
+          ["scenario", "Режим", Target],
+          ["composition", "Состав", ListChecks],
+          ["review", "Проверка", ClipboardCheck],
+        ] as const).map(([id, title, Icon]) => {
+          const className = [
+            "dns-assessor-v2-setup-tab",
+            activePanel === id ? "dns-assessor-v2-setup-tab--active" : "",
+            tabReady[id] ? "dns-assessor-v2-setup-tab--ready" : "",
+            id === nextTab && activePanel !== id ? "dns-assessor-v2-setup-tab--pulse" : "",
+          ].filter(Boolean).join(" ");
+          return (
+            <button key={id} type="button" className={className} onClick={() => setActivePanel(id)}>
+              <Icon className="h-4 w-4" />{title}
+              {tabReady[id] && <CheckCircle2 className="dns-assessor-v2-setup-tab-check h-3.5 w-3.5" />}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   const renderParticipantPanel = () => (
     <section className="dns-assessor-v2-panel dns-assessor-v2-main-panel">
@@ -1025,10 +1136,15 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         </span>
       </div>
 
+      {/* Подсветка идёт по фактическому значению, а не по признаку «подтверждено».
+          Раньше у участника с сохранёнными настройками сложность стояла в сводке
+          справа, а слева не была выбрана ни одна плитка: подтверждение сбрасывалось
+          при загрузке настроек. Признак «подтверждено» остаётся у плашки выше. */}
       <div className="dns-assessor-v2-card-grid dns-assessor-v2-card-grid--scenarios">
         <button
           type="button"
-          className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "medium" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
+          aria-pressed={difficulty === "medium" && !manualSelection}
+          className={`dns-assessor-v2-choice-card ${difficulty === "medium" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("medium")}
         >
           <span>Стандартный</span>
@@ -1038,7 +1154,8 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         </button>
         <button
           type="button"
-          className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "easy" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
+          aria-pressed={difficulty === "easy" && !manualSelection}
+          className={`dns-assessor-v2-choice-card ${difficulty === "easy" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("easy")}
         >
           <span>Лёгкий</span>
@@ -1048,7 +1165,8 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         </button>
         <button
           type="button"
-          className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "hard" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
+          aria-pressed={difficulty === "hard" && !manualSelection}
+          className={`dns-assessor-v2-choice-card ${difficulty === "hard" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("hard")}
         >
           <span>Сложный</span>
@@ -1058,7 +1176,8 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         </button>
         <button
           type="button"
-          className={`dns-assessor-v2-choice-card dns-assessor-v2-choice-card--manual ${scenarioConfirmed && manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
+          aria-pressed={manualSelection}
+          className={`dns-assessor-v2-choice-card dns-assessor-v2-choice-card--manual ${manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("medium", true)}
         >
           <span>Экспертный</span>
@@ -1323,6 +1442,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
 
   const renderSessionsPanel = (resultsOnly = false) => {
     const visibleSessions = monitorSessions.filter((session) => resultsOnly ? session.status === "completed" : session.status !== "completed");
+    const visibleZrdMatches = monitorZrdMatches.filter((m) => resultsOnly ? m.status === "completed" : m.status !== "completed");
     return (
     <section className="dns-assessor-v2-panel dns-assessor-v2-main-panel">
       <div className="dns-assessor-v2-panel-head">
@@ -1332,7 +1452,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
           <p>{resultsOnly ? "Завершенные прохождения, итоговые отчеты и экспорт PDF." : "Статус, прогресс и текущая оценка участников в реальном времени."}</p>
         </div>
         <span className={`dns-assessor-v2-pill ${resultsOnly ? "" : "dns-assessor-v2-pill--ok"}`}>
-          {visibleSessions.length} {resultsOnly ? "завершено" : "в работе"}
+          {visibleSessions.length + visibleZrdMatches.length} {resultsOnly ? "завершено" : "в работе"}
         </span>
       </div>
 
@@ -1341,6 +1461,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         <div><span>Идут</span><strong className="text-[#35d38a]">{monitorSessions.filter((item) => item.status === "running").length}</strong></div>
         <div><span>Ожидают</span><strong className="text-[#f5c04e]">{monitorSessions.filter((item) => item.status === "waiting").length}</strong></div>
         <div><span>Завершены</span><strong className="text-[#5eb1ff]">{monitorSessions.filter((item) => item.status === "completed").length}</strong></div>
+        <div><span>Матчи ЗРД</span><strong className="text-[#FF6B00]">{monitorZrdMatches.filter((item) => item.status !== "completed").length}</strong></div>
       </div>}
 
       {!resultsOnly && launchResults.length > 0 && (
@@ -1406,6 +1527,65 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
                 <Button type="button" size="sm" variant="outline" className="border-[#ff6472]/35 bg-transparent text-[#ffc2c8] hover:bg-[#ff6472]/10" onClick={() => removeLiveSession(session.liveSessionId)} disabled={removeLoadingId === session.liveSessionId}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   {removeLoadingId === session.liveSessionId ? "Удаление..." : "Удалить"}
+                </Button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Матчи ЗРД — отдельный список: у матча до 4 кодов и участников, в отличие от одиночной сессии Космонавта */}
+      <div className="dns-assessor-v2-panel-head" style={{ marginTop: visibleZrdMatches.length > 0 ? "1.5rem" : 0 }}>
+        <div>
+          <div className="dns-assessor-v2-kicker">Институт ЗРД</div>
+          <h2 style={{ fontSize: "1.05rem" }}>{resultsOnly ? "Завершённые матчи ЗРД" : "Матчи ЗРД"}</h2>
+        </div>
+      </div>
+      <div className="dns-assessor-v2-session-list">
+        {visibleZrdMatches.length === 0 && (
+          <div className="dns-assessor-v2-empty">
+            <Info className="h-4 w-4" />
+            {resultsOnly ? "Завершённых матчей ЗРД пока нет." : "Активных матчей ЗРД пока нет."}
+          </div>
+        )}
+        {visibleZrdMatches.map((match) => {
+          const statusInfo = getStatusLabel(match.status === "in_progress" ? "running" : match.status);
+          const humanSeats = match.seats.filter((s) => s.controllerKind === "human");
+          const progressPercent = Math.round((match.tick / 12) * 100);
+          return (
+            <div key={`zrd-${match.id}`} className="dns-assessor-v2-session-card">
+              <div className="dns-assessor-v2-session-person">
+                <span className="dns-assessor-v2-session-avatar">З</span>
+                <div className="min-w-0">
+                  <strong>Сессия #{match.id} · {humanSeats.length > 0 ? humanSeats.map((s) => s.participantName).join(", ") : "только ИИ"}</strong>
+                  <p>Оценщик: {match.evaluatorName || "—"} · {SCENARIOS[match.scenario]?.title ?? match.scenario}</p>
+                </div>
+              </div>
+              <div className="dns-assessor-v2-session-code">
+                <span>Коды участников</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {humanSeats.length === 0 && <span className="text-xs text-white/40">—</span>}
+                  {humanSeats.map((s) => (
+                    <span key={s.seatIdx}>{renderCopyAccessCodeButton(s.accessCode ?? "")}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="dns-assessor-v2-session-state">
+                <span className={statusInfo.color}>{match.paused ? "Пауза" : statusInfo.label}</span>
+                <div className="dns-assessor-v2-progress">
+                  <span style={{ width: progressPercent + "%" }} />
+                </div>
+                <em>Мес {match.tick}/12 · Кв {match.quarter}</em>
+              </div>
+              <div className="dns-assessor-v2-session-score">
+                <span>Сложность</span>
+                <strong>{match.difficulty}</strong>
+                <small>из 5</small>
+              </div>
+              <div className="dns-assessor-v2-session-actions">
+                <Button type="button" size="sm" className="bg-[#5eb1ff] text-white hover:bg-[#4a9fe8]" onClick={() => setZrdObserveMatchId(match.id)}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Наблюдать
                 </Button>
               </div>
             </div>
@@ -1547,9 +1727,9 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
               <button type="button" className="dns-assessor-v2-secondary" onClick={validateCurrentSetup}>
                 <ClipboardCheck className="h-4 w-4" />Проверить
               </button>
-              <Button type="button" className="dns-assessor-v2-primary" onClick={handleStart} disabled={readyParticipantSetups.length === 0 || isStarting} data-testid="button-start">
+              <Button type="button" className="dns-assessor-v2-primary" onClick={handleStart} disabled={(simulationRole !== "regional-deputy" && readyParticipantSetups.length === 0) || isStarting} data-testid="button-start">
                 <Play className="mr-2 h-4 w-4" />
-                {isStarting ? "Запускаем..." : "Запустить симуляцию"}
+                {isStarting ? "Запускаем..." : simulationRole === "regional-deputy" ? "Запустить ЗРД" : "Запустить симуляцию"}
               </Button>
             </div>
           </section>
@@ -1560,16 +1740,16 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
 
   return (
     <div
-      className={`dns-product-shell dns-visual-shell dns-visual-shell--product ${themeClass} relative overflow-auto`}
+      className={`dns-product-shell dns-assessor-shell dns-visual-shell dns-visual-shell--product ${themeClass} relative overflow-auto`}
       style={{
-        backgroundImage: `url(${storeBg})`,
+        backgroundImage: `url(${theme === "light" ? BRAND_ASSETS.backgrounds.cabinetLight : BRAND_ASSETS.backgrounds.cabinetDark})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundAttachment: "fixed",
       }}
     >
-      <BrandVisualBackdrop variant="product" />
-      <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0d1421ee] via-[#16213ef2] to-[#0d1421f7]" />
+      <BrandVisualBackdrop variant="cabinet" />
+      <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0b101966] via-[#0d142199] to-[#0d1421cc]" />
 
       <div className="dns-page-frame dns-assessor-v2-frame">
         <header className="dns-brand-header dns-assessor-v2-header">
@@ -1583,6 +1763,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
           </div>
           <div className="dns-header-actions dns-assessor-v2-header-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            <FeedbackButton />
             <button
               onClick={() => navigate("/")}
               className="dns-assessor-v2-header-button"
@@ -1682,6 +1863,34 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
             {renderSidePanel()}
           </div>
         )}
+        {zrdWizardOpen && (
+          <ZrdLaunchWizard
+            onClose={() => setZrdWizardOpen(false)}
+            knownNames={knownParticipantNames}
+          />
+        )}
+        {zrdObserveMatchId !== null && (() => {
+          const match = monitorZrdMatches.find((m) => m.id === zrdObserveMatchId);
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(8,12,22,0.7)", backdropFilter: "blur(4px)" }} role="dialog" aria-modal="true" aria-label="Наблюдение за матчем ЗРД">
+              <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border" style={{ background: "#101725", borderColor: "rgba(255,255,255,0.09)" }}>
+                <header className="flex items-center gap-3 border-b px-5 py-4" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+                  <div className="text-base font-extrabold text-white">Матч ЗРД #{zrdObserveMatchId}{match ? ` · ${SCENARIOS[match.scenario]?.title ?? match.scenario}` : ""}</div>
+                  <button type="button" onClick={() => setZrdObserveMatchId(null)} aria-label="Закрыть" className="ml-auto rounded-lg border p-1.5 text-white/60" style={{ borderColor: "rgba(255,255,255,0.12)", cursor: "pointer" }}>
+                    <X className="h-4 w-4" aria-hidden />
+                  </button>
+                </header>
+                <ZrdMatchCodesAndMonitor
+                  matchId={zrdObserveMatchId}
+                  seats={(match?.seats ?? []).map((s) => ({ ...s, aiLevel: null }))}
+                  knownNames={knownParticipantNames}
+                />
+              </div>
+            </div>
+          );
+        })()}
+        <ProductFooter onVersionClick={() => setReleaseHistoryOpen(true)} />
+        <ReleaseHistoryDialog open={releaseHistoryOpen} onOpenChange={setReleaseHistoryOpen} themeClass={themeClass} />
       </div>
     </div>
   );

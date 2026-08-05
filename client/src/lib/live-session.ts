@@ -173,8 +173,8 @@ export async function createRemoteLiveSimulation(
   return config;
 }
 
-export async function joinRemoteLiveSimulation(accessCode: string) {
-  const response = await apiRequest("POST", "/api/live-sessions/join", { accessCode });
+export async function joinRemoteLiveSimulation(accessCode: string, email?: string) {
+  const response = await apiRequest("POST", "/api/live-sessions/join", { accessCode, email });
   const session = (await response.json()) as LiveSimulationSessionState<SimulationState>;
   setLiveSimulationConfig(session.config);
   return session;

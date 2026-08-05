@@ -1,7 +1,7 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useLocation } from "wouter";
-import type { ChatInfo, CompetencyDefinition, EmailCase, MessengerCase, SimCase, SimulationRuntimeSettings, VideoCase } from "@shared/simulation-content";
+import type { ChatInfo, CompetencyDefinition, EmailCase, MessengerCase, SimCase, SimulationRuntimeSettings, VideoCase, WikiNote } from "@shared/simulation-content";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,25 +33,32 @@ import {
   resolveSimulationBriefingHtml,
 } from "@/lib/runtime-content";
 import { buildPdfPayloadFromReport, buildReportFromSessionDetails } from "@/lib/report-data";
+import { ParticipantMailDialog } from "./components/ParticipantMailDialog";
 import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
   BarChart3,
   BookOpen,
+  FileText,
   CalendarClock,
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardCheck,
   Eye,
   FileSpreadsheet,
   History,
   Info,
   LayoutDashboard,
+  Mail,
   Pause,
   Play,
   Radio,
   Save,
   Settings,
+  Sparkles,
   Trash2,
   Workflow,
   X,
@@ -66,22 +73,30 @@ import {
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
 } from "recharts";
-import storeBg from "@assets/store_bg.png";
+import { BRAND_ASSETS } from "@/lib/brand-assets";
+import { FeedbackButton } from "@/components/feedback-dialog";
+import { ProductFooter } from "@/components/product-footer";
+import { ReleaseHistoryDialog } from "@/components/release-history-dialog";
 import { autoAssignScheduleTimes, buildScheduleRows, getScheduleSourceLabel, type ScheduleRow } from "./schedule/schedule-utils";
 import { ADMIN_NAV_ICONS, ADMIN_VISUALS } from "./admin-constants";
 import type { AdminChannelTab as ChannelTab, AdminTabKey as TabKey, SystemSoundSettingKey } from "./admin-types";
 import { AdminVisualPanel } from "./components/AdminVisualPanel";
+import { AdminWiki } from "./components/AdminWiki";
+import { CaseFlowDiagram } from "./components/CaseFlowDiagram";
 import { AdminWikiDialog } from "./components/AdminWikiDialog";
 import { CompetencyRoleSelector, Field, FieldArea, MultiSelectField, SelectField, SuggestField } from "./components/AdminFields";
 import { CompetencyHorizontalImpactChart, type CompetencyImpactDatum } from "./components/CompetencyHorizontalImpactChart";
 import { EntityEditor } from "./components/EntityEditor";
 import {
-  CaseCreationWizard,
   CaseMediaPanel,
   SignalCreationWizard,
   StructuredCyclesEditor,
   StructuredOptionsEditor,
 } from "./cases/CaseEditors";
+import { CaseMaster, initialMasterView, type MasterView } from "./cases/master/CaseMaster";
+import { CaseRoadmap } from "./cases/master/CaseRoadmap";
+import { buildCaseSetupIssues, MASTER_STEP_TITLES } from "./cases/master/case-master-support";
+import { CaseCorrectionsDialog } from "./cases/CaseCorrectionsDialog";
 import { CASE_AUTHORING_WIKI } from "./admin-wiki-content";
 import { clearDraftFromStorage, deepClone, readDraftFromStorage, writeDraftToStorage } from "./hooks/useAdminDrafts";
 import { useAdminPermissions } from "./hooks/useAdminPermissions";
@@ -103,6 +118,7 @@ interface ComparisonResultRow {
   averageScore: number;
   answersCount: number;
   competencyAverages: Record<string, number>;
+  participantEmail: string;
   report: ComparisonReport | null;
   detail: any | null;
   isLoading: boolean;
@@ -300,7 +316,6 @@ const STORE_EFFECT_FIELDS = [
 ] as const;
 
 const DRAFT_STORAGE_KEYS = {
-  caseWizard: "dns-simcenter.admin.caseWizardDraft",
   signalWizard: "dns-simcenter.admin.signalWizardDraft",
 } as const;
 
@@ -388,37 +403,6 @@ function buildEntityCompetencyProfile(entity: any) {
   }
 
   return {};
-}
-
-function buildCaseSetupIssues(caseItem: SimCase | null | undefined) {
-  if (!caseItem) {
-    return [];
-  }
-
-  const issues: string[] = [];
-  if (!caseItem.title?.trim()) issues.push("Не заполнено название кейса.");
-  if (!caseItem.trigger?.text?.trim()) issues.push("Не заполнен стартовый сигнал кейса.");
-  if (!caseItem.trigger?.source?.trim()) issues.push("Не заполнен источник сигнала.");
-  if (!caseItem.timing?.decisionDeadlineSeconds) issues.push("Не задан срок решения.");
-  if (!caseItem.cycles?.length) issues.push("Не создан ни один цикл.");
-
-  (caseItem.cycles || []).forEach((cycle, cycleIndex) => {
-    if (!cycle.situation?.trim()) issues.push(`Цикл ${cycleIndex + 1}: не заполнена ситуация.`);
-    if (!cycle.signal?.content?.trim()) issues.push(`Цикл ${cycleIndex + 1}: не заполнен текст сигнала.`);
-    const activeOptions = (cycle.options || []).filter((option: any) => (option.status || "active") === "active");
-    if (activeOptions.length === 0) issues.push(`Цикл ${cycleIndex + 1}: нет активных вариантов ответа.`);
-    activeOptions.forEach((option: any, optionIndex: number) => {
-      if (!option.text?.trim()) issues.push(`Цикл ${cycleIndex + 1}, ответ ${optionIndex + 1}: не заполнен текст ответа.`);
-      if (Object.keys(option.competency_scores || {}).length === 0) {
-        issues.push(`Цикл ${cycleIndex + 1}, ответ ${optionIndex + 1}: нет влияния на компетенции.`);
-      }
-      if (option.nextCycleId && option.nextCycleId !== "__complete" && !(caseItem.cycles || []).some((item) => item.id === option.nextCycleId)) {
-        issues.push(`Цикл ${cycleIndex + 1}, ответ ${optionIndex + 1}: ссылка ведёт на несуществующий цикл.`);
-      }
-    });
-  });
-
-  return issues;
 }
 
 function buildCaseRouteRows(caseItem: SimCase | null | undefined) {
@@ -1096,7 +1080,18 @@ function createEmptyChat(order: number): ChatInfo {
 export default function AdminPage() {
   const [, navigate] = useLocation();
   const { theme, themeClass, toggleTheme } = useDnsTheme();
-  const [tab, setTab] = useState<TabKey>("cases");
+
+  // Параллакс корпоративного фона: фон (position:fixed) мягко смещается вслед за прокруткой.
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY || document.documentElement.scrollTop || 0;
+      document.documentElement.style.setProperty("--dns-bg-shift", `${Math.min(y * 0.045, 28)}px`);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  const [tab, setTab] = useState<TabKey>("dashboard");
   const [channelTab, setChannelTab] = useState<ChannelTab>("email");
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
@@ -1104,15 +1099,23 @@ export default function AdminPage() {
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [selectedResultId, setSelectedResultId] = useState<number | null>(null);
-  const [selectedWeightCaseId, setSelectedWeightCaseId] = useState<string | null>(null);
   const [selectedCaseCycleIndex, setSelectedCaseCycleIndex] = useState(0);
-  const [caseWizardOpen, setCaseWizardOpen] = useState(false);
+  const [caseEditorOpen, setCaseEditorOpen] = useState(false);
+  // id кейса-исправления, для которого открыт разбор правок.
+  const [correctionsCaseId, setCorrectionsCaseId] = useState<string | null>(null);
+  // Вид мастера живёт здесь, а не внутри него: правая панель должна уметь открыть
+  // этап, на котором чинится замечание.
+  const [masterView, setMasterView] = useState<MasterView>(() => initialMasterView(false));
+  // Правая панель раньше шла одной длинной лентой. Разделы переключаются, а не громоздятся.
+  const [caseImpactTab, setCaseImpactTab] = useState<"impact" | "routes" | "issues">("impact");
+  const [flowPreviewOpen, setFlowPreviewOpen] = useState(false);
+  const [showAdminWiki, setShowAdminWiki] = useState(false);
   const [signalWizardOpen, setSignalWizardOpen] = useState(false);
   const [adminWikiOpen, setAdminWikiOpen] = useState(false);
+  const [releaseHistoryOpen, setReleaseHistoryOpen] = useState(false);
   const [auditHistoryOpen, setAuditHistoryOpen] = useState(false);
   const [signalWizardStep, setSignalWizardStep] = useState(0);
   const [signalWizardMode, setSignalWizardMode] = useState<ChannelTab>("email");
-  const [caseWizardStep, setCaseWizardStep] = useState(0);
   const [caseDraft, setCaseDraft] = useState<SimCase | null>(null);
   const [emailDraft, setEmailDraft] = useState<EmailCase | null>(null);
   const [messengerDraft, setMessengerDraft] = useState<MessengerCase | null>(null);
@@ -1124,15 +1127,20 @@ export default function AdminPage() {
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  // Замечания автопроверки — это успешное сохранение с предупреждением, а не ошибка.
+  // Отдельное состояние, чтобы не показывать их красной плашкой отказа.
+  const [notice, setNotice] = useState("");
   const [excelLoading, setExcelLoading] = useState(false);
   const [pdfLoading, setPdfLoading] = useState(false);
   const [deleteResultLoading, setDeleteResultLoading] = useState(false);
   const [activePreviewKey, setActivePreviewKey] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
-  const [caseWizardDraft, setCaseWizardDraft] = useState<SimCase>(() => createEmptyCase(1));
   const [signalWizardDraft, setSignalWizardDraft] = useState<EmailCase | MessengerCase | VideoCase>(() => createEmptyEmail(1));
   const [scheduleDraft, setScheduleDraft] = useState<ScheduleRow[]>([]);
   const [comparisonSelection, setComparisonSelection] = useState<number[]>([]);
+  const [mailDialog, setMailDialog] = useState<{ rowId: number; mode: "contact" | "results" | "training" } | null>(null);
+  // диагностика SMTP из вкладки «Настройки»: конфиг + живое соединение, без отправки письма
+  const [mailDiag, setMailDiag] = useState<{ loading: boolean; result: { configured: boolean; ok: boolean; error?: string } | null }>({ loading: false, result: null });
 
   const {
     queryClient,
@@ -1152,7 +1160,9 @@ export default function AdminPage() {
   useAdminPermissions(staffQuery.data, staffQuery.isLoading);
 
   useEffect(() => {
-    if (contentQuery.data?.cases && !selectedCaseId && contentQuery.data.cases[0]) {
+    // "" — сигнал "автор создаёт новый кейс" из startCaseCreation: осознанно нет выбора
+    // среди сохранённых. null — стартовое "ничего ещё не выбирали", тут можно подставить первый.
+    if (contentQuery.data?.cases && selectedCaseId === null && contentQuery.data.cases[0]) {
       setSelectedCaseId(contentQuery.data.cases[0].id);
     }
     if (contentQuery.data?.emailCases && !selectedEmailId && contentQuery.data.emailCases[0]) {
@@ -1179,6 +1189,11 @@ export default function AdminPage() {
   }, [contentQuery.data, resultsQuery.data, selectedCaseId, selectedChatId, selectedEmailId, selectedMessengerId, selectedResultId, selectedVideoId]);
 
   useEffect(() => {
+    // Пустая строка — черновик уже выставлен явно в startCaseCreation, синхронизация
+    // со списком сохранённых кейсов должна его не трогать, а не сбрасывать в null.
+    if (selectedCaseId === "") {
+      return;
+    }
     const found = contentQuery.data?.cases?.find((item: SimCase) => item.id === selectedCaseId);
     setCaseDraft(found ? deepClone(found) : null);
     setSelectedCaseCycleIndex(0);
@@ -1214,12 +1229,6 @@ export default function AdminPage() {
       setSelectedResultId(resultsQuery.data[0].id);
     }
   }, [resultsQuery.data, selectedResultId]);
-
-  useEffect(() => {
-    if (caseWizardOpen) {
-      writeDraftToStorage(DRAFT_STORAGE_KEYS.caseWizard, caseWizardDraft);
-    }
-  }, [caseWizardDraft, caseWizardOpen]);
 
   useEffect(() => {
     if (signalWizardOpen) {
@@ -1272,15 +1281,6 @@ export default function AdminPage() {
     () => normalizeCaseWeightsDraft(settingsDraft),
     [settingsDraft],
   );
-  const selectedWeightCase = useMemo(
-    () => activeCases.find((item) => item.id === selectedWeightCaseId) || activeCases[0] || null,
-    [activeCases, selectedWeightCaseId],
-  );
-  const selectedCaseWeight = selectedWeightCase ? getCaseWeightValue(caseWeightsDraft, selectedWeightCase.id) : 100;
-  const selectedCaseProfile = useMemo(
-    () => buildEntityCompetencyProfile(selectedWeightCase),
-    [selectedWeightCase],
-  );
   const aggregateCompetencyProfile = useMemo(
     () => buildWeightedCompetencyProfile(activeCases, {}),
     [activeCases],
@@ -1288,10 +1288,6 @@ export default function AdminPage() {
   const factCompetencyProfile = useMemo(
     () => (resultDetailQuery.data?.result?.competencyAverages || {}) as Record<string, number>,
     [resultDetailQuery.data],
-  );
-  const aggregateBarData = useMemo(
-    () => buildCompetencyBarData(competencies, aggregateCompetencyProfile, selectedCaseProfile, selectedCaseWeight),
-    [competencies, aggregateCompetencyProfile, selectedCaseProfile, selectedCaseWeight],
   );
   const radarChartData = useMemo(
     () => buildCompetencyRadarData(competencies, aggregateCompetencyProfile, factCompetencyProfile),
@@ -1314,6 +1310,59 @@ export default function AdminPage() {
     () => new Set(completedResults.map((item) => Number(item.id))),
     [completedResults],
   );
+
+  // ─── Обзор кабинета (раздел "dashboard") ─────────────────────
+  const overviewMetrics = useMemo(() => {
+    const data = contentQuery.data;
+    const list = (data?.cases || []) as any[];
+    const total = list.length;
+    const withCycles = list.filter((item) => (item.cycles?.length || 0) > 0).length;
+    const noCycles = total - withCycles;
+    const completed = completedResults.length;
+    const scores = completedResults
+      .map((item) => Number(item.report?.overallAvg ?? item.averageScore ?? 0))
+      .filter((value) => value > 0);
+    const avg = scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
+    const readiness = total > 0 ? Math.round((withCycles / total) * 100) : 0;
+    const channelSignals = ((data?.emailCases || []) as any[]).length
+      + ((data?.messengerCases || []) as any[]).length
+      + ((data?.videoCases || []) as any[]).length;
+    const mediaCount = ((data?.assets || []) as any[]).length;
+    return { total, withCycles, noCycles, completed, avg, readiness, channelSignals, mediaCount };
+  }, [contentQuery.data, completedResults]);
+
+  const overviewReadinessItems = useMemo(() => {
+    const items: { tone: "ok" | "warn" | "err"; title: string; note: string; tab?: TabKey }[] = [];
+    if (overviewMetrics.total === 0) {
+      items.push({ tone: "err", title: "Нет ни одного кейса", note: "Создайте первый кейс, чтобы запустить симуляцию", tab: "cases" });
+    } else if (overviewMetrics.noCycles > 0) {
+      items.push({ tone: "warn", title: `Кейсы без циклов: ${overviewMetrics.noCycles}`, note: "Без циклов кейс нельзя пройти — добавьте события", tab: "cases" });
+    } else {
+      items.push({ tone: "ok", title: "У всех кейсов есть циклы", note: `${overviewMetrics.withCycles} из ${overviewMetrics.total}` });
+    }
+    items.push(
+      overviewMetrics.completed > 0
+        ? { tone: "ok", title: `Завершённых прохождений: ${overviewMetrics.completed}`, note: "Есть данные для проверки оценки", tab: "results" }
+        : { tone: "warn", title: "Нет завершённых прохождений", note: "Проведите тестовый прогон, чтобы проверить настройку", tab: "results" },
+    );
+    items.push(
+      competencies.length > 0
+        ? { tone: "ok", title: `Компетенций в профиле: ${competencies.length}`, note: "Профиль НАДО рассчитывается по этим компетенциям" }
+        : { tone: "err", title: "Профиль компетенций пуст", note: "Заполните компетенции в настройках", tab: "settings" },
+    );
+    items.push(
+      overviewMetrics.channelSignals > 0
+        ? { tone: "ok", title: `Сигналов по каналам: ${overviewMetrics.channelSignals}`, note: "Почта, мессенджер и видео настроены", tab: "channels" }
+        : { tone: "warn", title: "Каналы пока пустые", note: "Добавьте сигналы почты/чата/видео для нагрузки", tab: "channels" },
+    );
+    items.push(
+      overviewMetrics.mediaCount > 0
+        ? { tone: "ok", title: `Медиа загружено: ${overviewMetrics.mediaCount}`, note: "Аудио и видео доступны для кейсов", tab: "cases" }
+        : { tone: "warn", title: "Медиа не загружено", note: "Добавьте аудио/видео, иначе сработают fallback-заглушки", tab: "cases" },
+    );
+    items.push({ tone: "ok", title: `Готовность к запуску: ${overviewMetrics.readiness}%`, note: "Доля кейсов с заполненными циклами" });
+    return items;
+  }, [overviewMetrics, competencies.length]);
   useEffect(() => {
     if (tab !== "comparison") {
       return;
@@ -1358,6 +1407,7 @@ export default function AdminPage() {
         averageScore: Number(report?.avgScore ?? detail?.result?.averageScore ?? listItem?.averageScore ?? 0),
         answersCount: Number(report?.totalDecisions ?? detail?.answers?.length ?? 0),
         competencyAverages,
+        participantEmail: String(session.participantEmail || listItem?.participantEmail || ""),
         report,
         detail,
         isLoading: Boolean(detailQuery?.isLoading),
@@ -1420,20 +1470,40 @@ export default function AdminPage() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!activeCases.length) {
-      setSelectedWeightCaseId(null);
-      return;
-    }
+  // Материалы справочника, добавленные людьми. Живут отдельно от контента
+  // симуляции: их читают обе роли, а меняет только администратор.
+  const [wikiNotes, setWikiNotes] = useState<WikiNote[]>([]);
 
-    if (!selectedWeightCaseId || !activeCases.some((item) => item.id === selectedWeightCaseId)) {
-      setSelectedWeightCaseId(activeCases[0].id);
+  const loadWikiNotes = useCallback(async () => {
+    try {
+      const response = await apiRequest("GET", "/api/staff/wiki-notes");
+      const payload = await response.json();
+      setWikiNotes(payload.notes || []);
+    } catch {
+      // Справочник читается и без материалов — молча оставляем список пустым.
     }
-  }, [activeCases, selectedWeightCaseId]);
+  }, []);
+
+  useEffect(() => {
+    if (showAdminWiki) void loadWikiNotes();
+  }, [showAdminWiki, loadWikiNotes]);
+
+  const saveWikiNote = async (note: Omit<WikiNote, "id" | "imageUrl">) => {
+    const response = await apiRequest("POST", "/api/admin/wiki-notes", note);
+    const payload = await response.json();
+    setWikiNotes(payload.notes || []);
+  };
+
+  const deleteWikiNote = async (id: string) => {
+    const response = await apiRequest("DELETE", `/api/admin/wiki-notes/${id}`);
+    const payload = await response.json();
+    setWikiNotes(payload.notes || []);
+  };
 
   const handleUploadAsset = async (file: File) => {
     setUploading(true);
     setError("");
+    setNotice("");
     try {
       const dataUrl = await readFileAsDataUrl(file);
       const response = await apiRequest("POST", "/api/admin/assets", {
@@ -1456,11 +1526,16 @@ export default function AdminPage() {
   const saveCurrent = async () => {
     setSaving(true);
     setError("");
+    setNotice("");
     try {
       if (tab === "cases" && caseDraft) {
         const response = await apiRequest("POST", "/api/admin/cases", caseDraft);
         const payload = await response.json();
         setSelectedCaseId(payload.id);
+        const issueCount = Array.isArray(payload.validationIssues) ? payload.validationIssues.length : 0;
+        if (issueCount > 0) {
+          setNotice(`Кейс сохранён как черновик. Автопроверка нашла замечаний: ${issueCount}. Откройте карточку кейса или этап «Оформление и запуск», чтобы посмотреть список.`);
+        }
       }
       if (tab === "channels" && channelTab === "email" && emailDraft) {
         const response = await apiRequest("POST", "/api/admin/email-cases", emailDraft);
@@ -1500,6 +1575,7 @@ export default function AdminPage() {
 
     setSaving(true);
     setError("");
+    setNotice("");
     try {
       const publishedDraft = { ...caseDraft, isActive: true };
       const response = await apiRequest("POST", "/api/admin/cases", publishedDraft);
@@ -1507,6 +1583,13 @@ export default function AdminPage() {
       setCaseDraft(publishedDraft);
       setSelectedCaseId(payload.id);
       await invalidateRuntimeContent();
+      // Публикация меняет isActive, но не qaStatus, поэтому серверный гейт её не блокирует —
+      // иначе уже опубликованные кейсы с замечаниями стало бы невозможно переопубликовать.
+      // Но администратор должен видеть, что выпускает участникам кейс с известными дефектами.
+      const issueCount = Array.isArray(payload.validationIssues) ? payload.validationIssues.length : 0;
+      if (issueCount > 0) {
+        setNotice(`Кейс опубликован, но автопроверка нашла замечаний: ${issueCount}. Участники увидят его в текущем виде — проверьте карточку кейса или этап «Оформление и запуск».`);
+      }
     } catch (err: any) {
       setError(err.message || "Не удалось опубликовать кейс");
     } finally {
@@ -1515,6 +1598,9 @@ export default function AdminPage() {
   };
 
   const focusCaseLogicPreview = () => {
+    // Раньше просто скроллило к блоку. Теперь разделы переключаются, поэтому сначала
+    // открываем нужный: замечания, если они есть, иначе переходы.
+    setCaseImpactTab(caseSetupIssues.length > 0 ? "issues" : "routes");
     document.getElementById("admin-case-logic-preview")?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
@@ -1534,6 +1620,8 @@ export default function AdminPage() {
     }
 
     setError("");
+
+    setNotice("");
 
     if (activePreviewKey === previewKey) {
       stopPreviewAudio();
@@ -1598,6 +1686,7 @@ export default function AdminPage() {
   const saveSchedule = async () => {
     setSaving(true);
     setError("");
+    setNotice("");
     try {
       const casesById = new Map(((contentQuery.data?.cases || []) as SimCase[]).map((item) => [item.id, item]));
       const emailsById = new Map(((contentQuery.data?.emailCases || []) as EmailCase[]).map((item) => [item.id, item]));
@@ -1667,11 +1756,16 @@ export default function AdminPage() {
     }
   };
 
-  const openCaseWizard = () => {
-    const nextOrder = (contentQuery.data?.cases?.length || 0) + 1;
-    setCaseWizardDraft(readDraftFromStorage(DRAFT_STORAGE_KEYS.caseWizard, createEmptyCase(nextOrder)));
-    setCaseWizardStep(0);
-    setCaseWizardOpen(true);
+  const startCaseCreation = () => {
+    const draft = createEmptyCase((contentQuery.data?.cases?.length || 0) + 1);
+    setCaseDraft(draft);
+    setSelectedCaseId("");
+    setSelectedCaseCycleIndex(0);
+    setCaseEditorOpen(true);
+    // Диалог редактора кейса рендерится только пока активна вкладка «Кейсы» (см. ниже
+    // `{tab === "cases" && (...)}`) — иначе клик на дашборде откроет состояние диалога,
+    // но сам диалог не попадёт в дерево.
+    setTab("cases");
   };
 
   const openSignalWizard = (mode: ChannelTab) => {
@@ -1699,41 +1793,10 @@ export default function AdminPage() {
     setSignalWizardOpen(true);
   };
 
-  const confirmCaseWizard = async () => {
-    const nextDraft = deepClone(caseWizardDraft);
-    nextDraft.id = nextDraft.id || `CASE-${String((contentQuery.data?.cases?.length || 0) + 1).padStart(2, "0")}`;
-    nextDraft.cycles = (nextDraft.cycles || []).map((cycle, index) => ({
-      ...cycle,
-      id: cycle.id || `${nextDraft.id}-C${index + 1}`,
-      cycle: index + 1,
-      options: (cycle.options || []).map((option: any, optionIndex: number) => ({
-        ...option,
-        id: option.id || `${nextDraft.id}-C${index + 1}-O${optionIndex + 1}`,
-        level: optionIndex + 1,
-      })),
-    }));
-
-    setSaving(true);
-    setError("");
-    try {
-      const response = await apiRequest("POST", "/api/admin/cases", nextDraft);
-      const payload = await response.json();
-      const savedId = payload.id || nextDraft.id;
-      clearDraftFromStorage(DRAFT_STORAGE_KEYS.caseWizard);
-      await invalidateRuntimeContent();
-      setSelectedCaseId(savedId);
-      setCaseDraft({ ...nextDraft, id: savedId });
-      setCaseWizardOpen(false);
-    } catch (err: any) {
-      setError(err.message || "Не удалось создать кейс. Черновик сохранён в браузере.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const confirmSignalWizard = async () => {
     setSaving(true);
     setError("");
+    setNotice("");
 
     if (signalWizardMode === "email") {
       const nextDraft = deepClone(signalWizardDraft as EmailCase);
@@ -1801,6 +1864,7 @@ export default function AdminPage() {
   const exportResultsExcel = async () => {
     setExcelLoading(true);
     setError("");
+    setNotice("");
     try {
       const summaryRows = [
         [
@@ -1886,6 +1950,7 @@ export default function AdminPage() {
 
     setPdfLoading(true);
     setError("");
+    setNotice("");
     try {
       const payload = buildPdfPayloadFromReport(selectedResultReport);
       const response = await apiRequest("POST", "/api/export-pdf", payload);
@@ -1921,6 +1986,7 @@ export default function AdminPage() {
 
     setDeleteResultLoading(true);
     setError("");
+    setNotice("");
     try {
       await apiRequest("DELETE", `/api/admin/results/${selectedResultId}`);
       setSelectedResultId(null);
@@ -1935,6 +2001,7 @@ export default function AdminPage() {
 
   const handleDeleteCurrent = async () => {
     setError("");
+    setNotice("");
     try {
       if (tab === "cases" && selectedCaseId) {
         await apiRequest("DELETE", `/api/admin/cases/${selectedCaseId}`);
@@ -2094,16 +2161,16 @@ export default function AdminPage() {
 
   return (
     <div
-      className={`dns-product-shell dns-visual-shell dns-visual-shell--product ${themeClass} relative`}
+      className={`dns-product-shell dns-admin-shell dns-visual-shell dns-visual-shell--product ${themeClass} relative`}
       style={{
-        backgroundImage: `url(${storeBg})`,
+        backgroundImage: `url(${theme === "light" ? BRAND_ASSETS.backgrounds.cabinetLight : BRAND_ASSETS.backgrounds.cabinetDark})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundAttachment: "fixed",
       }}
     >
-      <BrandVisualBackdrop variant="product" />
-      <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0d1421ef] via-[#16213ef5] to-[#0d1421f7]" />
+      <BrandVisualBackdrop variant="cabinet" />
+      <div className="dns-theme-overlay absolute inset-0 bg-gradient-to-b from-[#0b101966] via-[#0d142199] to-[#0d1421cc]" />
       <div className="dns-page-frame max-w-[1560px]">
         <header className="dns-brand-header dns-admin-header-surface">
           <div className="dns-brand-title">
@@ -2116,25 +2183,12 @@ export default function AdminPage() {
           </div>
           <div className="dns-header-actions dns-admin-header-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
-            <Button
-              variant="outline"
-              className="border-[#19d3ae]/40 bg-[#19d3ae]/10 text-[#aaf7e7]"
-              onClick={() => setAuditHistoryOpen(true)}
-            >
-              <History className="mr-2 h-4 w-4" />
-              История изменений
-            </Button>
-            <Button variant="outline" className="border-[#4a9eff]/45 bg-[#4a9eff]/10 text-[#cfe6ff]" onClick={() => setAdminWikiOpen(true)}>
-              <BookOpen className="mr-2 h-4 w-4" />
-              Wiki
-            </Button>
-            <div className="inline-flex items-center rounded-full border border-[#FF6B00]/35 bg-[#FF6B00]/12 px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
-              Product UI v4.1
-            </div>
-            <Button variant="outline" className="border-[#2a3a4e] text-[#8890a8] bg-transparent" onClick={() => navigate("/evaluator")}>
+            {/* «История» — только внизу навигации (по просьбе пользователя убрана из шапки) */}
+            <FeedbackButton size="sm" />
+            <Button variant="outline" size="sm" onClick={() => navigate("/evaluator")}>
               В оценщик
             </Button>
-            <Button variant="outline" className="border-[#2a3a4e] text-[#8890a8] bg-transparent" onClick={async () => { await apiRequest("POST", "/api/staff/logout"); navigate("/staff-login"); }}>
+            <Button variant="outline" size="sm" onClick={async () => { await apiRequest("POST", "/api/staff/logout"); navigate("/staff-login"); }}>
               Выйти
             </Button>
           </div>
@@ -2147,14 +2201,14 @@ export default function AdminPage() {
               <strong>Управление</strong>
             </div>
             <nav>
-              {(["cases", "channels", "schedule", "results", "comparison", "settings"] as TabKey[]).map((item) => {
+              {(["dashboard", "cases", "channels", "schedule", "results", "comparison", "settings"] as TabKey[]).map((item) => {
                 const itemVisual = ADMIN_VISUALS[item];
                 const ItemIcon = ADMIN_NAV_ICONS[item];
                 return (
                   <button
                     key={item}
                     type="button"
-                    onClick={() => setTab(item)}
+                    onClick={() => { setTab(item); setShowAdminWiki(false); }}
                     className={tab === item ? "dns-admin-structure-nav-item dns-admin-structure-nav-item--active" : "dns-admin-structure-nav-item"}
                     title={itemVisual.label}
                   >
@@ -2165,13 +2219,13 @@ export default function AdminPage() {
               })}
             </nav>
             <div className="dns-admin-structure-nav-footer">
-              <button type="button" className="dns-admin-structure-nav-item" onClick={() => setAdminWikiOpen(true)}>
+              <button type="button" className="dns-admin-structure-nav-item" onClick={() => setShowAdminWiki(true)}>
                 <BookOpen aria-hidden="true" />
                 <span>Wiki</span>
               </button>
               <button type="button" className="dns-admin-structure-nav-item" onClick={() => setAuditHistoryOpen(true)}>
                 <History aria-hidden="true" />
-                <span>История</span>
+                <span>Журнал действий</span>
               </button>
               <div className="dns-admin-structure-profile">
                 <span>{staffQuery.data?.displayName?.slice(0, 1) || "A"}</span>
@@ -2185,14 +2239,124 @@ export default function AdminPage() {
 
           <main className={`dns-admin-dashboard-main dns-admin-dashboard-main--${tab}`}>
         {error && <div className="mb-4 rounded-lg border border-[#ff4444]/30 bg-[#ff4444]/10 px-4 py-3 text-sm text-[#ff9999]">{error}</div>}
+        {notice && <div className="mb-4 rounded-lg border border-[#ffc107]/30 bg-[#ffc107]/10 px-4 py-3 text-sm text-[#ffd77a]">{notice}</div>}
 
         <AdminWikiDialog open={adminWikiOpen} onOpenChange={setAdminWikiOpen} tab={tab} />
         <AdminAuditHistory open={auditHistoryOpen} onOpenChange={setAuditHistoryOpen} />
 
-        <AdminVisualPanel visual={activeAdminVisual} />
+        {showAdminWiki ? (
+          <AdminWiki
+            onBack={() => setShowAdminWiki(false)}
+            notes={wikiNotes}
+            assets={contentQuery.data?.assets || []}
+            onUploadAsset={handleUploadAsset}
+            onSaveNote={saveWikiNote}
+            onDeleteNote={deleteWikiNote}
+          />
+        ) : (
+        <>
+        {tab !== "dashboard" && <AdminVisualPanel visual={activeAdminVisual} />}
+
+        {tab === "dashboard" && (
+          <div className="dns-admin-overview flex flex-col gap-5">
+            {/* Hero */}
+            <section className="dns-admin-overview-hero relative overflow-hidden rounded-2xl border border-border p-6 2xl:p-7">
+              <div className="relative flex items-center gap-6">
+                <div className="flex-1">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#f68b1f]">Центр управления симуляцией</div>
+                  <h2 className="mt-2 text-2xl 2xl:text-[27px] font-bold leading-tight text-foreground">
+                    Здравствуйте, {staffQuery.data?.displayName || "Администратор"}.
+                  </h2>
+                  <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-muted-foreground">
+                    Базовый профиль компетенций задан. Дальше вы настраиваете кейсы, веса и параметры — и сразу видите, как это меняет оценку.
+                  </p>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <Button onClick={() => setTab("cases")} className="bg-[#f68b1f] text-white hover:bg-[#f68b1f]/90">Перейти к кейсам</Button>
+                    <Button variant="outline" onClick={startCaseCreation}>Создать кейс</Button>
+                  </div>
+                </div>
+                <img src={ADMIN_VISUALS.dashboard.primarySrc} alt={ADMIN_VISUALS.dashboard.primaryAlt}
+                  className="hidden h-[150px] w-auto select-none object-contain drop-shadow-[0_14px_30px_rgba(0,212,170,0.35)] lg:block" />
+              </div>
+            </section>
+
+            {/* KPI */}
+            <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+              {[
+                { label: "Кейсов в библиотеке", value: String(overviewMetrics.total), accent: "rgba(255,107,0,0.5)", hint: `${overviewMetrics.withCycles} с циклами` },
+                { label: "Завершённых прохождений", value: String(overviewMetrics.completed), accent: "rgba(0,212,170,0.5)", hint: "за всё время" },
+                { label: "Средний балл", value: overviewMetrics.avg > 0 ? overviewMetrics.avg.toFixed(1) : "—", accent: "rgba(74,158,255,0.5)", hint: "по завершённым" },
+                { label: "Готовность кейсов", value: `${overviewMetrics.readiness}%`, accent: "rgba(255,193,7,0.5)", hint: overviewMetrics.noCycles > 0 ? `${overviewMetrics.noCycles} без циклов` : "все с циклами" },
+              ].map((kpi) => (
+                <div key={kpi.label} className="relative overflow-hidden rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-4 backdrop-blur">
+                  <div className="absolute -right-7 -top-7 h-28 w-28 rounded-full opacity-50" style={{ background: `radial-gradient(circle, ${kpi.accent}, transparent 70%)` }} />
+                  <div className="relative text-[11px] font-semibold uppercase tracking-[0.06em] text-[#8890a8]">{kpi.label}</div>
+                  <div className="relative mt-2 text-[30px] font-bold leading-none tabular-nums text-white">{kpi.value}</div>
+                  <div className="relative mt-1.5 text-[11px] font-semibold text-[#8aa2c4]">{kpi.hint}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Row: что проверить + радар */}
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.4fr_1fr] items-stretch">
+              <section className="flex flex-col rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-5 backdrop-blur">
+                <div className="flex items-center gap-2">
+                  <ClipboardCheck className="h-4 w-4 text-[#f68b1f]" />
+                  <h3 className="text-sm font-bold text-white">Что проверить до запуска</h3>
+                  <span className="ml-auto rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-2.5 py-0.5 text-[10px] font-semibold text-[#8aa2c4]">{overviewReadinessItems.length} пунктов</span>
+                </div>
+                <div className="mt-4 flex flex-col gap-2.5">
+                  {overviewReadinessItems.map((it, i) => (
+                    <div key={i} className="flex items-center gap-3 rounded-lg border border-[#243244] bg-[#101826]/55 px-3 py-2.5">
+                      <span className={`flex h-6 w-6 flex-none items-center justify-center rounded-md text-[13px] font-bold ${
+                        it.tone === "ok" ? "bg-[#00d4aa]/16 text-[#00d4aa]" : it.tone === "warn" ? "bg-[#ffc107]/16 text-[#ffc107]" : "bg-[#ff4444]/16 text-[#ff4444]"
+                      }`}>{it.tone === "ok" ? "✓" : it.tone === "warn" ? "▲" : "!"}</span>
+                      <div className="min-w-0">
+                        <div className="text-[13px] font-semibold text-white">{it.title}</div>
+                        <div className="text-[11.5px] text-[#8aa2c4]">{it.note}</div>
+                      </div>
+                      {it.tab && (
+                        <button type="button" onClick={() => setTab(it.tab as TabKey)} className="ml-auto flex-none text-[11.5px] font-bold text-[#f68b1f] hover:underline">Открыть →</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-5 backdrop-blur">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-[#00d4aa]" />
+                  <h3 className="text-sm font-bold text-white">Профиль компетенций</h3>
+                  <span className="ml-auto rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-2.5 py-0.5 text-[10px] font-semibold text-[#8aa2c4]">НАДО / ФАКТ</span>
+                </div>
+                <p className="mt-1.5 text-[11.5px] leading-relaxed text-[#8aa2c4]">
+                  <span className="font-semibold text-[#4a9eff]">НАДО</span> — базовый ожидаемый профиль по текущим кейсам (статичен).{" "}
+                  <span className="font-semibold text-[#00d4aa]">ФАКТ</span> —{" "}
+                  {overviewMetrics.completed > 0
+                    ? `средний уровень по ${overviewMetrics.completed} завершённым прохождениям.`
+                    : "появится, когда будут завершённые прохождения."}
+                </p>
+                <div className="mt-2 h-[360px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={radarChartData} outerRadius="84%" margin={{ top: 18, right: 26, bottom: 18, left: 26 }}>
+                      <PolarGrid stroke={theme === "light" ? "#d3dae6" : "#273449"} />
+                      <PolarAngleAxis dataKey="competency" tick={{ fill: theme === "light" ? "#33425a" : "#a7b7cf", fontSize: 11 }} />
+                      <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fill: theme === "light" ? "#6b7a90" : "#5e7492", fontSize: 10 }} />
+                      <RechartsTooltip contentStyle={{ background: theme === "light" ? "#ffffff" : "#101826", border: "1px solid #2a3a4e", borderRadius: 12 }} labelStyle={{ color: theme === "light" ? "#1a2433" : "#fff" }} />
+                      <Legend wrapperStyle={{ fontSize: 12 }} />
+                      <Radar name="НАДО" dataKey="target" stroke="#4a9eff" fill="#4a9eff" fillOpacity={0.12} strokeWidth={2} />
+                      <Radar name="ФАКТ" dataKey="fact" stroke="#00d4aa" fill="#00d4aa" fillOpacity={0.12} strokeWidth={2} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </section>
+            </div>
+          </div>
+        )}
 
         {tab === "cases" && (
-          <div className="dns-mobile-stack dns-admin-main-grid dns-admin-cases-layout grid gap-5 2xl:gap-6 items-start">
+          <>
+          <div className="dns-admin-cases-list-view">
             <div className="dns-admin-case-nav rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 flex flex-col">
               <div className="dns-admin-case-nav-header flex items-center justify-between mb-3">
                 <div className="text-sm font-semibold text-white">Основные кейсы</div>
@@ -2203,55 +2367,42 @@ export default function AdminPage() {
                   <Button size="sm" variant="outline" className="dns-admin-case-nav-action border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={() => selectedCaseId && reorderCase(selectedCaseId, 1)} disabled={!selectedCaseId} aria-label="Опустить выбранный кейс ниже" title="Опустить выбранный кейс ниже">
                     <ArrowDown className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" onClick={openCaseWizard}>Новый</Button>
+                  <Button size="sm" onClick={startCaseCreation}>Новый</Button>
                 </div>
               </div>
               <div className="dns-admin-case-list space-y-2 max-h-[70vh] overflow-y-auto pr-1">
-                {contentQuery.data.cases.map((item: SimCase, index: number) => (
-                  <div key={item.id} className={`dns-admin-case-list-item w-full rounded-lg border px-3 py-2 ${selectedCaseId === item.id ? "dns-admin-case-list-item--active border-[#FF6B00] bg-[#FF6B00]/10" : "border-[#2a3a4e]"}`}>
+                {contentQuery.data.cases.map((item: SimCase, index: number) => {
+                  // Список читает сохранённые кейсы. Пока открыт редактор, показываем название
+                  // из черновика — иначе автор переименовал кейс, а в списке висит старое.
+                  const isOpenInEditor = caseEditorOpen && caseDraft?.id === item.id;
+                  const draftTitle = isOpenInEditor ? caseDraft?.title : "";
+                  const hasUnsavedTitle = Boolean(draftTitle?.trim()) && draftTitle !== item.title;
+                  return (
+                  <div key={item.id} className={`dns-admin-case-list-item w-full rounded-lg border px-3 py-2 ${selectedCaseId === item.id ? "dns-admin-case-list-item--active border-[#f68b1f] bg-[#f68b1f]/10" : "border-[#2a3a4e]"}`}>
                     <div className="dns-admin-case-order-index" aria-hidden="true">{index + 1}</div>
-                    <button onClick={() => setSelectedCaseId(item.id)} className="dns-admin-case-list-main w-full text-left">
-                      <div className="dns-admin-case-list-title text-sm text-white">{item.title || item.id}</div>
-                      <div className="dns-admin-case-list-meta text-xs text-[#8890a8]">{item.id}</div>
+                    <button onClick={() => { setSelectedCaseId(item.id); setCaseEditorOpen(true); }} className="dns-admin-case-list-main w-full text-left" title="Открыть редактор кейса">
+                      <div className="dns-admin-case-list-title text-sm text-white">{draftTitle?.trim() || item.title || item.id}</div>
+                      <div className="dns-admin-case-list-meta text-xs text-[#8890a8]">
+                        {item.id}
+                        {hasUnsavedTitle && <span className="ml-1.5 text-[#ffd36e]">не сохранено</span>}
+                      </div>
                     </button>
-                  </div>
-                ))}
-              </div>
-              {caseDraft && (
-                <div className="mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <div>
-                      <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">Циклы кейса</div>
-                      <div className="mt-1 text-[11px] text-[#8aa2c4]">{caseDraft.cycles?.length || 0} событий внутри выбранного кейса</div>
-                    </div>
-                    <span className="rounded-full border border-[#2a3a4e] bg-[#141c2b] px-2 py-1 text-[10px] text-[#cbd8ef]">
-                      Вкладка
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {(caseDraft.cycles || []).map((cycle, index) => (
+                    {/* У дубля-исправления разбор правок открывается прямо из списка:
+                        решение «верить ли этой версии» принимают до входа в редактор. */}
+                    {item.correctionOfCaseId && (
                       <button
-                        key={`${cycle.id || "cycle"}-${index}`}
                         type="button"
-                        onClick={() => setSelectedCaseCycleIndex(index)}
-                        className={`w-full rounded-lg border px-3 py-2 text-left transition ${
-                          selectedCaseCycleIndex === index
-                            ? "border-[#4a9eff] bg-[#4a9eff]/12"
-                            : "border-[#2a3a4e] bg-[#0d1522]/70 hover:border-[#3b5878]"
-                        }`}
+                        onClick={() => setCorrectionsCaseId(item.id)}
+                        className="mt-1.5 rounded-md border border-[#54d28c]/40 bg-[#54d28c]/10 px-2 py-0.5 text-[11px] font-semibold text-[#54d28c] transition hover:bg-[#54d28c]/20"
+                        title={`Показать, что исправлено относительно ${item.correctionOfCaseId}`}
                       >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-xs font-semibold text-white">Цикл {index + 1}</span>
-                          <span className="text-[10px] text-[#8aa2c4]">{(cycle.options || []).length} отв.</span>
-                        </div>
-                        <div className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8aa2c4]">
-                          {cycle.situation || cycle.signal?.content || "Пустой цикл"}
-                        </div>
+                        Исправление · что изменено ({(item.corrections || []).length})
                       </button>
-                    ))}
+                    )}
                   </div>
-                </div>
-              )}
+                  );
+                })}
+              </div>
               <div className="dns-admin-case-note mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">Методическое пояснение</div>
                 <div className="mt-3 space-y-3 text-sm leading-relaxed text-[#cbd8ef]">
@@ -2261,67 +2412,145 @@ export default function AdminPage() {
                 </div>
               </div>
             </div>
-            <div className="dns-admin-case-workspace grid gap-5 min-[1900px]:grid-cols-[minmax(920px,1fr),380px] min-[1900px]:gap-6 items-start">
-              <div className="dns-admin-case-editor-panel min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5">
+          </div>
+
+          {/* Разбор правок кейса-исправления: что было в оригинале, что стало и почему. */}
+          {(() => {
+            const cases = contentQuery.data.cases as SimCase[];
+            const correctedCase = cases.find((item) => item.id === correctionsCaseId);
+            if (!correctedCase) return null;
+            return (
+              <CaseCorrectionsDialog
+                open
+                onOpenChange={(next) => { if (!next) setCorrectionsCaseId(null); }}
+                correctedCase={correctedCase}
+                originalCase={cases.find((item) => item.id === correctedCase.correctionOfCaseId) || null}
+                themeClass={themeClass}
+              />
+            );
+          })()}
+
+          <Dialog open={caseEditorOpen} onOpenChange={setCaseEditorOpen}>
+            {/* Окно мастера занимает экран: при 1500px на широком мониторе по краям
+                оставалось больше 400px пустоты, а колонкам не хватало ширины. */}
+            <DialogContent className={`dns-product-shell dns-admin-shell ${themeClass} flex h-[94vh] max-h-[94vh] w-[98vw] max-w-[2400px] flex-col gap-0 overflow-hidden p-0`}>
+              <DialogHeader className="space-y-0.5 border-b border-border px-5 py-3.5 text-left">
+                <DialogTitle className="text-[15px]">Редактор кейса · {caseDraft?.title || caseDraft?.id || "Новый кейс"}</DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">Слева — настройка кейса, справа — влияние на профиль компетенций (меняется в моменте).</DialogDescription>
+              </DialogHeader>
+              <div className="dns-admin-case-workspace grid flex-1 gap-5 overflow-hidden p-5 lg:grid-cols-[minmax(0,1fr),360px] xl:grid-cols-[280px,minmax(0,1fr),360px]">
+                {/* Дерево кейса — постоянная левая полоса. Не зависит от текущего этапа
+                    и не исчезает при переключении: автор всё время видит кейс целиком. */}
                 {caseDraft && (
-                  <EntityEditor
-                    title="Редактор кейса"
+                  <div className="dns-admin-case-roadmap-panel hidden min-h-0 min-w-0 overflow-hidden rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-3 xl:flex xl:flex-col">
+                    <CaseRoadmap
+                      caseInput={caseDraft}
+                      activeStepId={masterView.kind === "step" ? masterView.stepId : null}
+                    />
+                  </div>
+                )}
+                <div className="dns-admin-case-editor-panel min-w-0 overflow-y-auto rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 custom-scroll">
+                {caseDraft && (
+                  <CaseMaster
                     entity={caseDraft}
-                    assets={assets}
                     competencies={competencies}
+                    assets={assets}
                     caseSourceOptions={caseSourceOptions}
-                    emailSenderOptions={emailSenderOptions}
-                    emailDepartmentOptions={emailDepartmentOptions}
-                    messengerSenderOptions={messengerSenderOptions}
-                    messengerRoleOptions={messengerRoleOptions}
-                    videoSenderOptions={videoSenderOptions}
-                    videoRoleOptions={videoRoleOptions}
-                    onChange={setCaseDraft}
+                    isNew={!selectedCaseId}
                     onUploadAsset={handleUploadAsset}
-                    chats={[]}
-                    mode="case"
-                    onAddOption={() => addOption(setCaseDraft)}
                     onTogglePreviewAudio={togglePreviewAudio}
                     activePreviewKey={activePreviewKey}
                     selectedCycleIndex={selectedCaseCycleIndex}
                     onSelectedCycleIndexChange={setSelectedCaseCycleIndex}
+                    onChange={setCaseDraft}
+                    view={masterView}
+                    onViewChange={setMasterView}
+                    themeClass={themeClass}
                   />
                 )}
               </div>
-              <div className="dns-admin-case-impact-panel min-w-0 rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4 min-[1900px]:sticky min-[1900px]:top-4 min-[1900px]:max-h-[calc(100vh-2rem)] min-[1900px]:overflow-y-auto min-[1900px]:overflow-x-hidden min-[1900px]:p-5 min-[1900px]:pr-4 custom-scroll">
-                <div className="text-sm font-semibold text-white">Влияние выбранного кейса</div>
-                <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
-                  Этот блок фиксирован рядом с редактором и показывает, как текущая настройка кейса влияет на ожидаемый профиль компетенций.
-                </div>
+              <div className="dns-admin-case-impact-panel min-w-0 overflow-y-auto rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4 2xl:p-5 custom-scroll">
                 {caseDraft ? (
                   <>
-                    <div className="mt-3 rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
-                      <div className="text-xs uppercase tracking-[0.18em] text-[#6fa0ff]">{caseDraft.id || "Новый кейс"}</div>
-                      <div className="mt-1 text-sm font-semibold text-white">{caseDraft.title || "Без названия"}</div>
-                      <div className="mt-2 text-[11px] text-[#cbd8ef]">Вес кейса в симуляции: {caseDraftWeight}%</div>
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <span className="text-[11px] uppercase tracking-[0.16em] text-[#6fa0ff]">{caseDraft.id || "Новый кейс"}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{caseDraft.title || "Без названия"}</span>
+                      <span className="text-[11px] text-[#cbd8ef]">вес {caseDraftWeight}%</span>
                     </div>
-                    <div className="mt-4">
-                      <CompetencyHorizontalImpactChart
-                        data={caseDraftBarData}
-                        series={[
-                          { key: "aggregate", label: "Профиль кейса", color: "#4a9eff" },
-                          { key: "selected", label: "Регулируемый вклад", color: "#00d4aa" },
-                        ]}
-                      />
+
+                    <div id="admin-case-logic-preview" className="mt-3 flex gap-1 rounded-lg border border-[#243244] bg-[#101826]/60 p-1">
+                      {([
+                        ["impact", "Влияние", 0],
+                        ["routes", "Переходы", caseRouteRows.length],
+                        ["issues", "Замечания", caseSetupIssues.length],
+                      ] as const).map(([key, label, count]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setCaseImpactTab(key)}
+                          className={`flex-1 whitespace-nowrap rounded-md border px-1.5 py-1.5 text-[11px] font-semibold transition ${
+                            caseImpactTab === key
+                              ? "border-[#f68b1f] bg-[#f68b1f]/15 text-white"
+                              : "border-transparent text-[#9aabc6] hover:border-[#3b5878]"
+                          }`}
+                        >
+                          {label}
+                          {count > 0 && (
+                            <span className={key === "issues" ? "ml-1 text-[#ffd36e]" : "ml-1 text-[#8aa2c4]"}>{count}</span>
+                          )}
+                        </button>
+                      ))}
                     </div>
-                    <div id="admin-case-logic-preview" className="mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-semibold text-white">Предпросмотр логики</div>
-                          <div className="mt-1 text-[11px] leading-relaxed text-[#8aa2c4]">
-                            Проверка связей «ответ → цикл» без запуска реальной сессии.
+
+                    {caseImpactTab === "impact" && (
+                      <div className="mt-3">
+                        {/* Вес кейса живёт рядом с графиком, который показывает его действие.
+                            Раньше он был в «Настройках», отдельно от кейса и от результата. */}
+                        {caseDraft && (
+                          <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
+                            <div className="flex items-baseline justify-between gap-2">
+                              <div className="text-[12px] font-semibold text-white">Вес кейса в симуляции</div>
+                              <div className="text-[13px] font-bold text-[#ffb27a]">{caseDraftWeight}%</div>
+                            </div>
+                            <div className="mt-1 text-[11px] leading-relaxed text-[#8aa2c4]">
+                              Чем выше вес, тем сильнее этот кейс влияет на итоговый портрет кандидата.
+                            </div>
+                            <div className="mt-3 px-1">
+                              <Slider
+                                value={[caseDraftWeight]}
+                                onValueChange={([nextValue]) => updateCaseWeight(caseDraft.id, nextValue)}
+                                min={0}
+                                max={100}
+                                step={10}
+                              />
+                              <div className="mt-2 flex justify-between text-[10px] uppercase tracking-[0.16em] text-[#7d9bc9]">
+                                <span>0</span>
+                                <span>50</span>
+                                <span>100</span>
+                              </div>
+                            </div>
                           </div>
+                        )}
+                        <div className="mt-3 text-[11px] leading-relaxed text-[#8aa2c4]">
+                          Синий — базовый профиль кейса, бирюзовый — фактический вклад с учётом веса.
                         </div>
-                        <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${caseSetupIssues.length === 0 ? "border-[#00d4aa]/40 text-[#7fffd4]" : "border-[#ffb000]/40 text-[#ffd36e]"}`}>
-                          {caseSetupIssues.length === 0 ? "Готово" : `${caseSetupIssues.length} замеч.`}
-                        </span>
+                        <div className="mt-2">
+                          <CompetencyHorizontalImpactChart
+                            data={caseDraftBarData}
+                            series={[
+                              { key: "aggregate", label: "Профиль кейса", color: "#4a9eff" },
+                              { key: "selected", label: "Регулируемый вклад", color: "#00d4aa" },
+                            ]}
+                          />
+                        </div>
                       </div>
-                      <div className="mt-3 max-h-48 space-y-2 overflow-y-auto pr-1 custom-scroll">
+                    )}
+
+                    {caseImpactTab === "routes" && (
+                      <div className="mt-3 space-y-2">
+                        <div className="text-[11px] leading-relaxed text-[#8aa2c4]">
+                          Куда ведёт каждый ответ — без запуска сессии.
+                        </div>
                         {caseRouteRows.length === 0 && (
                           <div className="rounded-lg border border-dashed border-[#31455f] px-3 py-3 text-[11px] text-[#8aa2c4]">
                             Добавьте активные варианты ответа, чтобы увидеть переходы.
@@ -2338,15 +2567,36 @@ export default function AdminPage() {
                           </div>
                         ))}
                       </div>
-                      {caseSetupIssues.length > 0 && (
-                        <div className="mt-3 rounded-lg border border-[#ffb000]/25 bg-[#ffb000]/8 p-3">
-                          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ffd36e]">Что исправить до запуска</div>
-                          <ul className="mt-2 space-y-1 text-[11px] leading-relaxed text-[#ffe6a6]">
-                            {caseSetupIssues.slice(0, 5).map((issue) => <li key={issue}>• {issue}</li>)}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
+                    )}
+
+                    {caseImpactTab === "issues" && (
+                      <div className="mt-3 space-y-2">
+                        {caseSetupIssues.length === 0 ? (
+                          <div className="rounded-lg border border-[#00d4aa]/35 bg-[#00d4aa]/8 px-3 py-3 text-[11px] text-[#7fffd4]">
+                            Всё необходимое заполнено — кейс можно публиковать.
+                          </div>
+                        ) : (
+                          <>
+                            <div className="text-[11px] leading-relaxed text-[#8aa2c4]">
+                              Нажмите на замечание — откроется этап, где оно чинится.
+                            </div>
+                            {caseSetupIssues.map((issue, issueIndex) => (
+                              <button
+                                key={`${issue.step}-${issueIndex}`}
+                                type="button"
+                                onClick={() => setMasterView({ kind: "step", stepId: issue.step })}
+                                className="flex w-full items-start gap-2 rounded-lg border border-[#ffb000]/25 bg-[#ffb000]/8 px-3 py-2 text-left text-[11px] leading-relaxed text-[#ffe6a6] transition hover:border-[#ffd36e]"
+                              >
+                                <span className="mt-0.5 shrink-0 rounded border border-[#ffb000]/40 px-1 text-[9px] uppercase tracking-wide text-[#ffd36e]">
+                                  {MASTER_STEP_TITLES[issue.step]}
+                                </span>
+                                <span className="min-w-0">{issue.text}</span>
+                              </button>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    )}
                     <div className="dns-admin-case-control-panel mt-4">
                       <div className="dns-admin-case-control-head">
                         <div>
@@ -2368,9 +2618,9 @@ export default function AdminPage() {
                           <Save className="mr-2 h-4 w-4" />
                           {saving ? "Сохраняем..." : "Сохранить"}
                         </Button>
-                        <Button type="button" variant="outline" onClick={focusCaseLogicPreview}>
+                        <Button type="button" variant="outline" onClick={() => setFlowPreviewOpen(true)}>
                           <Eye className="mr-2 h-4 w-4" />
-                          Предпросмотр
+                          Схема путей
                         </Button>
                         <Button type="button" variant="outline" onClick={focusCaseLogicPreview}>
                           {caseSetupIssues.length === 0 ? <CheckCircle2 className="mr-2 h-4 w-4" /> : <AlertTriangle className="mr-2 h-4 w-4" />}
@@ -2392,8 +2642,22 @@ export default function AdminPage() {
                   </div>
                 )}
               </div>
-            </div>
-          </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={flowPreviewOpen} onOpenChange={setFlowPreviewOpen}>
+            <DialogContent className={`dns-product-shell dns-admin-shell ${themeClass} flex h-[90vh] max-h-[90vh] w-[92vw] max-w-[860px] flex-col gap-0 overflow-hidden p-0`}>
+              <DialogHeader className="space-y-0.5 border-b border-border px-5 py-3.5 text-left">
+                <DialogTitle className="text-[15px]">Схема путей · {caseDraft?.title || caseDraft?.id || "Кейс"}</DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">Дерево ответов: что произойдёт при каждом выборе студента и куда ведёт переход по циклам.</DialogDescription>
+              </DialogHeader>
+              <div className="flex-1 overflow-y-auto px-5 py-5 custom-scroll">
+                <CaseFlowDiagram caseItem={caseDraft} />
+              </div>
+            </DialogContent>
+          </Dialog>
+          </>
         )}
 
         {tab === "channels" && (
@@ -2406,7 +2670,7 @@ export default function AdminPage() {
               ))}
             </div>
             {channelTab === "email" && (
-              <div className="grid gap-5 xl:grid-cols-[300px,minmax(680px,1fr)] 2xl:grid-cols-[320px,minmax(760px,1fr),380px] 2xl:gap-6">
+              <div className="grid gap-5 xl:grid-cols-[280px,minmax(0,1fr)] 2xl:grid-cols-[300px,minmax(0,1fr),340px] 2xl:gap-6">
                 <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full">
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-sm font-semibold text-white">Письма</div>
@@ -2473,7 +2737,7 @@ export default function AdminPage() {
                     </Button>
                   </div>
                 </div>
-                <div className="grid gap-5 xl:grid-cols-[300px,minmax(680px,1fr)] 2xl:grid-cols-[320px,minmax(760px,1fr),380px] 2xl:gap-6">
+                <div className="grid gap-5 xl:grid-cols-[280px,minmax(0,1fr)] 2xl:grid-cols-[300px,minmax(0,1fr),340px] 2xl:gap-6">
                   <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full">
                     <div className="flex items-center justify-between mb-3">
                       <div className="text-sm font-semibold text-white">Сообщения</div>
@@ -2496,7 +2760,7 @@ export default function AdminPage() {
               </div>
             )}
             {channelTab === "video" && (
-              <div className="grid gap-5 xl:grid-cols-[300px,minmax(680px,1fr)] 2xl:grid-cols-[320px,minmax(760px,1fr),380px] 2xl:gap-6">
+              <div className="grid gap-5 xl:grid-cols-[280px,minmax(0,1fr)] 2xl:grid-cols-[300px,minmax(0,1fr),340px] 2xl:gap-6">
                 <div className="min-w-0 rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 h-full">
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-sm font-semibold text-white">Видео</div>
@@ -2542,7 +2806,7 @@ export default function AdminPage() {
                 </Button>
                 <Button
                   type="button"
-                  className="bg-[#FF6B00] hover:bg-[#e06000]"
+                  className="bg-[#f68b1f] hover:bg-[#e06000]"
                   onClick={saveSchedule}
                   disabled={saving}
                 >
@@ -2557,7 +2821,7 @@ export default function AdminPage() {
                   <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-[#FF6B00]/35 bg-[#FF6B00]/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
+                        <span className="rounded-full border border-[#f68b1f]/35 bg-[#f68b1f]/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
                           {index + 1}
                         </span>
                         <span className="rounded-full border border-[#4a9eff]/35 bg-[#4a9eff]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8ec5ff]">
@@ -2713,7 +2977,8 @@ export default function AdminPage() {
                       </div>
                     </div>
                     <div className="dns-admin-action-block">
-                      <Button size="sm" variant="outline" className="border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={exportSelectedResultPdf} disabled={pdfLoading || !selectedResultReport}>
+                      <Button size="sm" variant="outline" className="border-[#4a9eff]/45 bg-[#4a9eff]/12 text-[#d7e7ff] hover:bg-[#4a9eff]/20 hover:text-white" onClick={exportSelectedResultPdf} disabled={pdfLoading || !selectedResultReport}>
+                        <FileText className="mr-2 h-4 w-4" />
                         {pdfLoading ? "PDF..." : "Скачать PDF"}
                       </Button>
                       <Button
@@ -2758,15 +3023,15 @@ export default function AdminPage() {
                           : "Без результата"}
                       </div>
                     </div>
-                    <div className="mt-4 h-[340px]">
+                    <div className="mt-4 h-[380px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart data={radarChartData} outerRadius="72%">
-                          <PolarGrid stroke="#273449" />
-                          <PolarAngleAxis dataKey="competency" tick={{ fill: "#a7b7cf", fontSize: 10 }} />
-                          <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fill: "#5e7492", fontSize: 10 }} />
+                        <RadarChart data={radarChartData} outerRadius="84%" margin={{ top: 18, right: 28, bottom: 18, left: 28 }}>
+                          <PolarGrid stroke={theme === "light" ? "#d3dae6" : "#273449"} />
+                          <PolarAngleAxis dataKey="competency" tick={{ fill: theme === "light" ? "#33425a" : "#a7b7cf", fontSize: 11 }} />
+                          <PolarRadiusAxis angle={90} domain={[0, 5]} tick={{ fill: theme === "light" ? "#6b7a90" : "#5e7492", fontSize: 10 }} />
                           <RechartsTooltip
-                            contentStyle={{ background: "#101826", border: "1px solid #2a3a4e", borderRadius: 12 }}
-                            labelStyle={{ color: "#fff" }}
+                            contentStyle={{ background: theme === "light" ? "#ffffff" : "#101826", border: "1px solid #2a3a4e", borderRadius: 12 }}
+                            labelStyle={{ color: theme === "light" ? "#1a2433" : "#fff" }}
                           />
                           <Legend wrapperStyle={{ fontSize: 12 }} />
                           <Radar name="НАДО" dataKey="target" stroke="#4a9eff" fill="#4a9eff" fillOpacity={0.12} strokeWidth={2} />
@@ -2965,6 +3230,20 @@ export default function AdminPage() {
                               Детали результата не загрузились.
                             </div>
                           )}
+                          <div className="mt-3 flex gap-1.5 border-t border-[#2a3a4e] pt-3">
+                            <Button type="button" size="sm" variant="outline" className="h-7 flex-1 gap-1 border-[#2a3a4e] bg-transparent px-2 text-[10px] text-[#8aa2c4]"
+                              onClick={() => setMailDialog({ rowId: row.id, mode: "contact" })} title="Связаться с участником">
+                              <Mail className="h-3 w-3" /> Связаться
+                            </Button>
+                            <Button type="button" size="sm" variant="outline" className="h-7 flex-1 gap-1 border-[#2a3a4e] bg-transparent px-2 text-[10px] text-[#8aa2c4]"
+                              onClick={() => setMailDialog({ rowId: row.id, mode: "results" })} disabled={!row.report} title="Отправить отчёт на почту">
+                              <FileText className="h-3 w-3" /> Отчёт
+                            </Button>
+                            <Button type="button" size="sm" variant="outline" className="h-7 flex-1 gap-1 border-[#2a3a4e] bg-transparent px-2 text-[10px] text-[#8aa2c4]"
+                              onClick={() => setMailDialog({ rowId: row.id, mode: "training" })} title="Назначить обучение">
+                              <CalendarClock className="h-3 w-3" /> Обучение
+                            </Button>
+                          </div>
                         </div>
                       );
                     })}
@@ -3104,13 +3383,11 @@ export default function AdminPage() {
                           </div>
                         </div>
 
-                        {insight.leaderNotes.length > 0 && (
-                          <div className="dns-comparison-leader-notes">
-                            {insight.leaderNotes.map((item) => (
-                              <span key={item}>{item}</span>
-                            ))}
-                          </div>
-                        )}
+                        <div className="dns-comparison-leader-notes">
+                          {insight.leaderNotes.map((item) => (
+                            <span key={item}>{item}</span>
+                          ))}
+                        </div>
 
                         <div className="dns-comparison-risk-block">
                           <span>Риски</span>
@@ -3173,75 +3450,47 @@ export default function AdminPage() {
                 ))}
               </div>
 
+              {/* Диагностика почты: конфигурация из .env сервера + живое соединение с Exchange (без отправки) */}
               <div className="mt-4 rounded-xl border border-[#243244] bg-[#141c2b]/45 p-4">
-                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <div className="text-sm font-semibold text-white">Вес каждого кейса</div>
-                    <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
-                      Вместо ручной настройки каждой компетенции для всей симуляции вы задаёте вес кейса целиком.
-                      Чем выше вес, тем сильнее именно этот кейс влияет на итоговый портрет кандидата.
+                    <div className="text-sm font-semibold text-white">Почта (SMTP / Exchange)</div>
+                    <div className="mt-1 text-xs text-[#8aa2c4]">
+                      Настраивается в .env сервера (FEEDBACK_SMTP_*). Проверка соединяется с сервером почты, письмо не отправляет.
                     </div>
                   </div>
-                  <label className="flex items-center gap-2 rounded-full border border-[#2a3a4e] bg-[#101826]/70 px-3 py-2 text-xs text-[#dbe2f0]">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(settingsDraft.timeInfluenceEnabled)}
-                      onChange={(e) => setSettingsDraft((current) => ({
-                        ...current,
-                        timeInfluenceEnabled: e.target.checked,
-                      }))}
-                      className="h-4 w-4 rounded border-[#3b4b61] bg-[#141c2b]"
-                    />
-                    Влияние времени на итоговую оценку
-                  </label>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="border-[#2a3a4e] bg-transparent text-[#8ec5ff]"
+                    disabled={mailDiag.loading}
+                    onClick={async () => {
+                      setMailDiag({ loading: true, result: null });
+                      try {
+                        const res = await apiRequest("GET", "/api/feedback/diagnostics");
+                        setMailDiag({ loading: false, result: await res.json() });
+                      } catch (err: any) {
+                        setMailDiag({ loading: false, result: { configured: false, ok: false, error: err?.message || "Запрос диагностики не прошёл" } });
+                      }
+                    }}
+                  >
+                    {mailDiag.loading ? "Проверяем..." : "Проверить соединение"}
+                  </Button>
                 </div>
-
-                <div className="space-y-3">
-                  {activeCases.map((caseItem) => {
-                    const weightValue = getCaseWeightValue(caseWeightsDraft, caseItem.id);
-                    const isSelected = selectedWeightCase?.id === caseItem.id;
-
-                    return (
-                      <div
-                        key={caseItem.id}
-                        onClick={() => setSelectedWeightCaseId(caseItem.id)}
-                        className={`w-full rounded-xl border p-3 text-left transition ${
-                          isSelected
-                            ? "border-[#4a9eff]/50 bg-[#4a9eff]/10"
-                            : "border-[#243244] bg-[#101826]/70 hover:border-[#34506f]"
-                        }`}
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-xs uppercase tracking-[0.18em] text-[#6fa0ff]">{caseItem.id}</div>
-                            <div className="mt-1 text-sm font-semibold text-white">{caseItem.title}</div>
-                            <div className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8aa2c4]">
-                              {caseItem.description}
-                            </div>
-                          </div>
-                          <div className="rounded-full border border-[#2a3a4e] bg-[#141c2b]/70 px-3 py-1 text-sm font-semibold text-white">
-                            {weightValue}%
-                          </div>
-                        </div>
-                        <div className="mt-3 px-1">
-                          <Slider
-                            value={[weightValue]}
-                            onValueChange={([nextValue]) => updateCaseWeight(caseItem.id, nextValue)}
-                            min={0}
-                            max={100}
-                            step={10}
-                          />
-                          <div className="mt-2 flex justify-between text-[10px] uppercase tracking-[0.16em] text-[#71839d]">
-                            <span>0</span>
-                            <span>50</span>
-                            <span>100</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                {mailDiag.result && (
+                  <div className={`mt-3 rounded-lg border px-3 py-2 text-xs ${mailDiag.result.ok
+                    ? "border-[#35d38a]/40 bg-[#35d38a]/10 text-[#9fe8c6]"
+                    : "border-[#ff6472]/40 bg-[#ff6472]/10 text-[#ffc2c8]"}`}>
+                    {mailDiag.result.ok
+                      ? "Соединение и авторизация на почтовом сервере успешны — отправка писем должна работать."
+                      : !mailDiag.result.configured
+                        ? "SMTP не сконфигурирован: сервер не видит FEEDBACK_SMTP_HOST/FEEDBACK_FROM. Проверьте, что рядом с приложением лежит .env и сервер запущен через npm start (флаг --env-file-if-exists)."
+                        : `Конфигурация есть, но соединение не удалось: ${mailDiag.result.error || "неизвестная ошибка"}. Типовые причины: порт 587 закрыт файрволом с хоста сервера; неверный пароль; нужен FEEDBACK_SMTP_TLS_REJECT_UNAUTHORIZED=false для внутреннего сертификата Exchange.`}
+                  </div>
+                )}
               </div>
+
 
               <div className="mt-4 rounded-xl border border-[#243244] bg-[#141c2b]/45 p-4">
                 <div className="text-sm font-semibold text-white mb-4">Системные медиа</div>
@@ -3492,30 +3741,6 @@ export default function AdminPage() {
             </div>
 
             <div className="space-y-4 xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:self-start xl:overflow-y-auto xl:overflow-x-hidden xl:pr-2 custom-scroll">
-              <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-white">Влияние выбранного кейса</div>
-                    <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
-                      График показывает статичный профиль симуляции по контенту и регулируемый вклад кейса, который вы сейчас настраиваете.
-                    </div>
-                  </div>
-                  {selectedWeightCase && (
-                    <div className="rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-3 py-1 text-[11px] text-[#dbe2f0]">
-                      {selectedWeightCase.id} • {selectedCaseWeight}%
-                    </div>
-                  )}
-                </div>
-                <div className="mt-4">
-                  <CompetencyHorizontalImpactChart
-                    data={aggregateBarData}
-                    series={[
-                      { key: "aggregate", label: "Статичный профиль", color: "#4a9eff" },
-                      { key: "selected", label: "Регулируемый вклад", color: "#00d4aa" },
-                    ]}
-                  />
-                </div>
-              </div>
 
               <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4">
                 <div className="text-sm font-semibold text-white">Автоматическая оценка ожиданий</div>
@@ -3613,14 +3838,14 @@ export default function AdminPage() {
                       <ul className="mt-3 space-y-2 text-xs leading-relaxed text-[#b8c5db]">
                         {section.items.map((item) => (
                           <li key={item} className="flex gap-2">
-                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF6B00]" />
+                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f68b1f]" />
                             <span>{item}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                   ))}
-                  <div className="rounded-xl border border-[#FF6B00]/30 bg-[#FF6B00]/10 p-3 text-xs leading-relaxed text-[#ffd9bf]">
+                  <div className="rounded-xl border border-[#f68b1f]/30 bg-[#f68b1f]/10 p-3 text-xs leading-relaxed text-[#ffd9bf]">
                     Пример: вариант “провести планёрку и перераспределить людей” может дать Команда / мораль +5,
                     Выдача / скорость +3 и Финансы / выручка +3. Если решение грубое и без контроля, ставьте отрицательные
                     значения там, где магазин реально проседает.
@@ -3631,17 +3856,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        <CaseCreationWizard
-          open={caseWizardOpen}
-          step={caseWizardStep}
-          draft={caseWizardDraft}
-          competencies={competencies}
-          caseSourceOptions={caseSourceOptions}
-          onOpenChange={setCaseWizardOpen}
-          onStepChange={setCaseWizardStep}
-          onDraftChange={setCaseWizardDraft}
-          onConfirm={confirmCaseWizard}
-        />
         <SignalCreationWizard
           open={signalWizardOpen}
           mode={signalWizardMode}
@@ -3661,9 +3875,9 @@ export default function AdminPage() {
           onConfirm={confirmSignalWizard}
         />
 
-        {tab !== "results" && tab !== "schedule" && tab !== "comparison" && (
+        {tab !== "dashboard" && tab !== "results" && tab !== "schedule" && tab !== "comparison" && (
           <div className="dns-admin-action-block mt-6 justify-start">
-            <Button className="bg-[#FF6B00] hover:bg-[#e06000]" onClick={saveCurrent} disabled={saving || uploading}>
+            <Button className="bg-[#f68b1f] hover:bg-[#e06000]" onClick={saveCurrent} disabled={saving || uploading}>
               {saving ? "Сохранение..." : "Сохранить"}
             </Button>
             {(tab === "cases" || tab === "channels") && (
@@ -3673,9 +3887,26 @@ export default function AdminPage() {
             )}
           </div>
         )}
+        </>
+        )}
           </main>
         </div>
+        <ProductFooter onVersionClick={() => setReleaseHistoryOpen(true)} />
+        <ReleaseHistoryDialog open={releaseHistoryOpen} onOpenChange={setReleaseHistoryOpen} themeClass={themeClass} />
       </div>
+      {mailDialog && (() => {
+        const row = comparisonRows.find((r) => r.id === mailDialog.rowId);
+        if (!row) return null;
+        return (
+          <ParticipantMailDialog
+            mode={mailDialog.mode}
+            participantName={row.participantName}
+            defaultEmail={row.participantEmail}
+            report={row.report}
+            onClose={() => setMailDialog(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

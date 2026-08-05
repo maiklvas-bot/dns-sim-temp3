@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Опрос управляющих — выводы по ответам</title>
+</head>
+<body>
+<style>
+  :root {
+    --ink: #1A1A1A; --ink-soft: #6B6B6B; --ink-dark: #3A3A3A;
+    --canvas: #F7F5F0; --cream: #F1ECDD; --surface: #FFFFFF;
+    --line: #D8D4CB; --line-2: #E2DFD7;
+    --yellow: #FFCC00; --yellow-dark: #E8B400; --amber: #B26A00;
+    --ok: #2F6B2F; --ok-bg: #E7EFE3;
+    --risk: #8A2A2A; --risk-bg: #F3E4E0;
+    --critical: #FF0000;
+    --sans: "Segoe UI", Inter, -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+    --maxw: 1180px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--canvas); color: var(--ink); font-family: var(--sans); }
+  body { line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 32px; }
+  h1, h2, h3 { margin: 0; text-wrap: balance; }
+  b { font-weight: 700; }
+
+  .t-hero { font-size: 56px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.05; }
+  .t-h1 { font-size: 32px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.01em; line-height: 1.15; }
+  .t-h2 { font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; }
+  .t-metric { font-size: 26px; font-weight: 800; letter-spacing: -0.01em; }
+  .t-subhead { font-size: 19px; font-weight: 600; color: var(--ink-dark); }
+  .t-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-soft); }
+  .t-body { font-size: 14px; color: var(--ink-dark); }
+  .t-caption { font-size: 11px; color: var(--ink-soft); }
+  .t-spec { font-family: "Cascadia Code", "Consolas", monospace; font-size: 11px; color: var(--amber); font-weight: 600; }
+
+  .brandbar { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 22px; }
+  .dns-badge { background: var(--yellow); color: var(--ink); font-weight: 800; font-size: 13px;
+    padding: 4px 10px; border-radius: 6px; letter-spacing: 0.02em; }
+  .kicker { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft); }
+
+  header { padding: 56px 0 36px; }
+  header .sub { margin-top: 14px; font-size: 16px; color: var(--ink-dark); max-width: 74ch; }
+  header .meta { margin-top: 10px; font-size: 12px; color: var(--ink-soft); }
+  .hairline { height: 1px; background: var(--line); border: none; margin: 0; }
+
+  section { padding: 44px 0; }
+  section + section { border-top: 1px solid var(--line); }
+  .sec-head { margin-bottom: 26px; }
+  .sec-head .t-h2 { color: var(--ink); }
+  .sec-head .t-body { margin-top: 8px; max-width: 78ch; }
+
+  .pill { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.04em;
+    text-transform: uppercase; padding: 5px 11px; border-radius: 5px; }
+  .pill.ok { background: var(--ok); color: #fff; }
+  .pill.mid { background: var(--yellow-dark); color: #241900; }
+  .pill.risk { background: var(--risk); color: #fff; }
+
+  .status-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .status-row.two { grid-template-columns: repeat(2, 1fr); }
+  .status-card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .status-card .bar { height: 5px; }
+  .status-card .bar.ok { background: var(--ok); }
+  .status-card .bar.mid { background: var(--yellow-dark); }
+  .status-card .bar.risk { background: var(--risk); }
+  .status-card .body { padding: 18px 20px 20px; }
+  .status-card .body p { margin: 12px 0 0; font-size: 13px; color: var(--ink-dark); line-height: 1.45; }
+
+  .thesis { display: flex; gap: 14px; background: var(--cream); border-radius: 8px; padding: 16px 20px;
+    align-items: flex-start; }
+  .thesis .accent { width: 4px; align-self: stretch; background: var(--yellow); border-radius: 2px; flex: none; }
+  .thesis .txt { font-size: 14px; color: var(--ink-dark); line-height: 1.5; }
+  .thesis .txt b { color: var(--ink); }
+  .thesis.quote .txt { font-style: italic; }
+
+  .block-label { font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--ink); margin: 0 0 12px; display: flex; align-items: baseline; gap: 8px; }
+  .block-label .n { color: var(--amber); font-variant-numeric: tabular-nums; }
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px;
+    margin-bottom: 24px; }
+  .metric-card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px 18px 16px; }
+  .metric-card .num { font-size: 26px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .metric-card .delta { font-size: 12px; color: var(--ink-soft); margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .metric-card .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--ink-soft); margin-top: 10px; }
+  .metric-card.top { border-color: var(--yellow-dark); border-width: 2px; padding: 17px 17px 15px; }
+  .metric-card.zero .num { color: var(--risk); }
+
+  /* horizontal bar chart */
+  .barchart { display: grid; gap: 10px; }
+  .bar-row { display: grid; grid-template-columns: 220px 1fr 56px; gap: 12px; align-items: center; }
+  .bar-row .name { font-size: 13px; color: var(--ink-dark); }
+  .bar-row .track { height: 22px; background: var(--cream); border-radius: 4px; overflow: hidden; }
+  .bar-row .fill { height: 100%; background: var(--amber); }
+  .bar-row .fill.hi { background: var(--yellow-dark); }
+  .bar-row .val { font-size: 13px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .comp-row { border-top: 1px solid var(--line-2); padding: 18px 0; display: grid;
+    grid-template-columns: 230px 1fr; gap: 24px; }
+  .comp-row:last-child { border-bottom: 1px solid var(--line-2); }
+  .comp-row .name { font-size: 15px; font-weight: 700; color: var(--ink); }
+  .comp-row .id { display: block; margin-top: 3px; }
+  .anchors { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .anchor h4 { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; margin: 0 0 6px; }
+  .anchor.weak h4 { color: var(--risk); }
+  .anchor.strong h4 { color: var(--ok); }
+  .anchor p { margin: 0; font-size: 13px; color: var(--ink-dark); line-height: 1.5; }
+
+  .checks-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .check-card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 18px; }
+  .check-card .idx { display: inline-flex; width: 26px; height: 26px; border-radius: 6px; background: var(--ink);
+    color: #fff; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+  .check-card h4 { font-size: 14px; font-weight: 700; margin: 10px 0 6px; }
+  .check-card p { margin: 0; font-size: 12.5px; color: var(--ink-dark); line-height: 1.48; }
+
+  .roadmap { display: grid; gap: 0; border-left: 2px solid var(--line); margin-left: 4px; }
+  .rstep { position: relative; padding: 0 0 22px 24px; }
+  .rstep:last-child { padding-bottom: 0; }
+  .rstep::before { content: ""; position: absolute; left: -7px; top: 2px; width: 12px; height: 12px;
+    border-radius: 50%; background: var(--surface); border: 2px solid var(--yellow-dark); }
+  .rstep.done::before { background: var(--ok); border-color: var(--ok); }
+  .rstep .lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-soft); }
+  .rstep h4 { font-size: 14.5px; font-weight: 700; margin: 3px 0 4px; }
+  .rstep p { margin: 0; font-size: 13px; color: var(--ink-dark); }
+
+  footer { padding: 28px 0 48px; }
+  .pagenum { font-size: 12px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 720px) {
+    .comp-row { grid-template-columns: 1fr; }
+    .anchors { grid-template-columns: 1fr; }
+    .status-row, .status-row.two { grid-template-columns: 1fr; }
+    .bar-row { grid-template-columns: 130px 1fr 44px; }
+  }
+</style>
+
+<header>
+  <div class="wrap">
+    <div class="brandbar"><span class="dns-badge">DNS</span><span class="kicker">SimCenter · Симуляция «Космонавт» · Опрос управляющих</span></div>
+    <h1 class="t-hero">Что показали ответы</h1>
+    <p class="sub">Выводы двух волн опроса действующих управляющих: как они на практике оценивают готовность начинающих ЗУМ, ИО ЗУМ и старших продавцов — не в теории, а по конкретным случаям из своих подразделений.</p>
+    <p class="meta">Опрос v2: 43 ответа (веса, приоритеты, стоп-факторы) · Опрос v3: 19 ответов (поведенческие якоря по 12 компетенциям) · Отсечка данных 2026-07-30</p>
+  </div>
+</header>
+<hr class="hairline">
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="t-h2">00 · Кто отвечал</h2>
+      <p class="t-body">Формат магазина и опыт оценки — совпадающий паттерн в обеих волнах, выборки сопоставимы.</p>
+    </div>
+    <div class="status-row">
+      <div class="status-card"><div class="bar ok"></div><div class="body">
+        <span class="pill ok">62 ответа</span>
+        <p><b>Критическая масса набрана.</b> Планка была ≥8 — набрано в 7+ раз больше. Темы в открытых ответах повторяются десятками раз, новые ответы почти не добавляют новых типов поведения.</p>
+      </div></div>
+      <div class="status-card"><div class="bar ok"></div><div class="body">
+        <span class="pill ok">Гипер · большинство</span>
+        <p><b>Формат магазина.</b> v2: 25 Гипер / 11 Стандарт / 7 др. · v3: 12 Гипер / 5 Стандарт / 2 др. Управляющие крупных форматов — основной голос выборки.</p>
+      </div></div>
+      <div class="status-card"><div class="bar ok"></div><div class="body">
+        <span class="pill ok">100% заполненность</span>
+        <p><b>Опыт оценки:</b> большинство оценивали 1–2 новичков за год. В v3 все 10 обязательных компетенций заполнены на 100% — сортировка вопросов по важности сработала, никто не бросил на середине.</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="t-h2">01 · Что перевешивает при оценке</h2>
+      <p class="t-body">Прямой вопрос управляющим (n=43): что важнее, когда оценка спорная?</p>
+    </div>
+    <div class="metric-grid">
+      <div class="metric-card top"><div class="num">23</div><div class="delta">из 43</div><div class="lbl">Умение применять на практике</div></div>
+      <div class="metric-card"><div class="num">20</div><div class="delta">из 43</div><div class="lbl">Ответственность и мотивация</div></div>
+      <div class="metric-card zero"><div class="num">0</div><div class="delta">из 43</div><div class="lbl">Объём знаний</div></div>
+    </div>
+    <div class="thesis">
+      <div class="accent"></div>
+      <div class="txt"><b>Ни один управляющий не поставил знания выше практики.</b> Это прямое обоснование всей методологии пересборки — тренажёр должен проверять «делает», а не «знает/называет».</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="t-h2">02 · Приоритеты и стоп-факторы</h2>
+      <p class="t-body">Частота попадания компетенции в «топ-5 важных» (n=43).</p>
+    </div>
+    <div class="barchart">
+      <div class="bar-row"><span class="name">Направленность на результат</span><div class="track"><div class="fill hi" style="width:100%"></div></div><span class="val">35/43</span></div>
+      <div class="bar-row"><span class="name">Организация и контроль работы</span><div class="track"><div class="fill hi" style="width:86%"></div></div><span class="val">30/43</span></div>
+      <div class="bar-row"><span class="name">Системность мышления</span><div class="track"><div class="fill" style="width:80%"></div></div><span class="val">28/43</span></div>
+      <div class="bar-row"><span class="name">Бизнес-процессы</span><div class="track"><div class="fill" style="width:77%"></div></div><span class="val">27/43</span></div>
+      <div class="bar-row"><span class="name">Личная мотивация к обучению</span><div class="track"><div class="fill" style="width:43%"></div></div><span class="val">15/43</span></div>
+      <div class="bar-row"><span class="name">Коммуникабельность</span><div class="track"><div class="fill" style="width:40%"></div></div><span class="val">14/43</span></div>
+    </div>
+    <div class="status-row two" style="margin-top:24px">
+      <div class="status-card"><div class="bar risk"></div><div class="body">
+        <span class="pill risk">Стоп-фактор</span>
+        <p><b>Организация и контроль работы</b> — 24/43 отметили как «без чего нельзя ставить на роль».</p>
+      </div></div>
+      <div class="status-card"><div class="bar risk"></div><div class="body">
+        <span class="pill risk">Стоп-фактор</span>
+        <p><b>Направленность на результат</b> — 23/43. Обе компетенции набрали чистое большинство голосов.</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="t-h2">03 · Как управляющие реагируют на риск</h2>
+      <p class="t-body">«Подчинённый принял быстрое, но рискованное решение ради результата — ваша реакция?»</p>
+    </div>
+    <div class="metric-grid">
+      <div class="metric-card top"><div class="num">24</div><div class="delta">из 43</div><div class="lbl">Укажу на риск и подстрахую</div></div>
+      <div class="metric-card"><div class="num">17</div><div class="delta">из 43</div><div class="lbl">Разберу и поддержу, если риск осознан</div></div>
+      <div class="metric-card"><div class="num">2</div><div class="delta">из 43</div><div class="lbl">Жёстко пресеку</div></div>
+    </div>
+    <div class="thesis">
+      <div class="accent"></div>
+      <div class="txt">Управляющие — <b>наставнического, а не карательного типа.</b> Почти никто не выбрал жёсткое пресечение. Это прямое указание для дизайна дебрифа: разбор ошибки, а не наказание за неё.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="t-h2">04 · Поведенческие паттерны — слабо / сильно</h2>
+      <p class="t-body">Самые насыщенные темы из открытых ответов (v2 + v3), сгруппированные по компетенции.</p>
+    </div>
+
+    <div class="comp-row">
+      <div class="head"><span class="name">Направленность на результат</span></div>
+      <div class="anchors">
+        <div class="anchor weak"><h4>Слабо</h4><p>Говорит, но не делает; боится ответственности, спихивает решение на УМ/УСМ; считает задачу завершённой сразу после передачи другому; опускает руки при первых сложностях.</p></div>
+        <div class="anchor strong"><h4>Сильно</h4><p>Сам определяет нужный результат, распределяет задачи, проверяет промежуточное выполнение; при неудаче разбирает, что не получилось, и ищет пути решения.</p></div>
+      </div>
+    </div>
+
+    <div class="comp-row">
+      <div class="head"><span class="name">Организация и контроль работы</span></div>
+      <div class="anchors">
+        <div class="anchor weak"><h4>Слабо</h4><p>Делает сам вместо постановки задачи; задача без срока и образа результата; «западает промежуточный контроль» — самая частая жалоба во всей выборке; реагирует, только когда об ошибке уже написали.</p></div>
+        <div class="anchor strong"><h4>Сильно</h4><p>Ставит по SMART, проверяет понимание; назначает точки контроля и возвращается к ним; работа продолжается даже в его отсутствие.</p></div>
+      </div>
+    </div>
+
+    <div class="comp-row">
+      <div class="head"><span class="name">Системность мышления</span></div>
+      <div class="anchors">
+        <div class="anchor weak"><h4>Слабо</h4><p>Устраняет только текущее последствие, не разбирает причину — повторяет то же решение при повторном возникновении проблемы. «Лечит симптом, а не болезнь».</p></div>
+        <div class="anchor strong"><h4>Сильно</h4><p>При проблеме выясняет причину, оценивает влияющие процессы, предлагает варианты и определяет, как не допустить повторения.</p></div>
+      </div>
+    </div>
+
+    <div class="comp-row">
+      <div class="head"><span class="name">Мотивация и обучение сотрудников</span></div>
+      <div class="anchors">
+        <div class="anchor weak"><h4>Слабо</h4><p>Применяет один и тот же подход ко всем; «назначил тест и забыл»; не даёт индивидуальной обратной связи.</p></div>
+        <div class="anchor strong"><h4>Сильно</h4><p>Одному объясняет и показывает, другому ставит конкретную задачу со сроком — <b>индивидуальный подход</b>, а не шаблон.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="t-h2">05 · Синтез — три находки, которых не было в задании</h2>
+      <p class="t-body">Не подгонялись под гипотезу — вышли из самих ответов управляющих.</p>
+    </div>
+
+    <div class="thesis quote">
+      <div class="accent"></div>
+      <div class="txt">«Когда новый ЗУМ <b>перестаёт мыслить как продавец</b>, и начинает мыслить как управляющий»</div>
+    </div>
+    <p class="t-body" style="margin-top:10px">Почти все категории провала — делегирование, контроль, конфликты — сводятся к одному сдвигу идентичности: «я делаю» → «я обеспечиваю, чтобы сделали». Респондент назвал это дословно, мы это не придумывали.</p>
+
+    <div class="thesis quote" style="margin-top:24px">
+      <div class="accent"></div>
+      <div class="txt">«Спокойно выслушивает клиента… предлагает решение <b>в рамках своих полномочий</b> и сразу подключает руководителя, если требуется согласование»</div>
+    </div>
+    <p class="t-body" style="margin-top:10px">Автономность — это не «сделал всё сам». Слабость — промах мимо нужного ресурса в <b>любую</b> сторону: и беспомощный вопрос по мелочи, и самоуправство без эскалации. Сильный ход — точный выбор: решить самому / спросить / подключить процесс.</p>
+
+    <div class="thesis quote" style="margin-top:24px">
+      <div class="accent"></div>
+      <div class="txt">«Экстернальный локус контроля» · «постоянно ищет виновных за невыполнение» · «ищет оправдания трудностям»</div>
+    </div>
+    <p class="t-body" style="margin-top:10px">Ответственность за результат управляющие описывают именно термином психологии контроля — не абстрактно, а как конкретно наблюдаемое поведение: берёт причину на себя или сваливает на обстоятельства.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="t-h2">06 · Честные ограничения</h2>
+      <p class="t-body">Что мы не можем утверждать на основании этих данных.</p>
+    </div>
+    <div class="checks-grid">
+      <div class="check-card"><span class="idx">1</span><h4>Эхо подсказки</h4><p>В v3 описание вопроса содержало формулировку индикатора профиля — часть ответов её просто пересказала, не дав нового наблюдения.</p></div>
+      <div class="check-card"><span class="idx">2</span><h4>Один день сбора</h4><p>Большая часть ответов пришла в течение 1–2 дней — нет данных о стабильности мнений во времени.</p></div>
+      <div class="check-card"><span class="idx">3</span><h4>Смещение интерпретации</h4><p>«Задачи сотрудников магазина» респонденты в основном поняли как «отношение к задачам», а не как знание обязанностей персонала.</p></div>
+      <div class="check-card"><span class="idx">4</span><h4>Грубые веса</h4><p>Форма не поддерживает шкалу 1–5 по каждой компетенции — веса собраны через частоту топ-5, это грубее, чем изначально планировалось.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <h2 class="t-h2">07 · Куда это привело</h2>
+    </div>
+    <div class="roadmap">
+      <div class="rstep done"><span class="lbl">Сделано</span><h4>Данные превращены в критерии мастера кейсов</h4><p>Веса, стоп-факторы, модель компенсации и якоря BARS по всем 14 компетенциям — отдельный документ.</p></div>
+      <div class="rstep"><span class="lbl">Дальше</span><h4>Инженерный план реализации</h4><p>Модель данных, автопроверки, дебриф — на основе этой методологии.</p></div>
+      <div class="rstep"><span class="lbl">После</span><h4>Пилотный кейс и тиражирование</h4><p>Один эталонный кейс по критериям, затем остальные 13.</p></div>
+    </div>
+  </div>
+</section>
+
+<hr class="hairline">
+<footer>
+  <div class="wrap" style="display:flex;justify-content:space-between;align-items:center">
+    <span class="t-caption">SimCenter · Космонавт · Выводы по опросам УМ v2+v3 · 2026-07-30</span>
+    <span class="pagenum">Бренд-стиль · Дивизион Урал</span>
+  </div>
+</footer>
+
+</body>
+</html>

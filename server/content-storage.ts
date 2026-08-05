@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import {
   caseCycles,
@@ -14,6 +14,7 @@ import {
   scoringRules,
   simulationCases,
   simulationSettings,
+  wikiNotes,
 } from "@shared/schema";
 import type {
   ChatInfo,
@@ -24,6 +25,7 @@ import type {
   SimCase,
   SimulationRuntimeSettings,
   VideoCase,
+  WikiNote,
 } from "@shared/simulation-content";
 import { db } from "./db";
 import { buildPublicAssetUrl, parseJsonArray } from "./data-utils";
@@ -173,6 +175,57 @@ export class ContentStorage {
     }));
   }
 
+  /**
+   * Материалы справочника, добавленные людьми. Ссылка на картинку разворачивается
+   * в публичный адрес здесь же — интерфейсу не нужно знать про хранилище файлов.
+   */
+  listWikiNotes(): WikiNote[] {
+    const assets = new Map(this.listAssets().map((asset) => [asset.id, asset.publicUrl]));
+    return db
+      .select()
+      .from(wikiNotes)
+      .orderBy(desc(wikiNotes.createdAt))
+      .all()
+      .map((note) => ({
+        id: note.id,
+        sectionId: note.sectionId,
+        title: note.title,
+        summary: note.summary,
+        body: note.body,
+        imageAssetId: note.imageAssetId || "",
+        imageUrl: note.imageAssetId ? assets.get(note.imageAssetId) || null : null,
+        author: note.author,
+        createdAt: note.createdAt,
+        updatedAt: note.updatedAt,
+      }));
+  }
+
+  saveWikiNote(input: Omit<WikiNote, "id" | "imageUrl"> & { id?: string }): string {
+    const id = input.id || nanoid();
+    const now = new Date().toISOString();
+    const record = {
+      id,
+      sectionId: input.sectionId,
+      title: input.title,
+      summary: input.summary,
+      body: input.body,
+      imageAssetId: input.imageAssetId || null,
+      author: input.author || "",
+      updatedAt: now,
+    };
+    const existing = db.select().from(wikiNotes).where(eq(wikiNotes.id, id)).get();
+    if (existing) {
+      db.update(wikiNotes).set(record).where(eq(wikiNotes.id, id)).run();
+    } else {
+      db.insert(wikiNotes).values({ ...record, createdAt: now }).run();
+    }
+    return id;
+  }
+
+  deleteWikiNote(id: string) {
+    db.delete(wikiNotes).where(eq(wikiNotes.id, id)).run();
+  }
+
   createAsset(input: StoredAssetInput) {
     return db.insert(mediaAssets).values({
       id: input.id || nanoid(),
@@ -314,6 +367,14 @@ export class ContentStorage {
                 })),
             };
         }),
+        businessProblem: row.businessProblem || null,
+        hiddenCause: row.hiddenCause || null,
+        dataPoints: parseJsonArray<NonNullable<SimCase["dataPoints"]>[number]>(row.dataPointsJson, []),
+        falseTrails: parseJsonArray<string>(row.falseTrailsJson, []),
+        qaStatus: (row.qaStatus as SimCase["qaStatus"]) || "draft",
+        acceptedIssues: parseJsonArray<NonNullable<SimCase["acceptedIssues"]>[number]>(row.acceptedIssuesJson, []),
+        correctionOfCaseId: row.correctionOfCaseId || null,
+        corrections: parseJsonArray<NonNullable<SimCase["corrections"]>[number]>(row.correctionsJson, []),
         imageAssetId: row.imageAssetId,
         imageUrl: image?.publicUrl || null,
         audioAssetId: row.audioAssetId,
@@ -340,6 +401,8 @@ export class ContentStorage {
         name: row.name,
         description: row.description,
         category: row.category as "basic" | "advanced" | "leadership",
+        facetOfCompetencyId: row.facetOfCompetencyId || null,
+        isStopFactor: Boolean(row.isStopFactor),
       })),
       cases,
       emailCases,
@@ -542,6 +605,14 @@ export class ContentStorage {
         primaryCompetenciesJson: JSON.stringify(input.primaryCompetencies),
         secondaryCompetenciesJson: JSON.stringify(input.secondaryCompetencies),
         zonesAffectedJson: JSON.stringify(input.zones_affected),
+        businessProblem: input.businessProblem || null,
+        hiddenCause: input.hiddenCause || null,
+        dataPointsJson: JSON.stringify(input.dataPoints || []),
+        falseTrailsJson: JSON.stringify(input.falseTrails || []),
+        acceptedIssuesJson: JSON.stringify(input.acceptedIssues || []),
+        correctionOfCaseId: input.correctionOfCaseId || null,
+        correctionsJson: JSON.stringify(input.corrections || []),
+        qaStatus: input.qaStatus || "draft",
         imageAssetId: input.imageAssetId,
         audioAssetId: input.audioAssetId,
         sortOrder: input.sortOrder ?? 0,

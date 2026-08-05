@@ -13,7 +13,9 @@ import { Timer, Calendar, User, FileText, StopCircle, FlaskConical, PauseCircle,
 import { setLiveSimulationRole } from "@/lib/live-session";
 import { ThemeToggle, useDnsTheme } from "@/components/theme-toggle";
 import { BrandVisualBackdrop } from "@/components/brand-access-shell";
+import { ProductFooter } from "@/components/product-footer";
 import { SimulationProgressCompact, SimulationProgressRail } from "./layout/SimulationProgressRail";
+import { useIsMobile } from "@/hooks/use-mobile";
 import storeBg from "@assets/store_bg.png";
 
 // Тип иконки из lucide-react
@@ -31,6 +33,7 @@ export default function SimulationPage() {
   const [, navigate] = useLocation();
   const { state, dispatch, isReadOnly, livePresence, liveSessionConfig, liveSocketConnected, liveStatus, mode } = useSimulation();
   const { theme, themeClass, toggleTheme } = useDnsTheme();
+  const isMobile = useIsMobile();
 
   // ─── Mobile tab state ───
   const [activePanel, setActivePanel] = useState<SimulationPanelKey>('signals');
@@ -105,7 +108,7 @@ export default function SimulationPage() {
           };
 
   // ─── Mobile tab configuration ───
-  const useTabbedPanels = isReadOnly;
+  const useTabbedPanels = isReadOnly || isMobile;
   const hiddenPanelClass = useTabbedPanels ? "hidden" : "hidden md:block";
   const panelGridClass = useTabbedPanels
     ? "grid-cols-1"
@@ -125,7 +128,7 @@ export default function SimulationPage() {
 
   return (
     <div
-      className={`dns-product-shell dns-visual-shell dns-visual-shell--simulation ${themeClass} h-screen flex flex-col overflow-hidden relative`}
+      className={`dns-product-shell dns-visual-shell dns-visual-shell--simulation ${themeClass} h-dvh flex flex-col overflow-hidden relative`}
       style={{
         backgroundImage: `url(${storeBg})`,
         backgroundSize: "cover",
@@ -180,6 +183,14 @@ export default function SimulationPage() {
               <div className="hidden md:flex items-center gap-1.5 text-[#6a7088]">
                 <User className="w-3.5 h-3.5" />
                 <span className="text-xs">{state.participantName}</span>
+              </div>
+            )}
+
+            {/* Session code (student) */}
+            {mode === "student" && liveSessionConfig && !state.isCompleted && (
+              <div className="flex items-center gap-1.5 rounded-lg border border-[#FF6B00]/30 bg-[#FF6B00]/10 px-2 md:px-3 py-1 flex-shrink-0">
+                <span className="hidden sm:inline text-[10px] uppercase tracking-[0.14em] text-[#8b93ab]">Код сессии</span>
+                <span className="text-xs font-mono font-bold tabular-nums text-[#FF6B00]">{liveSessionConfig.accessCode}</span>
               </div>
             )}
 
@@ -475,12 +486,6 @@ export default function SimulationPage() {
           </div>
         )}
 
-        {mode === "student" && liveSessionConfig && !state.isCompleted && (
-          <div className="pointer-events-none absolute left-4 top-16 z-20 rounded-full border border-[#2a3a4e] bg-[#141c2b]/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#aab7d0]">
-            Код сессии: {liveSessionConfig.accessCode}
-          </div>
-        )}
-
         {state.isPaused && !state.isCompleted && (
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-[#0d1117]/70 backdrop-blur-sm">
             <div className="w-full max-w-md rounded-2xl border border-[#2a3a4e] bg-[#141c2b]/95 p-6 text-center shadow-2xl">
@@ -515,6 +520,7 @@ export default function SimulationPage() {
           </div>
         )}
       </div>
+      <ProductFooter className="absolute inset-x-0 bottom-0 mt-0 py-1.5" version="" />
     </div>
   );
 }

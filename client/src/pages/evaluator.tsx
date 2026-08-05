@@ -11,7 +11,7 @@ export default function EvaluatorPage() {
   });
 
   if (isLoading) {
-    return <div className="min-h-screen flex items-center justify-center bg-[#0d1117] text-white">Проверка доступа...</div>;
+    return <div className="min-h-dvh flex items-center justify-center bg-background text-foreground">Проверка доступа...</div>;
   }
 
   if (!data || (data.role !== "evaluator" && data.role !== "admin") || error) {

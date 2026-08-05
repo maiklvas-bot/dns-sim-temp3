@@ -1,0 +1,628 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Пересборка симуляции «Космонавт» — план изменений</title>
+</head>
+<body>
+<style>
+  :root {
+    --bg: #F4F1EB; --surface: #FFFFFF; --surface-2: #FBF8F3;
+    --ink: #16243F; --ink-soft: #55606F; --ink-faint: #8A8578;
+    --line: #E3DCCF; --line-soft: #EEE9DF;
+    --accent: #EC5B24; --navy: #16243F;
+    --have: #707A88; --have-bg: #EFF0F2;
+    --problem: #BE3A2B; --problem-bg: #F8ECE9;
+    --will: #EC5B24; --will-bg: #FBEBE2;
+    --result: #2C7A55; --result-bg: #E7F1EB;
+    --benefit: #1E3A6B; --benefit-bg: #E8EDF5;
+    --shadow: 0 1px 2px rgba(22,36,63,.06), 0 8px 24px rgba(22,36,63,.05);
+    --maxw: 1180px;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0E1622; --surface: #16212F; --surface-2: #1B2837;
+      --ink: #ECE6DA; --ink-soft: #9BA5B3; --ink-faint: #6C7787;
+      --line: #293747; --line-soft: #22303F;
+      --accent: #FF7A3D; --navy: #C9D6EC;
+      --have: #8B95A3; --have-bg: #1E2733;
+      --problem: #E46A55; --problem-bg: #2C1F1E;
+      --will: #FF7A3D; --will-bg: #2E2118;
+      --result: #4FB584; --result-bg: #16281F;
+      --benefit: #7FA6DE; --benefit-bg: #182233;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.28);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #F4F1EB; --surface: #FFFFFF; --surface-2: #FBF8F3;
+    --ink: #16243F; --ink-soft: #55606F; --ink-faint: #8A8578;
+    --line: #E3DCCF; --line-soft: #EEE9DF; --accent: #EC5B24; --navy: #16243F;
+    --have: #707A88; --have-bg: #EFF0F2; --problem: #BE3A2B; --problem-bg: #F8ECE9;
+    --will: #EC5B24; --will-bg: #FBEBE2; --result: #2C7A55; --result-bg: #E7F1EB;
+    --benefit: #1E3A6B; --benefit-bg: #E8EDF5;
+    --shadow: 0 1px 2px rgba(22,36,63,.06), 0 8px 24px rgba(22,36,63,.05);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0E1622; --surface: #16212F; --surface-2: #1B2837;
+    --ink: #ECE6DA; --ink-soft: #9BA5B3; --ink-faint: #6C7787;
+    --line: #293747; --line-soft: #22303F; --accent: #FF7A3D; --navy: #C9D6EC;
+    --have: #8B95A3; --have-bg: #1E2733; --problem: #E46A55; --problem-bg: #2C1F1E;
+    --will: #FF7A3D; --will-bg: #2E2118; --result: #4FB584; --result-bg: #16281F;
+    --benefit: #7FA6DE; --benefit-bg: #182233;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.28);
+  }
+
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans);
+    line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+  h1, h2, h3 { text-wrap: balance; margin: 0; }
+
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--accent); }
+  .muted { color: var(--ink-soft); }
+
+  /* Header */
+  header { border-bottom: 1px solid var(--line); background:
+      linear-gradient(180deg, var(--surface-2), var(--bg)); }
+  .head-grid { padding: 44px 0 36px; display: grid; gap: 22px; }
+  header h1 { font-size: clamp(28px, 4.4vw, 46px); font-weight: 800; letter-spacing: -.02em;
+    line-height: 1.06; }
+  header h1 .accent { color: var(--accent); }
+  .lede { font-size: clamp(15px, 1.7vw, 18px); color: var(--ink-soft); max-width: 64ch; }
+  .meta { display: flex; flex-wrap: wrap; gap: 10px; }
+  .chip { font-size: 12.5px; font-weight: 600; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft);
+    display: inline-flex; align-items: center; gap: 7px; }
+  .chip b { color: var(--ink); font-weight: 700; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .dot.wait { background: var(--will); }
+
+  section { padding: 40px 0; }
+  .section-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 20px;
+    flex-wrap: wrap; }
+  .section-head h2 { font-size: clamp(19px, 2.4vw, 25px); font-weight: 800; letter-spacing: -.01em; }
+  .rule { flex: 1; height: 1px; background: var(--line); min-width: 30px; }
+
+  /* Context */
+  .context { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .ctx-card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px;
+    padding: 20px; box-shadow: var(--shadow); }
+  .ctx-card h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; }
+  .ctx-card p { margin: 0; font-size: 14px; color: var(--ink-soft); }
+  .ctx-card .k { color: var(--accent); font-weight: 700; }
+
+  /* Legend */
+  .legend { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .leg { border-radius: 12px; padding: 14px 14px 16px; border: 1px solid var(--line);
+    background: var(--surface); position: relative; overflow: hidden; }
+  .leg::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+    background: var(--c); }
+  .leg .n { font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--c); }
+  .leg .t { font-size: 14px; font-weight: 700; margin-top: 4px; }
+  .leg .d { font-size: 12.5px; color: var(--ink-soft); margin-top: 4px; line-height: 1.4; }
+  .leg.have { --c: var(--have); } .leg.problem { --c: var(--problem); }
+  .leg.will { --c: var(--will); } .leg.result { --c: var(--result); }
+  .leg.benefit { --c: var(--benefit); }
+
+  /* Change cards */
+  .changes { display: grid; gap: 18px; }
+  .change { background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow); overflow: hidden; }
+  .change-top { display: flex; align-items: center; gap: 14px; padding: 16px 20px;
+    border-bottom: 1px solid var(--line-soft); background: var(--surface-2); }
+  .idx { font-size: 13px; font-weight: 800; letter-spacing: .04em; color: var(--surface);
+    background: var(--navy); width: 34px; height: 34px; border-radius: 9px; display: grid;
+    place-items: center; flex: none; font-variant-numeric: tabular-nums; }
+  :root[data-theme="dark"] .idx, .change-top .idx { color: var(--bg); }
+  .change-top h3 { font-size: 16.5px; font-weight: 800; letter-spacing: -.01em; }
+  .tag { margin-left: auto; font-size: 11px; font-weight: 700; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--ink-faint); border: 1px solid var(--line);
+    padding: 4px 9px; border-radius: 999px; white-space: nowrap; }
+
+  .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; }
+  .stage { padding: 16px 16px 18px; position: relative; border-right: 1px solid var(--line-soft); }
+  .stage:last-child { border-right: 0; }
+  .stage .lab { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--c); display: flex; align-items: center; gap: 7px; margin-bottom: 9px; }
+  .stage .lab::before { content: ""; width: 9px; height: 9px; border-radius: 3px; background: var(--c);
+    flex: none; }
+  .stage p { margin: 0; font-size: 13.5px; color: var(--ink); line-height: 1.48; }
+  .stage.have { --c: var(--have); background: linear-gradient(180deg, var(--have-bg), transparent 60%); }
+  .stage.problem { --c: var(--problem); background: linear-gradient(180deg, var(--problem-bg), transparent 60%); }
+  .stage.will { --c: var(--will); background: linear-gradient(180deg, var(--will-bg), transparent 60%); }
+  .stage.result { --c: var(--result); background: linear-gradient(180deg, var(--result-bg), transparent 60%); }
+  .stage.benefit { --c: var(--benefit); background: linear-gradient(180deg, var(--benefit-bg), transparent 60%); }
+
+  /* New entities */
+  .entities { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .ent { background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; }
+  .ent-top { padding: 15px 18px 13px; border-bottom: 1px solid var(--line-soft);
+    background: var(--surface-2); display: flex; align-items: flex-start; gap: 10px; }
+  .ent-top h3 { font-size: 15.5px; font-weight: 800; color: var(--ink); letter-spacing: -.01em;
+    flex: 1; line-height: 1.25; }
+  .pill { font-size: 9.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+    padding: 4px 8px; border-radius: 999px; white-space: nowrap; flex: none; margin-top: 1px; }
+  .pill.new { background: var(--will); color: #fff; }
+  .pill.rebuild { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .ent-body { padding: 14px 18px 16px; display: flex; flex-direction: column; gap: 11px; flex: 1; }
+  .ent-what { font-size: 13px; color: var(--ink-soft); margin: 0; line-height: 1.5; }
+  .ent-what b { color: var(--ink); font-weight: 700; }
+  .ent-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .ent-list li { font-size: 12.75px; color: var(--ink); padding-left: 17px; position: relative;
+    line-height: 1.42; }
+  .ent-list li::before { content: ""; position: absolute; left: 2px; top: 7px; width: 6px; height: 6px;
+    border-radius: 2px; background: var(--accent); }
+  .ent-foot { margin-top: auto; padding-top: 11px; border-top: 1px dashed var(--line);
+    font-size: 11.5px; color: var(--ink-faint); line-height: 1.4; }
+  .ent-foot b { color: var(--ink-soft); font-weight: 700; }
+
+  /* Roadmap */
+  .road { display: grid; gap: 0; border-left: 2px solid var(--line); margin-left: 6px; }
+  .step { position: relative; padding: 0 0 24px 26px; }
+  .step:last-child { padding-bottom: 0; }
+  .step::before { content: ""; position: absolute; left: -8px; top: 3px; width: 14px; height: 14px;
+    border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
+  .step.now::before { background: var(--accent); }
+  .step .when { font-size: 12px; font-weight: 700; letter-spacing: .04em; color: var(--accent);
+    text-transform: uppercase; }
+  .step h4 { margin: 3px 0 4px; font-size: 15.5px; font-weight: 700; }
+  .step p { margin: 0; font-size: 13.5px; color: var(--ink-soft); max-width: 70ch; }
+
+  /* Methodology */
+  .method { background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+    box-shadow: var(--shadow); overflow: hidden; }
+  .method-head { padding: 22px 24px 18px; border-top: 3px solid var(--accent);
+    border-bottom: 1px solid var(--line-soft); background: var(--surface-2); }
+  .method-head .eyebrow { color: var(--accent); }
+  .method-head h2 { font-size: clamp(19px, 2.3vw, 23px); font-weight: 800; margin: 9px 0 7px;
+    color: var(--ink); letter-spacing: -.01em; }
+  .method-head p { margin: 0; font-size: 14px; color: var(--ink-soft); max-width: 78ch; }
+  .method-body { padding: 22px 24px 24px; display: grid; gap: 26px; }
+  .msub-title { font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--accent); margin: 0 0 13px; }
+  .mgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 11px; }
+  .mcard { border: 1px solid var(--line); border-radius: 12px; padding: 14px 15px 15px;
+    background: var(--surface); }
+  .mcard .h { display: flex; align-items: center; gap: 9px; }
+  .mcard .badge { font-size: 11px; font-weight: 800; color: #fff; background: var(--accent);
+    border-radius: 6px; padding: 3px 8px; letter-spacing: .02em; flex: none; }
+  .mcard .name { font-size: 14px; font-weight: 800; color: var(--ink); }
+  .mcard .q { font-size: 12.5px; color: var(--ink-soft); margin: 8px 0 0; line-height: 1.46; }
+  .mcard .r { font-size: 12px; color: var(--ink-faint); margin: 8px 0 0; line-height: 1.42;
+    padding-top: 8px; border-top: 1px dashed var(--line); }
+  .mcard .r b { color: var(--result); font-weight: 700; }
+  .mcard .r b.stop { color: var(--problem); }
+  .mcard.src .name { font-size: 13.5px; }
+  .mcard.src::before { content: ""; display: block; width: 26px; height: 3px; border-radius: 2px;
+    background: var(--accent); margin-bottom: 10px; }
+  .mgrid.wide { grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); }
+  .basis { margin-top: 12px; padding-top: 11px; border-top: 1px dashed var(--line); }
+  .basis-label { font-size: 10.5px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--ink-faint); display: block; margin-bottom: 8px; }
+  .basis-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+  .btag { font-size: 11.5px; font-weight: 600; color: var(--ink-soft); background: var(--will-bg);
+    border: 1px solid var(--line); border-radius: 7px; padding: 4px 9px; display: inline-flex;
+    gap: 6px; align-items: center; line-height: 1.25; }
+  .btag b { color: var(--accent); font-weight: 800; font-variant-numeric: tabular-nums; }
+
+  footer { padding: 30px 0 48px; color: var(--ink-faint); font-size: 12.5px; }
+
+  @media (max-width: 880px) {
+    .legend { grid-template-columns: 1fr 1fr; }
+    .flow { grid-template-columns: 1fr; }
+    .stage { border-right: 0; border-bottom: 1px solid var(--line-soft); }
+    .stage:last-child { border-bottom: 0; }
+  }
+  @media (max-width: 520px) { .legend { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: no-preference) {
+    .change { transition: transform .18s ease, box-shadow .18s ease; }
+    .change:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(22,36,63,.08), 0 18px 40px rgba(22,36,63,.09); }
+  }
+</style>
+
+<header>
+  <div class="wrap head-grid">
+    <div>
+      <div class="eyebrow">SimCenter · Симуляция «Космонавт»</div>
+      <h1 style="margin-top:14px">План и схема изменений:<br><span class="accent">пересборка симуляции</span></h1>
+    </div>
+    <p class="lede">Как перестроить тренажёр так, чтобы он честно измерял управленческое поведение выпускника «Космонавтики», а результатам доверяли управляющие. По каждому направлению: что есть сейчас, в чём проблема, что будет, ожидаемый результат и польза.</p>
+    <div class="meta">
+      <span class="chip"><span class="dot"></span>Целевая роль: <b>ЗУМ / ст. продавец / ВРИО-ИО</b></span>
+      <span class="chip"><span class="dot wait"></span>Статус: <b>ждём ответы опроса ~17 июля</b></span>
+      <span class="chip">Рамка: <b>ТЗ-0, гейты G1–G7</b></span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="section-head"><h2>Зачем это всё</h2><span class="rule"></span></div>
+    <div class="context">
+      <div class="ctx-card">
+        <h3>Разрыв, который закрываем</h3>
+        <p>Выпускник курса приходит на подразделение «со сырыми знаниями». Симуляция должна в безопасной среде дать <span class="k">применить</span> их — превратить «знает» в «делает».</p>
+      </div>
+      <div class="ctx-card">
+        <h3>Корневая проблема доверия</h3>
+        <p>Управляющие не приняли прежнюю версию: <span class="k">«не уверены в правоте»</span>. Аудит показал — дело не только в весах, но и в самом формате кейсов.</p>
+      </div>
+      <div class="ctx-card">
+        <h3>Опора решения</h3>
+        <p>Веса и уровни поведения выводим из <span class="k">ответов самих управляющих</span> (опрос → протокол мерила), а формат кейсов — из методологии ТЗ-0.</p>
+      </div>
+      <div class="ctx-card">
+        <h3>Второй эффект</h3>
+        <p>Сопоставимые результаты прохождения → <span class="k">поддержка решения</span> о назначении: кандидатов можно сравнивать по одной мерке.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:8px">
+  <div class="wrap">
+    <div class="section-head"><h2>Как читать схему</h2><span class="rule"></span></div>
+    <div class="legend">
+      <div class="leg have"><div class="n">Есть</div><div class="t">Как сейчас</div><div class="d">Текущее состояние движка и контента.</div></div>
+      <div class="leg problem"><div class="n">Проблема</div><div class="t">Что не так</div><div class="d">Красный флаг по методологии ТЗ-0.</div></div>
+      <div class="leg will"><div class="n">Будет</div><div class="t">Что меняем</div><div class="d">Целевое изменение после пересборки.</div></div>
+      <div class="leg result"><div class="n">Результат</div><div class="t">Что получим</div><div class="d">Наблюдаемый эффект изменения.</div></div>
+      <div class="leg benefit"><div class="n">Польза</div><div class="t">Зачем это бизнесу</div><div class="d">Ценность для оценки и обучения.</div></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:8px">
+  <div class="wrap">
+    <div class="section-head"><h2>Направления изменений</h2><span class="rule"></span><span class="muted" style="font-size:13px">8 блоков</span></div>
+    <div class="changes">
+
+      <div class="change">
+        <div class="change-top"><span class="idx">01</span><h3>Что измеряем: компетенции</h3><span class="tag">Аудит F1 · G3</span></div>
+        <div class="flow">
+          <div class="stage have"><div class="lab">Есть</div><p>Движок считает свои 14 компетенций (planning, delegation, decision_making, it-инструменты…).</p></div>
+          <div class="stage problem"><div class="lab">Проблема</div><p>С профилем выпускника совпадает лишь ~6 из 14. Восемь профильных (финансы, задачи сотрудников, идеология, системность, мотивация и обучение персонала, самооценка) не меряются вовсе.</p></div>
+          <div class="stage will"><div class="lab">Будет</div><p>Набор приведён к Профилю выпускника «Космонавтики»; веса — из опроса управляющих.</p></div>
+          <div class="stage result"><div class="lab">Результат</div><p>Симуляция мерит то же, что выходной ассессмент курса.</p></div>
+          <div class="stage benefit"><div class="lab">Польза</div><p>Результат сопоставим с профилем должности — исчезает «меряем не то».</p></div>
+        </div>
+      </div>
+
+      <div class="change">
+        <div class="change-top"><span class="idx">02</span><h3>Веса и доверие: мерило</h3><span class="tag">Проблема доверия · Раздел 12</span></div>
+        <div class="flow">
+          <div class="stage have"><div class="lab">Есть</div><p>Веса компетенций выставлены «на глаз».</p></div>
+          <div class="stage problem"><div class="lab">Проблема</div><p>Именно к весам было недоверие управляющих — «правильно ли настроено влияние».</p></div>
+          <div class="stage will"><div class="lab">Будет</div><p>Веса выведены из ответов управляющих по протоколу: блок × важность → усечённое среднее → согласие (CV) → стоп-факторы.</p></div>
+          <div class="stage result"><div class="lab">Результат</div><p>Каждый вес построен самими управляющими, с мерой согласия; спорные — на обсуждение, а не вслепую.</p></div>
+          <div class="stage benefit"><div class="lab">Польза</div><p>Снимается корневое отторжение: «веса не наши придуманные, а ваши».</p></div>
+        </div>
+      </div>
+
+      <div class="change">
+        <div class="change-top"><span class="idx">03</span><h3>Формат вариантов: антигейминг</h3><span class="tag">Аудит F2 · G5 / §8a</span></div>
+        <div class="flow">
+          <div class="stage have"><div class="lab">Есть</div><p>42 из 42 циклов — балл монотонно растёт с уровнем; лучший ответ часто самый длинный.</p></div>
+          <div class="stage problem"><div class="lab">Проблема</div><p>Высокий балл берётся формой ответа, а не мышлением — «очевидная кнопка».</p></div>
+          <div class="stage will"><div class="lab">Будет</div><p>Варианты равны по форме и длине; сигнал — по уместности выбора к контексту (якоря поведения), а не по формулировке.</p></div>
+          <div class="stage result"><div class="lab">Результат</div><p>Угадать сильный ответ по виду нельзя.</p></div>
+          <div class="stage benefit"><div class="lab">Польза</div><p>Оценка отражает реальное поведение, а не насмотренность на «правильные слова».</p></div>
+        </div>
+      </div>
+
+      <div class="change">
+        <div class="change-top"><span class="idx">04</span><h3>Диагностика: скрытая причина и данные</h3><span class="tag">Аудит F3 · G4</span></div>
+        <div class="flow">
+          <div class="stage have"><div class="lab">Есть</div><p>Ситуация видна целиком; данных для запроса, ложных следов и скрытой причины нет.</p></div>
+          <div class="stage problem"><div class="lab">Проблема</div><p>Кейс проходится без диагностики — не проверяется, умеет ли человек отделить симптом от причины.</p></div>
+          <div class="stage will"><div class="lab">Будет</div><p>У кейса появляется скрытая причина, доступные данные (с ценой запроса), ложные следы и управленческая дилемма.</p></div>
+          <div class="stage result"><div class="lab">Результат</div><p>Сильное решение невозможно без диагностики.</p></div>
+          <div class="stage benefit"><div class="lab">Польза</div><p>Меряем процесс решения, а не память на «хорошие практики».</p></div>
+        </div>
+      </div>
+
+      <div class="change">
+        <div class="change-top"><span class="idx">05</span><h3>Механика: ветвление и последствия</h3><span class="tag">Аудит F4 · Раздел 9</span></div>
+        <div class="flow">
+          <div class="stage have"><div class="lab">Есть</div><p>0 из 42 циклов ветвятся; выбор влияет на метрики, но не на следующее событие.</p></div>
+          <div class="stage problem"><div class="lab">Проблема</div><p>Это череда независимых вопросов, а не система состояний — нет отложенных последствий.</p></div>
+          <div class="stage will"><div class="lab">Будет</div><p>Решение меняет переменные, которые влияют на дальнейшие события; появляются отложенные последствия и точки схождения.</p></div>
+          <div class="stage result"><div class="lab">Результат</div><p>Быстрый выигрыш может дорого аукнуться позже — как в реальной работе.</p></div>
+          <div class="stage benefit"><div class="lab">Польза</div><p>Тренирует системность и ответственность за последствия.</p></div>
+        </div>
+      </div>
+
+      <div class="change">
+        <div class="change-top"><span class="idx">06</span><h3>Оценка процесса и дебриф</h3><span class="tag">Аудит F5 · Матрица 30/50/20 · G6</span></div>
+        <div class="flow">
+          <div class="stage have"><div class="lab">Есть</div><p>Один балл за результат выбора; обоснования, хода мышления и дебрифа нет.</p></div>
+          <div class="stage problem"><div class="lab">Проблема</div><p>Высокий счёт приравнивается к компетентности; после игры — только балл, без переноса в работу.</p></div>
+          <div class="stage will"><div class="lab">Будет</div><p>Оценка 30/50/20 (результат / процесс / дебриф) + логирование хода мышления + обязательный дебриф с вопросами.</p></div>
+          <div class="stage result"><div class="lab">Результат</div><p>Видно, КАК человек принимал решение, а не только к чему пришёл.</p></div>
+          <div class="stage benefit"><div class="lab">Польза</div><p>Симуляция становится обучающей — закрывает разрыв «знания → практика».</p></div>
+        </div>
+      </div>
+
+      <div class="change">
+        <div class="change-top"><span class="idx">07</span><h3>Стоп-факторы и план развития</h3><span class="tag">Решение по оценке</span></div>
+        <div class="flow">
+          <div class="stage have"><div class="lab">Есть</div><p>Критический провал компенсируется баллами в лёгких местах.</p></div>
+          <div class="stage problem"><div class="lab">Проблема</div><p>Кандидат с проваленным ключевым навыком проходит за счёт общего балла.</p></div>
+          <div class="stage will"><div class="lab">Будет</div><p>Стоп-факторы (по большинству управляющих) → мягкое вето: симуляцию не стопаем, но красный флаг = блокирующее условие развития + углублённый дебриф + план мероприятий с повторной проверкой.</p></div>
+          <div class="stage result"><div class="lab">Результат</div><p>Критичные пробелы не прячутся за суммой; по ним — маршрут закрытия.</p></div>
+          <div class="stage benefit"><div class="lab">Польза</div><p>Честное решение о готовности плюс конкретный план развития кандидата.</p></div>
+        </div>
+      </div>
+
+      <div class="change">
+        <div class="change-top"><span class="idx">08</span><h3>Модель данных и конструктор кейсов</h3><span class="tag">ТЗ-0 · Разделы 5–8, 16–17</span></div>
+        <div class="flow">
+          <div class="stage have"><div class="lab">Есть</div><p>Модель без полей паспорта кейса; конструктор — лёгкий 4-шаговый редактор.</p></div>
+          <div class="stage problem"><div class="lab">Проблема</div><p>Негде хранить скрытую причину, данные, обоснование, дебриф; нет гейтов качества.</p></div>
+          <div class="stage will"><div class="lab">Будет</div><p>Модель расширена паспортом кейса; конструктор — вопросный мастер с гейтами (смысл, антигейминг, дебриф, QA).</p></div>
+          <div class="stage result"><div class="lab">Результат</div><p>Методолог/HR собирает валидный кейс без кода, с проверками и версиями.</p></div>
+          <div class="stage benefit"><div class="lab">Польза</div><p>Масштабируемость и контроль качества: кейсов много — стандарт один.</p></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:8px">
+  <div class="wrap">
+    <div class="section-head"><h2>Новые сущности продукта</h2><span class="rule"></span><span class="muted" style="font-size:13px">чего сейчас нет</span></div>
+    <div class="entities">
+
+      <div class="ent">
+        <div class="ent-top"><h3>Конструктор кейсов (сборщик)</h3><span class="pill rebuild">Пересборка</span></div>
+        <div class="ent-body">
+          <p class="ent-what"><b>Что это:</b> вопросный диагностический мастер, который ведёт автора кейса и не даёт выпустить кейс без пройденных проверок. Заменяет нынешний 4-шаговый редактор.</p>
+          <ul class="ent-list">
+            <li>11 шагов-вопросов: запрос → формат → поведение → ситуация → данные → решения → переменные → последствия → оценка → дебриф → QA</li>
+            <li>Гейты качества: смысл, антигейминг, дебриф, QA</li>
+            <li>Роли: методолог создаёт, заказчик комментирует, QA проверяет</li>
+            <li>Версионность и экспорт (JSON в движок)</li>
+          </ul>
+          <p class="ent-foot"><b>Основано на:</b> ТЗ-0 разд. 5–8, 16–17 · закрывает направление 08</p>
+        </div>
+      </div>
+
+      <div class="ent">
+        <div class="ent-top"><h3>Паспорт кейса</h3><span class="pill new">Новое</span></div>
+        <div class="ent-body">
+          <p class="ent-what"><b>Что это:</b> структурированная карточка кейса — то, чего в текущей модели данных нет вовсе.</p>
+          <ul class="ent-list">
+            <li>Бизнес-проблема, симптом, скрытая причина</li>
+            <li>Данные, цена запроса, ложные следы</li>
+            <li>Решения, эффекты, переменные, отложенные последствия</li>
+            <li>Матрица оценки, логирование, вопросы дебрифа, QA-статус</li>
+          </ul>
+          <p class="ent-foot"><b>Основано на:</b> ТЗ-0 разд. 7 · закрывает F3 и F5</p>
+        </div>
+      </div>
+
+      <div class="ent">
+        <div class="ent-top"><h3>Дебриф</h3><span class="pill new">Новое</span></div>
+        <div class="ent-body">
+          <p class="ent-what"><b>Что это:</b> разбор после прохождения, который вскрывает ход мышления и запускает перенос в работу. Сейчас отсутствует полностью.</p>
+          <ul class="ent-list">
+            <li>Обязательные вопросы: факты, логика, диагностика, риски, люди, перенос</li>
+            <li>Личный вывод участника + рабочее действие на 7 дней</li>
+            <li>Углублённый разбор по красному флагу стоп-фактора</li>
+          </ul>
+          <p class="ent-foot"><b>Основано на:</b> Kolb, ТЗ-0 разд. 14 · закрывает F5 / G6</p>
+        </div>
+      </div>
+
+      <div class="ent">
+        <div class="ent-top"><h3>Контур закрепления — постобучение 7 / 14 / 30</h3><span class="pill new">Новое</span></div>
+        <div class="ent-body">
+          <p class="ent-what"><b>Что это:</b> цикл после симуляции, который не даёт навыку угаснуть и доводит его до практики.</p>
+          <ul class="ent-list">
+            <li>Рабочее действие на 7 дней + кто подтверждает выполнение</li>
+            <li>Повторный микрокейс через 7 / 14 / 30 дней</li>
+            <li>Метрика наблюдения: что должно измениться в работе</li>
+            <li>ИПР — индивидуальный план развития</li>
+          </ul>
+          <p class="ent-foot"><b>Основано на:</b> Ebbinghaus (забывание), Baldwin &amp; Ford (перенос)</p>
+        </div>
+      </div>
+
+      <div class="ent">
+        <div class="ent-top"><h3>Дообучение по стоп-факторам</h3><span class="pill new">Новое</span></div>
+        <div class="ent-body">
+          <p class="ent-what"><b>Что это:</b> обязательный маршрут закрытия критического пробела, когда сработал красный флаг. Триггерится мягким вето из направления 07.</p>
+          <ul class="ent-list">
+            <li>Детальный план мероприятий по западающему навыку/знанию</li>
+            <li>Повторная проверка, что навык действительно налажен</li>
+            <li>Блокирующее условие развития — до подтверждения закрытия</li>
+          </ul>
+          <p class="ent-foot"><b>Основано на:</b> решение по стоп-факторам + Baldwin &amp; Ford</p>
+        </div>
+      </div>
+
+      <div class="ent">
+        <div class="ent-top"><h3>Мерило — веса и якоря</h3><span class="pill new">Новое</span></div>
+        <div class="ent-body">
+          <p class="ent-what"><b>Что это:</b> линейка оценки, выведенная из ответов управляющих, а не выставленная «на глаз».</p>
+          <ul class="ent-list">
+            <li>Веса компетенций (усечённое среднее + мера согласия CV)</li>
+            <li>Стоп-факторы (по большинству управляющих)</li>
+            <li>Поведенческие якоря BARS — 3 уровня на компетенцию</li>
+          </ul>
+          <p class="ent-foot"><b>Основано на:</b> опрос + протокол мерила · Spencer &amp; Spencer, Flanagan</p>
+        </div>
+      </div>
+
+      <div class="ent">
+        <div class="ent-top"><h3>Лог хода мышления</h3><span class="pill new">Новое</span></div>
+        <div class="ent-body">
+          <p class="ent-what"><b>Что это:</b> запись процесса решения, без которой невозможны честный дебриф и оценка процесса.</p>
+          <ul class="ent-list">
+            <li>Открытие данных: что и когда открыто</li>
+            <li>Обоснование участника после ключевых решений</li>
+            <li>Игнорирование сигналов, смена стратегии</li>
+          </ul>
+          <p class="ent-foot"><b>Основано на:</b> ТЗ-0 разд. 13 · кормит дебриф и оценку 30/50/20</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="section-head"><h2>Порядок работ</h2><span class="rule"></span></div>
+    <div class="road">
+      <div class="step now">
+        <div class="when">Сейчас → ~17 июля</div>
+        <h4>Сбор ответов опроса управляющих</h4>
+        <p>Анкета в поле. Ждём минимум ~8 ответов, чтобы веса были доверенными. Контент не трогаем.</p>
+      </div>
+      <div class="step">
+        <div class="when">17 июля</div>
+        <h4>Прогон ответов через протокол мерила</h4>
+        <p>За один проход: веса компетенций → мера согласия и флаги → стоп-факторы → черновик поведенческих якорей. Калибруем пороги на реальных данных.</p>
+      </div>
+      <div class="step">
+        <div class="when">После весов</div>
+        <h4>Пилот: один эталонный кейс</h4>
+        <p>Переписываем один кейс целиком в новом формате (антигейминг + диагностика + ветвление), утверждаем шаблон — сухой прогон до масштабирования (гейт G7).</p>
+      </div>
+      <div class="step">
+        <div class="when">Далее</div>
+        <h4>Пересборка остальных кейсов и движка</h4>
+        <p>Остальные кейсы по утверждённому шаблону; расширение модели данных; слой дебриф + план развития; привязка весов и якорей.</p>
+      </div>
+      <div class="step">
+        <div class="when">Приёмка</div>
+        <h4>QA и пилот на живых участниках</h4>
+        <p>Проверка по чек-листам ТЗ-0, затем валидация профилей на реальных прохождениях и подстройка весов.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="wrap">
+    <div class="method">
+      <div class="method-head">
+        <div class="eyebrow">Методологическая рамка</div>
+        <h2>Всё опирается на ТЗ-0, а не на вкус</h2>
+        <p>Проверка идёт по обязательным гейтам: пока нет ответа на гейт, кейс не переходит в разработку механики и интерфейса. При провале — возврат к уточнению гипотезы. Метод опирается на признанные модели обучения и оценки, а не на внутренние догадки.</p>
+      </div>
+      <div class="method-body">
+        <div>
+          <p class="msub-title">Гейты проверки — идти / упростить / остановить</p>
+          <div class="mgrid">
+            <div class="mcard"><div class="h"><span class="badge">G1</span><span class="name">Запрос</span></div><p class="q">Есть ли бизнес-проблема и рабочее поведение, которое нужно изменить?</p><p class="r"><b class="stop">Нет</b> — остановить разработку.</p></div>
+            <div class="mcard"><div class="h"><span class="badge">G2</span><span class="name">Формат</span></div><p class="q">Нужна ли именно симуляция, а не тест, инструкция или наставничество?</p><p class="r">Если это факты и процедуры — <b>вынести в подготовку</b>.</p></div>
+            <div class="mcard"><div class="h"><span class="badge">G3</span><span class="name">Компетенции</span></div><p class="q">Есть ли карта сильного и слабого поведения с логируемыми признаками?</p><p class="r"><b class="stop">Нет</b> — сначала собрать компетентностную карту.</p></div>
+            <div class="mcard"><div class="h"><span class="badge">G4</span><span class="name">Кейс</span></div><p class="q">Есть ли скрытая причина, данные, ложные следы и последствия?</p><p class="r"><b class="stop">Нет</b> — кейс не готов к механике.</p></div>
+            <div class="mcard"><div class="h"><span class="badge">G5</span><span class="name">Антигейминг</span></div><p class="q">Можно ли выиграть без диагностики или по очевидной кнопке?</p><p class="r"><b class="stop">Да</b> — перепроектировать выборы и последствия.</p></div>
+            <div class="mcard"><div class="h"><span class="badge">G6</span><span class="name">Дебриф</span></div><p class="q">Можно ли восстановить ход мышления участника?</p><p class="r"><b class="stop">Нет</b> — добавить логирование и вопросы дебрифа.</p></div>
+            <div class="mcard"><div class="h"><span class="badge">G7</span><span class="name">Запуск</span></div><p class="q">Прошёл ли кейс сухой прогон и проверку QA?</p><p class="r"><b class="stop">Нет</b> — не запускать на участниках.</p></div>
+          </div>
+        </div>
+        <div>
+          <p class="msub-title">Источники метода — что взято и в основу каких изменений легло</p>
+          <div class="mgrid wide">
+
+            <div class="mcard src">
+              <div class="name">Kirkpatrick — 4 уровня оценки</div>
+              <p class="q"><b>Что взято:</b> различаем реакцию, обучение, поведение и бизнес-результат. Прежняя симуляция застревала на уровне «обучение», а ценность — на уровне «поведение».</p>
+              <div class="basis"><span class="basis-label">Легло в основу</span><div class="basis-tags">
+                <span class="btag"><b>06</b> Оценка 30/50/20 и дебриф</span>
+                <span class="btag"><b>01</b> Связь компетенций с метриками</span>
+                <span class="btag">Разрыв «знания → практика»</span>
+              </div></div>
+            </div>
+
+            <div class="mcard src">
+              <div class="name">Kolb — цикл обучения через опыт</div>
+              <p class="q"><b>Что взято:</b> проба → осмысление → концепт → новая проба. Без осмысления (дебрифа) прохождение не превращается в обучение.</p>
+              <div class="basis"><span class="basis-label">Легло в основу</span><div class="basis-tags">
+                <span class="btag"><b>06</b> Дебриф как обязательный этап</span>
+                <span class="btag"><b>07</b> План развития после флага</span>
+                <span class="btag">G2 Выбор формата «симуляция»</span>
+              </div></div>
+            </div>
+
+            <div class="mcard src">
+              <div class="name">Ebbinghaus — кривая забывания</div>
+              <p class="q"><b>Что взято:</b> без закрепления навык угасает. Одного прохождения мало — нужен повтор через интервалы.</p>
+              <div class="basis"><span class="basis-label">Легло в основу</span><div class="basis-tags">
+                <span class="btag"><b>07</b> Повторная проверка навыка</span>
+                <span class="btag">Контур закрепления 7 / 14 / 30</span>
+                <span class="btag">Повторный микрокейс</span>
+              </div></div>
+            </div>
+
+            <div class="mcard src">
+              <div class="name">Baldwin &amp; Ford — перенос обучения</div>
+              <p class="q"><b>Что взято:</b> перенос в работу зависит от дизайна, участника и рабочей среды — значит, продукт не заканчивается баллом.</p>
+              <div class="basis"><span class="basis-label">Легло в основу</span><div class="basis-tags">
+                <span class="btag"><b>07</b> План мероприятий + наблюдение руководителя</span>
+                <span class="btag"><b>06</b> Перенос в работу в дебрифе</span>
+              </div></div>
+            </div>
+
+            <div class="mcard src">
+              <div class="name">Spencer &amp; Spencer / McClelland</div>
+              <p class="q"><b>Что взято:</b> компетенция — это наблюдаемое поведение, а не знание формулировок. Индикаторы профиля пока «называет / говорит» — их надо перевести в «делает».</p>
+              <div class="basis"><span class="basis-label">Легло в основу</span><div class="basis-tags">
+                <span class="btag"><b>03</b> Антигейминг: уместность, а не слова</span>
+                <span class="btag"><b>01</b> «Называет» → «делает»</span>
+                <span class="btag">Якоря BARS в протоколе мерила</span>
+              </div></div>
+            </div>
+
+            <div class="mcard src">
+              <div class="name">Flanagan — критические инциденты</div>
+              <p class="q"><b>Что взято:</b> сильное и слабое поведение собираем из реальных рабочих ситуаций, а не выдумываем. Это метод самого опроса управляющих.</p>
+              <div class="basis"><span class="basis-label">Легло в основу</span><div class="basis-tags">
+                <span class="btag">Опрос: секции инцидентов и якорей</span>
+                <span class="btag"><b>04</b> Паспорт кейса и дилеммы</span>
+              </div></div>
+            </div>
+
+            <div class="mcard src">
+              <div class="name">Gagné / Merrill / Bloom</div>
+              <p class="q"><b>Что взято:</b> разные учебные цели требуют разных форм практики. Факты — в курс, управленческие решения — в симуляцию.</p>
+              <div class="basis"><span class="basis-label">Легло в основу</span><div class="basis-tags">
+                <span class="btag"><b>08</b> Шаг «Формат» в конструкторе</span>
+                <span class="btag">Граница «курс ↔ симуляция»</span>
+              </div></div>
+            </div>
+
+            <div class="mcard src">
+              <div class="name">Goodhart / Campbell</div>
+              <p class="q"><b>Что взято:</b> показатель портится, став единственной целью. Нельзя оценивать только игровой балл — его начнут «фармить».</p>
+              <div class="basis"><span class="basis-label">Легло в основу</span><div class="basis-tags">
+                <span class="btag"><b>03</b> Антигейминг вариантов</span>
+                <span class="btag"><b>06</b> Не только результат (30/50/20)</span>
+                <span class="btag"><b>07</b> Стоп-факторы против «добора»</span>
+              </div></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">Рабочий документ для обсуждения · Пересборка симуляции «Космонавт» · Генерация кейсов начинается только после весов из опроса.</div>
+</footer>
+
+</body>
+</html>

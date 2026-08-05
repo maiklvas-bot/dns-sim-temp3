@@ -21,6 +21,7 @@
 
 import { z } from "zod";
 import type { Request, Response, NextFunction } from "express";
+import type { AcceptedIssue } from "@shared/simulation-content";
 
 // =============================================================================
 // Общие валидаторы (реиспользуемые)
@@ -98,6 +99,30 @@ export const staffElevationBodySchema = z.object({
   password: passwordSchema,
 }).strict();
 
+/** Форма обратной связи (категория, сообщение, опц. контакт + контекст экрана). */
+export const feedbackBodySchema = z.object({
+  category: z.string().trim().min(1).max(80),
+  message: z.string().trim().min(5, "Сообщение слишком короткое").max(4000),
+  contact: z.string().trim().max(200).optional(),
+  url: z.string().trim().max(300).optional(),
+}).strict();
+
+/** «Связаться с пользователем» — оценщик пишет участнику на его корпоративную почту. */
+export const contactParticipantMailSchema = z.object({
+  to: z.string().trim().toLowerCase().email().max(120),
+  participantName: z.string().trim().min(1).max(120),
+  subject: z.string().trim().min(1).max(200),
+  message: z.string().trim().min(1).max(4000),
+}).strict();
+
+/** «Назначить обучение на определённую дату». */
+export const scheduleTrainingMailSchema = z.object({
+  to: z.string().trim().toLowerCase().email().max(120),
+  participantName: z.string().trim().min(1).max(120),
+  trainingDate: z.string().trim().min(1).max(60),
+  note: z.string().trim().max(1000).optional(),
+}).strict();
+
 /**
  * Схема для создания симуляционной сессии.
  * Валидация всех полей с ограничениями диапазонов.
@@ -105,6 +130,8 @@ export const staffElevationBodySchema = z.object({
 export const createSimulationSessionSchema = z.object({
   participantName: nameSchema.optional().default("Участник"),
   participantExternalId: z.string().max(100).nullable().optional().default(null),
+  /** участник вводит сам при входе по коду (не оценщик) — для обратной связи и дальнейшей коммуникации */
+  participantEmail: z.string().trim().toLowerCase().email().max(120).optional(),
   assessorName: z.string().max(100).optional().default(""),
   difficulty: z.enum(["easy", "medium", "hard"]).optional().default("medium"),
   selectedCaseIds: z.array(idStringSchema).optional().default([]),
@@ -215,6 +242,8 @@ export const joinLiveSessionSchema = z.object({
     .min(1, "Код доступа обязателен")
     .max(20, "Код доступа слишком длинный")
     .regex(/^[A-Z0-9]+$/, "Неверный формат кода доступа"),
+  /** участник вводит сам при входе — для обратной связи и дальнейшей коммуникации, не обязателен */
+  email: z.string().trim().toLowerCase().email().max(120).optional(),
 });
 
 /**
@@ -307,6 +336,50 @@ const caseCycleSchema = z.object({
   options: z.array(editableOptionSchema).max(50).default([]),
 });
 
+const caseDataPointSchema = z.object({
+  label: safeLooseTextSchema(500),
+  costToRequest: safeLooseTextSchema(300).nullable().optional().default(null),
+});
+
+const caseQaStatusSchema = z.enum([
+  "draft",
+  "auto_check_failed",
+  "methodical_review",
+  "ready_prototype",
+  "ready_launch",
+]);
+
+const acceptedIssueSchema = z.object({
+  check: z.enum(["bars_conformance", "antigaming", "diagnostics", "effect_reality"]),
+  cycleId: idStringSchema.nullable().optional().default(null),
+  optionId: idStringSchema.nullable().optional().default(null),
+  competencyId: idStringSchema.nullable().optional().default(null),
+  reason: safeLooseTextSchema(5_000),
+  acceptedForMessage: safeLooseTextSchema(1_000).nullable().optional().default(null),
+});
+
+/**
+ * Материал справочника. Обязательные поля непустые: заметка без заголовка,
+ * описания, содержания или скриншота ничего не объясняет.
+ */
+export const wikiNoteSchema = z.object({
+  id: emptyOrIdStringSchema.optional().default(""),
+  sectionId: safeLooseTextSchema(200),
+  title: safeLooseTextSchema(300),
+  summary: safeLooseTextSchema(1_000),
+  body: safeLooseTextSchema(20_000),
+  imageAssetId: safeLooseTextSchema(200),
+  author: safeLooseTextSchema(200).optional().default(""),
+});
+
+const caseCorrectionSchema = z.object({
+  check: z.enum(["bars_conformance", "antigaming", "diagnostics", "effect_reality", "content"]),
+  scope: safeLooseTextSchema(300),
+  was: safeLooseTextSchema(5_000),
+  became: safeLooseTextSchema(5_000),
+  why: safeLooseTextSchema(5_000),
+});
+
 export const editableSimCaseSchema = z.object({
   id: emptyOrIdStringSchema.optional().default(""),
   title: safeLooseTextSchema(300),
@@ -320,11 +393,19 @@ export const editableSimCaseSchema = z.object({
   }),
   zones_affected: z.array(zoneTypeSchema).max(10).default([]),
   cycles: z.array(caseCycleSchema).min(1).max(50),
+  businessProblem: safeLooseTextSchema(5_000).nullable().optional().default(null),
+  hiddenCause: safeLooseTextSchema(5_000).nullable().optional().default(null),
+  dataPoints: z.array(caseDataPointSchema).max(30).optional().default([]),
+  falseTrails: z.array(safeLooseTextSchema(1_000)).max(30).optional().default([]),
+  qaStatus: caseQaStatusSchema.optional().default("draft"),
   imageAssetId: nullableIdStringSchema.optional().default(null),
   audioAssetId: nullableIdStringSchema.optional().default(null),
   timing: timingConfigSchema,
   sortOrder: boundedIntSchema(0, 100_000).optional().default(0),
   isActive: z.boolean().optional().default(true),
+  acceptedIssues: z.array(acceptedIssueSchema).optional().default([]),
+  correctionOfCaseId: nullableIdStringSchema.optional().default(null),
+  corrections: z.array(caseCorrectionSchema).max(500).optional().default([]),
 });
 
 const editableChannelBaseSchema = z.object({
@@ -496,6 +577,14 @@ export const pdfExportSchema = z.object({
   impactfulDecisions: z.array(pdfImpactfulDecisionSchema).max(100).optional().default([]),
 }).strict();
 
+/** «Отправить обратную связь на почту» — итоги/отчёт участнику, PDF формируется на сервере из того же payload, что и /api/export-pdf. */
+export const sendResultsMailSchema = z.object({
+  to: z.string().trim().toLowerCase().email().max(120),
+  participantName: z.string().trim().min(1).max(120),
+  summary: z.string().trim().min(1).max(2000),
+  pdfPayload: pdfExportSchema,
+}).strict();
+
 /**
  * Схема для экспорта Excel.
  */
@@ -539,6 +628,126 @@ export const auditLogsQuerySchema = z.object({
  */
 export const sessionIdParamSchema = z.object({
   id: z.string().regex(/^\d+$/, "ID должен быть числом"),
+});
+
+// =============================================================================
+// Симуляция ЗРД (Фаза 3)
+// =============================================================================
+
+export const createZrdSessionSchema = z.object({
+  participantName: nameSchema.optional().default("Участник"),
+  assessorName: z.string().max(100).optional().default(""),
+  difficulty: z.number().int().min(1).max(5).optional().default(3),
+  region: z.string().max(60).nullable().optional().default(null),
+  seed: z.number().int().min(0).max(2147483647).optional(),
+  quarters: z.number().int().min(1).max(8).optional().default(4),
+});
+
+const zrdStrategySchema = z.enum(["service", "expansion", "efficiency"]);
+const zrdStandardActionSchema = z.enum(["open_basic", "hire", "promo", "improve_service", "improve_logistics"]);
+const zrdOptionIdSchema = z.string().regex(/^[a-z_]+$/, "Некорректный id варианта").max(40);
+
+/** Намерение хода (TurnIntent) — дискриминированное объединение по полю kind. */
+export const zrdIntentSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("declareStrategy"), strategy: zrdStrategySchema }),
+  z.object({ kind: z.literal("keepCards"), cardIds: z.array(idStringSchema).max(4) }),
+  z.object({ kind: z.literal("playCard"), cardId: idStringSchema }),
+  z.object({ kind: z.literal("standard"), action: zrdStandardActionSchema }),
+  z.object({ kind: z.literal("viewData") }),
+  z.object({ kind: z.literal("eventChoice"), optionId: zrdOptionIdSchema }),
+  z.object({ kind: z.literal("pass") }),
+]);
+
+// =============================================================================
+// ЗРД v2 — матч на 4 места (мультистол)
+// =============================================================================
+
+const zrdRrsIdSchema = z.enum(["ekb", "chel", "tmn", "perm", "chbo2", "svo1"]);
+const zrdCardIdSchema = z.string().regex(/^[a-z0-9_]+$/, "Некорректный id карты").max(60);
+
+export const createZrdMatchSchema = z.object({
+  scenario: z.enum(["conquest", "crisis", "race", "efficiency"]),
+  difficulty: z.number().int().min(1).max(5).optional().default(3),
+  winMode: z.enum(["year", "race"]).optional().default("year"),
+  missionMode: z.enum(["auto", "manual"]).optional().default("auto"),
+  missionIds: z.array(z.string().regex(/^m_[a-z_]+$/).max(40)).max(6).optional(),
+  keyMissionId: z.string().regex(/^m_[a-z_]+$/).max(40).optional(),
+  /** «Гонка»: настраиваемая цель финиша (KPI + значение), замещает встроенный порог ключевой миссии */
+  raceTargetKpi: z.enum(["sales_growth", "market_coverage", "efficiency", "service_level", "logistics", "staffing"]).optional(),
+  raceTargetValue: z.number().int().min(1).max(100).optional(),
+  swanFrequency: z.enum(["off", "rare", "standard", "storm"]).optional().default("standard"),
+  minutesPerTick: z.number().int().min(2).max(15).optional().default(6),
+  seed: z.number().int().min(0).max(2147483647).optional(),
+  seats: z.array(z.object({
+    rrsId: zrdRrsIdSchema,
+    controller: z.enum(["human", "ai", "off"]),
+    participantName: z.string().max(60).optional(),
+    aiLevel: z.number().int().min(1).max(5).optional(),
+    mascotId: z.enum(["strateg", "media", "dispatcher", "captain"]).optional(),
+  })).length(4),
+});
+
+export const joinZrdMatchSchema = z.object({
+  code: z.string().regex(/^[A-Za-z0-9]{6}$/, "Код — 6 символов"),
+});
+
+/** подключение игрока к запущенному матчу (оценщик сажает человека на место ИИ/пустое) */
+export const zrdMatchAttachSchema = z.object({
+  seatIdx: z.number().int().min(0).max(3),
+  participantName: z.string().trim().min(1, "Выберите игрока").max(60),
+});
+
+export const zrdMatchSeatQuerySchema = z.object({
+  seat: z.string().regex(/^[0-3]$/, "Место — 0..3"),
+});
+
+/** Намерение места матча (SeatIntent) */
+export const zrdMatchIntentSchema = z.object({
+  seatIdx: z.number().int().min(0).max(3),
+  intent: z.discriminatedUnion("kind", [
+    z.object({ kind: z.literal("playCard"), cardId: zrdCardIdSchema }),
+    z.object({ kind: z.literal("standard"), action: zrdStandardActionSchema }),
+    z.object({ kind: z.literal("eventChoice"), optionId: zrdOptionIdSchema }),
+    z.object({ kind: z.literal("swanChoice"), swanId: zrdOptionIdSchema, optionId: zrdOptionIdSchema }),
+    z.object({ kind: z.literal("viewData") }),
+    z.object({ kind: z.literal("pass") }),
+  ]),
+});
+
+export const zrdMatchSwanSchema = z.object({
+  swanId: z.string().regex(/^[a-z_]+$/).max(40),
+  target: z.union([zrdRrsIdSchema, z.literal("all")]),
+});
+
+export const zrdMatchPauseSchema = z.object({
+  paused: z.boolean(),
+});
+
+/** выбор фигурки игроком после входа по коду (следом — своя корпоративная почта, необязательно) */
+export const zrdMatchMascotSchema = z.object({
+  seatIdx: z.number().int().min(0).max(3),
+  mascotId: z.enum(["strateg", "media", "dispatcher", "captain"]),
+  email: z.string().trim().toLowerCase().email().max(120).optional(),
+});
+
+/** выбор РРС самим игроком при входе (когда людей за столом больше одного) */
+export const zrdMatchRrsSchema = z.object({
+  seatIdx: z.number().int().min(0).max(3),
+  rrsId: zrdRrsIdSchema,
+});
+
+/** Секции инструкции /zrd/manual, к которым админ может добавлять дополнения. */
+export const ZRD_MANUAL_SECTION_IDS = [
+  "about", "roles", "goal", "flow", "turnmap", "interface", "cards",
+  "events", "scenarios", "competencies", "results", "learning", "admin",
+] as const;
+
+export const zrdManualSectionParamSchema = z.object({
+  sectionId: z.enum(ZRD_MANUAL_SECTION_IDS),
+});
+
+export const zrdManualNoteBodySchema = z.object({
+  bodyMd: z.string().max(8000),
 });
 
 // =============================================================================

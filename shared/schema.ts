@@ -69,6 +69,8 @@ export const competencies = sqliteTable("competencies", {
   name: text("name").notNull(),
   description: text("description").notNull(),
   category: text("category").notNull(),
+  facetOfCompetencyId: text("facet_of_competency_id"),
+  isStopFactor: integer("is_stop_factor", { mode: "boolean" }).notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
 });
@@ -85,6 +87,25 @@ export const mediaAssets = sqliteTable("media_assets", {
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+/**
+ * Материалы справочника, добавленные людьми: методические заметки, разборы,
+ * скриншоты своих экранов. Живут рядом с зашитыми разделами и крепятся к ним
+ * через `sectionId`.
+ */
+export const wikiNotes = sqliteTable("wiki_notes", {
+  id: text("id").primaryKey(),
+  sectionId: text("section_id").notNull(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  body: text("body").notNull(),
+  imageAssetId: text("image_asset_id"),
+  author: text("author").notNull().default(""),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  sectionIdx: index("wiki_notes_section_idx").on(table.sectionId),
+}));
+
 export const simulationCases = sqliteTable("simulation_cases", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
@@ -92,6 +113,14 @@ export const simulationCases = sqliteTable("simulation_cases", {
   primaryCompetenciesJson: text("primary_competencies_json").notNull().default("[]"),
   secondaryCompetenciesJson: text("secondary_competencies_json").notNull().default("[]"),
   zonesAffectedJson: text("zones_affected_json").notNull().default("[]"),
+  businessProblem: text("business_problem"),
+  hiddenCause: text("hidden_cause"),
+  dataPointsJson: text("data_points_json").notNull().default("[]"),
+  falseTrailsJson: text("false_trails_json").notNull().default("[]"),
+  qaStatus: text("qa_status").notNull().default("draft"),
+  acceptedIssuesJson: text("accepted_issues_json").notNull().default("[]"),
+  correctionOfCaseId: text("correction_of_case_id"),
+  correctionsJson: text("corrections_json").notNull().default("[]"),
   imageAssetId: text("image_asset_id"),
   audioAssetId: text("audio_asset_id"),
   sortOrder: integer("sort_order").notNull().default(0),
@@ -275,6 +304,8 @@ export const simulationSessions = sqliteTable("simulation_sessions", {
   participantId: integer("participant_id"),
   participantTokenHash: text("participant_token_hash"),
   participantName: text("participant_name").notNull(),
+  /** участник вводит сам при входе по коду (не оценщик) — для обратной связи и дальнейшей коммуникации */
+  participantEmail: text("participant_email"),
   evaluatorAccountId: integer("evaluator_account_id"),
   evaluatorName: text("evaluator_name").notNull().default(""),
   difficulty: text("difficulty").notNull().default("medium"),
@@ -341,6 +372,168 @@ export const sessionMetrics = sqliteTable("session_metrics", {
   sessionIdx: index("session_metrics_session_idx").on(table.sessionId),
 }));
 
+// ── Симуляция ЗРД (Фаза 3) ───────────────────────────────────────────────
+// Серверно-авторитетное состояние партии хранится целиком в state_json (ZrdState).
+export const zrdSessions = sqliteTable("zrd_sessions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  participantName: text("participant_name").notNull().default("Участник"),
+  participantTokenHash: text("participant_token_hash"),
+  evaluatorAccountId: integer("evaluator_account_id"),
+  evaluatorName: text("evaluator_name").notNull().default(""),
+  difficulty: integer("difficulty").notNull().default(3),
+  region: text("region"),
+  seed: integer("seed").notNull().default(0),
+  quarters: integer("quarters").notNull().default(4),
+  opponent: text("opponent").notNull().default("ai"),
+  accessCode: text("access_code"),
+  stateJson: text("state_json").notNull().default("{}"),
+  status: text("status").notNull().default("in_progress"), // in_progress | completed
+  startedAt: text("started_at").notNull(),
+  completedAt: text("completed_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  statusIdx: index("zrd_sessions_status_idx").on(table.status),
+  createdIdx: index("zrd_sessions_created_idx").on(table.createdAt),
+  accessCodeIdx: index("zrd_sessions_access_code_idx").on(table.accessCode),
+}));
+
+export const zrdTurns = sqliteTable("zrd_turns", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sessionId: integer("session_id").notNull().references(() => zrdSessions.id, { onDelete: "cascade" }),
+  seq: integer("seq").notNull(),
+  quarter: integer("quarter").notNull(),
+  intentJson: text("intent_json").notNull().default("{}"),
+  logType: text("log_type").notNull().default(""),
+  detail: text("detail").notNull().default(""),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  sessionIdx: index("zrd_turns_session_idx").on(table.sessionId),
+}));
+
+export const zrdResults = sqliteTable("zrd_results", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sessionId: integer("session_id").notNull().references(() => zrdSessions.id, { onDelete: "cascade" }),
+  tr: integer("tr").notNull().default(0),
+  aiTr: integer("ai_tr").notNull().default(0),
+  winner: text("winner").notNull().default("player"), // player | ai | draw
+  finalMetricsJson: text("final_metrics_json").notNull().default("{}"),
+  competenciesJson: text("competencies_json").notNull().default("{}"),
+  outcomeJson: text("outcome_json").notNull().default("{}"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  sessionIdx: uniqueIndex("zrd_results_session_idx").on(table.sessionId),
+}));
+
+// ── ЗРД v2: матч на 4 места (мультистол) ────────────────────────────────────
+// Состояние матча целиком в state_json (MatchState); state_version — для поллинга клиентов.
+export const zrdMatches = sqliteTable("zrd_matches", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  configJson: text("config_json").notNull().default("{}"),
+  stateJson: text("state_json").notNull().default("{}"),
+  stateVersion: integer("state_version").notNull().default(0),
+  status: text("status").notNull().default("in_progress"), // in_progress | completed
+  paused: integer("paused").notNull().default(0),
+  tickDeadlineAt: text("tick_deadline_at"),
+  evaluatorAccountId: integer("evaluator_account_id"),
+  evaluatorName: text("evaluator_name").notNull().default(""),
+  startedAt: text("started_at").notNull(),
+  completedAt: text("completed_at"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  statusIdx: index("zrd_matches_status_idx").on(table.status),
+  createdIdx: index("zrd_matches_created_idx").on(table.createdAt),
+}));
+
+export const zrdMatchSeats = sqliteTable("zrd_match_seats", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  matchId: integer("match_id").notNull().references(() => zrdMatches.id, { onDelete: "cascade" }),
+  seatIdx: integer("seat_idx").notNull(),
+  rrsId: text("rrs_id").notNull(),
+  controllerKind: text("controller_kind").notNull().default("off"), // human | ai | off
+  aiLevel: integer("ai_level"),
+  participantName: text("participant_name"),
+  tokenHash: text("token_hash"),
+  accessCode: text("access_code"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  matchIdx: index("zrd_match_seats_match_idx").on(table.matchId),
+  accessCodeIdx: uniqueIndex("zrd_match_seats_access_code_idx").on(table.accessCode),
+  seatUniqueIdx: uniqueIndex("zrd_match_seats_seat_idx").on(table.matchId, table.seatIdx),
+}));
+
+export const zrdMatchTurns = sqliteTable("zrd_match_turns", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  matchId: integer("match_id").notNull().references(() => zrdMatches.id, { onDelete: "cascade" }),
+  seatIdx: integer("seat_idx").notNull(),
+  seq: integer("seq").notNull(),
+  tick: integer("tick").notNull(),
+  intentJson: text("intent_json").notNull().default("{}"),
+  logType: text("log_type").notNull().default(""),
+  detail: text("detail").notNull().default(""),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  matchIdx: index("zrd_match_turns_match_idx").on(table.matchId),
+}));
+
+export const zrdMatchResults = sqliteTable("zrd_match_results", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  matchId: integer("match_id").notNull().references(() => zrdMatches.id, { onDelete: "cascade" }),
+  seatIdx: integer("seat_idx").notNull(),
+  tr: integer("tr").notNull().default(0),
+  isWinner: integer("is_winner").notNull().default(0),
+  kpiJson: text("kpi_json").notNull().default("{}"),
+  competenciesJson: text("competencies_json").notNull().default("{}"),
+  outcomeJson: text("outcome_json").notNull().default("{}"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  matchSeatIdx: uniqueIndex("zrd_match_results_match_seat_idx").on(table.matchId, table.seatIdx),
+}));
+
+// ── ЗРД: правки инструкции администратором (дополнения к секциям /zrd/manual) ─
+export const zrdManualNotes = sqliteTable("zrd_manual_notes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  sectionId: text("section_id").notNull(),
+  bodyMd: text("body_md").notNull().default(""),
+  updatedBy: text("updated_by").notNull().default(""),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  sectionIdx: uniqueIndex("zrd_manual_notes_section_idx").on(table.sectionId),
+}));
+export type ZrdManualNoteRow = typeof zrdManualNotes.$inferSelect;
+
+export const insertZrdMatchSchema = createInsertSchema(zrdMatches).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertZrdMatchSeatSchema = createInsertSchema(zrdMatchSeats).omit({ id: true, createdAt: true });
+export const insertZrdMatchTurnSchema = createInsertSchema(zrdMatchTurns).omit({ id: true, createdAt: true });
+export const insertZrdMatchResultSchema = createInsertSchema(zrdMatchResults).omit({ id: true, createdAt: true });
+
+export type ZrdMatchRow = typeof zrdMatches.$inferSelect;
+export type ZrdMatchSeatRow = typeof zrdMatchSeats.$inferSelect;
+export type ZrdMatchTurnRow = typeof zrdMatchTurns.$inferSelect;
+export type ZrdMatchResultRow = typeof zrdMatchResults.$inferSelect;
+export type InsertZrdMatch = z.infer<typeof insertZrdMatchSchema>;
+export type InsertZrdMatchSeat = z.infer<typeof insertZrdMatchSeatSchema>;
+export type InsertZrdMatchTurn = z.infer<typeof insertZrdMatchTurnSchema>;
+export type InsertZrdMatchResult = z.infer<typeof insertZrdMatchResultSchema>;
+
+export const insertZrdSessionSchema = createInsertSchema(zrdSessions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertZrdTurnSchema = createInsertSchema(zrdTurns).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertZrdResultSchema = createInsertSchema(zrdResults).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertSimulationSessionSchema = createInsertSchema(simulationSessions).omit({
   id: true,
   createdAt: true,
@@ -393,3 +586,10 @@ export type InsertSessionAnswer = z.infer<typeof insertSessionAnswerSchema>;
 export type InsertSessionMetrics = z.infer<typeof insertSessionMetricsSchema>;
 export type InsertSessionResult = z.infer<typeof insertSessionResultSchema>;
 export type StaffLoginPayload = z.infer<typeof staffLoginSchema>;
+
+export type ZrdSessionRow = typeof zrdSessions.$inferSelect;
+export type ZrdTurnRow = typeof zrdTurns.$inferSelect;
+export type ZrdResultRow = typeof zrdResults.$inferSelect;
+export type InsertZrdSession = z.infer<typeof insertZrdSessionSchema>;
+export type InsertZrdTurn = z.infer<typeof insertZrdTurnSchema>;
+export type InsertZrdResult = z.infer<typeof insertZrdResultSchema>;

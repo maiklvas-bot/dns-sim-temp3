@@ -3,6 +3,8 @@ export interface CompetencyDefinition {
   name: string;
   description: string;
   category: "basic" | "advanced" | "leadership";
+  facetOfCompetencyId?: string | null;
+  isStopFactor?: boolean;
 }
 
 export interface MetricEffects {
@@ -69,6 +71,84 @@ export interface CaseTrigger {
 
 export type ZoneType = "торговый_зал" | "склад" | "выдача" | "начальство";
 
+export interface CaseDataPoint {
+  label: string;
+  costToRequest?: string | null;
+}
+
+export interface AcceptedIssue {
+  check: "bars_conformance" | "antigaming" | "diagnostics" | "effect_reality";
+  cycleId?: string | null;
+  optionId?: string | null;
+  /** Компетенция замечания — различает несколько замечаний у одного варианта. */
+  competencyId?: string | null;
+  /** Почему автор считает, что в этом кейсе так и задумано. Обязательно. */
+  reason: string;
+  /**
+   * Формулировка замечания на момент принятия — справочно, в сопоставлении не участвует.
+   *
+   * Сопоставление идёт по (check, cycleId, optionId) и переживает правки варианта:
+   * привязка к тексту сообщения сбрасывала бы принятие от любой мелочи, потому что
+   * сообщения содержат изменчивые числа (баллы, длины строк). Чтобы принятие при этом
+   * не прикрывало молча другой дефект, исходная формулировка сохраняется и
+   * показывается рядом с обоснованием — расхождение видно глазом.
+   */
+  acceptedForMessage?: string | null;
+}
+
+/**
+ * Материал справочника, добавленный человеком.
+ *
+ * Заголовок, краткое описание, содержание и скриншот обязательны: заметка без
+ * них не объясняет ничего и только засоряет справочник. Требование проверяется
+ * и в форме, и на сервере — форму можно обойти.
+ */
+export interface WikiNote {
+  id: string;
+  /** Раздел справочника, к которому относится материал. */
+  sectionId: string;
+  title: string;
+  summary: string;
+  body: string;
+  imageAssetId: string;
+  imageUrl?: string | null;
+  author?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Поля материала, которые обязан заполнить автор. */
+export const WIKI_NOTE_REQUIRED_FIELDS = ["title", "summary", "body", "imageAssetId"] as const;
+
+export type CaseQaStatus =
+  | "draft"
+  | "auto_check_failed"
+  | "methodical_review"
+  | "ready_prototype"
+  | "ready_launch";
+
+/**
+ * Одна правка в кейсе-исправлении: что было в оригинале, что стало и почему так вернее.
+ *
+ * Журнал существует ради доверия к оценке. Управляющие отвергали симуляцию не
+ * потому, что веса были неверны, а потому, что происхождение баллов было
+ * непрозрачно. Кейс-исправление обязан показывать свою правку целиком: не
+ * «система нормализовала баллы», а конкретно — какой вариант, какое было
+ * значение, какое стало и какое методическое правило этого требует.
+ */
+export interface CaseCorrection {
+  /** Какая автопроверка этого требовала. `content` — правка смысла, её ни одна проверка не ловит. */
+  check: "bars_conformance" | "antigaming" | "diagnostics" | "effect_reality" | "content";
+  /** Где именно, человеческим языком: «Цикл 2 · вариант 3» или «Паспорт кейса». */
+  scope: string;
+  /** Как было в оригинале. */
+  was: string;
+  /** Как стало в исправленном. */
+  became: string;
+  /** Почему так вернее — методическое основание, а не пересказ действия. */
+  why: string;
+}
+
 export interface SimCase {
   id: string;
   title: string;
@@ -78,6 +158,19 @@ export interface SimCase {
   trigger: CaseTrigger;
   zones_affected: ZoneType[];
   cycles: CaseCycle[];
+  businessProblem?: string | null;
+  hiddenCause?: string | null;
+  dataPoints?: CaseDataPoint[];
+  falseTrails?: string[];
+  qaStatus?: CaseQaStatus;
+  acceptedIssues?: AcceptedIssue[];
+  /**
+   * Если кейс — исправленный дубль, здесь id оригинала. Оригинал остаётся жить
+   * своей жизнью: дубль ничего в нём не меняет и не отменяет.
+   */
+  correctionOfCaseId?: string | null;
+  /** Журнал правок относительно оригинала. Пуст у обычных кейсов. */
+  corrections?: CaseCorrection[];
   imageAssetId: string | null;
   imageUrl: string | null;
   audioAssetId: string | null;

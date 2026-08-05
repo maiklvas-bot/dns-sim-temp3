@@ -1,12 +1,45 @@
-import { useEffect, useState } from "react";
 import type { ChatInfo, CompetencyDefinition } from "@shared/simulation-content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pause, Play } from "lucide-react";
-import { CaseMediaPanel, StructuredCyclesEditor, StructuredOptionsEditor } from "../cases/CaseEditors";
-import { getPreviewAudioUrl, CASE_SIGNAL_TYPE_OPTIONS, STORE_ZONE_OPTIONS } from "../cases/case-editor-support";
-import { CompetencyRoleSelector, Field, FieldArea, MultiSelectField, SelectField, SuggestField } from "./AdminFields";
+import { StructuredOptionsEditor } from "../cases/CaseEditors";
+import { getPreviewAudioUrl } from "../cases/case-editor-support";
+import { Field, FieldArea, SelectField, SuggestField } from "./AdminFields";
+
+/**
+ * Секция редактора сигнала — та же анатомия, что у секций мастера кейса:
+ * рамка, заголовок, поясняющая строка, содержимое. Один вид на оба редактора,
+ * чтобы каналы не выглядели отдельным продуктом рядом с кейсами.
+ */
+function EditorSection({
+  title,
+  hint,
+  badge,
+  children,
+}: {
+  title: string;
+  hint?: string;
+  badge?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h4 className="text-[13px] font-bold text-white">{title}</h4>
+          {hint && <p className="mt-0.5 text-[11.5px] leading-relaxed text-[#8aa2c4]">{hint}</p>}
+        </div>
+        {badge && (
+          <span className="shrink-0 rounded-md border border-[#3b5878] bg-[#0d1522]/60 px-2 py-0.5 text-[10.5px] font-semibold text-[#8ec5ff]">
+            {badge}
+          </span>
+        )}
+      </div>
+      <div className="mt-3 space-y-3">{children}</div>
+    </section>
+  );
+}
 
 export function EntityEditor({
   title,
@@ -63,34 +96,22 @@ export function EntityEditor({
     value: competency.id,
     label: competency.name,
   }));
-  const [caseEditorSection, setCaseEditorSection] = useState<"details" | "cycles">("details");
-
-  useEffect(() => {
-    if (mode === "case" && typeof selectedCycleIndex === "number") {
-      setCaseEditorSection("cycles");
-    }
-  }, [entity.id, mode, selectedCycleIndex]);
-
   const update = (patch: Record<string, any>) => onChange({ ...entity, ...patch });
   const updateTiming = (patch: Record<string, number | null>) => {
     update({
       timing: {
         ...entity.timing,
-        ...(mode === "case" ? {} : { arrivalMinute: entity.arrivalMinute }),
+        arrivalMinute: entity.arrivalMinute,
         ...patch,
       },
     });
   };
-  const timingTitle = mode === "case"
-    ? "Тайминг основного кейса"
-    : mode === "email"
+  const timingTitle = mode === "email"
     ? "Тайминг письма"
     : mode === "messenger"
     ? "Тайминг сообщения"
     : "Тайминг видеозвонка";
-  const timingHelper = mode === "case"
-    ? "Регулирует паузы между основными событиями, срок решения и повторное напоминание участнику."
-    : "Регулирует минуту появления канального события, срок решения и повторное напоминание участнику.";
+  const timingHelper = "Регулирует минуту появления канального события, срок решения и повторное напоминание участнику.";
   const audioTitle = mode === "email"
     ? "Аудио письма"
     : mode === "messenger"
@@ -99,52 +120,115 @@ export function EntityEditor({
     ? "Озвучка видео"
     : "Озвучка кейса";
 
+  const channelName = mode === "email" ? "Почта" : mode === "messenger" ? "Мессенджер" : "Видео звонок";
+
   return (
     <div className="space-y-4">
       <div className="text-sm font-semibold text-white">{title}</div>
-      <Field label="Порядок показа" value={entity.sortOrder} onChange={(value) => update({ sortOrder: Number(value) })} />
-      <div className="rounded-2xl border border-[#FF6B00]/35 bg-gradient-to-br from-[#FF6B00]/14 via-[#1a2537]/88 to-[#101826]/92 p-4 shadow-[0_18px_45px_rgba(255,107,0,0.12)]">
-        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#ffb27a]">Настройки хода симуляции</div>
-            <div className="mt-1 text-base font-bold text-white">{timingTitle}</div>
-            <div className="mt-1 max-w-2xl text-xs leading-relaxed text-[#b8c7df]">{timingHelper}</div>
-          </div>
-          <div className="rounded-full border border-[#FF6B00]/35 bg-[#FF6B00]/12 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
-            Видно сразу
-          </div>
-        </div>
+
+      {/* Сигнал канала разбирается теми же секциями, что и кейс: замысел, что
+          получит участник, варианты ответа, ход симуляции. Раньше поля шли
+          сплошным списком, а тайминг выделялся отдельной градиентной плашкой —
+          рядом с мастером кейса это читалось как другой продукт. */}
+      <EditorSection
+        title="Замысел сигнала"
+        hint="Кто пишет, о чём и какую компетенцию проверяет это событие."
+      >
+        {mode === "email" && (
+          <>
+            <Field label="Тема" value={entity.subject} onChange={(value) => update({ subject: value })} />
+            <SuggestField label="Отправитель" value={entity.from} onChange={(value) => update({ from: value })} options={emailSenderOptions} />
+            <div className="grid gap-4 md:grid-cols-2">
+              <SuggestField label="Подразделение" value={entity.department} onChange={(value) => update({ department: value })} options={emailDepartmentOptions} />
+              <Field label="Цвет отдела" value={entity.departmentColor} onChange={(value) => update({ departmentColor: value })} />
+            </div>
+          </>
+        )}
+        {mode === "messenger" && (
+          <>
+            <div className="grid gap-4 md:grid-cols-3">
+              <SuggestField label="Отправитель" value={entity.senderName} onChange={(value) => update({ senderName: value })} options={messengerSenderOptions} />
+              <SuggestField label="Роль" value={entity.senderRole} onChange={(value) => update({ senderRole: value })} options={messengerRoleOptions} />
+              <Field label="Аватар" value={entity.senderAvatar} onChange={(value) => update({ senderAvatar: value })} />
+            </div>
+            <div>
+              <Label className="mb-1 block text-xs text-[#8890a8]">Чат</Label>
+              <select value={entity.chatId} onChange={(e) => update({ chatId: e.target.value })} className="w-full rounded-md border border-[#2a3a4e] bg-[#141c2b] px-3 py-2 text-white">
+                <option value="">Выберите чат</option>
+                {chats.map((chat) => <option key={chat.id} value={chat.id}>{chat.name}</option>)}
+              </select>
+            </div>
+          </>
+        )}
+        {mode === "video" && (
+          <>
+            <Field label="Заголовок" value={entity.title} onChange={(value) => update({ title: value })} />
+            <div className="grid gap-4 md:grid-cols-3">
+              <SuggestField label="Отправитель" value={entity.sender} onChange={(value) => update({ sender: value })} options={videoSenderOptions} />
+              <SuggestField label="Роль" value={entity.role} onChange={(value) => update({ role: value })} options={videoRoleOptions} />
+              <Field label="Аватар" value={entity.senderAvatar} onChange={(value) => update({ senderAvatar: value })} />
+            </div>
+            <Field label="Длительность" value={entity.duration} onChange={(value) => update({ duration: value })} />
+          </>
+        )}
+        <SelectField
+          label="Компетенция"
+          value={entity.primaryCompetency}
+          onChange={(value) => update({ primaryCompetency: value })}
+          options={competencyOptions}
+        />
+      </EditorSection>
+
+      <EditorSection
+        title="Что увидит участник"
+        hint="Текст сигнала в том виде, в каком он придёт на экран."
+      >
+        {mode === "email" && (
+          <>
+            <FieldArea label="Короткое превью письма" value={entity.preview} onChange={(value) => update({ preview: value })} />
+            <FieldArea label="Тело письма" value={entity.body} onChange={(value) => update({ body: value })} />
+          </>
+        )}
+        {mode === "messenger" && (
+          <FieldArea label="Сообщение" value={entity.message} onChange={(value) => update({ message: value })} />
+        )}
+        {mode === "video" && (
+          <FieldArea label="Ситуация" value={entity.situation} onChange={(value) => update({ situation: value })} />
+        )}
+      </EditorSection>
+
+      <EditorSection
+        title="Решения"
+        hint="Варианты ответа и их вклад в профиль компетенций — та же механика, что в кейсе."
+      >
+        <StructuredOptionsEditor
+          title="Варианты ответа"
+          options={entity.options || []}
+          competencies={competencies}
+          onChange={(options) => update({ options })}
+        />
+      </EditorSection>
+
+      <EditorSection
+        title={timingTitle}
+        hint={timingHelper}
+        badge={`Канал: ${channelName}`}
+      >
         <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-4">
-          {mode !== "case" && (
-            <Field
-              label="Минута прихода"
-              value={entity.timing?.arrivalMinute ?? entity.arrivalMinute ?? ""}
-              onChange={(value) => {
-                const nextValue = value ? Number(value) : 0;
-                update({
-                  arrivalMinute: nextValue,
-                  timing: {
-                    ...entity.timing,
-                    arrivalMinute: value ? nextValue : null,
-                  },
-                });
-              }}
-            />
-          )}
-          {mode === "case" && (
-            <>
-              <Field
-                label="Мин. интервал, сек"
-                value={entity.timing?.minIntervalSeconds ?? ""}
-                onChange={(value) => updateTiming({ minIntervalSeconds: value ? Number(value) : null })}
-              />
-              <Field
-                label="Макс. интервал, сек"
-                value={entity.timing?.maxIntervalSeconds ?? ""}
-                onChange={(value) => updateTiming({ maxIntervalSeconds: value ? Number(value) : null })}
-              />
-            </>
-          )}
+          <Field
+            label="Минута прихода"
+            value={entity.timing?.arrivalMinute ?? entity.arrivalMinute ?? ""}
+            onChange={(value) => {
+              const nextValue = value ? Number(value) : 0;
+              update({
+                arrivalMinute: nextValue,
+                timing: {
+                  ...entity.timing,
+                  arrivalMinute: value ? nextValue : null,
+                },
+              });
+            }}
+          />
           <Field
             label="Срок решения, сек"
             value={entity.timing?.decisionDeadlineSeconds ?? ""}
@@ -155,163 +239,14 @@ export function EntityEditor({
             value={entity.timing?.reminderIntervalSeconds ?? (mode === "messenger" ? 5 : 180)}
             onChange={(value) => updateTiming({ reminderIntervalSeconds: value ? Number(value) : null })}
           />
-          {mode !== "case" && (
-            <div className="rounded-xl border border-[#30445f] bg-[#101826]/75 px-3 py-2">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8ec5ff]">Канал</div>
-              <div className="mt-1 text-sm font-semibold text-white">
-                {mode === "email" ? "Почта" : mode === "messenger" ? "Мессенджер" : "Видео звонок"}
-              </div>
-              <div className="mt-1 text-[11px] leading-relaxed text-[#8aa2c4]">Эти значения применяются без изменения текста и вариантов ответа.</div>
-            </div>
-          )}
+          <Field label="Порядок показа" value={entity.sortOrder} onChange={(value) => update({ sortOrder: Number(value) })} />
         </div>
-      </div>
-      {mode === "case" && (
-        <div className="flex flex-wrap gap-2 rounded-xl border border-[#243244] bg-[#101826]/60 p-2">
-          {([
-            ["details", "Карточка кейса"],
-            ["cycles", "Циклы и медиа"],
-          ] as const).map(([section, label]) => (
-            <button
-              key={section}
-              type="button"
-              onClick={() => setCaseEditorSection(section)}
-              className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
-                caseEditorSection === section
-                  ? "border-[#FF6B00] bg-[#FF6B00]/15 text-white"
-                  : "border-[#2a3a4e] bg-[#0d1522]/70 text-[#9aabc6] hover:border-[#3b5878]"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="text-[11px] leading-relaxed text-[#8aa2c4]">
+          Эти значения применяются без изменения текста и вариантов ответа.
         </div>
-      )}
-      {mode === "case" && (
-        <>
-          {caseEditorSection === "details" && (
-            <>
-              <CaseMediaPanel
-                title="Медиа кейса по умолчанию"
-                helper="Эти файлы используются как fallback, если у конкретного цикла не выбраны свои изображение или озвучка."
-                target={entity}
-                assets={assets}
-                onChange={(patch) => update(patch)}
-                onUploadAsset={onUploadAsset}
-                onTogglePreviewAudio={onTogglePreviewAudio}
-                activePreviewKey={activePreviewKey}
-                previewKey={`case-default:${entity.id}`}
-              />
-              <Field label="Название" value={entity.title} onChange={(value) => update({ title: value })} />
-              <FieldArea label="Описание" value={entity.description} onChange={(value) => update({ description: value })} />
-              <div className="grid gap-4 md:grid-cols-3">
-                <SuggestField label="Источник сигнала" value={entity.trigger.source} onChange={(value) => update({ trigger: { ...entity.trigger, source: value } })} options={caseSourceOptions} />
-                <SelectField label="Тип сигнала" value={entity.trigger.type} onChange={(value) => update({ trigger: { ...entity.trigger, type: value } })} options={[...CASE_SIGNAL_TYPE_OPTIONS]} />
-                <MultiSelectField label="Зоны магазина" values={entity.zones_affected || []} onChange={(values) => update({ zones_affected: values })} options={[...STORE_ZONE_OPTIONS]} />
-              </div>
-              <FieldArea label="Текст сигнала" value={entity.trigger.text} onChange={(value) => update({ trigger: { ...entity.trigger, text: value } })} />
-              <CompetencyRoleSelector
-                primaryValues={entity.primaryCompetencies || []}
-                secondaryValues={entity.secondaryCompetencies || []}
-                onChange={(next) => update(next)}
-                competencies={competencies}
-              />
-            </>
-          )}
-          {caseEditorSection === "cycles" && (
-            <StructuredCyclesEditor
-              cycles={entity.cycles || []}
-              competencies={competencies}
-              assets={assets}
-              onUploadAsset={onUploadAsset}
-              onTogglePreviewAudio={onTogglePreviewAudio}
-              activePreviewKey={activePreviewKey}
-              selectedCycleIndex={selectedCycleIndex}
-              onSelectedCycleIndexChange={onSelectedCycleIndexChange}
-              onChange={(cycles) => update({ cycles })}
-            />
-          )}
-        </>
-      )}
-      {mode === "email" && (
-        <>
-          <Field label="Тема" value={entity.subject} onChange={(value) => update({ subject: value })} />
-          <SuggestField label="Отправитель" value={entity.from} onChange={(value) => update({ from: value })} options={emailSenderOptions} />
-          <div className="grid gap-4 md:grid-cols-2">
-            <SuggestField label="Подразделение" value={entity.department} onChange={(value) => update({ department: value })} options={emailDepartmentOptions} />
-            <Field label="Цвет отдела" value={entity.departmentColor} onChange={(value) => update({ departmentColor: value })} />
-          </div>
-          <SelectField
-            label="Компетенция"
-            value={entity.primaryCompetency}
-            onChange={(value) => update({ primaryCompetency: value })}
-            options={competencyOptions}
-          />
-          <FieldArea label="Короткое превью письма" value={entity.preview} onChange={(value) => update({ preview: value })} />
-          <FieldArea label="Тело письма" value={entity.body} onChange={(value) => update({ body: value })} />
-          <StructuredOptionsEditor
-            title="Варианты ответа"
-            options={entity.options || []}
-            competencies={competencies}
-            onChange={(options) => update({ options })}
-          />
-        </>
-      )}
-      {mode === "messenger" && (
-        <>
-          <div className="grid gap-4 md:grid-cols-3">
-            <SuggestField label="Отправитель" value={entity.senderName} onChange={(value) => update({ senderName: value })} options={messengerSenderOptions} />
-            <SuggestField label="Роль" value={entity.senderRole} onChange={(value) => update({ senderRole: value })} options={messengerRoleOptions} />
-            <Field label="Аватар" value={entity.senderAvatar} onChange={(value) => update({ senderAvatar: value })} />
-          </div>
-          <Label className="text-xs text-[#8890a8] block">Чат</Label>
-          <select value={entity.chatId} onChange={(e) => update({ chatId: e.target.value })} className="w-full rounded-md border border-[#2a3a4e] bg-[#141c2b] px-3 py-2 text-white">
-            <option value="">Выберите чат</option>
-            {chats.map((chat) => <option key={chat.id} value={chat.id}>{chat.name}</option>)}
-          </select>
-          <SelectField
-            label="Компетенция"
-            value={entity.primaryCompetency}
-            onChange={(value) => update({ primaryCompetency: value })}
-            options={competencyOptions}
-          />
-          <FieldArea label="Сообщение" value={entity.message} onChange={(value) => update({ message: value })} />
-          <StructuredOptionsEditor
-            title="Варианты ответа"
-            options={entity.options || []}
-            competencies={competencies}
-            onChange={(options) => update({ options })}
-          />
-        </>
-      )}
-      {mode === "video" && (
-        <>
-          <Field label="Заголовок" value={entity.title} onChange={(value) => update({ title: value })} />
-          <div className="grid gap-4 md:grid-cols-3">
-            <SuggestField label="Отправитель" value={entity.sender} onChange={(value) => update({ sender: value })} options={videoSenderOptions} />
-            <SuggestField label="Роль" value={entity.role} onChange={(value) => update({ role: value })} options={videoRoleOptions} />
-            <Field label="Аватар" value={entity.senderAvatar} onChange={(value) => update({ senderAvatar: value })} />
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Длительность" value={entity.duration} onChange={(value) => update({ duration: value })} />
-            <SelectField
-              label="Компетенция"
-              value={entity.primaryCompetency}
-              onChange={(value) => update({ primaryCompetency: value })}
-              options={competencyOptions}
-            />
-          </div>
-          <FieldArea label="Ситуация" value={entity.situation} onChange={(value) => update({ situation: value })} />
-          <StructuredOptionsEditor
-            title="Варианты ответа"
-            options={entity.options || []}
-            competencies={competencies}
-            onChange={(options) => update({ options })}
-          />
-        </>
-      )}
+      </EditorSection>
 
-      {mode === "case" ? null : mode === "video" ? (
+      {mode === "video" ? (
         <div className="rounded-lg border border-[#2a3a4e] bg-[#141c2b]/40 p-4">
           <div className="text-xs font-semibold text-[#8890a8] mb-3 uppercase tracking-wider">Видеофайл</div>
           <div className="grid gap-3 sm:grid-cols-[1fr,auto]">

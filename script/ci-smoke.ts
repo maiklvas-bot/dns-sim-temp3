@@ -274,6 +274,134 @@ async function runAdminStorageAcceptanceChecks() {
     assertCondition(persistedCycle?.priority === "critical", "Cycle priority must survive persistence");
     assertCondition(persistedCycle?.criticality === "risk", "Cycle criticality must survive persistence");
 
+    const { validateCase, shouldBlockCaseSave } = await import("../shared/case-validation");
+    const incompleteDossierCase = {
+      id: "TASK-030-DOSSIER-INCOMPLETE",
+      title: "Dossier gate acceptance",
+      description: "Checks the 4 auto-checks gate",
+      primaryCompetencies: [],
+      secondaryCompetencies: [],
+      trigger: { type: "message" as const, source: "Acceptance", text: "Start" },
+      zones_affected: [],
+      cycles: [{
+        id: "TASK-030-DOSSIER-INCOMPLETE-C1",
+        cycle: 1,
+        situation: "Situation",
+        signal: { type: "message" as const, content: "Signal" },
+        options: [
+          { id: "OPT-1", level: 1, text: "Option one", score: 1, effects: { queue: 0, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 }, competency_scores: {} },
+        ],
+      }],
+      imageAssetId: null,
+      imageUrl: null,
+      audioAssetId: null,
+      audioUrl: null,
+      sortOrder: 2,
+      isActive: true,
+    };
+    const gateIssues = validateCase(incompleteDossierCase as Parameters<typeof validateCase>[0]);
+    assertCondition(
+      gateIssues.some((issue) => issue.check === "diagnostics") && gateIssues.some((issue) => issue.check === "effect_reality"),
+      "Case missing dossier and real effects must fail diagnostics and effect_reality checks",
+    );
+
+    contentStorage.saveCase({
+      id: "TASK-030-DOSSIER-COMPLETE",
+      title: "Dossier persistence acceptance",
+      description: "Checks case dossier persists end to end",
+      primaryCompetencies: [],
+      secondaryCompetencies: [],
+      trigger: { type: "message", source: "Acceptance", text: "Start" },
+      zones_affected: [],
+      cycles: [{
+        id: "TASK-030-DOSSIER-COMPLETE-C1",
+        cycle: 1,
+        situation: "Situation",
+        signal: { type: "message", content: "Signal" },
+        options: [
+          { id: "OPT-2", level: 1, text: "Option one", score: 1, effects: { queue: 5, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 }, competency_scores: { planning: 1 } },
+        ],
+      }],
+      businessProblem: "Test business problem",
+      hiddenCause: "Root cause",
+      dataPoints: [{ label: "Report", costToRequest: null }],
+      falseTrails: ["Distraction"],
+      qaStatus: "ready_prototype",
+      imageAssetId: null,
+      audioAssetId: null,
+      sortOrder: 3,
+      isActive: true,
+    });
+    const persistedDossierCase = contentStorage.getPublicContent(true).cases.find((item) => item.id === "TASK-030-DOSSIER-COMPLETE");
+    assertCondition(persistedDossierCase?.hiddenCause === "Root cause", "Hidden cause must survive persistence");
+    assertCondition(persistedDossierCase?.dataPoints?.[0]?.label === "Report", "Data point content must survive persistence");
+    assertCondition(persistedDossierCase?.falseTrails?.[0] === "Distraction", "False trail content must survive persistence");
+    assertCondition(persistedDossierCase?.qaStatus === "ready_prototype", "QA status must survive persistence");
+
+    // Осознанно принятое замечание должно пережить сохранение: без записи в saveCase
+    // обоснование терялось при перезагрузке, и замечание снова блокировало кейс.
+    contentStorage.saveCase({
+      ...(persistedDossierCase as Parameters<typeof contentStorage.saveCase>[0]),
+      acceptedIssues: [
+        {
+          check: "effect_reality",
+          cycleId: "TASK-030-DOSSIER-COMPLETE-C1",
+          optionId: "OPT-2",
+          reason: "В этом варианте бездействие и должно быть без последствий",
+          acceptedForMessage: "Вариант \"OPT-2\": все эффекты на состояние равны нулю",
+        },
+      ],
+    });
+    const persistedAccepted = contentStorage
+      .getPublicContent(true)
+      .cases.find((item) => item.id === "TASK-030-DOSSIER-COMPLETE");
+    assertCondition(
+      persistedAccepted?.acceptedIssues?.length === 1,
+      "Accepted issue must survive persistence",
+    );
+    assertCondition(
+      persistedAccepted?.acceptedIssues?.[0]?.reason?.startsWith("В этом варианте"),
+      "Accepted issue reason must survive persistence — without it the author's justification is lost",
+    );
+    assertCondition(
+      persistedAccepted?.acceptedIssues?.[0]?.optionId === "OPT-2",
+      "Accepted issue must keep its option binding — otherwise acceptance stops being addressable",
+    );
+
+    // Контракт гейта на уровне обработчика: без этой проверки удаление гейта из routes.ts
+    // не уронило бы ни один тест — валидация и сохранение покрыты по отдельности.
+    const gateHandler = (body: Parameters<typeof validateCase>[0] & { qaStatus?: string }) => {
+      const validationIssues = validateCase(body);
+      if (shouldBlockCaseSave(body.qaStatus, validationIssues)) {
+        return { status: 400, payload: { error: "case_validation_failed", issues: validationIssues } };
+      }
+      return { status: 200, payload: { id: body.id, validationIssues } };
+    };
+
+    const defectiveReadyCase = { ...incompleteDossierCase, qaStatus: "ready_launch" } as Parameters<typeof gateHandler>[0];
+    const blocked = gateHandler(defectiveReadyCase);
+    assertCondition(blocked.status === 400, "Gate must reject a defective case marked ready for launch");
+    assertCondition(
+      (blocked.payload as { error?: string }).error === "case_validation_failed",
+      "Gate rejection must name the validation failure",
+    );
+
+    const defectiveDraft = { ...incompleteDossierCase, qaStatus: "draft" } as Parameters<typeof gateHandler>[0];
+    const allowed = gateHandler(defectiveDraft);
+    assertCondition(allowed.status === 200, "Gate must let a defective draft through");
+    assertCondition(
+      Array.isArray((allowed.payload as { validationIssues?: unknown }).validationIssues)
+        && ((allowed.payload as { validationIssues: unknown[] }).validationIssues.length > 0),
+      "A saved draft must carry its validation issues back to the author",
+    );
+
+    const legacyClientCase = { ...incompleteDossierCase } as Parameters<typeof gateHandler>[0];
+    delete legacyClientCase.qaStatus;
+    assertCondition(
+      gateHandler(legacyClientCase).status === 200,
+      "Existing admin clients that never send qaStatus must keep working",
+    );
+
     const auditRequest = {
       session: {
         staff: {
@@ -1131,6 +1259,16 @@ assertSchemaRejects(
   editableSimCaseSchema,
   { ...validCasePayload, cycles: "not-an-array" },
   "Editable case schema must reject malformed cycles",
+);
+assertSchemaAccepts(
+  editableSimCaseSchema,
+  { ...validCasePayload, hiddenCause: "Root cause", dataPoints: [{ label: "Report" }], falseTrails: ["Distraction"], qaStatus: "methodical_review" },
+  "Editable case schema must accept a filled case dossier",
+);
+assertSchemaRejects(
+  editableSimCaseSchema,
+  { ...validCasePayload, qaStatus: "not-a-real-status" },
+  "Editable case schema must reject unknown QA statuses",
 );
 
 assertSchemaRejects(

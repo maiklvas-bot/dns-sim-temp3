@@ -1,0 +1,23 @@
+{
+  "hooks": {
+    "Stop": [{"matcher":"","hooks":[{"type":"command","command":"powershell.exe -Command \"[Console]::Beep(880,300)\" 2>/dev/null || true"}]}],
+    "Notification": [{"matcher":"","hooks":[{"type":"command","command":"powershell.exe -Command \"[Console]::Beep(440,200)\" 2>/dev/null || true"}]}]
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "ask": [
+      "Bash(rm *)",
+      "Bash(rmdir *)",
+      "Bash(del *)",
+      "Bash(Remove-Item *)"
+    ],
+    "deny": [
+      "Bash(rm -rf /*)",
+      "Bash(*curl* export *)",
+      "Bash(cat .env)",
+      "Bash(cat .env.local)",
+      "Bash(*wget* $*)",
+      "Bash(chmod 777 *)"
+    ]
+  }
+}

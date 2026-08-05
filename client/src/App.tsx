@@ -18,6 +18,9 @@ const ResultsPage = lazy(() => import("@/pages/results"));
 const StaffLoginPage = lazy(() => import("@/pages/staff-login"));
 const AdminPage = lazy(() => import("@/pages/admin"));
 const EvaluatorPage = lazy(() => import("@/pages/evaluator"));
+const ZrdPage = lazy(() => import("@/pages/zrd"));
+const ZrdManualPage = lazy(() => import("@/pages/zrd-manual"));
+const DesignSystemPage = lazy(() => import("@/pages/design-system"));
 
 function AppRouter() {
   return (
@@ -29,8 +32,11 @@ function AppRouter() {
       <Route path="/evaluator" component={EvaluatorPage} />
       <Route path="/admin" component={AdminPage} />
       <Route path="/simulation" component={SimulationPage} />
+      <Route path="/zrd/manual" component={ZrdManualPage} />
+      <Route path="/zrd" component={ZrdPage} />
       <Route path="/results/:sessionId" component={ResultsPage} />
       <Route path="/results" component={ResultsPage} />
+      <Route path="/design-system" component={DesignSystemPage} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -60,7 +66,7 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0d1117] text-white">
+      <div className="min-h-dvh flex items-center justify-center bg-background text-foreground">
         Загрузка симуляции...
       </div>
     );
@@ -68,7 +74,7 @@ function AppContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0d1117] text-white">
+      <div className="min-h-dvh flex items-center justify-center bg-background text-foreground">
         Не удалось загрузить контент симуляции
       </div>
     );
@@ -79,7 +85,7 @@ function AppContent() {
       <Router hook={useHashLocation}>
         <Suspense
           fallback={(
-            <div className="min-h-screen flex items-center justify-center bg-[#0d1117] text-white">
+            <div className="min-h-dvh flex items-center justify-center bg-background text-foreground">
               Открываем экран...
             </div>
           )}

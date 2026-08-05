@@ -4,6 +4,8 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
 import { accumulateCompetencyTotals } from "@shared/simulation-scoring";
+import { validateCase, shouldBlockCaseSave } from "@shared/case-validation";
+import { WIKI_NOTE_REQUIRED_FIELDS } from "@shared/simulation-content";
 import { buildWorkbookBuffer } from "./excel-export";
 import { requireExportAccess } from "./export-access";
 import { generatePdfBuffer } from "./pdf-export";
@@ -18,16 +20,27 @@ import {
   toPublicSimulationSession,
 } from "./simulation-session-access";
 import { staffStorage } from "./staff-storage";
+import { zrdStorage } from "./zrd-storage";
+import { zrdService } from "./zrd-service";
+import { zrdMatchService } from "./zrd-match-service";
+import { zrdManualStorage } from "./zrd-manual-storage";
+import type { TurnIntent, Difficulty } from "@shared/zrd/types";
+import type { SeatIntent as ZrdSeatIntent } from "@shared/zrd/match-types";
 import { auditStorage, type AuditRecordInput } from "./audit-storage";
 import { requireAdmin, requireStaff, saveMediaUpload } from "./route-utils";
 import {
   adminRateLimiter,
+  apiRateLimiter,
   clearFailedAttempts,
   heavyOperationRateLimiter,
   loginFailedAttemptLimiter,
   loginRateLimiter,
   recordFailedLogin,
 } from "./middleware/rate-limiter";
+import {
+  FeedbackMailNotConfiguredError, isFeedbackMailConfigured, sendFeedbackMail, verifyFeedbackTransport,
+  sendContactParticipantMail, sendResultsMail, sendTrainingScheduleMail,
+} from "./mail";
 import { generateCsrfToken, getCsrfToken } from "./middleware/csrf";
 import { internalApiError } from "./middleware/error-handler";
 import {
@@ -38,12 +51,30 @@ import {
   adminSettingsSchema,
   createLiveSessionSchema,
   createSimulationSessionSchema,
+  createZrdSessionSchema,
+  zrdIntentSchema,
+  createZrdMatchSchema,
+  joinZrdMatchSchema,
+  zrdMatchAttachSchema,
+  zrdMatchSeatQuerySchema,
+  zrdMatchIntentSchema,
+  zrdMatchSwanSchema,
+  zrdMatchPauseSchema,
+  zrdMatchMascotSchema,
+  zrdMatchRrsSchema,
+  zrdManualSectionParamSchema,
+  zrdManualNoteBodySchema,
   editableChatSchema,
   editableEmailCaseSchema,
   editableMessengerCaseSchema,
   editableSimCaseSchema,
+  wikiNoteSchema,
   editableVideoCaseSchema,
   excelExportSchema,
+  feedbackBodySchema,
+  contactParticipantMailSchema,
+  sendResultsMailSchema,
+  scheduleTrainingMailSchema,
   joinLiveSessionSchema,
   listResultsQuerySchema,
   liveRecoverSessionParamSchema,
@@ -392,7 +423,11 @@ export async function registerRoutes(
     validateBody(staffElevationBodySchema),
     asyncHandler(async (req, res) => {
       const evaluatorActor = req.session.staff || null;
-      if (req.session.staff?.role !== "evaluator") {
+      // Подтверждение администратора доступно из сессии оценщика (повышение роли) ИЛИ
+      // из админ-сессии (повторное подтверждение пароля после истечения грейс-периода).
+      // В обоих случаях требуется верный пароль администратора (ниже).
+      const sessionRole = req.session.staff?.role;
+      if (sessionRole !== "evaluator" && sessionRole !== "admin") {
         recordAudit(req, {
           area: "security",
           action: "role_elevation_denied",
@@ -403,8 +438,8 @@ export async function registerRoutes(
           summary: "Отклонена попытка перехода в меню администратора",
         });
         res.status(403).json({
-          message: "Повышение роли доступно только из меню оценщика.",
-          code: "EVALUATOR_REQUIRED",
+          message: "Подтверждение администратора доступно только авторизованному персоналу.",
+          code: "STAFF_REQUIRED",
         });
         return;
       }
@@ -463,6 +498,80 @@ export async function registerRoutes(
     res.json({ ...req.session.staff, csrfToken: getCsrfToken(req) });
   });
 
+  // Обратная связь разработчику: письмо двум скрытым получателям (адреса в env/коде, в UI не видны).
+  app.post(
+    "/api/feedback",
+    apiRateLimiter,
+    validateBody(feedbackBodySchema),
+    asyncHandler(async (req, res) => {
+      const body = req.validatedBody as z.infer<typeof feedbackBodySchema>;
+      const actor = req.session.staff || null;
+      try {
+        const { recipients } = await sendFeedbackMail({
+          category: body.category,
+          message: body.message,
+          contact: body.contact,
+          meta: {
+            role: actor?.role ?? null,
+            url: body.url ?? null,
+            userAgent: req.get("user-agent") ?? null,
+          },
+        });
+        recordAudit(req, {
+          area: "system",
+          action: "feedback_sent",
+          outcome: "success",
+          actor,
+          entityType: "feedback",
+          entityId: null,
+          summary: `Отправлена обратная связь: ${body.category}`,
+          metadata: { recipients: recipients.length, hasContact: Boolean(body.contact) },
+        });
+        res.json({ ok: true });
+      } catch (error) {
+        if (error instanceof FeedbackMailNotConfiguredError) {
+          recordAudit(req, {
+            area: "system",
+            action: "feedback_not_configured",
+            outcome: "failure",
+            actor,
+            entityType: "feedback",
+            entityId: null,
+            summary: "Попытка отправки ОС: почта не настроена",
+          });
+          res.status(503).json({ message: "Отправка обратной связи пока не настроена. Сообщите администратору.", code: "MAIL_NOT_CONFIGURED" });
+          return;
+        }
+        console.error("Feedback mail failed:", error);
+        recordAudit(req, {
+          area: "system",
+          action: "feedback_failed",
+          outcome: "failure",
+          actor,
+          entityType: "feedback",
+          entityId: null,
+          summary: "Не удалось отправить обратную связь (ошибка SMTP)",
+        });
+        res.status(502).json({ message: "Не удалось отправить сообщение. Попробуйте позже.", code: "MAIL_SEND_FAILED" });
+      }
+    }),
+  );
+
+  // Диагностика почты (только админ): проверка соединения с Exchange/SMTP без отправки письма.
+  app.get(
+    "/api/feedback/diagnostics",
+    requireAdmin,
+    asyncHandler(async (_req, res) => {
+      const configured = isFeedbackMailConfigured();
+      if (!configured) {
+        res.json({ configured: false, ok: false, error: "SMTP/Exchange не настроен (нет FEEDBACK_SMTP_HOST + FEEDBACK_FROM)." });
+        return;
+      }
+      const result = await verifyFeedbackTransport();
+      res.json({ configured: true, ...result });
+    }),
+  );
+
   app.post("/api/sessions", validateBody(createSimulationSessionSchema), (req, res, next) => {
     try {
       const body = req.validatedBody as z.infer<typeof createSimulationSessionSchema>;
@@ -476,6 +585,7 @@ export async function registerRoutes(
         participantId: participant?.id || null,
         participantTokenHash: hashSimulationSessionToken(sessionToken),
         participantName: body.participantName || participant?.fullName || "Участник",
+        participantEmail: body.participantEmail || null,
         evaluatorAccountId: staff?.role === "evaluator" ? staff.id : null,
         evaluatorName: body.assessorName || staff?.displayName || "",
         difficulty: body.difficulty || "medium",
@@ -517,6 +627,375 @@ export async function registerRoutes(
       res.json(toPublicSimulationSession(req.simulationSession!));
     },
   );
+
+  // ── Симуляция ЗРД (Фаза 3): solo против AI, серверно-авторитетно ──────────
+  // Доступ к партии: персонал (создание/наблюдение) ИЛИ игрок по токену (x-zrd-token).
+  function requireZrdAccess(req: Request, res: Response, next: NextFunction) {
+    const id = Number(getSingleParam(req.params.id));
+    const session = zrdStorage.getSession(id);
+    if (!session) {
+      return res.status(404).json({ message: "Сессия не найдена", code: "ZRD_SESSION_NOT_FOUND" });
+    }
+    const isStaff = Boolean(req.session.staff);
+    const token = req.header("x-zrd-token") || "";
+    const tokenOk = Boolean(token) && Boolean(session.participantTokenHash)
+      && hashSimulationSessionToken(token) === session.participantTokenHash;
+    if (!isStaff && !tokenOk) {
+      return res.status(403).json({ message: "Нет доступа к сессии", code: "ZRD_ACCESS_DENIED" });
+    }
+    next();
+  }
+
+  app.post("/api/zrd/sessions", requireStaff, validateBody(createZrdSessionSchema), (req, res, next) => {
+    try {
+      const body = req.validatedBody as z.infer<typeof createZrdSessionSchema>;
+      const staff = req.session.staff;
+      const game = zrdService.createGame({
+        participantName: body.participantName,
+        evaluatorName: body.assessorName || staff?.displayName || "",
+        evaluatorAccountId: staff?.role === "evaluator" ? staff.id : null,
+        difficulty: body.difficulty as Difficulty,
+        region: body.region,
+        seed: body.seed,
+        quarters: body.quarters,
+      });
+      recordAudit(req, {
+        area: staff?.role === "admin" ? "admin" : "evaluator",
+        action: "zrd_session_created",
+        entityType: "zrd-session",
+        entityId: game.session.id,
+        summary: `Создана ЗРД-партия (сложность ${game.session.difficulty}) для ${game.session.participantName}`,
+      });
+      res.json({
+        id: game.session.id,
+        participantName: game.session.participantName,
+        difficulty: game.session.difficulty,
+        region: game.session.region,
+        quarters: game.session.quarters,
+        status: game.session.status,
+        accessCode: game.accessCode,
+        sessionToken: game.token,
+        state: game.state,
+      });
+    } catch (error) {
+      next(internalApiError("ZRD_SESSION_CREATE_FAILED", "Не удалось создать ЗРД-партию.", error));
+    }
+  });
+
+  app.get("/api/zrd/sessions/:id", validateParams(sessionIdParamSchema), requireZrdAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const data = zrdService.getPublicSession(id);
+      if (!data) {
+        return res.status(404).json({ message: "Сессия не найдена", code: "ZRD_SESSION_NOT_FOUND" });
+      }
+      res.json(data);
+    } catch (error) {
+      next(internalApiError("ZRD_SESSION_FETCH_FAILED", "Не удалось получить ЗРД-партию.", error));
+    }
+  });
+
+  app.post("/api/zrd/sessions/:id/intent", validateParams(sessionIdParamSchema), requireZrdAccess, validateBody(zrdIntentSchema), (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const intent = req.validatedBody as TurnIntent;
+      const result = zrdService.applyPlayerIntent(id, intent);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Ход отклонён", code: "ZRD_INTENT_REJECTED", error: result.error });
+      }
+      res.json({ state: result.state, finalized: result.finalized, result: result.result ?? null });
+    } catch (error) {
+      next(internalApiError("ZRD_INTENT_FAILED", "Не удалось применить ход.", error));
+    }
+  });
+
+  app.post("/api/zrd/sessions/:id/finish", validateParams(sessionIdParamSchema), requireZrdAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const data = zrdService.getPublicSession(id);
+      if (!data) {
+        return res.status(404).json({ message: "Сессия не найдена", code: "ZRD_SESSION_NOT_FOUND" });
+      }
+      if (data.status !== "completed") {
+        return res.status(409).json({ message: "Партия ещё не завершена", code: "ZRD_NOT_ENDED" });
+      }
+      recordAudit(req, {
+        area: "evaluator",
+        action: "zrd_session_finished",
+        entityType: "zrd-session",
+        entityId: id,
+        summary: `ЗРД-партия завершена (ТР ${data.result?.tr ?? "?"})`,
+      });
+      res.json(data);
+    } catch (error) {
+      next(internalApiError("ZRD_FINISH_FAILED", "Не удалось завершить партию.", error));
+    }
+  });
+
+  // ── ЗРД v2: матч на 4 места (мультистол) ────────────────────────────────
+  // Доступ: персонал (создание/наблюдение/лебеди/пауза) ИЛИ игрок по seat-токену
+  // (заголовок x-zrd-seat-token + номер места). Вход игрока — по коду места.
+  function requireZrdMatchSeatAccess(req: Request, res: Response, next: NextFunction) {
+    const id = Number(getSingleParam(req.params.id));
+    if (req.session.staff) return next();
+    const seatIdx = Number(
+      (req.validatedQuery as { seat?: string } | undefined)?.seat
+      ?? (req.validatedBody as { seatIdx?: number } | undefined)?.seatIdx,
+    );
+    const token = req.header("x-zrd-seat-token") || "";
+    if (!Number.isInteger(seatIdx) || seatIdx < 0 || seatIdx > 3 || !zrdMatchService.verifySeatToken(id, seatIdx, token)) {
+      return res.status(403).json({ message: "Нет доступа к матчу", code: "ZRD_MATCH_ACCESS_DENIED" });
+    }
+    next();
+  }
+
+  app.post("/api/zrd/match", requireStaff, validateBody(createZrdMatchSchema), (req, res, next) => {
+    try {
+      const body = req.validatedBody as z.infer<typeof createZrdMatchSchema>;
+      const staff = req.session.staff;
+      const created = zrdMatchService.createMatch({
+        evaluatorName: staff?.displayName || "",
+        evaluatorAccountId: staff?.role === "evaluator" ? staff.id : null,
+        scenario: body.scenario,
+        difficulty: body.difficulty as Difficulty,
+        winMode: body.winMode,
+        missionMode: body.missionMode,
+        missionIds: body.missionIds,
+        keyMissionId: body.keyMissionId,
+        raceTargetKpi: body.raceTargetKpi,
+        raceTargetValue: body.raceTargetValue,
+        swanFrequency: body.swanFrequency,
+        minutesPerTick: body.minutesPerTick,
+        seed: body.seed,
+        seats: body.seats.map((s) => ({
+          rrsId: s.rrsId,
+          controller: s.controller,
+          participantName: s.participantName,
+          aiLevel: s.aiLevel as 1 | 2 | 3 | 4 | 5 | undefined,
+          mascotId: s.mascotId,
+        })),
+      });
+      recordAudit(req, {
+        area: staff?.role === "admin" ? "admin" : "evaluator",
+        action: "zrd_match_created",
+        entityType: "zrd-match",
+        entityId: created.match.id,
+        summary: `Создан ЗРД-матч (${body.scenario}, сложность ${body.difficulty})`,
+      });
+      res.json({ id: created.match.id, seats: created.seats });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_CREATE_FAILED", "Не удалось создать матч.", error));
+    }
+  });
+
+  // Демо-матч — самообслуживание без служебного входа: 1 человек + 3 ИИ, стандартный сценарий.
+  app.post("/api/zrd/match/demo", apiRateLimiter, (req, res, next) => {
+    try {
+      const created = zrdMatchService.createMatch({
+        evaluatorName: "Демо",
+        evaluatorAccountId: null,
+        scenario: "conquest",
+        difficulty: 3 as Difficulty,
+        winMode: "year",
+        missionMode: "auto",
+        swanFrequency: "standard",
+        minutesPerTick: 6,
+        seats: [
+          { rrsId: "ekb", controller: "human", participantName: "Демо-игрок" },
+          { rrsId: "chel", controller: "ai", aiLevel: 3 },
+          { rrsId: "tmn", controller: "ai", aiLevel: 3 },
+          { rrsId: "perm", controller: "ai", aiLevel: 3 },
+        ],
+      });
+      res.json({ id: created.match.id, seats: created.seats });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_DEMO_FAILED", "Не удалось создать демо-матч.", error));
+    }
+  });
+
+  app.post("/api/zrd/match/join", validateBody(joinZrdMatchSchema), (req, res, next) => {
+    try {
+      const { code } = req.validatedBody as z.infer<typeof joinZrdMatchSchema>;
+      const joined = zrdMatchService.joinSeat(code);
+      if (!joined) {
+        return res.status(404).json({ message: "Код не найден", code: "ZRD_MATCH_CODE_NOT_FOUND" });
+      }
+      res.json(joined);
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_JOIN_FAILED", "Не удалось войти в матч.", error));
+    }
+  });
+
+  app.get("/api/zrd/match/:id/seat", validateParams(sessionIdParamSchema), validateQuery(zrdMatchSeatQuerySchema), requireZrdMatchSeatAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const seatIdx = Number((req.validatedQuery as { seat: string }).seat);
+      const data = zrdMatchService.getSeatView(id, seatIdx);
+      if (!data) {
+        return res.status(404).json({ message: "Матч не найден", code: "ZRD_MATCH_NOT_FOUND" });
+      }
+      res.json(data);
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_SEAT_FAILED", "Не удалось получить состояние места.", error));
+    }
+  });
+
+  app.get("/api/zrd/match/:id/version", validateParams(sessionIdParamSchema), validateQuery(zrdMatchSeatQuerySchema), requireZrdMatchSeatAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const data = zrdMatchService.getVersion(id);
+      if (!data) {
+        return res.status(404).json({ message: "Матч не найден", code: "ZRD_MATCH_NOT_FOUND" });
+      }
+      res.json(data);
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_VERSION_FAILED", "Не удалось получить версию матча.", error));
+    }
+  });
+
+  app.post("/api/zrd/match/:id/intent", validateParams(sessionIdParamSchema), validateBody(zrdMatchIntentSchema), requireZrdMatchSeatAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const { seatIdx, intent } = req.validatedBody as z.infer<typeof zrdMatchIntentSchema>;
+      const result = zrdMatchService.applyIntent(id, seatIdx, intent as ZrdSeatIntent);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Ход отклонён", code: "ZRD_MATCH_INTENT_REJECTED", error: result.error });
+      }
+      res.json({ view: result.view, version: result.version, ended: result.ended });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_INTENT_FAILED", "Не удалось применить ход.", error));
+    }
+  });
+
+  // Игрок выбирает свою фигурку при входе по коду (оценщик аватары не назначает)
+  app.post("/api/zrd/match/:id/mascot", validateParams(sessionIdParamSchema), validateBody(zrdMatchMascotSchema), requireZrdMatchSeatAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const { seatIdx, mascotId, email } = req.validatedBody as z.infer<typeof zrdMatchMascotSchema>;
+      const result = zrdMatchService.setMascot(id, seatIdx, mascotId, email);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Не удалось выбрать фигурку", code: "ZRD_MATCH_MASCOT_REJECTED", error: result.error });
+      }
+      res.json({ view: result.view, version: result.version });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_MASCOT_FAILED", "Не удалось выбрать фигурку.", error));
+    }
+  });
+
+  // Игрок сам выбирает РРС при входе (когда людей за столом >1); до выбора борд показывает экран выбора
+  app.post("/api/zrd/match/:id/rrs", validateParams(sessionIdParamSchema), validateBody(zrdMatchRrsSchema), requireZrdMatchSeatAccess, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const { seatIdx, rrsId } = req.validatedBody as z.infer<typeof zrdMatchRrsSchema>;
+      const result = zrdMatchService.chooseRrs(id, seatIdx, rrsId);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Не удалось выбрать РРС", code: "ZRD_MATCH_RRS_REJECTED", error: result.error });
+      }
+      res.json({ view: result.view, version: result.version });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_RRS_FAILED", "Не удалось выбрать РРС.", error));
+    }
+  });
+
+  // Подключение игрока к запущенной сессии: оценщик сажает человека на место ИИ/пустое,
+  // игроку выдаётся личный код входа в рамках этой сессии.
+  app.post("/api/zrd/match/:id/attach-player", validateParams(sessionIdParamSchema), requireStaff, validateBody(zrdMatchAttachSchema), (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const { seatIdx, participantName } = req.validatedBody as z.infer<typeof zrdMatchAttachSchema>;
+      const result = zrdMatchService.attachHuman(id, seatIdx, participantName);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Не удалось подключить игрока", code: "ZRD_MATCH_ATTACH_REJECTED", error: result.error });
+      }
+      recordAudit(req, {
+        area: req.session.staff?.role === "admin" ? "admin" : "evaluator",
+        action: "zrd_player_attached",
+        entityType: "zrd-match",
+        entityId: id,
+        summary: `К матчу ЗРД #${id} подключён игрок ${participantName} (место ${seatIdx})`,
+      });
+      res.json({ ok: true, seatIdx, accessCode: result.accessCode });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_ATTACH_FAILED", "Не удалось подключить игрока.", error));
+    }
+  });
+
+  app.get("/api/zrd/match/:id/observer", validateParams(sessionIdParamSchema), requireStaff, (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const data = zrdMatchService.getObserverView(id);
+      if (!data) {
+        return res.status(404).json({ message: "Матч не найден", code: "ZRD_MATCH_NOT_FOUND" });
+      }
+      res.json(data);
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_OBSERVER_FAILED", "Не удалось получить наблюдение.", error));
+    }
+  });
+
+  app.post("/api/zrd/match/:id/swan", validateParams(sessionIdParamSchema), requireStaff, validateBody(zrdMatchSwanSchema), (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const { swanId, target } = req.validatedBody as z.infer<typeof zrdMatchSwanSchema>;
+      const result = zrdMatchService.triggerSwan(id, swanId, target);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Лебедь не запущен", code: "ZRD_MATCH_SWAN_REJECTED", error: result.error });
+      }
+      recordAudit(req, {
+        area: "evaluator",
+        action: "zrd_match_swan_triggered",
+        entityType: "zrd-match",
+        entityId: id,
+        summary: `Ручной чёрный лебедь: ${swanId} → ${target}`,
+      });
+      res.json({ ok: true });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_SWAN_FAILED", "Не удалось запустить лебедя.", error));
+    }
+  });
+
+  app.post("/api/zrd/match/:id/pause", validateParams(sessionIdParamSchema), requireStaff, validateBody(zrdMatchPauseSchema), (req, res, next) => {
+    try {
+      const id = Number(getSingleParam(req.params.id));
+      const { paused } = req.validatedBody as z.infer<typeof zrdMatchPauseSchema>;
+      const result = zrdMatchService.setPaused(id, paused);
+      if (!result.ok) {
+        return res.status(400).json({ message: "Пауза не переключена", code: "ZRD_MATCH_PAUSE_REJECTED", error: result.error });
+      }
+      res.json({ ok: true });
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_PAUSE_FAILED", "Не удалось переключить паузу.", error));
+    }
+  });
+
+  // ── ЗРД: дополнения администратора к инструкции /zrd/manual ──────────────
+  app.get("/api/zrd/manual-notes", (_req, res, next) => {
+    try {
+      const notes = zrdManualStorage.listNotes();
+      res.json({ notes: notes.map((n) => ({ sectionId: n.sectionId, bodyMd: n.bodyMd, updatedBy: n.updatedBy, updatedAt: n.updatedAt })) });
+    } catch (error) {
+      next(internalApiError("ZRD_MANUAL_FETCH_FAILED", "Не удалось загрузить дополнения инструкции.", error));
+    }
+  });
+
+  app.put("/api/zrd/manual-notes/:sectionId", requireAdmin, validateParams(zrdManualSectionParamSchema), validateBody(zrdManualNoteBodySchema), (req, res, next) => {
+    try {
+      const { sectionId } = req.validatedParams as { sectionId: string };
+      const { bodyMd } = req.validatedBody as z.infer<typeof zrdManualNoteBodySchema>;
+      const staff = req.session.staff;
+      const saved = zrdManualStorage.upsertNote(sectionId, bodyMd, staff?.displayName || staff?.username || "admin");
+      recordAudit(req, {
+        area: "admin",
+        action: "zrd_manual_note_updated",
+        entityType: "zrd-manual",
+        entityId: sectionId,
+        summary: saved ? `Обновлено дополнение инструкции ЗРД: секция ${sectionId}` : `Удалено дополнение инструкции ЗРД: секция ${sectionId}`,
+      });
+      res.json({ ok: true, note: saved ? { sectionId: saved.sectionId, bodyMd: saved.bodyMd, updatedBy: saved.updatedBy, updatedAt: saved.updatedAt } : null });
+    } catch (error) {
+      next(internalApiError("ZRD_MANUAL_SAVE_FAILED", "Не удалось сохранить дополнение инструкции.", error));
+    }
+  });
 
   app.patch("/api/sessions/:id", validateParams(sessionIdParamSchema), requireSessionAccess, validateBody(patchSessionSchema), (req, res) => {
     const { id } = req.validatedParams as { id: string };
@@ -760,7 +1239,7 @@ export async function registerRoutes(
       return res.status(400).json({ message: "Access code is required" });
     }
 
-    const session = liveSessionService.getSessionByAccessCode(accessCode);
+    let session = liveSessionService.getSessionByAccessCode(accessCode);
     if (!session) {
       recordAudit(req, {
         area: "security",
@@ -772,6 +1251,11 @@ export async function registerRoutes(
         metadata: { accessCodeProvided: accessCode.length > 0 },
       });
       return res.status(404).json({ message: "Live session not found" });
+    }
+
+    // участник сам вводит корпоративную почту при входе (оценщик её не назначает)
+    if (body.email) {
+      session = liveSessionService.setParticipantEmail(session.config.liveSessionId, body.email) ?? session;
     }
 
     recordAudit(req, {
@@ -838,6 +1322,15 @@ export async function registerRoutes(
 
   app.get("/api/staff/live-sessions", requireStaff, (_req, res) => {
     res.json(liveSessionService.listSessions());
+  });
+
+  // Матчи ЗРД — отдельный листинг (у матча может быть до 4 кодов вместо одного)
+  app.get("/api/staff/zrd-matches", requireStaff, (_req, res, next) => {
+    try {
+      res.json(zrdMatchService.listMatches());
+    } catch (error) {
+      next(internalApiError("ZRD_MATCH_LIST_FAILED", "Не удалось получить список матчей ЗРД.", error));
+    }
   });
 
   app.delete("/api/live-sessions/:id", requireStaff, validateParams(liveSessionIdParamSchema), (req, res) => {
@@ -966,8 +1459,62 @@ export async function registerRoutes(
     }
   });
 
+  /**
+   * Материалы справочника, добавленные людьми.
+   *
+   * Читать может любой сотрудник — справочник открыт и администратору, и
+   * оценщику. Добавлять и удалять — только администратор.
+   */
+  app.get("/api/staff/wiki-notes", requireStaff, (_req, res) => {
+    res.json({ notes: contentStorage.listWikiNotes() });
+  });
+
+  app.post("/api/admin/wiki-notes", requireAdmin, adminRateLimiter, validateBody(wikiNoteSchema), (req, res) => {
+    const body = req.validatedBody as z.infer<typeof wikiNoteSchema>;
+    // Обязательность проверяется и здесь: форму можно обойти запросом напрямую.
+    const missing = WIKI_NOTE_REQUIRED_FIELDS.filter((field) => !String(body[field] || "").trim());
+    if (missing.length > 0) {
+      return res.status(400).json({ error: "wiki_note_incomplete", missing });
+    }
+    const id = contentStorage.saveWikiNote({
+      id: body.id || undefined,
+      sectionId: body.sectionId,
+      title: body.title.trim(),
+      summary: body.summary.trim(),
+      body: body.body.trim(),
+      imageAssetId: body.imageAssetId,
+      author: body.author?.trim() || "",
+    });
+    recordAudit(req, {
+      area: "admin",
+      action: body.id ? "wiki_note_update" : "wiki_note_create",
+      entityType: "wiki_note",
+      entityId: id,
+      summary: `Материал справочника: ${body.title}`,
+      after: { title: body.title, sectionId: body.sectionId },
+    });
+    res.json({ id, notes: contentStorage.listWikiNotes() });
+  });
+
+  app.delete("/api/admin/wiki-notes/:id", requireAdmin, adminRateLimiter, (req, res) => {
+    const noteId = String(req.params.id);
+    contentStorage.deleteWikiNote(noteId);
+    recordAudit(req, {
+      area: "admin",
+      action: "wiki_note_delete",
+      entityType: "wiki_note",
+      entityId: noteId,
+      summary: "Удалён материал справочника",
+    });
+    res.json({ notes: contentStorage.listWikiNotes() });
+  });
+
   app.post("/api/admin/cases", requireAdmin, adminRateLimiter, validateBody(editableSimCaseSchema), (req, res) => {
     const body = req.validatedBody as z.infer<typeof editableSimCaseSchema>;
+    const validationIssues = validateCase(body as EditableSimCase);
+    if (shouldBlockCaseSave(body.qaStatus, validationIssues, body.acceptedIssues)) {
+      return res.status(400).json({ error: "case_validation_failed", issues: validationIssues });
+    }
     const before = body.id ? getCaseSnapshot(body.id) : null;
     const id = contentStorage.saveCase(body as EditableSimCase);
     const after = getCaseSnapshot(id);
@@ -980,7 +1527,7 @@ export async function registerRoutes(
       before,
       after,
     });
-    res.json({ id });
+    res.json({ id, validationIssues });
   });
 
   app.post("/api/admin/cases/reorder", requireAdmin, adminRateLimiter, validateBody(adminCaseReorderSchema), (req, res) => {
@@ -1147,6 +1694,103 @@ export async function registerRoutes(
         "Не удалось сформировать PDF.",
         error,
       ));
+    }
+  });
+
+  // «Связаться с пользователем» — оценщик пишет участнику на его корпоративную почту.
+  app.post("/api/staff/mail/contact-participant", requireStaff, heavyOperationRateLimiter, validateBody(contactParticipantMailSchema), async (req, res, next) => {
+    try {
+      const body = req.validatedBody as z.infer<typeof contactParticipantMailSchema>;
+      const staff = req.session.staff;
+      await sendContactParticipantMail({
+        to: body.to,
+        participantName: body.participantName,
+        evaluatorName: staff?.displayName || "",
+        subject: body.subject,
+        message: body.message,
+      });
+      recordAudit(req, {
+        area: "evaluator",
+        action: "participant_contacted",
+        actor: staff || null,
+        entityType: "mail",
+        summary: `Письмо участнику ${body.participantName} (${body.to})`,
+      });
+      res.json({ ok: true });
+    } catch (error) {
+      if (error instanceof FeedbackMailNotConfiguredError) {
+        res.status(503).json({ message: "Почта не настроена. Сообщите администратору.", code: "MAIL_NOT_CONFIGURED" });
+        return;
+      }
+      next(internalApiError("MAIL_CONTACT_FAILED", "Не удалось отправить письмо участнику.", error));
+    }
+  });
+
+  // «Отправить обратную связь на почту» — итоги/отчёт участнику; PDF формируется тем же генератором, что и /api/export-pdf.
+  app.post("/api/staff/mail/send-results", requireStaff, heavyOperationRateLimiter, validateBody(sendResultsMailSchema), async (req, res, next) => {
+    try {
+      const body = req.validatedBody as z.infer<typeof sendResultsMailSchema>;
+      const staff = req.session.staff;
+
+      const scriptPath = path.resolve(__dirname, "generate_pdf.py");
+      if (!fs.existsSync(scriptPath)) {
+        next(internalApiError("PDF_EXPORT_FAILED", "Не удалось сформировать PDF.", new Error(`PDF generator not found: ${scriptPath}`)));
+        return;
+      }
+      const pdf = await generatePdfBuffer(body.pdfPayload, scriptPath);
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const filename = `${getPdfFilenamePart(body.participantName)}_${dateStr}.pdf`;
+
+      await sendResultsMail({
+        to: body.to,
+        participantName: body.participantName,
+        evaluatorName: staff?.displayName || "",
+        summary: body.summary,
+        attachments: [{ filename, content: pdf }],
+      });
+      recordAudit(req, {
+        area: "evaluator",
+        action: "results_mailed",
+        actor: staff || null,
+        entityType: "mail",
+        summary: `Результаты отправлены участнику ${body.participantName} (${body.to})`,
+      });
+      res.json({ ok: true });
+    } catch (error) {
+      if (error instanceof FeedbackMailNotConfiguredError) {
+        res.status(503).json({ message: "Почта не настроена. Сообщите администратору.", code: "MAIL_NOT_CONFIGURED" });
+        return;
+      }
+      next(internalApiError("MAIL_RESULTS_FAILED", "Не удалось отправить результаты на почту.", error));
+    }
+  });
+
+  // «Назначить обучение на определённую дату».
+  app.post("/api/staff/mail/schedule-training", requireStaff, heavyOperationRateLimiter, validateBody(scheduleTrainingMailSchema), async (req, res, next) => {
+    try {
+      const body = req.validatedBody as z.infer<typeof scheduleTrainingMailSchema>;
+      const staff = req.session.staff;
+      await sendTrainingScheduleMail({
+        to: body.to,
+        participantName: body.participantName,
+        evaluatorName: staff?.displayName || "",
+        trainingDate: body.trainingDate,
+        note: body.note,
+      });
+      recordAudit(req, {
+        area: "evaluator",
+        action: "training_scheduled_mail_sent",
+        actor: staff || null,
+        entityType: "mail",
+        summary: `Уведомление об обучении отправлено ${body.participantName} (${body.to}) на ${body.trainingDate}`,
+      });
+      res.json({ ok: true });
+    } catch (error) {
+      if (error instanceof FeedbackMailNotConfiguredError) {
+        res.status(503).json({ message: "Почта не настроена. Сообщите администратору.", code: "MAIL_NOT_CONFIGURED" });
+        return;
+      }
+      next(internalApiError("MAIL_TRAINING_FAILED", "Не удалось отправить уведомление об обучении.", error));
     }
   });
 

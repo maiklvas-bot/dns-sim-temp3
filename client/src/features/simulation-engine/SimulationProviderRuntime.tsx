@@ -183,6 +183,8 @@ const MAX_PAUSE_TOTAL_SECONDS = 30 * 60;
 export interface SimulationState {
   // Session config
   participantName: string;
+  /** участник вводит сам при входе по коду (не оценщик) — для обратной связи и дальнейшей коммуникации */
+  participantEmail: string;
   assessorName: string;
   sessionId: number | null;
   difficulty: "easy" | "medium" | "hard";
@@ -1161,6 +1163,7 @@ function getInitialState(): SimulationState {
   const sanitizedStartingMetrics = sanitizeStartingMetrics(defaultStartingMetrics);
   return {
     participantName: "",
+    participantEmail: "",
     assessorName: "",
     sessionId: null,
     difficulty: "medium",
@@ -2371,6 +2374,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       type: "BOOTSTRAP_SIMULATION",
       payload: {
         participantName: session.config.participantName,
+        participantEmail: session.config.participantEmail || "",
         assessorName: session.config.assessorName,
         difficulty: session.config.difficulty,
         selectedCaseIds: session.config.selectedCaseIds,
@@ -2736,6 +2740,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
       try {
         const session = await createPersistedSession({
           participantName: state.participantName || "Участник",
+          participantEmail: state.participantEmail || undefined,
           assessorName: state.assessorName || "",
           difficulty: state.difficulty,
           selectedCaseIds: state.selectedCaseIds,

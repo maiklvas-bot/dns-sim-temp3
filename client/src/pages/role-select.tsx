@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { BrandAccessShell, BrandLogo } from "@/components/brand-access-shell";
+import { ProductFooter } from "@/components/product-footer";
 import {
   Dialog,
   DialogContent,
@@ -153,10 +154,6 @@ export default function RoleSelectPage() {
                   </DialogContent>
                 </Dialog>
               </div>
-
-              <p className="dns-home-entry-card__footer">
-                Версия 3.0 <span aria-hidden="true">•</span> Контент и результаты хранятся в БД
-              </p>
             </div>
           </section>
 
@@ -241,6 +238,8 @@ export default function RoleSelectPage() {
             </span>
           </article>
         </section>
+
+        <ProductFooter version="v3.0" />
       </main>
     </BrandAccessShell>
   );

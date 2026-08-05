@@ -28,7 +28,7 @@ export function SimulationProgressRail({ summary }: { summary: SimulationProgres
         <div className="absolute top-2 w-1 rounded-full bg-[#00d4aa]" style={{ height: `${Math.min(100, Math.max(0, summary.percent))}%` }} />
         <div className="relative z-10 flex w-full flex-col justify-between py-1">
           {steps.map((step) => (
-            <div key={step.key} className="flex flex-col items-center gap-1 rounded-xl bg-[#101826]/80 py-1">
+            <div key={step.key} className="flex flex-col items-center gap-1 py-1">
               {step.key === "done" ? <CheckCircle2 className="h-4 w-4" style={{ color: step.color }} /> : <CircleDot className="h-4 w-4" style={{ color: step.color }} />}
               <div className="text-sm font-bold tabular-nums text-white">{step.value}</div>
               <div className="max-w-[4.4rem] text-center text-[9px] font-semibold uppercase leading-3 tracking-[0.08em] text-[#8aa2c4]">{step.label}</div>

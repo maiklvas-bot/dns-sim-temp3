@@ -74,6 +74,13 @@ export const SIMULATION_ROLE_CARDS: ReadonlyArray<{
     participantRole: "Управляющий",
     available: false,
   },
+  {
+    id: "regional-deputy",
+    title: "ЗРД",
+    description: "Стратегический матч 4 РРС: люди и ИИ-управленцы, миссии, чёрные лебеди",
+    participantRole: "Заместитель регионального директора",
+    available: true,
+  },
 ];
 
 export const TIME_PROFILE_RATIO: Record<AssessorDifficulty, number> = {

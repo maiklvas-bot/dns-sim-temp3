@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { Pause, Play, Trash2 } from "lucide-react";
 import { CompetencyRoleSelector, Field, FieldArea, MultiSelectField, SelectField, SuggestField } from "../components/AdminFields";
 import { CompetencyHorizontalImpactChart } from "../components/CompetencyHorizontalImpactChart";
+import { competencyCategoryLabel } from "@/data/competencies";
 import type { AdminChannelTab as ChannelTab } from "../admin-types";
 import {
   buildCompetencyAliasMap,
@@ -19,7 +19,7 @@ import {
   STORE_EFFECT_FIELDS,
   STORE_ZONE_OPTIONS,
 } from "./case-editor-support";
-import { createEmptyStructuredOption, formatCompetencyScores, parseCompetencyScores } from "./case-editor-support";
+import { barsLevelForScore, BARS_OPTIONS, createEmptyStructuredOption } from "./case-editor-support";
 
 export function StructuredOptionsEditor({
   title,
@@ -36,6 +36,7 @@ export function StructuredOptionsEditor({
   cycleOptions?: Array<{ value: string; label: string }>;
   currentCycleId?: string;
 }) {
+  const [openOption, setOpenOption] = useState<number>(0);
   const previewData = useMemo(() => {
     const profile = buildOptionCompetencyProfile(options);
     return competencies
@@ -72,7 +73,9 @@ export function StructuredOptionsEditor({
   };
 
   const addOption = () => {
-    onChange([...(options || []), createEmptyStructuredOption((options?.length || 0) + 1)]);
+    const nextIndex = options?.length || 0;
+    onChange([...(options || []), createEmptyStructuredOption(nextIndex + 1)]);
+    setOpenOption(nextIndex);
   };
 
   const removeOption = (index: number) => {
@@ -84,22 +87,34 @@ export function StructuredOptionsEditor({
       <div className="mb-3 flex items-center justify-between gap-3">
         <div>
           <div className="text-sm font-semibold text-white">{title}</div>
-          <div className="mt-1 text-[11px] text-[#8890a8]">Каждый вариант ответа заполняется отдельными полями без JSON.</div>
+          <div className="mt-1 text-[11px] text-[#8fa8cf]">Каждый вариант ответа заполняется отдельными полями без JSON.</div>
         </div>
         <Button type="button" size="sm" className="shrink-0 whitespace-nowrap" onClick={addOption}>Добавить вариант</Button>
       </div>
       <div className="space-y-3">
         {(options || []).map((option, index) => (
           <div key={`${option.id || "option"}-${index}`} className="dns-admin-option-card rounded-xl border border-[#243244] bg-[#101826]/60 p-3">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div className="text-sm font-semibold text-white">Вариант {index + 1}</div>
-              <Button type="button" size="sm" variant="outline" className="border-[#ff4444]/30 bg-transparent text-[#ff9999]" onClick={() => removeOption(index)}>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setOpenOption((cur) => (cur === index ? -1 : index))}
+                className="flex min-w-0 flex-1 items-center gap-2.5 text-left"
+                aria-expanded={openOption === index}
+              >
+                <span className="text-[11px] text-[#8ec5ff]">{openOption === index ? "▾" : "▸"}</span>
+                <span className="shrink-0 text-sm font-semibold text-white">Вариант {index + 1}</span>
+                <span className="shrink-0 rounded-full border border-[#2a3a4e] bg-[#141c2b]/70 px-2 py-0.5 text-[11px] font-semibold text-[#54d28c]">{Number(option.score) || 0}/5</span>
+                <span className="min-w-0 flex-1 truncate text-[11px] text-[#8aa2c4]">{option.text || "Без текста"}</span>
+              </button>
+              <Button type="button" size="sm" variant="outline" className="shrink-0 border-[#ff4444]/30 bg-transparent text-[#ff9999]" onClick={() => removeOption(index)}>
                 Удалить
               </Button>
             </div>
+            {openOption === index && (
+            <div className="mt-3">
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-lg border border-[#243244] bg-[#0d1522]/70 px-3 py-2">
-                <div className="text-[10px] uppercase tracking-[0.16em] text-[#70829d]">Позиция варианта</div>
+                <div className="text-[10px] uppercase tracking-[0.16em] text-[#7d9bc9]">Позиция варианта</div>
                 <div className="mt-1 text-sm font-semibold text-white">{index + 1}</div>
               </div>
               <Field label="Оценка" value={option.score} onChange={(value) => updateOption(index, { score: Number(value) })} />
@@ -158,7 +173,7 @@ export function StructuredOptionsEditor({
                     value={option.effects?.[field.key] ?? 0}
                     onChange={(value) => updateEffects(index, field.key, Number(value))}
                   />
-                  <div className="mt-1 text-[10px] leading-relaxed text-[#71839d]">{field.metric}</div>
+                  <div className="mt-1 text-[10px] leading-relaxed text-[#7d9bc9]">{field.metric}</div>
                 </div>
               ))}
             </div>
@@ -166,44 +181,63 @@ export function StructuredOptionsEditor({
               <div className="mb-3 flex items-start justify-between gap-3">
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#6fa0ff]">Влияние на компетенции</div>
-                  <div className="mt-1 text-[11px] leading-relaxed text-[#8890a8]">
-                    Настройте силу влияния ответа на каждую компетенцию. `0` означает, что этот вариант не влияет на выбранную компетенцию.
+                  <div className="mt-1 text-[11px] leading-relaxed text-[#8fa8cf]">
+                    Выберите уровень проявления компетенции в этом варианте. Уровни соответствуют якорям поведения: слабо — нижний якорь, сильно — верхний. Промежуточные значения не используются, иначе автопроверка забракует кейс.
                   </div>
                 </div>
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 {competencies.map((competency) => {
                   const scoreValue = Number(option.competency_scores?.[competency.id] || 0);
+                  const currentLevel = barsLevelForScore(scoreValue);
 
                   return (
                     <div key={competency.id} className="rounded-lg border border-[#223245] bg-[#101826]/80 px-3 py-2">
                       <div className="mb-2 flex items-center justify-between gap-3">
                         <div className="min-w-0">
                           <div className="truncate text-xs font-medium text-white">{competency.name}</div>
-                          <div className="text-[10px] uppercase tracking-[0.16em] text-[#70829d]">{competency.category}</div>
+                          <div className="text-[10px] uppercase tracking-[0.16em] text-[#7d9bc9]">{competencyCategoryLabel(competency.category)}</div>
                         </div>
-                        <div className="rounded-full border border-[#2a3a4e] bg-[#141c2b]/70 px-2 py-1 text-xs font-semibold text-white">
-                          {scoreValue}
-                        </div>
+                        {currentLevel === "off_scale" && (
+                          <div className="shrink-0 rounded-full border border-[#ffb27a]/40 bg-[#f68b1f]/12 px-2 py-1 text-[10px] font-semibold text-[#ffb27a]">
+                            {scoreValue} — вне шкалы
+                          </div>
+                        )}
                       </div>
-                      <Slider
-                        value={[scoreValue]}
-                        onValueChange={([value]) => updateCompetencyScore(index, competency.id, value)}
-                        min={0}
-                        max={5}
-                        step={1}
-                      />
+                      <div className="grid grid-cols-4 gap-1.5" role="group" aria-label={`Уровень влияния: ${competency.name}`}>
+                        {BARS_OPTIONS.map((barsOption) => {
+                          const active = barsOption.score === scoreValue;
+                          return (
+                            <button
+                              key={barsOption.level}
+                              type="button"
+                              title={barsOption.hint}
+                              aria-pressed={active}
+                              onClick={() => updateCompetencyScore(index, competency.id, barsOption.score)}
+                              className={`rounded-md border px-2 py-1.5 text-[11px] font-semibold transition ${
+                                active
+                                  ? "border-[#4a9eff] bg-[#4a9eff]/15 text-white"
+                                  : "border-[#2a3a4e] bg-[#0d1522]/70 text-[#8aa2c4] hover:border-[#3b5878]"
+                              }`}
+                            >
+                              {barsOption.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   );
                 })}
               </div>
             </div>
+            </div>
+            )}
           </div>
         ))}
       </div>
       <div className="mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
         <div className="text-sm font-semibold text-white">Живой preview влияния кейса</div>
-        <div className="mt-1 text-[11px] leading-relaxed text-[#8890a8]">
+        <div className="mt-1 text-[11px] leading-relaxed text-[#8fa8cf]">
           Ниже видно, как текущий набор вариантов ответа формирует ожидаемый профиль компетенций у этого кейса.
         </div>
         {previewData.length > 0 ? (

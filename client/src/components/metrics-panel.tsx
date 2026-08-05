@@ -19,7 +19,7 @@ function MetricRow({ icon, label, value, subValue, color, barPct }: MetricRowPro
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between">
-          <span className="text-[12px] text-[#bfd0e7] truncate">{label}</span>
+          <span className="text-[12px] text-foreground truncate">{label}</span>
           <span className="text-sm font-semibold tabular-nums ml-1" style={{ color }}>
             {value}
           </span>
@@ -33,7 +33,7 @@ function MetricRow({ icon, label, value, subValue, color, barPct }: MetricRowPro
           </div>
         )}
         {subValue && (
-          <div className="text-[11px] text-[#8ea4c2] mt-0.5">{subValue}</div>
+          <div className="text-[11px] text-muted-foreground mt-0.5">{subValue}</div>
         )}
       </div>
     </div>
@@ -89,15 +89,15 @@ export default function MetricsPanel() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-3 rounded-2xl border border-[#2a3a4e] bg-[linear-gradient(180deg,rgba(20,28,43,0.82),rgba(11,18,28,0.9))] px-3 py-3">
+      <div className="mb-3 rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(20,28,43,0.82),rgba(11,18,28,0.9))] px-3 py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
             <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#FF6B00]">Метрики магазина</div>
-            <div className="mt-1 text-[12px] text-[#a8bbd6]">Живой срез смены по клиентам, людям и операционке</div>
+            <div className="mt-1 text-[12px] text-muted-foreground">Живой срез смены по клиентам, людям и операционке</div>
           </div>
-          <div className="flex min-w-[102px] flex-col items-center justify-center rounded-2xl border border-[#2d4563] bg-[#101826] px-3 py-2 text-center">
-            <div className="text-[11px] uppercase tracking-[0.14em] text-[#8ea4c2]">Пульс смены</div>
-            <div className="text-lg font-bold text-white tabular-nums">{storePulse}%</div>
+          <div className="flex min-w-[102px] flex-col items-center justify-center rounded-2xl border border-border bg-background px-3 py-2 text-center">
+            <div className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Пульс смены</div>
+            <div className="text-lg font-bold text-foreground tabular-nums">{storePulse}%</div>
           </div>
         </div>
       </div>
@@ -149,7 +149,7 @@ export default function MetricsPanel() {
           </div>
           <div className="flex-1">
             <div className="flex items-center justify-between mb-0.5">
-              <span className="text-[12px] text-[#bfd0e7]">Настроение команды</span>
+              <span className="text-[12px] text-foreground">Настроение команды</span>
               <span className="text-xs font-semibold tabular-nums" style={{ color: moraleColor }}>
                 {m.teamMorale.toFixed(1)}
               </span>
@@ -172,7 +172,7 @@ export default function MetricsPanel() {
           Критичные таймеры
         </div>
         {criticalTimers.length === 0 ? (
-          <div className="rounded-2xl border border-[#2a3a4e] bg-[#101826]/70 px-3 py-4 text-center text-[12px] text-[#c8d7eb]">
+          <div className="rounded-2xl border border-border bg-background/70 px-3 py-4 text-center text-[12px] text-foreground">
             Сейчас в сводке нет активных таймеров. Правая панель покажет их сразу после появления.
           </div>
         ) : (
@@ -187,8 +187,8 @@ export default function MetricsPanel() {
                 <div key={timer.id} className="rounded-lg border border-[#d7a5a5]/30 bg-[linear-gradient(180deg,rgba(215,165,165,0.12),rgba(15,23,36,0.82))] px-3 py-2">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="truncate text-[13px] font-medium text-white">{timer.title}</div>
-                      <div className="truncate text-[11px] text-[#b7c8df]">{timer.taskType} • {timer.zoneLabel}</div>
+                      <div className="truncate text-[13px] font-medium text-foreground">{timer.title}</div>
+                      <div className="truncate text-[11px] text-muted-foreground">{timer.taskType} • {timer.zoneLabel}</div>
                     </div>
                     <div className={`font-mono text-[12px] ${overdue ? "text-[#ffd7d7]" : "text-[#f4d5d5]"}`}>
                       {remaining}

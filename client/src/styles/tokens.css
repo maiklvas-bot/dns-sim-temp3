@@ -1,0 +1,120 @@
+/* client/src/styles/tokens.css
+ * Единственный источник правды для цвета/моушена/z-index SimCenter.
+ * Канон и происхождение значений: docs/superpowers/specs/2026-07-10-design-system-foundation-design.md
+ *
+ * Селекторы ниже — НЕ новые: :root уже безусловно тёмный (был так и раньше),
+ * .dns-product-shell.dns-theme-light — существующий светлый оверрайд,
+ * управляемый хуком useDnsTheme() (client/src/components/brand-access-shell.tsx).
+ * Здесь только заменяются ЗНАЧЕНИЯ, механизм переключения не меняется.
+ */
+
+:root {
+  /* ---- Базовый слой: бренд-примитивы (не зависят от темы) ---- */
+  --dns-navy: 225 100% 14%;      /* #001145 */
+  --dns-orange: 30 92% 54%;      /* #f68b1f */
+  --dns-blue: 203 66% 49%;       /* #2a91d0 */
+  --dns-teal: 168 100% 36%;      /* #00ba95 */
+  --dns-gray: 0 0% 31%;          /* #505050 */
+  --dns-success: 148 48% 43%;    /* #38a169 */
+  --dns-warning: 45 100% 55%;    /* #f6ad55, согласовано с --chart-3 */
+  --dns-info: 203 66% 49%;       /* = --dns-blue */
+  --dns-error: 0 76% 57%;        /* #e53e3e */
+
+  /* ---- Моушен (тема-независимый) ---- */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ---- Z-index (тема-независимый) ---- */
+  --z-raised: 10;
+  --z-sticky: 20;
+  --z-dropdown: 30;
+  --z-overlay: 50;
+  --z-toast: 60;
+  --z-tooltip: 70;
+
+  /* ---- Семантика: ТЁМНАЯ тема (default) ---- */
+  --background: 225 40% 8%;
+  --foreground: 210 35% 93%;
+  --border: 220 24% 26%;
+  --input: 220 24% 26%;
+
+  --card: 224 35% 13%;
+  --card-foreground: 210 35% 93%;
+  --card-border: 220 24% 26%;
+
+  --sidebar: 226 42% 11%;
+  --sidebar-foreground: 0 0% 90%;
+  --sidebar-border: 220 24% 20%;
+  --sidebar-primary: 30 92% 54%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 222 26% 19%;
+  --sidebar-accent-foreground: 0 0% 90%;
+  --sidebar-ring: 30 92% 54%;
+
+  --popover: 224 35% 13%;
+  --popover-foreground: 210 35% 93%;
+  --popover-border: 220 24% 26%;
+
+  --primary: 30 92% 54%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 222 28% 17%;
+  --secondary-foreground: 0 0% 88%;
+
+  --muted: 222 22% 17%;
+  --muted-foreground: 225 15% 60%;
+
+  --accent: 222 26% 19%;
+  --accent-foreground: 0 0% 88%;
+
+  --destructive: 0 76% 57%;
+  --destructive-foreground: 0 0% 100%;
+
+  --ring: 30 92% 54%;
+
+  --chart-1: 30 92% 54%;
+  --chart-2: 168 100% 36%;
+  --chart-3: 45 100% 55%;
+  --chart-4: 203 66% 49%;
+  --chart-5: 0 76% 57%;
+
+  --radius: 1rem;
+}
+
+/* ---- Семантика: СВЕТЛАЯ тема (оверрайд) ---- */
+.dns-product-shell.dns-theme-light {
+  --background: 210 40% 98%;
+  --foreground: 213 43% 14%;
+  --border: 214 28% 80%;
+  --input: 214 26% 82%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 213 43% 14%;
+  --card-border: 214 30% 80%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 213 43% 14%;
+  --popover-border: 214 30% 80%;
+
+  --secondary: 214 36% 94%;
+  --secondary-foreground: 213 43% 18%;
+
+  --muted: 214 32% 92%;
+  --muted-foreground: 212 19% 39%;
+
+  --accent: 214 40% 92%;
+  --accent-foreground: 213 43% 18%;
+
+  --sidebar: 210 40% 97%;
+  --sidebar-foreground: 213 30% 22%;
+  --sidebar-border: 214 28% 82%;
+  --sidebar-accent: 214 36% 92%;
+  --sidebar-accent-foreground: 213 43% 18%;
+
+  /* --primary/--destructive не переопределяются — наследуются из :root
+     (подтверждено: текущий светлый блок base.css:885-908 их тоже не переопределял) */
+
+  --radius: 1rem;
+}

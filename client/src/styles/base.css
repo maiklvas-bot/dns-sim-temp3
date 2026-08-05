@@ -1,13 +1,31 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import './tokens.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Все три начертания DNS RotondaC. Раньше был объявлен только Regular, и любой
+   font-weight ≥ 600 браузер синтезировал сам — искусственное утолщение выглядит
+   грубее настоящего Bold, особенно на крупных заголовках. */
 @font-face {
   font-family: "DNS RotondaC";
   src: url("/fonts/DNS RotondaC.ttf") format("truetype");
   font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DNS RotondaC";
+  src: url("/fonts/DNS RotondaC-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DNS RotondaC";
+  src: url("/fonts/DNS RotondaC-Black.ttf") format("truetype");
+  font-weight: 900;
   font-style: normal;
   font-display: swap;
 }
@@ -313,7 +331,7 @@
   overflow: hidden;
   color: #ffffff;
   font-size: 0.82rem;
-  font-weight: 900;
+  font-weight: 800;
   letter-spacing: 0.01em;
   line-height: 1.08;
   text-overflow: ellipsis;
@@ -357,10 +375,11 @@
 
 .dns-store-map-tactical {
   display: grid;
+  grid-auto-rows: minmax(3.4rem, 1fr);
   min-height: 0;
   flex: 1;
-  gap: 0.55rem;
-  margin-top: 0.7rem;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
   overflow-y: auto;
   padding-right: 0.15rem;
 }
@@ -368,12 +387,14 @@
 .dns-store-map-tactical-card {
   position: relative;
   display: grid;
-  min-height: 5.25rem;
-  gap: 0.5rem;
+  grid-template-rows: auto 1fr;
+  align-content: center;
+  min-height: 0;
+  gap: 0.3rem;
   overflow: hidden;
   border: 1px solid;
-  border-radius: 0.75rem;
-  padding: 0.62rem;
+  border-radius: 0.7rem;
+  padding: 0.5rem 0.6rem;
   text-align: left;
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
@@ -414,8 +435,8 @@
 
 .dns-store-map-card-icon {
   display: grid;
-  width: 1.9rem;
-  height: 1.9rem;
+  width: 1.6rem;
+  height: 1.6rem;
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--zone-accent) 58%, transparent);
   border-radius: 0.55rem;
@@ -432,22 +453,24 @@
   overflow: hidden;
   color: #fff;
   font-size: 0.8rem;
-  font-weight: 950;
+  font-weight: 800;
   line-height: 1.08;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .dns-store-map-card-detail {
-  display: block;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
   overflow: hidden;
-  margin-top: 0.18rem;
+  margin-top: 0.1rem;
   color: var(--zone-text);
-  font-size: 0.6rem;
-  font-weight: 800;
+  font-size: 0.58rem;
+  font-weight: 650;
   line-height: 1.2;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .dns-store-map-card-badge {
@@ -457,50 +480,30 @@
   color: var(--zone-accent);
   padding: 0.22rem 0.34rem;
   font-size: 0.54rem;
-  font-weight: 950;
+  font-weight: 800;
   line-height: 1;
   text-transform: uppercase;
 }
 
-.dns-store-map-card-body {
+.dns-store-map-card-figure {
   display: grid;
-  grid-template-columns: minmax(3.5rem, auto) minmax(0, 1fr);
-  gap: 0.55rem;
-  align-items: end;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.6rem;
+  align-items: center;
+  align-self: end;
+  min-height: 0;
 }
 
-.dns-store-map-kpi {
-  display: grid;
-  gap: 0.08rem;
-}
-
-.dns-store-map-kpi strong {
+.dns-store-map-card-value {
   color: #fff;
-  font-size: 1rem;
-  font-weight: 950;
-  line-height: 1;
-}
-
-.dns-store-map-kpi small {
-  color: #8fa4c2;
-  font-size: 0.54rem;
+  font-size: 1.05rem;
   font-weight: 850;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
 }
 
-.dns-store-map-sparkline {
-  display: block;
-  height: 1.65rem;
-  min-width: 0;
-}
-
-.dns-store-map-sparkline svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--zone-accent) 45%, transparent));
+.dns-store-map-card-figure .dns-store-map-meter {
+  margin-top: 0;
 }
 
 .dns-store-map-card-bottom {
@@ -580,65 +583,22 @@
 
 /* DNS Store Dark Theme — Dark charcoal/navy with orange accents */
 :root {
-  font-size: 16px;
+  /* Корневой размер: на десктопе ровно 16px (как проектировались плотные макеты —
+     ничего не раздувается), на узких экранах плавно уменьшается. Потолок = 1rem,
+     чтобы rem-система НЕ росла выше базовой и не ломала фиксированные блоки.
+     Реконфигурация под разрешение делается брейкпоинтами/контейнер-квери, а не зумом. */
+  font-size: clamp(0.875rem, 0.45vw + 0.74rem, 1rem);
   --button-outline: rgba(255,255,255, .10);
   --badge-outline: rgba(255,255,255, .05);
   --opaque-button-border-intensity: 9;
   --elevate-1: rgba(255,255,255, .04);
   --elevate-2: rgba(255,255,255, .09);
 
-  /* Core surfaces — dark charcoal/navy */
-  --background: 230 30% 11%;          /* #1a1a2e */
-  --foreground: 0 0% 88%;             /* #e0e0e0 */
-  --border: 215 25% 18%;              /* subtle dark borders */
-
-  --card: 215 35% 14%;                /* #1e2a3a panels */
-  --card-foreground: 0 0% 88%;
-  --card-border: 215 30% 20%;
-
-  --sidebar: 220 40% 12%;
-  --sidebar-foreground: 0 0% 90%;
-  --sidebar-border: 215 30% 18%;
-  --sidebar-primary: 25 100% 50%;     /* DNS Orange #FF6B00 */
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 215 35% 18%;
-  --sidebar-accent-foreground: 0 0% 90%;
-  --sidebar-ring: 25 100% 50%;
-
-  --popover: 220 35% 13%;
-  --popover-foreground: 0 0% 88%;
-  --popover-border: 215 30% 20%;
-
-  /* Primary = DNS Orange */
-  --primary: 25 100% 50%;             /* #FF6B00 */
-  --primary-foreground: 0 0% 100%;
-
-  /* Secondary = Cool blue-gray panels */
-  --secondary: 215 35% 16%;           /* #0f3460 derived */
-  --secondary-foreground: 0 0% 88%;
-
-  --muted: 220 20% 16%;
-  --muted-foreground: 220 10% 55%;
-
-  --accent: 215 30% 18%;
-  --accent-foreground: 0 0% 88%;
-
-  --destructive: 0 72% 55%;           /* #ff4444 */
-  --destructive-foreground: 0 0% 100%;
-
-  --input: 215 25% 22%;
-  --ring: 25 100% 50%;
-
-  /* Chart colors */
-  --chart-1: 25 100% 50%;             /* Orange */
-  --chart-2: 168 100% 42%;            /* Teal #00d4aa */
-  --chart-3: 45 100% 55%;             /* Amber */
-  --chart-4: 215 80% 55%;             /* Blue */
-  --chart-5: 0 72% 55%;               /* Red */
+  /* Цветовые семантические токены (--background, --primary, --card, --sidebar-*,
+     --chart-* и т.д.) и --radius теперь живут в tokens.css (импорт в начале файла). */
 
   --font-sans: 'DNS RotondaC', 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', Menlo, monospace;
-  --radius: .5rem;
 
   --shadow-2xs: 0px 1px 2px 0px hsl(0 0% 0% / 0.2);
   --shadow-xs: 0px 1px 3px 0px hsl(0 0% 0% / 0.25);
@@ -652,15 +612,6 @@
   --tracking-normal: 0em;
   --spacing: 0.25rem;
 
-  /* DNS custom vars */
-  --dns-orange: #FF6B00;
-  --dns-orange-dim: #cc5500;
-  --dns-teal: #00d4aa;
-  --dns-amber: #ffc107;
-  --dns-red: #ff4444;
-  --dns-bg-dark: #1a1a2e;
-  --dns-panel: #1e2a3a;
-  --dns-panel-border: #2a3a4e;
   --scrollbar-track: rgba(20, 28, 43, 0.92);
   --scrollbar-track-border: rgba(44, 60, 82, 0.72);
   --scrollbar-thumb-start: rgba(255, 107, 0, 0.92);
@@ -677,6 +628,170 @@
   --accent-border: hsl(var(--accent));
   --destructive-border: hsl(var(--destructive));
 }
+
+/* Авторская планка продукта — читаемый цвет вне зависимости от темы/контекста:
+   светлый по умолчанию (тёмные фоны: авторизация, симуляция, тёмная тема),
+   тёмный — внутри светлой темы. Не зависит от токена muted-foreground. */
+.dns-product-footer-text {
+  color: rgba(226, 234, 247, 0.72);
+}
+.dns-theme-light .dns-product-footer-text {
+  color: rgba(40, 52, 72, 0.74);
+}
+
+/* ===== «Служебный вход» в стиле iOS 16 (по референсу Figma) ===== */
+.dns-ios-login-wrap {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+.dns-ios-login {
+  width: 100%;
+  max-width: 25rem;
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 30px 70px rgba(6, 12, 24, 0.45), 0 2px 10px rgba(6, 12, 24, 0.2);
+  padding: 1.5rem 1.4rem 1.6rem;
+  font-family: -apple-system, "SF Pro Text", system-ui, "Segoe UI", Roboto, sans-serif;
+  color: #1c1c1e;
+}
+.dns-ios-login__brand {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.dns-ios-login__mascot {
+  height: 3.6rem;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.18));
+}
+.dns-ios-login__title {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #1c1c1e;
+}
+.dns-ios-login__subtitle {
+  margin: 0.2rem 0 1.1rem;
+  font-size: 0.92rem;
+  line-height: 1.35;
+  color: rgba(60, 60, 67, 0.78);
+}
+/* Сегмент-контрол (iOS) */
+.dns-ios-segmented {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 2px;
+  border-radius: 0.7rem;
+  background: rgba(118, 118, 128, 0.12);
+  margin-bottom: 1.05rem;
+}
+.dns-ios-segmented__thumb {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  border-radius: 0.56rem;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 1px rgba(0, 0, 0, 0.04);
+  transition: transform 240ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.dns-ios-segmented__thumb[data-role="admin"] {
+  transform: translateX(100%);
+}
+.dns-ios-segmented__seg {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem; /* комфортная цель нажатия */
+  padding: 0.5rem;
+  border: 0;
+  background: transparent;
+  color: rgba(60, 60, 67, 0.7);
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 180ms ease;
+}
+.dns-ios-segmented__seg[aria-selected="true"] {
+  color: #1c1c1e;
+}
+/* Сгруппированные поля (iOS inset) */
+.dns-ios-field-group {
+  border-radius: 0.85rem;
+  background: #f2f2f7;
+  overflow: hidden;
+  transition: box-shadow 160ms ease;
+}
+.dns-ios-field-group:focus-within {
+  box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.2);
+}
+.dns-ios-field__input {
+  width: 100%;
+  padding: 0.92rem 1rem;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: #1c1c1e;
+  font-size: 1.05rem;
+}
+.dns-ios-field__input::placeholder {
+  color: rgba(60, 60, 67, 0.62);
+}
+.dns-ios-field-sep {
+  height: 1px;
+  margin-left: 1rem;
+  background: rgba(60, 60, 67, 0.16);
+}
+.dns-ios-error {
+  margin-top: 0.7rem;
+  border-radius: 0.7rem;
+  background: rgba(255, 59, 48, 0.1);
+  color: #d70015;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 0.6rem 0.85rem;
+}
+.dns-ios-primary {
+  width: 100%;
+  margin-top: 1.1rem;
+  padding: 0.92rem;
+  border: 0;
+  border-radius: 0.85rem;
+  background: #ff6b00;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms ease, transform 120ms ease;
+}
+.dns-ios-primary:hover { background: #ec6200; }
+.dns-ios-primary:active { transform: scale(0.985); }
+.dns-ios-primary:disabled { opacity: 0.55; cursor: default; }
+.dns-ios-ghost {
+  width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.6rem;
+  border: 0;
+  background: transparent;
+  color: #007aff;
+  font-size: 0.98rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dns-ios-ghost:disabled { opacity: 0.5; cursor: default; }
 
 /* Theme switcher */
 .dns-theme-toggle {
@@ -708,6 +823,11 @@
   --dns-admin-text-muted: #526277;
   --dns-admin-text-soft: #24354a;
   --dns-admin-text-dim: #617086;
+
+  /* Светлый набор семантических токенов (--background, --card, --border, --sidebar-* и т.д.)
+     теперь живёт в tokens.css под этим же селектором. --primary/--destructive
+     наследуются из :root. Здесь остаётся только не-цветовое/admin-специфичное. */
+
   color: #142033;
 }
 
@@ -783,6 +903,7 @@
 .dns-product-shell.dns-theme-light .dns-store-map-zone-detail,
 .dns-product-shell.dns-theme-light .dns-store-map-card-title,
 .dns-product-shell.dns-theme-light .dns-store-map-card-detail,
+.dns-product-shell.dns-theme-light .dns-store-map-card-value,
 .dns-product-shell.dns-theme-light .dns-store-map-kpi strong {
   color: #162235 !important;
 }
@@ -954,12 +1075,21 @@
   color: #24354a !important;
 }
 
+/* Белый текст — только на СПЛОШНОЙ заливке акцентом. Полупрозрачные варианты
+   (bg-[#hex]/15 у активных вкладок) в светлой теме почти белые: белый текст на
+   них не читался. Исключаем их из правила по наличию слеша в классе. */
 .dns-product-shell.dns-theme-light .dns-assessor-v2-primary,
-.dns-product-shell.dns-theme-light button[class*="bg-[#ff6b00"],
-.dns-product-shell.dns-theme-light button[class*="bg-[#FF6B00"],
-.dns-product-shell.dns-theme-light button[class*="bg-[#5eb1ff"] {
+.dns-product-shell.dns-theme-light button[class*="bg-[#ff6b00"]:not([class*="/"]),
+.dns-product-shell.dns-theme-light button[class*="bg-[#f68b1f"]:not([class*="/"]),
+.dns-product-shell.dns-theme-light button[class*="bg-[#5eb1ff"]:not([class*="/"]) {
   color: #ffffff !important;
-  box-shadow: 0 12px 24px rgba(255, 107, 0, 0.18);
+  box-shadow: 0 12px 24px rgba(246, 139, 31, 0.18);
+}
+
+/* Активная вкладка на полупрозрачной заливке: текст брендовым тёмно-оранжевым. */
+.dns-product-shell.dns-theme-light button[class*="bg-[#f68b1f]/"],
+.dns-product-shell.dns-theme-light button[class*="bg-[#ff6b00]/"] {
+  color: #9a4f06 !important;
 }
 
 .dns-product-shell.dns-theme-light .dns-assessor-v2-code-button {
@@ -1088,7 +1218,7 @@
 
 @layer components {
   .dns-product-shell {
-    min-height: 100vh;
+    min-height: 100dvh;
     position: relative;
     color: #edf3ff;
     background:
@@ -1599,19 +1729,20 @@
     line-height: 1.45;
   }
 
+  /* Выводы сравнения: секции каждого студента выровнены по строкам (subgrid),
+     чтобы блоки «Риски» и «Вопросы» всегда были на одном уровне у всех. */
   .dns-comparison-insight-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-    grid-auto-rows: 1fr;
-    align-items: stretch;
+    grid-template-rows: repeat(6, auto);
     gap: 0.85rem;
   }
 
   .dns-comparison-insight-card {
-    display: flex;
-    flex-direction: column;
+    display: grid;
+    grid-row: span 6;
+    grid-template-rows: subgrid;
     gap: 0.85rem;
-    height: 100%;
     min-width: 0;
     border: 1px solid rgba(42, 58, 78, 0.9);
     border-radius: 0.75rem;
@@ -1859,7 +1990,9 @@
 
   .dns-admin-select {
     padding-right: 2.2rem;
-    white-space: normal;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .dns-admin-textarea {

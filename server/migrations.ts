@@ -84,6 +84,7 @@ export function runMigrations(sqlite: Database.Database): void {
 
   ensureColumn(sqlite, "simulation_settings", "pre_simulation_instruction_html", "TEXT");
   ensureColumn(sqlite, "simulation_sessions", "participant_token_hash", "TEXT");
+  ensureColumn(sqlite, "simulation_sessions", "participant_email", "TEXT");
   ensureColumn(sqlite, "simulation_settings", "pre_simulation_instruction_video_asset_id", "TEXT");
   ensureColumn(sqlite, "simulation_settings", "case_weights_json", "TEXT NOT NULL DEFAULT '{}'");
   ensureColumn(sqlite, "simulation_settings", "time_influence_enabled", "INTEGER NOT NULL DEFAULT 0");

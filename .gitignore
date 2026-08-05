@@ -46,6 +46,9 @@ Thumbs.db
 .idea/
 .vscode/
 
+# Claude local settings (машинно-специфичные пути к Obsidian-vault)
+.claude/settings.local.json
+
 # Temp / archive files
 *.tmp
 *.temp
@@ -67,3 +70,10 @@ live-sessions.json
 
 # Примечание: .business/, plans/, retrospectives/ — НАМЕРЕННО в git
 # (общий приватный репозиторий: знания и история нужны обоим агентам)
+# Рабочие/эфемерные артефакты (скрипты Playwright, дампы страниц MCP)
+/tmp/
+/.playwright-mcp/
+.mcp.json
+
+# Отладочные скриншоты UI в корне (Playwright/ручная проверка) — не версионируем
+/*.png

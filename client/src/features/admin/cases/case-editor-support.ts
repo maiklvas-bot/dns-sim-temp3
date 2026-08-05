@@ -1,4 +1,5 @@
-import type { CompetencyDefinition, SimCase } from "@shared/simulation-content";
+import type { CaseCycle, CaseOption, CompetencyDefinition, SimCase } from "@shared/simulation-content";
+import { BARS_LEVEL_SCORES, hasMeaningfulText } from "@shared/case-validation";
 
 export const CASE_SIGNAL_TYPE_OPTIONS = [
   { value: "call", label: "Звонок" },
@@ -91,7 +92,7 @@ export function createEmptyCase(order: number): SimCase {
   };
 }
 
-export function createEmptyStructuredOption(level: number) {
+export function createEmptyStructuredOption(level: number): CaseOption {
   return {
     id: "",
     level,
@@ -104,6 +105,31 @@ export function createEmptyStructuredOption(level: number) {
     status: "active",
     effects: { queue: 0, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 },
     competency_scores: {},
+  };
+}
+
+// Новый шаг создаётся из двух мест — этап «Структура» мастера и редактор циклов.
+// Форма одна, иначе шаги получаются с разными умолчаниями (например, без тайминга).
+export function createEmptyCycle(id: string, order: number): CaseCycle {
+  return {
+    id,
+    cycle: order,
+    title: `Цикл ${order}`,
+    description: "",
+    source: "",
+    situation: "",
+    signal: { type: "message" as const, content: "" },
+    zonesAffected: [],
+    timing: { decisionDeadlineSeconds: 180, reminderIntervalSeconds: 180 },
+    status: "draft",
+    isFinal: false,
+    priority: "normal",
+    criticality: "normal",
+    options: [createEmptyStructuredOption(1)],
+    imageAssetId: null,
+    imageUrl: null,
+    audioAssetId: null,
+    audioUrl: null,
   };
 }
 
@@ -131,4 +157,41 @@ export function getPreviewAudioUrl(entityId: string, mode: "case" | "email" | "m
   if (mode === "case") return `/library/audio_case_${suffix}.mp3`;
   if (mode === "video") return `/library/audio_video_${suffix}.mp3`;
   return null;
+}
+
+export type BarsLevel = "none" | "weak" | "mid" | "strong" | "off_scale";
+
+export const BARS_OPTIONS: ReadonlyArray<{ level: BarsLevel; score: number; label: string; hint: string }> = [
+  { level: "none", score: 0, label: "Не влияет", hint: "Вариант не проявляет эту компетенцию" },
+  { level: "weak", score: BARS_LEVEL_SCORES.weak, label: "Слабо", hint: "Поведение из нижнего якоря" },
+  { level: "mid", score: BARS_LEVEL_SCORES.mid, label: "Средне", hint: "Формально верно, без глубины" },
+  { level: "strong", score: BARS_LEVEL_SCORES.strong, label: "Сильно", hint: "Поведение из верхнего якоря" },
+];
+
+export function barsLevelForScore(score: number | undefined | null): BarsLevel {
+  const value = Number(score || 0);
+  const match = BARS_OPTIONS.find((option) => option.score === value);
+  return match ? match.level : "off_scale";
+}
+
+export interface CaseDossierSummary {
+  filled: number;
+  total: number;
+  isComplete: boolean;
+  missing: string[];
+}
+
+export function buildCaseDossierSummary(caseInput: SimCase): CaseDossierSummary {
+  // Заполненность считается ровно теми же правилами, что и checkDiagnostics в механике
+  // (общая функция hasMeaningfulText). Иначе интерфейс показывал бы «4 из 4», а
+  // автопроверка выдавала замечания по диагностике — прямое расхождение для автора.
+  const checks: Array<{ key: string; filled: boolean }> = [
+    { key: "businessProblem", filled: hasMeaningfulText(caseInput.businessProblem) },
+    { key: "hiddenCause", filled: hasMeaningfulText(caseInput.hiddenCause) },
+    { key: "dataPoints", filled: (caseInput.dataPoints || []).some((point) => hasMeaningfulText(point.label)) },
+    { key: "falseTrails", filled: (caseInput.falseTrails || []).some((trail) => hasMeaningfulText(trail)) },
+  ];
+  const missing = checks.filter((check) => !check.filled).map((check) => check.key);
+  const filled = checks.length - missing.length;
+  return { filled, total: checks.length, isComplete: missing.length === 0, missing };
 }

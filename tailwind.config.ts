@@ -51,6 +51,18 @@ export default {
           foreground: "hsl(var(--destructive-foreground) / <alpha-value>)",
           border: "var(--destructive-border)",
         },
+        success: {
+          DEFAULT: "hsl(var(--dns-success) / <alpha-value>)",
+          foreground: "hsl(0 0% 100% / <alpha-value>)",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--dns-warning) / <alpha-value>)",
+          foreground: "hsl(0 0% 12% / <alpha-value>)",
+        },
+        info: {
+          DEFAULT: "hsl(var(--dns-info) / <alpha-value>)",
+          foreground: "hsl(0 0% 100% / <alpha-value>)",
+        },
         ring: "hsl(var(--ring) / <alpha-value>)",
         chart: {
           "1": "hsl(var(--chart-1) / <alpha-value>)",
@@ -100,6 +112,19 @@ export default {
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+      },
+      zIndex: {
+        raised: "var(--z-raised)",
+        sticky: "var(--z-sticky)",
+        dropdown: "var(--z-dropdown)",
+        overlay: "var(--z-overlay)",
+        toast: "var(--z-toast)",
+        tooltip: "var(--z-tooltip)",
+      },
+      transitionDuration: {
+        fast: "var(--duration-fast)",
+        base: "var(--duration-base)",
+        slow: "var(--duration-slow)",
       },
     },
   },

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { ThemeToggle, useDnsTheme } from "@/components/theme-toggle";
 import { BRAND_ASSETS, hideMissingBrandAsset } from "@/lib/brand-assets";
 
-type BackdropVariant = "auth" | "product" | "simulation" | "results";
+type BackdropVariant = "auth" | "product" | "simulation" | "results" | "cabinet";
 
 const BACKDROP_IMAGES: Record<BackdropVariant, { dark: string; light?: string }> = {
   auth: {
@@ -13,6 +13,10 @@ const BACKDROP_IMAGES: Record<BackdropVariant, { dark: string; light?: string }>
   product: {
     dark: BRAND_ASSETS.backgrounds.productDark,
     light: BRAND_ASSETS.backgrounds.productLight,
+  },
+  cabinet: {
+    dark: BRAND_ASSETS.backgrounds.cabinetDark,
+    light: BRAND_ASSETS.backgrounds.cabinetLight,
   },
   simulation: {
     dark: BRAND_ASSETS.backgrounds.simulationDark,
@@ -28,7 +32,7 @@ export function BrandVisualBackdrop({ variant }: { variant: BackdropVariant }) {
   const images = BACKDROP_IMAGES[variant];
 
   return (
-    <div className="dns-visual-backdrop" aria-hidden="true">
+    <div className={`dns-visual-backdrop dns-visual-backdrop--${variant}`} aria-hidden="true">
       <img
         src={images.dark}
         alt=""

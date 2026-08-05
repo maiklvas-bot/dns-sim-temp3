@@ -1,7 +1,7 @@
 .dns-visual-shell {
-  --dns-visual-orange: #ff6b00;
-  --dns-visual-blue: #4a9eff;
-  --dns-visual-cyan: #00d4aa;
+  --dns-visual-orange: hsl(var(--dns-orange));
+  --dns-visual-blue: hsl(var(--dns-blue));
+  --dns-visual-cyan: hsl(var(--dns-teal));
   --dns-visual-text: #f7f9ff;
   --dns-visual-muted: #a4b0c5;
   --dns-visual-panel: rgba(10, 18, 31, 0.9);
@@ -9,7 +9,7 @@
   --dns-visual-border: rgba(133, 156, 190, 0.34);
   position: relative;
   isolation: isolate;
-  min-height: 100vh;
+  min-height: 100dvh;
   color: var(--dns-visual-text);
 }
 
@@ -120,6 +120,42 @@
   object-fit: cover;
   opacity: 0.035;
   mix-blend-mode: screen;
+}
+
+/* Cabinet-вариант (новые фоны кабинетов админа/оценщика):
+   показываем фон ярче и чётче (cover/center, без зума/блюра), без сетки и шума.
+   Читаемость контента обеспечивает .dns-theme-overlay поверх (настроен в шеллах). */
+.dns-visual-backdrop--cabinet .dns-visual-backdrop__grid,
+.dns-visual-backdrop--cabinet .dns-visual-backdrop__noise {
+  display: none;
+}
+/* Фиксируем backdrop по вьюпорту: на длинных (скроллящихся) разделах absolute+cover
+   растягивал картинку на всю высоту прокрутки и зумил её. fixed = всегда корректный
+   масштаб + фон стоит на месте под контентом. Параллакс добавляется через --dns-bg-shift. */
+.dns-visual-backdrop--cabinet {
+  position: fixed;
+  inset: 0;
+  will-change: transform;
+}
+.dns-visual-backdrop--cabinet .dns-visual-backdrop__image {
+  filter: saturate(1);
+  transform: translate3d(0, calc(var(--dns-bg-shift, 0px) * -1), 0) scale(1.06);
+  transition: transform 120ms linear;
+  animation: none;
+  object-fit: cover;
+  object-position: center;
+}
+/* Непрозрачность строго по картинке+теме, чтобы не стекать обе:
+   тёмная тема → нейбула (dark), светлая → взрыв (light). */
+.dns-visual-backdrop--cabinet .dns-visual-backdrop__image--dark { opacity: 0.92; }
+.dns-visual-backdrop--cabinet .dns-visual-backdrop__image--light { opacity: 0; }
+.dns-theme-light .dns-visual-backdrop--cabinet .dns-visual-backdrop__image--dark { opacity: 0; }
+.dns-theme-light .dns-visual-backdrop--cabinet .dns-visual-backdrop__image--light { opacity: 0.95; }
+.dns-visual-backdrop--cabinet .dns-visual-backdrop__gradient {
+  background: radial-gradient(circle at 50% 42%, rgba(6, 12, 22, 0) 0%, rgba(6, 12, 22, 0.18) 64%, rgba(5, 10, 19, 0.55) 100%);
+}
+.dns-theme-light .dns-visual-backdrop--cabinet .dns-visual-backdrop__gradient {
+  background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0) 0%, rgba(246, 248, 252, 0.22) 64%, rgba(235, 241, 249, 0.5) 100%);
 }
 
 .dns-visual-logo {
@@ -1136,6 +1172,7 @@ html[data-dns-theme="light"] .dns-access-dialog [class*="bg-[#141c2b"] {
   z-index: 12;
   display: grid;
   justify-items: center;
+  gap: 0.5rem;
   text-align: center;
 }
 
@@ -1154,11 +1191,13 @@ html[data-dns-theme="light"] .dns-access-dialog [class*="bg-[#141c2b"] {
 
 .dns-home-header__copy p {
   max-width: 43rem;
-  margin-top: -0.3rem;
+  margin-top: 0;
+  margin-inline: auto;
   color: #c1ccdc;
-  font-size: clamp(0.76rem, 0.85vw, 0.94rem);
-  font-weight: 550;
-  line-height: 1.45;
+  font-size: clamp(0.8rem, 0.85vw, 0.95rem);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
   text-shadow: 0 2px 16px rgba(0, 0, 0, 0.74);
 }
 
@@ -1216,15 +1255,15 @@ html[data-dns-theme="light"] .dns-access-dialog [class*="bg-[#141c2b"] {
 .dns-home-character--welcome {
   right: -1rem;
   width: auto;
-  height: clamp(26rem, 56svh, 39rem);
+  height: clamp(23rem, 50svh, 35rem);
 }
 
 .dns-home-analyst-scene {
   position: absolute;
   z-index: 2;
   bottom: -0.75rem;
-  left: -0.5rem;
-  width: clamp(26rem, 33vw, 40rem);
+  left: -1.5rem;
+  width: clamp(22rem, 27vw, 33rem);
   aspect-ratio: 1303 / 1251;
   animation: dns-visual-float 7s ease-in-out -3.5s infinite;
 }
@@ -1293,9 +1332,9 @@ html[data-dns-theme="light"] .dns-access-dialog [class*="bg-[#141c2b"] {
 .dns-home-hud {
   position: absolute;
   z-index: 4;
-  top: 8%;
+  top: 2%;
   display: grid;
-  width: min(14rem, 72%);
+  width: min(13rem, 70%);
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.7rem;
   align-items: start;
@@ -1314,11 +1353,11 @@ html[data-dns-theme="light"] .dns-access-dialog [class*="bg-[#141c2b"] {
 }
 
 .dns-home-hud--left {
-  left: 0;
+  left: -1rem;
 }
 
 .dns-home-hud--right {
-  right: -0.65rem;
+  right: -1rem;
 }
 
 .dns-home-hud__icon {

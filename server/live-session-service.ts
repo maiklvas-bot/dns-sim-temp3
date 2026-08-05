@@ -260,6 +260,19 @@ export class LiveSessionService {
     return this.toSessionState(session);
   }
 
+  /** участник сам вводит свою корпоративную почту при входе по коду (оценщик её не назначает) */
+  setParticipantEmail(liveSessionId: string, email: string): LiveSimulationSessionState | null {
+    const session = this.sessions.get(liveSessionId);
+    if (!session) {
+      return null;
+    }
+
+    session.config = { ...session.config, participantEmail: email };
+    session.updatedAt = Date.now();
+    this.schedulePersistSessions();
+    return this.toSessionState(session);
+  }
+
   closeSession(liveSessionId: string) {
     const session = this.sessions.get(liveSessionId);
     if (!session) {
@@ -688,6 +701,7 @@ export class LiveSessionService {
       accessCode: session.config.accessCode,
       participantName: session.config.participantName,
       participantRole: session.config.participantRole || "",
+      participantEmail: session.config.participantEmail || "",
       assessorName: session.config.assessorName,
       createdAt: session.config.createdAt,
       status: session.status,
