@@ -227,6 +227,36 @@ for (const field of ["item.was", "item.became", "item.why"]) {
   );
 }
 
+// Выбранная карточка в кабинете оценщика обязана читаться как выбранная.
+// Подсветка идёт по фактическому значению: раньше она требовала ещё и признак
+// «подтверждено», и у участника с сохранёнными настройками не было выбрано ничего.
+const assessorRuntime = readText("client/src/features/assessor/AssessorWorkspaceRuntime.tsx");
+assertCondition(
+  !/scenarioConfirmed && difficulty ===/.test(assessorRuntime),
+  "Подсветка выбранного режима не должна зависеть от признака подтверждения",
+);
+assertCondition(
+  (assessorRuntime.match(/aria-pressed=\{difficulty ===/g) || []).length >= 3,
+  "Выбранная карточка режима должна сообщать о выборе программам чтения с экрана",
+);
+const assessorCss = readText("client/src/styles/assessor.css");
+const responsiveCss = readText("client/src/styles/responsive.css");
+assertCondition(
+  /choice-card--active[\s\S]{0,400}content: "✓"/.test(assessorCss),
+  "У выбранной карточки должна быть отметка, чтобы выбор читался не только цветом",
+);
+for (const [name, css] of [["assessor.css", assessorCss], ["responsive.css", responsiveCss]]) {
+  // Правило выбранной карточки — то, у которого объявлена толщина рамки:
+  // селектор `--active` встречается и в правилах приглушения соседей.
+  const declaresThickBorder = css
+    .split("}")
+    .some((block) => /choice-card--active/.test(block) && /border-width: 2px/.test(block));
+  assertCondition(
+    declaresThickBorder,
+    `${name}: рамка выбранной карточки должна быть заметной, а не волосяной`,
+  );
+}
+
 const releaseHistory = readText("client/src/data/release-history.ts");
 assertCondition(
   releaseHistory.includes("problems") && releaseHistory.includes("solved"),
