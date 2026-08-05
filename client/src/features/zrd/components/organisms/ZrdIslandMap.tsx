@@ -374,7 +374,19 @@ export function ZrdIslandMap({ view }: { view: ZrdSeatView }) {
   }));
 
   return (
-    <div style={{ position: "absolute", inset: 0, background: "#0b0d12" }}>
+    <div style={{ position: "absolute", inset: 0, background: "#0b0d12", overflow: "hidden" }}>
+      {/* фон: та же карта на весь слот (cover), размытая и затемнённая — вместо чёрных полей
+          по бокам мягкое продолжение карты; острова резко рисуются поверх в svg (meet). */}
+      <img
+        src={districtArt}
+        alt=""
+        aria-hidden
+        style={{
+          position: "absolute", inset: 0, width: "100%", height: "100%",
+          objectFit: "cover", filter: "blur(30px) brightness(0.68) saturate(1.05)",
+          transform: "scale(1.18)", pointerEvents: "none",
+        }}
+      />
       <svg
         viewBox={`${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`}
         preserveAspectRatio="xMidYMid meet"
