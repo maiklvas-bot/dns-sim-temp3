@@ -274,6 +274,23 @@ for (const [name, css] of [["assessor.css", assessorCss], ["responsive.css", res
   );
 }
 
+// Справочник: клик по разделу открывает страницу и сразу показывает её состав.
+// Пока состав прятался только под «+», о том, что внутри что-то есть, догадаться
+// было нельзя.
+const wikiSections = readText("client/src/features/admin/wiki/AdminWikiReference.tsx");
+assertCondition(
+  /const openSection[\s\S]{0,400}setExpandedKeys/.test(wikiSections),
+  "Открытие раздела справочника должно раскрывать его состав",
+);
+assertCondition(
+  /useState<string\[\]>\(\[`theory-/.test(wikiSections),
+  "Раздел, открытый при первом заходе в справочник, тоже должен показывать состав",
+);
+assertCondition(
+  /scrollToPart\(part\.id\)/.test(wikiSections) && /id=\{`wiki-part-/.test(wikiSections),
+  "Подразделы должны вести к своим местам в содержимом справочника",
+);
+
 const releaseHistory = readText("client/src/data/release-history.ts");
 assertCondition(
   releaseHistory.includes("problems") && releaseHistory.includes("solved"),
