@@ -353,6 +353,7 @@ const acceptedIssueSchema = z.object({
   check: z.enum(["bars_conformance", "antigaming", "diagnostics", "effect_reality"]),
   cycleId: idStringSchema.nullable().optional().default(null),
   optionId: idStringSchema.nullable().optional().default(null),
+  competencyId: idStringSchema.nullable().optional().default(null),
   reason: safeLooseTextSchema(5_000),
   acceptedForMessage: safeLooseTextSchema(1_000).nullable().optional().default(null),
 });

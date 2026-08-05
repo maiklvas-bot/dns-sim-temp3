@@ -281,8 +281,27 @@ assertCondition(
 // Компонент карточки мало создать — он должен быть подключён, иначе принять негде.
 const validationPanel = readText("client/src/features/admin/cases/CaseValidationPanel.tsx");
 assertCondition(
-  /<IssueCard[\s/>]/.test(validationPanel),
+  /<IssueGroupCard[\s/>]/.test(validationPanel),
   "Замечания показываются карточкой с объяснением, а не сухим списком",
+);
+// Однотипные замечания идут одной группой: иначе автор получает десятки
+// одинаковых карточек и перестаёт различать за ними конкретные места.
+assertCondition(
+  /byCheck|groupBy|issue\.check/.test(validationPanel),
+  "Замечания одного вида проверки должны объединяться в одну группу",
+);
+const issueGroupCard = readText("client/src/features/admin/cases/master/IssueGroupCard.tsx");
+assertCondition(
+  issueGroupCard.includes("explainIssue") && issueGroupCard.includes(".why"),
+  "Группа замечаний объясняет, чем они вредят оценке, а не только что не так",
+);
+assertCondition(
+  issueGroupCard.includes("competencyId"),
+  "Место замечания должно называться вместе с компетенцией: у варианта их бывает несколько",
+);
+assertCondition(
+  /findIndex/.test(issueGroupCard) && /Цикл \$\{/.test(issueGroupCard),
+  "Место замечания называется номером цикла и варианта, а не служебным идентификатором",
 );
 assertCondition(
   validationPanel.includes("acceptedIssues"),

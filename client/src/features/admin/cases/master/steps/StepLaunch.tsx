@@ -1,4 +1,4 @@
-import type { SimCase } from "@shared/simulation-content";
+import type { CompetencyDefinition, SimCase } from "@shared/simulation-content";
 import { Field } from "../../../components/AdminFields";
 import { CaseMediaPanel } from "../../CaseEditors";
 import { CaseValidationPanel } from "../../CaseValidationPanel";
@@ -12,6 +12,7 @@ export function StepLaunch({
   onTogglePreviewAudio,
   activePreviewKey,
   onChange,
+  competencies,
 }: {
   entity: SimCase;
   assets: any[];
@@ -19,6 +20,8 @@ export function StepLaunch({
   onTogglePreviewAudio: (previewKey: string, url: string | null) => void;
   activePreviewKey: string | null;
   onChange: (patch: Partial<SimCase>) => void;
+  /** Нужны, чтобы в замечаниях компетенция называлась по-русски, а не служебным id. */
+  competencies: CompetencyDefinition[];
 }) {
   const updateTiming = (patch: Record<string, number | null>) => {
     onChange({ timing: { ...(entity.timing || {}), ...patch } });
@@ -83,7 +86,7 @@ export function StepLaunch({
         onChange={(value) => onChange({ sortOrder: Number(value) })}
       />
 
-      <CaseValidationPanel caseInput={entity} onChange={onChange} />
+      <CaseValidationPanel caseInput={entity} onChange={onChange} competencies={competencies} />
     </div>
   );
 }

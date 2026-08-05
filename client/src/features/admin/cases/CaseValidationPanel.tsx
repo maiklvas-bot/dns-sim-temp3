@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import type { AcceptedIssue, SimCase } from "@shared/simulation-content";
+import type { AcceptedIssue, CompetencyDefinition, SimCase } from "@shared/simulation-content";
 import { isIssueAccepted, validateCase, type CaseValidationIssue } from "@shared/case-validation";
-import { IssueCard } from "./master/IssueCard";
+import { IssueGroupCard } from "./master/IssueGroupCard";
 
 /**
  * Замечания автопроверки на этапе «Оформление и запуск».
@@ -13,10 +13,13 @@ import { IssueCard } from "./master/IssueCard";
 export function CaseValidationPanel({
   caseInput,
   onChange,
+  competencies = [],
 }: {
   caseInput: SimCase | null;
   /** Без него панель только показывает: принять замечание будет нечем. */
   onChange?: (patch: Partial<SimCase>) => void;
+  /** Чтобы компетенция в замечании называлась по-русски, а не служебным id. */
+  competencies?: CompetencyDefinition[];
 }) {
   const issues = useMemo(() => (caseInput ? validateCase(caseInput) : []), [caseInput]);
   const accepted = useMemo(() => caseInput?.acceptedIssues || [], [caseInput]);
@@ -24,6 +27,18 @@ export function CaseValidationPanel({
     () => issues.filter((issue) => !isIssueAccepted(issue, accepted)),
     [issues, accepted],
   );
+
+  // Замечания одного вида объясняются одинаково, поэтому показываются одной
+  // группой: тридцать семь одинаковых карточек автор просто перестаёт читать.
+  const groups = useMemo(() => {
+    const byCheck = new Map<CaseValidationIssue["check"], CaseValidationIssue[]>();
+    for (const issue of issues) {
+      const list = byCheck.get(issue.check);
+      if (list) list.push(issue);
+      else byCheck.set(issue.check, [issue]);
+    }
+    return Array.from(byCheck.entries());
+  }, [issues]);
 
   if (!caseInput) {
     return null;
@@ -81,11 +96,13 @@ export function CaseValidationPanel({
       </div>
 
       <div className="mt-3 space-y-2">
-        {issues.map((issue, issueIndex) => (
-          <IssueCard
-            key={`${issue.check}-${issue.cycleId || ""}-${issue.optionId || ""}-${issueIndex}`}
-            issue={issue}
+        {groups.map(([check, groupIssues]) => (
+          <IssueGroupCard
+            key={check}
+            issues={groupIssues}
             accepted={accepted}
+            caseInput={caseInput}
+            competencies={competencies}
             onAccept={acceptIssue}
             onRevoke={revokeIssue}
           />

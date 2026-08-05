@@ -10,6 +10,15 @@ export interface CaseValidationIssue {
   check: "bars_conformance" | "antigaming" | "diagnostics" | "effect_reality";
   cycleId?: string;
   optionId?: string;
+  /**
+   * Компетенция, к которой относится замечание — есть только у проверки баллов.
+   *
+   * Хранится отдельным полем, а не вынимается из текста сообщения: интерфейс
+   * группирует замечания по месту, и разбор строки развалился бы от любой
+   * правки формулировки. Заодно это различает несколько замечаний у одного
+   * варианта — иначе принятие одного снимало бы их все разом.
+   */
+  competencyId?: string;
   message: string;
 }
 
@@ -27,6 +36,7 @@ function checkBarsConformance(caseInput: SimCase): CaseValidationIssue[] {
             check: "bars_conformance",
             cycleId: cycle.id,
             optionId: option.id,
+            competencyId,
             message: `Вариант "${option.id}": балл компетенции "${competencyId}" (${score}) не соответствует уровню BARS (1 слабо / 3 средне / 5 сильно).`,
           });
         }
@@ -206,6 +216,9 @@ export function isIssueAccepted(issue: CaseValidationIssue, accepted: AcceptedIs
     if (!item.reason || !item.reason.trim()) return false;
     if ((item.cycleId ?? null) !== (issue.cycleId ?? null)) return false;
     if ((item.optionId ?? null) !== (issue.optionId ?? null)) return false;
+    // У одного варианта бывает несколько замечаний по разным компетенциям.
+    // Без этого сравнения принятие одного из них снимало бы сразу все.
+    if ((item.competencyId ?? null) !== (issue.competencyId ?? null)) return false;
     return true;
   });
 }

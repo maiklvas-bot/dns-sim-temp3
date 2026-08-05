@@ -80,6 +80,8 @@ export interface AcceptedIssue {
   check: "bars_conformance" | "antigaming" | "diagnostics" | "effect_reality";
   cycleId?: string | null;
   optionId?: string | null;
+  /** Компетенция замечания — различает несколько замечаний у одного варианта. */
+  competencyId?: string | null;
   /** Почему автор считает, что в этом кейсе так и задумано. Обязательно. */
   reason: string;
   /**

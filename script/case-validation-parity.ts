@@ -245,4 +245,35 @@ assert.equal(
   "принятие без указания варианта не снимает замечание по конкретному варианту",
 );
 
+// У одного варианта бывает несколько замечаний по разным компетенциям.
+// Принятие одного из них не должно снимать остальные — иначе автор,
+// объяснив один балл, молча закрывает проверку по всему варианту.
+const multiCase = buildCase();
+multiCase.cycles[0].options[0].competency_scores = { communication: 2, planning: 4 };
+const multiIssues = validateCase(multiCase).filter((issue) => issue.check === "bars_conformance");
+assert.equal(multiIssues.length, 2, "два балла вне шкалы дают два замечания");
+assert.equal(multiIssues[0].cycleId, multiIssues[1].cycleId, "замечания в одном цикле");
+assert.equal(multiIssues[0].optionId, multiIssues[1].optionId, "замечания у одного варианта");
+assert.notEqual(
+  multiIssues[0].competencyId,
+  multiIssues[1].competencyId,
+  "замечания различаются компетенцией",
+);
+
+const acceptedOneCompetency = [
+  {
+    check: "bars_conformance" as const,
+    cycleId: multiIssues[0].cycleId,
+    optionId: multiIssues[0].optionId,
+    competencyId: multiIssues[0].competencyId,
+    reason: "для этой компетенции шкала другая",
+  },
+];
+assert.equal(isIssueAccepted(multiIssues[0], acceptedOneCompetency), true, "принятое замечание снято");
+assert.equal(
+  isIssueAccepted(multiIssues[1], acceptedOneCompetency),
+  false,
+  "вторая компетенция того же варианта остаётся с замечанием",
+);
+
 console.log("case-validation parity checks passed");
