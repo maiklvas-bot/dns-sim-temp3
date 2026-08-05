@@ -280,14 +280,42 @@
 .dns-product-shell.dns-assessor-shell .dns-assessor-v2-info-card {
   transition: border-color 160ms ease, background 160ms ease, color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
 }
+/* Выбранная карточка: оранжевая рамка в два пикселя, заливка акцентом и
+   оранжевое свечение — один и тот же признак в обеих темах.
+
+   Раньше здесь стояло синее свечение, а светлая тема поверх красила рамку
+   оранжевым: выбранная карточка получала синий ореол вокруг оранжевого края
+   и заливку в 12% с уходом в белый. На светлом фоне это не читалось как
+   выбор — отсюда «клацаешь, а не выделяется». */
 .dns-product-shell.dns-assessor-shell .dns-assessor-v2-choice-card--active,
 .dns-product-shell.dns-assessor-shell .dns-assessor-v2-info-card--active {
-  border-color: rgba(94, 177, 255, 0.9) !important;
-  background: rgba(94, 177, 255, 0.16) !important;
+  border-color: var(--dns-orange-hex, #ff6b00) !important;
+  border-width: 2px !important;
+  background: rgba(255, 107, 0, 0.18) !important;
   transform: scale(1.03);
-  box-shadow: 0 0 0 1.5px rgba(94, 177, 255, 0.55), 0 8px 26px rgba(94, 177, 255, 0.24);
+  box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.35), 0 10px 28px rgba(255, 107, 0, 0.22);
   position: relative;
   z-index: 1;
+}
+
+/* Выбор должен читаться и без цвета: у выбранной карточки — отметка в углу. */
+.dns-product-shell.dns-assessor-shell .dns-assessor-v2-choice-card--active::after,
+.dns-product-shell.dns-assessor-shell .dns-assessor-v2-info-card--active::after {
+  content: "✓";
+  position: absolute;
+  top: 0.45rem;
+  right: 0.55rem;
+  display: flex;
+  width: 1.15rem;
+  height: 1.15rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--dns-orange-hex, #ff6b00);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
 }
 /* Невыбранные приглушаются сильнее для контраста */
 .dns-product-shell.dns-assessor-shell .dns-assessor-v2-card-grid:has(.dns-assessor-v2-choice-card--active) .dns-assessor-v2-choice-card:not(.dns-assessor-v2-choice-card--active) {
@@ -2316,18 +2344,14 @@
   color: #f5c04e !important;
 }
 
+/* Сводка уходит под основную колонку только там, где колонок действительно две
+   (порог 980 ниже). Раньше это правило стояло на 1100: при ширине около 1024 —
+   а это ровно десктоп 1536 при масштабе 150% — грид держал три колонки, но
+   сводку принудительно сажали во вторую. Она уезжала вниз, справа оставалось
+   304px пустоты, и кабинет выглядел мобильной версией на большом экране. */
 @media (max-width: 1100px) {
-  .dns-product-shell .dns-assessor-v2-shell {
-    grid-template-columns: 7rem minmax(0, 1fr);
-  }
-
   .dns-product-shell .dns-assessor-v2-main {
     border-right: 0;
-  }
-
-  .dns-product-shell .dns-assessor-v2-side {
-    grid-column: 2;
-    border-top: 1px solid rgba(29, 45, 65, 0.9);
   }
 }
 
@@ -2824,6 +2848,7 @@
 
   .dns-product-shell .dns-assessor-v2-side {
     grid-column: 2;
+    border-top: 1px solid rgba(29, 45, 65, 0.9);
   }
 }
 
@@ -2981,4 +3006,64 @@
   .dns-product-shell.dns-assessor-shell .dns-assessor-v2-rail-footer-button {
     min-height: 44px;
   }
+}
+
+/* ============================================================
+   Справочник открывается и в кабинете оценщика, где обёртки
+   .dns-admin-wiki нет: там корень — сам .dns-admin-wiki-reference.
+   Без этих правил в светлой теме его шапка оставалась тёмной
+   плашкой с белым текстом на белой странице.
+   ============================================================ */
+.dns-admin-wiki-reference .dns-assessor-wiki-hero h2 {
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.dns-admin-wiki-reference .dns-assessor-wiki-hero {
+  border-radius: 1.1rem;
+  backdrop-filter: none;
+}
+.dns-admin-wiki-reference .dns-assessor-wiki-back {
+  border-radius: 0.85rem;
+}
+
+.dns-theme-light .dns-admin-wiki-reference .dns-assessor-wiki-hero {
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(20, 34, 56, 0.06), 0 8px 24px rgba(20, 34, 56, 0.05);
+}
+.dns-theme-light .dns-admin-wiki-reference .dns-assessor-wiki-hero h2 {
+  color: #1c1c1e !important;
+}
+.dns-theme-light .dns-admin-wiki-reference .dns-assessor-wiki-hero p {
+  color: rgba(60, 60, 67, 0.74) !important;
+}
+.dns-theme-light .dns-admin-wiki-reference .dns-assessor-wiki-back {
+  background: #f2f2f7 !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+  color: #007aff !important;
+}
+
+.dns-theme-dark .dns-admin-wiki-reference .dns-assessor-wiki-hero {
+  background: rgba(34, 38, 45, 0.92) !important;
+}
+.dns-theme-dark .dns-admin-wiki-reference .dns-assessor-wiki-back {
+  background: rgba(0, 0, 0, 0.24) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Меню справочника в светлой теме: подписи и подразделы шли светло-синим
+   из тёмного макета — на белой панели контраст падал до 1.9 при норме 4.5. */
+.dns-theme-light .dns-admin-wiki-menu {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(24, 52, 92, 0.16) !important;
+}
+.dns-theme-light .dns-admin-wiki-menu ul button {
+  color: #2b4568 !important;
+}
+.dns-theme-light .dns-admin-wiki-menu ul button:hover {
+  color: #0e1c30 !important;
+}
+.dns-theme-light .dns-admin-wiki-menu > div > div > div:first-child {
+  color: #41618c !important;
 }

@@ -1136,10 +1136,15 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         </span>
       </div>
 
+      {/* Подсветка идёт по фактическому значению, а не по признаку «подтверждено».
+          Раньше у участника с сохранёнными настройками сложность стояла в сводке
+          справа, а слева не была выбрана ни одна плитка: подтверждение сбрасывалось
+          при загрузке настроек. Признак «подтверждено» остаётся у плашки выше. */}
       <div className="dns-assessor-v2-card-grid dns-assessor-v2-card-grid--scenarios">
         <button
           type="button"
-          className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "medium" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
+          aria-pressed={difficulty === "medium" && !manualSelection}
+          className={`dns-assessor-v2-choice-card ${difficulty === "medium" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("medium")}
         >
           <span>Стандартный</span>
@@ -1149,7 +1154,8 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         </button>
         <button
           type="button"
-          className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "easy" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
+          aria-pressed={difficulty === "easy" && !manualSelection}
+          className={`dns-assessor-v2-choice-card ${difficulty === "easy" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("easy")}
         >
           <span>Лёгкий</span>
@@ -1159,7 +1165,8 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         </button>
         <button
           type="button"
-          className={`dns-assessor-v2-choice-card ${scenarioConfirmed && difficulty === "hard" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
+          aria-pressed={difficulty === "hard" && !manualSelection}
+          className={`dns-assessor-v2-choice-card ${difficulty === "hard" && !manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("hard")}
         >
           <span>Сложный</span>
@@ -1169,7 +1176,8 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         </button>
         <button
           type="button"
-          className={`dns-assessor-v2-choice-card dns-assessor-v2-choice-card--manual ${scenarioConfirmed && manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
+          aria-pressed={manualSelection}
+          className={`dns-assessor-v2-choice-card dns-assessor-v2-choice-card--manual ${manualSelection ? "dns-assessor-v2-choice-card--active" : ""}`}
           onClick={() => applyScenario("medium", true)}
         >
           <span>Экспертный</span>

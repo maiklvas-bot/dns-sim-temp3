@@ -328,12 +328,16 @@
   box-shadow: 0 8px 22px rgba(44, 67, 98, 0.07);
 }
 
+/* Заливка в 12% с уходом в белый на белом фоне не читалась как выбор.
+   Тон плотнее, рамка сплошная и в два пикселя — тот же признак, что и в тёмной теме. */
 .dns-product-shell.dns-theme-light .dns-assessor-v2-choice-card--active,
 .dns-product-shell.dns-theme-light .dns-assessor-v2-info-card--active,
 .dns-product-shell.dns-theme-light .dns-assessor-v2-mode-note--active,
 .dns-product-shell.dns-theme-light .dns-assessor-v2-participant-card--active {
-  background: linear-gradient(135deg, rgba(255, 107, 0, 0.12), #ffffff) !important;
-  border-color: rgba(255, 107, 0, 0.68) !important;
+  background: rgba(255, 107, 0, 0.14) !important;
+  border-color: #ff6b00 !important;
+  border-width: 2px !important;
+  box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.28), 0 10px 26px rgba(255, 107, 0, 0.16) !important;
 }
 
 .dns-product-shell.dns-theme-light .dns-assessor-v2-choice-card--disabled {

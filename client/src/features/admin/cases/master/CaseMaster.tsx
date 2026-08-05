@@ -168,6 +168,7 @@ export function CaseMaster({
               onTogglePreviewAudio={onTogglePreviewAudio}
               activePreviewKey={activePreviewKey}
               onChange={patch}
+              competencies={competencies}
             />
           )}
 

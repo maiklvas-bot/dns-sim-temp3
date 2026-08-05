@@ -4,6 +4,7 @@ import {
   ChevronDown, ChevronUp, ClipboardCheck, Gauge, GitBranch, Info, ListChecks, Map,
   MousePointerClick, Settings2, Shield, SlidersHorizontal, Target, UserCheck,
 } from "lucide-react";
+import { AdminWikiReference } from "@/features/admin/wiki/AdminWikiReference";
 
 type AssessorWikiFocus =
   | "entry"
@@ -256,152 +257,32 @@ function WikiScreenshot({ focus, label }: { focus: AssessorWikiFocus; label: str
   );
 }
 
-export function AssessorWiki({
-  onBack,
-  processOpen,
-  onToggleProcess,
-}: {
-  onBack: () => void;
-  processOpen: boolean;
-  onToggleProcess: () => void;
-}) {
+/**
+ * Справочник оценщика.
+ *
+ * Раньше это была одна длинная сетка карточек — тот же вид, от которого уже
+ * отказались в кабинете администратора. Теперь обе роли открывают один и тот
+ * же справочник: слева разделы с составом, справа содержание выбранного.
+ * Отличаются только заголовки и набор разбираемых экранов.
+ */
+export function AssessorWiki({ onBack }: { onBack: () => void; processOpen?: boolean; onToggleProcess?: () => void }) {
   return (
-    <div className="dns-assessor-wiki space-y-5">
-      <section className="dns-assessor-wiki-hero">
-        <div>
-          <div className="dns-assessor-wiki-kicker">WIKI оценщика</div>
-          <h2>Как настроить и провести симуляцию</h2>
-          <p>
-            Эта страница объясняет каждый блок меню оценщика: что он меняет, как влияет на сценарий,
-            где возникает зависимость и какой результат увидит заказчик в отчете.
-          </p>
-        </div>
-        <button type="button" onClick={onBack} className="dns-assessor-wiki-back">
-          <ArrowLeft className="h-4 w-4" />
-          Вернуться к настройке
-        </button>
-      </section>
-
-      <section className="dns-assessor-wiki-summary">
-        <div>
-          <MousePointerClick className="h-5 w-5" />
-          <span>1. Оценщик задает рамки</span>
-        </div>
-        <div>
-          <GitBranch className="h-5 w-5" />
-          <span>2. Система строит сценарий</span>
-        </div>
-        <div>
-          <Activity className="h-5 w-5" />
-          <span>3. Участник принимает решения</span>
-        </div>
-        <div>
-          <ClipboardCheck className="h-5 w-5" />
-          <span>4. Отчет показывает доказательства</span>
-        </div>
-      </section>
-
-      <section className="dns-assessor-wiki-note">
-        <Info className="h-5 w-5" />
-        <div>
-          <h3>Главный принцип оценки</h3>
-          <p>
-            Итог не должен быть "ощущением оценщика". Он строится из решений участника:
-            выбранные кейсы и каналы дают ситуации, решения меняют метрики магазина и формируют
-            вклад в компетенции, а отчет собирает это в понятную картину.
-          </p>
-        </div>
-      </section>
-
-      <section className="dns-assessor-wiki-grid">
-        {ASSESSOR_WIKI_BLOCKS.map((block) => {
-          const Icon = block.icon;
-          return (
-            <article key={block.id} className="dns-assessor-wiki-card">
-              <div className="dns-assessor-wiki-card-head">
-                <div className="dns-assessor-wiki-icon">
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <h3>{block.title}</h3>
-                  <p>{block.label}</p>
-                </div>
-              </div>
-              <WikiScreenshot focus={block.focus} label={block.label} />
-              <p className="dns-assessor-wiki-card-summary">{block.summary}</p>
-              <div className="dns-assessor-wiki-columns">
-                <div>
-                  <h4>Как менять</h4>
-                  <ul>
-                    {block.controls.map((item) => <li key={item}>{item}</li>)}
-                  </ul>
-                </div>
-                <div>
-                  <h4>Динамика</h4>
-                  <ul>
-                    {block.dynamics.map((item) => (
-                      <li key={item.text} className={`dns-assessor-wiki-dynamic dns-assessor-wiki-dynamic--${item.type}`}>
-                        {item.type === "up" && <ArrowUpRight className="h-3.5 w-3.5" />}
-                        {item.type === "down" && <ArrowDownRight className="h-3.5 w-3.5" />}
-                        {item.type === "neutral" && <Info className="h-3.5 w-3.5" />}
-                        <span>{item.text}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </article>
-          );
-        })}
-      </section>
-
-      <section className="dns-assessor-wiki-process">
-        <button type="button" onClick={onToggleProcess} className="dns-assessor-wiki-process-toggle">
-          <div>
-            <div className="dns-assessor-wiki-kicker">Процесс оценки</div>
-            <h3>BPMN-схема настройки и прохождения симуляции</h3>
-            <p>Большой блок для сотрудника без погружения в механику: от настройки до отчета.</p>
-          </div>
-          {processOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-        </button>
-        {processOpen && (
-          <div className="dns-assessor-bpmn">
-            <div className="dns-assessor-bpmn-lanes">
-              <span>Оценщик</span>
-              <span>Система</span>
-              <span>Участник</span>
-            </div>
-            <div className="dns-assessor-bpmn-flow">
-              {WIKI_PROCESS_STEPS.map((step, index) => (
-                <div key={`${step.lane}-${step.title}`} className="dns-assessor-bpmn-node">
-                  <div className="dns-assessor-bpmn-lane">{step.lane}</div>
-                  <div className="dns-assessor-bpmn-title">{step.title}</div>
-                  <div className="dns-assessor-bpmn-note">{step.note}</div>
-                  {index < WIKI_PROCESS_STEPS.length - 1 && <ArrowRight className="dns-assessor-bpmn-arrow h-4 w-4" />}
-                </div>
-              ))}
-            </div>
-            <div className="dns-assessor-bpmn-dependencies">
-              <div>
-                <Target className="h-4 w-4" />
-                Сложность и ручной выбор определяют, какие компетенции реально проверяются.
-              </div>
-              <div>
-                <SlidersHorizontal className="h-4 w-4" />
-                Каналы и события определяют поток сигналов и управленческую нагрузку.
-              </div>
-              <div>
-                <BarChart3 className="h-4 w-4" />
-                Стартовые метрики задают исходный контекст, а решения участника двигают показатели вверх или вниз.
-              </div>
-              <div>
-                <Map className="h-4 w-4" />
-                Итоговый отчет связывает решения, метрики и компетенции в доказательный результат.
-              </div>
-            </div>
-          </div>
-        )}
-      </section>
-    </div>
+    <AdminWikiReference
+      onBack={onBack}
+      blocks={ASSESSOR_WIKI_BLOCKS}
+      processSteps={[...WIKI_PROCESS_STEPS]}
+      Shot={AssessorWikiShot}
+      title="Оценка: теория и устройство кабинета"
+      lead="Слева — разделы. Теория объясняет, зачем симуляция и почему её оценке можно верить. Дальше — разбор каждого экрана кабинета оценщика."
+      backLabel="Вернуться к настройке"
+      blocksLabel="Экраны оценщика"
+    />
   );
+}
+
+/** Снимок нужного участка кабинета: справочник показывает его в шапке раздела. */
+function AssessorWikiShot({ id }: { id: string }) {
+  const block = ASSESSOR_WIKI_BLOCKS.find((item) => item.id === id);
+  if (!block) return null;
+  return <WikiScreenshot focus={block.focus} label={block.label} />;
 }

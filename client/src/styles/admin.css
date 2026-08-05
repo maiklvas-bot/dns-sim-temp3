@@ -345,7 +345,11 @@
 /* Цвета дерева — переменными, а не хексами в разметке: заливки SVG задаются
    атрибутами и ремапом по классам не ловятся, поэтому в светлой теме дерево
    оставалось тёмным пятном на белой панели. */
-.dns-admin-shell {
+/* Справочник со схемами открывается и в кабинете оценщика, поэтому переменные
+   объявлены для обеих оболочек: иначе SVG остаётся без цвета и рисует чёрные
+   прямоугольники с чёрным текстом. */
+.dns-admin-shell,
+.dns-assessor-shell {
   /* Брендовый оранжевый готовым цветом: --dns-orange хранит компоненты HSL
      и в атрибут SVG напрямую не подставляется. */
   --dns-orange-hex: hsl(var(--dns-orange));
@@ -358,7 +362,8 @@
   --roadmap-partial-text: #ffd9bf;
   --roadmap-edge: #4a9eff;
 }
-.dns-admin-shell.dns-theme-light {
+.dns-admin-shell.dns-theme-light,
+.dns-assessor-shell.dns-theme-light {
   --roadmap-dim-fill: #f2f6fb;
   --roadmap-dim-stroke: #b9c9de;
   --roadmap-dim-text: #52708f;
@@ -1352,3 +1357,9 @@
 .dns-admin-shell.dns-theme-light .dns-flow-option { background: #ffffff; box-shadow: 0 1px 4px rgba(20, 34, 56, 0.06); }
 .dns-admin-shell.dns-theme-light .dns-flow-rail::before { background: rgba(0, 0, 0, 0.12); }
 .dns-admin-shell.dns-theme-light .dns-flow-node { border-color: rgba(0, 0, 0, 0.08); }
+
+/* Подложка схемы справочника берёт цвет темы, а не жёсткий тёмный тон:
+   справочник открывается в обеих оболочках и в обеих темах. */
+.dns-wiki-diagram {
+  background: var(--roadmap-dim-fill, #0d1522);
+}

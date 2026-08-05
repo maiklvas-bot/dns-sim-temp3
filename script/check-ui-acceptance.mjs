@@ -227,6 +227,135 @@ for (const field of ["item.was", "item.became", "item.why"]) {
   );
 }
 
+// Выбранная карточка в кабинете оценщика обязана читаться как выбранная.
+// Подсветка идёт по фактическому значению: раньше она требовала ещё и признак
+// «подтверждено», и у участника с сохранёнными настройками не было выбрано ничего.
+const assessorRuntime = readText("client/src/features/assessor/AssessorWorkspaceRuntime.tsx");
+assertCondition(
+  !/scenarioConfirmed && difficulty ===/.test(assessorRuntime),
+  "Подсветка выбранного режима не должна зависеть от признака подтверждения",
+);
+assertCondition(
+  (assessorRuntime.match(/aria-pressed=\{difficulty ===/g) || []).length >= 3,
+  "Выбранная карточка режима должна сообщать о выборе программам чтения с экрана",
+);
+const assessorCss = readText("client/src/styles/assessor.css");
+const responsiveCss = readText("client/src/styles/responsive.css");
+assertCondition(
+  /choice-card--active[\s\S]{0,400}content: "✓"/.test(assessorCss),
+  "У выбранной карточки должна быть отметка, чтобы выбор читался не только цветом",
+);
+for (const [name, css] of [["assessor.css", assessorCss], ["responsive.css", responsiveCss]]) {
+  // Правило выбранной карточки — то, у которого объявлена толщина рамки:
+  // селектор `--active` встречается и в правилах приглушения соседей.
+  const declaresThickBorder = css
+    .split("}")
+    .some((block) => /choice-card--active/.test(block) && /border-width: 2px/.test(block));
+  assertCondition(
+    declaresThickBorder,
+    `${name}: рамка выбранной карточки должна быть заметной, а не волосяной`,
+  );
+}
+
+// Сводка кабинета оценщика уезжает вниз только там, где колонок действительно
+// две. Пока грид держит три колонки, сажать её во вторую нельзя: справа
+// остаётся пустая колонка, а кабинет выглядит мобильной версией на десктопе.
+{
+  const blocks = assessorCss.split("@media");
+  const wide = blocks.find((block) => block.trimStart().startsWith("(max-width: 1100px)"));
+  assertCondition(
+    Boolean(wide) && !/assessor-v2-side\s*\{[^}]*grid-column/.test(wide),
+    "На пороге 1100px сводка оценщика не должна переноситься в колонку основного блока",
+  );
+  const narrow = blocks.find((block) => block.trimStart().startsWith("(max-width: 980px)"));
+  assertCondition(
+    Boolean(narrow) && /assessor-v2-side\s*\{[^}]*grid-column: 2/.test(narrow),
+    "На пороге 980px, где колонок две, сводка должна вставать под основной блок",
+  );
+}
+
+// Справочник: клик по разделу открывает страницу и сразу показывает её состав.
+// Пока состав прятался только под «+», о том, что внутри что-то есть, догадаться
+// было нельзя.
+const wikiSections = readText("client/src/features/admin/wiki/AdminWikiReference.tsx");
+assertCondition(
+  /const openSection[\s\S]{0,400}setExpandedKeys/.test(wikiSections),
+  "Открытие раздела справочника должно раскрывать его состав",
+);
+assertCondition(
+  /useState<string\[\]>\(\[`theory-/.test(wikiSections),
+  "Раздел, открытый при первом заходе в справочник, тоже должен показывать состав",
+);
+assertCondition(
+  /scrollToPart\(part\.id\)/.test(wikiSections) && /id=\{`wiki-part-/.test(wikiSections),
+  "Подразделы должны вести к своим местам в содержимом справочника",
+);
+
+// Обе роли открывают один и тот же справочник: у оценщика была своя старая
+// сетка карточек, от которой в кабинете администратора уже отказались.
+const assessorWiki = readText("client/src/features/assessor/components/AssessorWiki.tsx");
+assertCondition(
+  /<AdminWikiReference[\s/>]/.test(assessorWiki),
+  "Справочник оценщика должен быть тем же компонентом, что и у администратора",
+);
+assertCondition(
+  !/dns-assessor-wiki-grid/.test(assessorWiki),
+  "Старая сетка карточек в справочнике оценщика не должна остаться",
+);
+// Схемы справочника и его шапка обязаны получать цвета в обеих оболочках:
+// переменные объявлялись только для админской, и в кабинете оценщика SVG
+// рисовался чёрным по чёрному.
+assertCondition(
+  readText("client/src/styles/admin.css")
+    .split("}")
+    .some((block) => /\.dns-assessor-shell\s*[,{]/.test(block) && /--roadmap-dim-fill\s*:/.test(block)),
+  "Переменные схем справочника должны объявляться и для оболочки оценщика",
+);
+assertCondition(
+  /dns-admin-wiki-reference \.dns-assessor-wiki-hero/.test(assessorCss),
+  "Шапка справочника должна оформляться и там, где нет обёртки .dns-admin-wiki",
+);
+
+// Материалы справочника: обязательные поля проверяются и в форме, и на сервере.
+// Форму можно обойти прямым запросом, поэтому одной подсветки полей мало.
+const noteEditor = readText("client/src/features/admin/wiki/WikiNoteEditor.tsx");
+assertCondition(
+  noteEditor.includes("WIKI_NOTE_REQUIRED_FIELDS"),
+  "Форма материала должна брать список обязательных полей из общего источника",
+);
+assertCondition(
+  /Не заполнено/.test(noteEditor) && /invalid\(/.test(noteEditor),
+  "Незаполненные поля материала должны называться и подсвечиваться",
+);
+const routes = readText("server/routes.ts");
+assertCondition(
+  /wiki_note_incomplete/.test(routes) && /WIKI_NOTE_REQUIRED_FIELDS\.filter/.test(routes),
+  "Сервер должен отклонять материал с незаполненными обязательными полями",
+);
+assertCondition(
+  /\.trim\(\)\)/.test(routes.slice(routes.indexOf("wiki_note_incomplete") - 400, routes.indexOf("wiki_note_incomplete"))),
+  "Поле из одних пробелов не должно считаться заполненным",
+);
+
+// Редактор сигнала канала разбирается теми же секциями, что и кейс. Раньше
+// поля шли сплошным списком, а тайминг выделялся градиентной плашкой — рядом
+// с мастером кейса это читалось как другой продукт.
+const entityEditor = readText("client/src/features/admin/components/EntityEditor.tsx");
+assertCondition(
+  /function EditorSection\(/.test(entityEditor) && /<EditorSection[\s>]/.test(entityEditor),
+  "Редактор сигнала должен собираться из секций с общей анатомией",
+);
+for (const section of ["Замысел сигнала", "Что увидит участник", "Решения"]) {
+  assertCondition(
+    entityEditor.includes(section),
+    `В редакторе сигнала должна быть секция «${section}»`,
+  );
+}
+assertCondition(
+  !/from-\[#f68b1f\]\/14/.test(entityEditor),
+  "Градиентная плашка тайминга заменена обычной секцией — как в мастере кейса",
+);
+
 const releaseHistory = readText("client/src/data/release-history.ts");
 assertCondition(
   releaseHistory.includes("problems") && releaseHistory.includes("solved"),
@@ -281,8 +410,27 @@ assertCondition(
 // Компонент карточки мало создать — он должен быть подключён, иначе принять негде.
 const validationPanel = readText("client/src/features/admin/cases/CaseValidationPanel.tsx");
 assertCondition(
-  /<IssueCard[\s/>]/.test(validationPanel),
+  /<IssueGroupCard[\s/>]/.test(validationPanel),
   "Замечания показываются карточкой с объяснением, а не сухим списком",
+);
+// Однотипные замечания идут одной группой: иначе автор получает десятки
+// одинаковых карточек и перестаёт различать за ними конкретные места.
+assertCondition(
+  /byCheck|groupBy|issue\.check/.test(validationPanel),
+  "Замечания одного вида проверки должны объединяться в одну группу",
+);
+const issueGroupCard = readText("client/src/features/admin/cases/master/IssueGroupCard.tsx");
+assertCondition(
+  issueGroupCard.includes("explainIssue") && issueGroupCard.includes(".why"),
+  "Группа замечаний объясняет, чем они вредят оценке, а не только что не так",
+);
+assertCondition(
+  issueGroupCard.includes("competencyId"),
+  "Место замечания должно называться вместе с компетенцией: у варианта их бывает несколько",
+);
+assertCondition(
+  /findIndex/.test(issueGroupCard) && /Цикл \$\{/.test(issueGroupCard),
+  "Место замечания называется номером цикла и варианта, а не служебным идентификатором",
 );
 assertCondition(
   validationPanel.includes("acceptedIssues"),

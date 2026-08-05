@@ -10,7 +10,7 @@ const DANGER = "#ff9999";
 
 function Frame({ height, children }: { height: number; children: React.ReactNode }) {
   return (
-    <div className="dns-wiki-diagram overflow-hidden rounded-xl border border-[#243244] bg-[#0d1522]/70 p-3">
+    <div className="dns-wiki-diagram overflow-hidden rounded-xl border border-[#243244] p-3">
       <svg width="100%" height={height} viewBox={`0 0 640 ${height}`} preserveAspectRatio="xMidYMid meet">
         {children}
       </svg>

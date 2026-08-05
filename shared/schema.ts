@@ -87,6 +87,25 @@ export const mediaAssets = sqliteTable("media_assets", {
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
 
+/**
+ * Материалы справочника, добавленные людьми: методические заметки, разборы,
+ * скриншоты своих экранов. Живут рядом с зашитыми разделами и крепятся к ним
+ * через `sectionId`.
+ */
+export const wikiNotes = sqliteTable("wiki_notes", {
+  id: text("id").primaryKey(),
+  sectionId: text("section_id").notNull(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  body: text("body").notNull(),
+  imageAssetId: text("image_asset_id"),
+  author: text("author").notNull().default(""),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  sectionIdx: index("wiki_notes_section_idx").on(table.sectionId),
+}));
+
 export const simulationCases = sqliteTable("simulation_cases", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),

@@ -5,6 +5,7 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { accumulateCompetencyTotals } from "@shared/simulation-scoring";
 import { validateCase, shouldBlockCaseSave } from "@shared/case-validation";
+import { WIKI_NOTE_REQUIRED_FIELDS } from "@shared/simulation-content";
 import { buildWorkbookBuffer } from "./excel-export";
 import { requireExportAccess } from "./export-access";
 import { generatePdfBuffer } from "./pdf-export";
@@ -67,6 +68,7 @@ import {
   editableEmailCaseSchema,
   editableMessengerCaseSchema,
   editableSimCaseSchema,
+  wikiNoteSchema,
   editableVideoCaseSchema,
   excelExportSchema,
   feedbackBodySchema,
@@ -1455,6 +1457,56 @@ export async function registerRoutes(
     } catch (error) {
       next(error);
     }
+  });
+
+  /**
+   * Материалы справочника, добавленные людьми.
+   *
+   * Читать может любой сотрудник — справочник открыт и администратору, и
+   * оценщику. Добавлять и удалять — только администратор.
+   */
+  app.get("/api/staff/wiki-notes", requireStaff, (_req, res) => {
+    res.json({ notes: contentStorage.listWikiNotes() });
+  });
+
+  app.post("/api/admin/wiki-notes", requireAdmin, adminRateLimiter, validateBody(wikiNoteSchema), (req, res) => {
+    const body = req.validatedBody as z.infer<typeof wikiNoteSchema>;
+    // Обязательность проверяется и здесь: форму можно обойти запросом напрямую.
+    const missing = WIKI_NOTE_REQUIRED_FIELDS.filter((field) => !String(body[field] || "").trim());
+    if (missing.length > 0) {
+      return res.status(400).json({ error: "wiki_note_incomplete", missing });
+    }
+    const id = contentStorage.saveWikiNote({
+      id: body.id || undefined,
+      sectionId: body.sectionId,
+      title: body.title.trim(),
+      summary: body.summary.trim(),
+      body: body.body.trim(),
+      imageAssetId: body.imageAssetId,
+      author: body.author?.trim() || "",
+    });
+    recordAudit(req, {
+      area: "admin",
+      action: body.id ? "wiki_note_update" : "wiki_note_create",
+      entityType: "wiki_note",
+      entityId: id,
+      summary: `Материал справочника: ${body.title}`,
+      after: { title: body.title, sectionId: body.sectionId },
+    });
+    res.json({ id, notes: contentStorage.listWikiNotes() });
+  });
+
+  app.delete("/api/admin/wiki-notes/:id", requireAdmin, adminRateLimiter, (req, res) => {
+    const noteId = String(req.params.id);
+    contentStorage.deleteWikiNote(noteId);
+    recordAudit(req, {
+      area: "admin",
+      action: "wiki_note_delete",
+      entityType: "wiki_note",
+      entityId: noteId,
+      summary: "Удалён материал справочника",
+    });
+    res.json({ notes: contentStorage.listWikiNotes() });
   });
 
   app.post("/api/admin/cases", requireAdmin, adminRateLimiter, validateBody(editableSimCaseSchema), (req, res) => {
