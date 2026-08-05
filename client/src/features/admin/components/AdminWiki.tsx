@@ -320,8 +320,35 @@ function getScoreC(v: number) {
   return v >= 3.5 ? "#00d4aa" : v >= 2.5 ? "#ffc107" : "#ff6b6b";
 }
 
+import type { WikiNote } from "@shared/simulation-content";
 import { AdminWikiReference } from "../wiki/AdminWikiReference";
 
-export function AdminWiki({ onBack }: { onBack: () => void }) {
-  return <AdminWikiReference onBack={onBack} blocks={ADMIN_WIKI_BLOCKS} processSteps={ADMIN_PROCESS_STEPS} Shot={AdminWikiShot} />;
+export function AdminWiki({
+  onBack,
+  notes = [],
+  assets = [],
+  onUploadAsset,
+  onSaveNote,
+  onDeleteNote,
+}: {
+  onBack: () => void;
+  notes?: WikiNote[];
+  assets?: { id: string; name: string; kind: string; publicUrl: string }[];
+  onUploadAsset?: (file: File) => Promise<string | null>;
+  onSaveNote?: (note: Omit<WikiNote, "id" | "imageUrl">) => Promise<void>;
+  onDeleteNote?: (id: string) => Promise<void>;
+}) {
+  return (
+    <AdminWikiReference
+      onBack={onBack}
+      blocks={ADMIN_WIKI_BLOCKS}
+      processSteps={ADMIN_PROCESS_STEPS}
+      Shot={AdminWikiShot}
+      notes={notes}
+      assets={assets}
+      onUploadAsset={onUploadAsset}
+      onSaveNote={onSaveNote}
+      onDeleteNote={onDeleteNote}
+    />
+  );
 }

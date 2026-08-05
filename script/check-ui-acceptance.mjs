@@ -316,6 +316,27 @@ assertCondition(
   "Шапка справочника должна оформляться и там, где нет обёртки .dns-admin-wiki",
 );
 
+// Материалы справочника: обязательные поля проверяются и в форме, и на сервере.
+// Форму можно обойти прямым запросом, поэтому одной подсветки полей мало.
+const noteEditor = readText("client/src/features/admin/wiki/WikiNoteEditor.tsx");
+assertCondition(
+  noteEditor.includes("WIKI_NOTE_REQUIRED_FIELDS"),
+  "Форма материала должна брать список обязательных полей из общего источника",
+);
+assertCondition(
+  /Не заполнено/.test(noteEditor) && /invalid\(/.test(noteEditor),
+  "Незаполненные поля материала должны называться и подсвечиваться",
+);
+const routes = readText("server/routes.ts");
+assertCondition(
+  /wiki_note_incomplete/.test(routes) && /WIKI_NOTE_REQUIRED_FIELDS\.filter/.test(routes),
+  "Сервер должен отклонять материал с незаполненными обязательными полями",
+);
+assertCondition(
+  /\.trim\(\)\)/.test(routes.slice(routes.indexOf("wiki_note_incomplete") - 400, routes.indexOf("wiki_note_incomplete"))),
+  "Поле из одних пробелов не должно считаться заполненным",
+);
+
 const releaseHistory = readText("client/src/data/release-history.ts");
 assertCondition(
   releaseHistory.includes("problems") && releaseHistory.includes("solved"),

@@ -1,7 +1,9 @@
 import type React from "react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, BookOpen, Info, Lightbulb, Sparkles } from "lucide-react";
+import type { WikiNote } from "@shared/simulation-content";
 import { WIKI_THEORY } from "./wiki-theory";
+import { WikiNoteEditor } from "./WikiNoteEditor";
 import { WikiDiagram, type WikiDiagramId } from "./WikiDiagrams";
 
 /**
@@ -79,6 +81,11 @@ export function AdminWikiReference({
   lead = "Слева — разделы. Начните с теории, если нужно объяснить, зачем симуляция и почему её оценке можно верить. Дальше — разбор каждого экрана кабинета.",
   backLabel = "Вернуться в кабинет",
   blocksLabel = "Экраны кабинета",
+  notes = [],
+  assets = [],
+  onUploadAsset,
+  onSaveNote,
+  onDeleteNote,
 }: {
   onBack: () => void;
   blocks: WikiBlock[];
@@ -89,6 +96,13 @@ export function AdminWikiReference({
   lead?: string;
   backLabel?: string;
   blocksLabel?: string;
+  /** Материалы, добавленные людьми. Показываются в своём разделе. */
+  notes?: WikiNote[];
+  assets?: { id: string; name: string; kind: string; publicUrl: string }[];
+  /** Без этих обработчиков справочник только читают: добавлять материалы может администратор. */
+  onUploadAsset?: (file: File) => Promise<string | null>;
+  onSaveNote?: (note: Omit<WikiNote, "id" | "imageUrl">) => Promise<void>;
+  onDeleteNote?: (id: string) => Promise<void>;
 }) {
   const [selection, setSelection] = useState<Selection>({ kind: "theory", id: WIKI_THEORY[0]?.id || "" });
   // Состав раздела прячется под «+», но раздел, который открыт сейчас, показывает
@@ -200,6 +214,15 @@ export function AdminWikiReference({
   /** Устойчивый идентификатор подраздела: по нему идёт прокрутка правой колонки. */
   const partId = (sectionId: string, index: number) => `wiki-part-${sectionId}-${index}`;
 
+  // Раздел, к которому крепятся добавленные материалы.
+  const currentSectionId = selection.kind === "process" ? "process" : selection.id;
+  const currentSectionTitle =
+    selection.kind === "theory"
+      ? WIKI_THEORY.find((item) => item.id === selection.id)?.title || "Теория"
+      : selection.kind === "block"
+        ? blocks.find((item) => item.id === selection.id)?.title || "Раздел"
+        : "Процесс целиком";
+
   return (
     <div className="dns-admin-wiki-reference space-y-4">
       <section className="dns-assessor-wiki-hero">
@@ -257,9 +280,116 @@ export function AdminWikiReference({
           {selection.kind === "theory" && <TheoryView sectionId={selection.id} />}
           {selection.kind === "block" && <BlockView blocks={blocks} blockId={selection.id} Shot={Shot} />}
           {selection.kind === "process" && <ProcessView steps={processSteps} />}
+
+          {/* Материалы этого раздела, добавленные людьми, — под зашитым содержанием. */}
+          <WikiNotesSection
+            sectionId={currentSectionId}
+            sectionTitle={currentSectionTitle}
+            notes={notes.filter((note) => note.sectionId === currentSectionId)}
+            assets={assets}
+            onUploadAsset={onUploadAsset}
+            onSaveNote={onSaveNote}
+            onDeleteNote={onDeleteNote}
+          />
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Материалы раздела, добавленные людьми, и форма добавления нового.
+ *
+ * Форма показывается только там, где переданы обработчики: справочник открыт
+ * и оценщику, а добавлять материалы может администратор.
+ */
+function WikiNotesSection({
+  sectionId,
+  sectionTitle,
+  notes,
+  assets,
+  onUploadAsset,
+  onSaveNote,
+  onDeleteNote,
+}: {
+  sectionId: string;
+  sectionTitle: string;
+  notes: WikiNote[];
+  assets: { id: string; name: string; kind: string; publicUrl: string }[];
+  onUploadAsset?: (file: File) => Promise<string | null>;
+  onSaveNote?: (note: Omit<WikiNote, "id" | "imageUrl">) => Promise<void>;
+  onDeleteNote?: (id: string) => Promise<void>;
+}) {
+  const [adding, setAdding] = useState(false);
+  const canEdit = Boolean(onSaveNote && onUploadAsset);
+
+  if (!canEdit && notes.length === 0) return null;
+
+  return (
+    <section className="mt-4 space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8fa8cf]">
+          Материалы раздела · {notes.length}
+        </div>
+        {canEdit && !adding && (
+          <button
+            type="button"
+            onClick={() => setAdding(true)}
+            className="rounded-md border border-[#3b5878] px-2.5 py-1 text-[11.5px] font-semibold text-[#8ec5ff] transition hover:bg-[#6fa0ff]/10"
+          >
+            Добавить материал
+          </button>
+        )}
+      </div>
+
+      {adding && canEdit && (
+        <WikiNoteEditor
+          sectionId={sectionId}
+          sectionTitle={sectionTitle}
+          assets={assets}
+          onUploadAsset={onUploadAsset!}
+          onSave={onSaveNote!}
+          onCancel={() => setAdding(false)}
+        />
+      )}
+
+      {notes.length === 0 && !adding && (
+        <div className="rounded-xl border border-dashed border-[#3b5878] px-4 py-3 text-[12px] text-[#8aa2c4]">
+          Своих материалов в разделе пока нет.
+        </div>
+      )}
+
+      {notes.map((note) => (
+        <article key={note.id} className="rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h4 className="text-[14px] font-bold text-white">{note.title}</h4>
+              <p className="mt-0.5 text-[12.5px] leading-relaxed text-[#8aa2c4]">{note.summary}</p>
+            </div>
+            {onDeleteNote && (
+              <button
+                type="button"
+                onClick={() => onDeleteNote(note.id)}
+                className="shrink-0 text-[11px] text-[#8aa2c4] underline decoration-dotted underline-offset-2 hover:text-[#ff8f6b]"
+              >
+                Удалить
+              </button>
+            )}
+          </div>
+          {note.imageUrl && (
+            <img
+              src={note.imageUrl}
+              alt=""
+              className="mt-3 max-h-72 w-full rounded-lg border border-[#243244] object-contain"
+            />
+          )}
+          <p className="mt-3 whitespace-pre-line text-[13px] leading-relaxed text-[#dbe2f0]">{note.body}</p>
+          {note.author && (
+            <div className="mt-2 text-[11px] text-[#7d9bc9]">Добавил: {note.author}</div>
+          )}
+        </article>
+      ))}
+    </section>
   );
 }
 

@@ -358,6 +358,20 @@ const acceptedIssueSchema = z.object({
   acceptedForMessage: safeLooseTextSchema(1_000).nullable().optional().default(null),
 });
 
+/**
+ * Материал справочника. Обязательные поля непустые: заметка без заголовка,
+ * описания, содержания или скриншота ничего не объясняет.
+ */
+export const wikiNoteSchema = z.object({
+  id: emptyOrIdStringSchema.optional().default(""),
+  sectionId: safeLooseTextSchema(200),
+  title: safeLooseTextSchema(300),
+  summary: safeLooseTextSchema(1_000),
+  body: safeLooseTextSchema(20_000),
+  imageAssetId: safeLooseTextSchema(200),
+  author: safeLooseTextSchema(200).optional().default(""),
+});
+
 const caseCorrectionSchema = z.object({
   check: z.enum(["bars_conformance", "antigaming", "diagnostics", "effect_reality", "content"]),
   scope: safeLooseTextSchema(300),

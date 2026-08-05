@@ -1,7 +1,7 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { useLocation } from "wouter";
-import type { ChatInfo, CompetencyDefinition, EmailCase, MessengerCase, SimCase, SimulationRuntimeSettings, VideoCase } from "@shared/simulation-content";
+import type { ChatInfo, CompetencyDefinition, EmailCase, MessengerCase, SimCase, SimulationRuntimeSettings, VideoCase, WikiNote } from "@shared/simulation-content";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import {
@@ -1470,6 +1470,36 @@ export default function AdminPage() {
     };
   }, []);
 
+  // Материалы справочника, добавленные людьми. Живут отдельно от контента
+  // симуляции: их читают обе роли, а меняет только администратор.
+  const [wikiNotes, setWikiNotes] = useState<WikiNote[]>([]);
+
+  const loadWikiNotes = useCallback(async () => {
+    try {
+      const response = await apiRequest("GET", "/api/staff/wiki-notes");
+      const payload = await response.json();
+      setWikiNotes(payload.notes || []);
+    } catch {
+      // Справочник читается и без материалов — молча оставляем список пустым.
+    }
+  }, []);
+
+  useEffect(() => {
+    if (showAdminWiki) void loadWikiNotes();
+  }, [showAdminWiki, loadWikiNotes]);
+
+  const saveWikiNote = async (note: Omit<WikiNote, "id" | "imageUrl">) => {
+    const response = await apiRequest("POST", "/api/admin/wiki-notes", note);
+    const payload = await response.json();
+    setWikiNotes(payload.notes || []);
+  };
+
+  const deleteWikiNote = async (id: string) => {
+    const response = await apiRequest("DELETE", `/api/admin/wiki-notes/${id}`);
+    const payload = await response.json();
+    setWikiNotes(payload.notes || []);
+  };
+
   const handleUploadAsset = async (file: File) => {
     setUploading(true);
     setError("");
@@ -2215,7 +2245,14 @@ export default function AdminPage() {
         <AdminAuditHistory open={auditHistoryOpen} onOpenChange={setAuditHistoryOpen} />
 
         {showAdminWiki ? (
-          <AdminWiki onBack={() => setShowAdminWiki(false)} />
+          <AdminWiki
+            onBack={() => setShowAdminWiki(false)}
+            notes={wikiNotes}
+            assets={contentQuery.data?.assets || []}
+            onUploadAsset={handleUploadAsset}
+            onSaveNote={saveWikiNote}
+            onDeleteNote={deleteWikiNote}
+          />
         ) : (
         <>
         {tab !== "dashboard" && <AdminVisualPanel visual={activeAdminVisual} />}

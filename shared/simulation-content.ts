@@ -96,6 +96,30 @@ export interface AcceptedIssue {
   acceptedForMessage?: string | null;
 }
 
+/**
+ * Материал справочника, добавленный человеком.
+ *
+ * Заголовок, краткое описание, содержание и скриншот обязательны: заметка без
+ * них не объясняет ничего и только засоряет справочник. Требование проверяется
+ * и в форме, и на сервере — форму можно обойти.
+ */
+export interface WikiNote {
+  id: string;
+  /** Раздел справочника, к которому относится материал. */
+  sectionId: string;
+  title: string;
+  summary: string;
+  body: string;
+  imageAssetId: string;
+  imageUrl?: string | null;
+  author?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/** Поля материала, которые обязан заполнить автор. */
+export const WIKI_NOTE_REQUIRED_FIELDS = ["title", "summary", "body", "imageAssetId"] as const;
+
 export type CaseQaStatus =
   | "draft"
   | "auto_check_failed"
