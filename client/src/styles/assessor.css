@@ -2344,18 +2344,14 @@
   color: #f5c04e !important;
 }
 
+/* Сводка уходит под основную колонку только там, где колонок действительно две
+   (порог 980 ниже). Раньше это правило стояло на 1100: при ширине около 1024 —
+   а это ровно десктоп 1536 при масштабе 150% — грид держал три колонки, но
+   сводку принудительно сажали во вторую. Она уезжала вниз, справа оставалось
+   304px пустоты, и кабинет выглядел мобильной версией на большом экране. */
 @media (max-width: 1100px) {
-  .dns-product-shell .dns-assessor-v2-shell {
-    grid-template-columns: 7rem minmax(0, 1fr);
-  }
-
   .dns-product-shell .dns-assessor-v2-main {
     border-right: 0;
-  }
-
-  .dns-product-shell .dns-assessor-v2-side {
-    grid-column: 2;
-    border-top: 1px solid rgba(29, 45, 65, 0.9);
   }
 }
 
@@ -2852,6 +2848,7 @@
 
   .dns-product-shell .dns-assessor-v2-side {
     grid-column: 2;
+    border-top: 1px solid rgba(29, 45, 65, 0.9);
   }
 }
 

@@ -257,6 +257,23 @@ for (const [name, css] of [["assessor.css", assessorCss], ["responsive.css", res
   );
 }
 
+// Сводка кабинета оценщика уезжает вниз только там, где колонок действительно
+// две. Пока грид держит три колонки, сажать её во вторую нельзя: справа
+// остаётся пустая колонка, а кабинет выглядит мобильной версией на десктопе.
+{
+  const blocks = assessorCss.split("@media");
+  const wide = blocks.find((block) => block.trimStart().startsWith("(max-width: 1100px)"));
+  assertCondition(
+    Boolean(wide) && !/assessor-v2-side\s*\{[^}]*grid-column/.test(wide),
+    "На пороге 1100px сводка оценщика не должна переноситься в колонку основного блока",
+  );
+  const narrow = blocks.find((block) => block.trimStart().startsWith("(max-width: 980px)"));
+  assertCondition(
+    Boolean(narrow) && /assessor-v2-side\s*\{[^}]*grid-column: 2/.test(narrow),
+    "На пороге 980px, где колонок две, сводка должна вставать под основной блок",
+  );
+}
+
 const releaseHistory = readText("client/src/data/release-history.ts");
 assertCondition(
   releaseHistory.includes("problems") && releaseHistory.includes("solved"),
