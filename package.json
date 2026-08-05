@@ -18,6 +18,7 @@
     "db:push": "drizzle-kit push",
     "db:migrate": "tsx script/migrate-db.ts",
     "db:seed-simulation": "tsx script/seed-simulation-content.ts",
+    "db:seed-corrected-cases": "tsx script/seed-corrected-cases.ts",
     "db:merge-main-cases": "tsx script/import-external-main-cases.ts",
     "db:generate-bootstrap": "tsx script/generate-bootstrap-content.ts",
     "staff:reset": "tsx script/reset-staff-accounts.ts",

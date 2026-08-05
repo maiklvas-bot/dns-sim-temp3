@@ -1,0 +1,979 @@
+{
+  "templates": [
+    {
+      "id": "tpl-queue",
+      "title": "Очередь на кассе в час пик",
+      "summary": "Линейный кейс: три шага без ветвления, участник ищет причину затора",
+      "teaches": "Отделять симптом от причины и не бросаться чинить видимое",
+      "caseData": {
+        "id": "TPL-QUEUE",
+        "title": "Очередь на кассе в час пик",
+        "description": "Пятница, вечер. У касс собралась очередь, клиенты недовольны.",
+        "primaryCompetencies": [
+          "management_basics"
+        ],
+        "secondaryCompetencies": [
+          "communication"
+        ],
+        "trigger": {
+          "type": "message",
+          "source": "Старший продавец Артём",
+          "text": "У касс очередь на десять человек, клиенты начинают ругаться. Что делаем?"
+        },
+        "zones_affected": [
+          "торговый_зал"
+        ],
+        "businessProblem": "Клиенты уходят из очереди, выручка вечера проседает",
+        "hiddenCause": "Вторая касса закрыта: кассир ушёл разбирать поставку, потому что кладовщик не вышел",
+        "dataPoints": [
+          {
+            "label": "График смены на сегодня",
+            "costToRequest": "минута"
+          },
+          {
+            "label": "Отчёт по скорости обслуживания за час",
+            "costToRequest": "две минуты"
+          }
+        ],
+        "falseTrails": [
+          "Кажется, что касса тормозит из-за сбоя программы",
+          "Похоже, кассир работает медленно и его надо поторопить"
+        ],
+        "qaStatus": "ready_launch",
+        "cycles": [
+          {
+            "id": "TPL-QUEUE-C1",
+            "cycle": 1,
+            "situation": "Очередь растёт, работает одна касса из двух.",
+            "signal": {
+              "type": "message",
+              "content": "Артём ждёт решения, клиенты смотрят на вас."
+            },
+            "options": [
+              {
+                "id": "TPL-QUEUE-C1-O1",
+                "level": 1,
+                "text": "Встать на вторую кассу самому",
+                "score": 1,
+                "effects": {
+                  "queue": -3,
+                  "conversion": 0,
+                  "morale": -2,
+                  "revenue_impact": 0,
+                  "delivery_status": -3
+                },
+                "competency_scores": {
+                  "management_basics": 1,
+                  "communication": 3
+                }
+              },
+              {
+                "id": "TPL-QUEUE-C1-O2",
+                "level": 2,
+                "text": "Поторопить кассира по громкой связи",
+                "score": 2,
+                "effects": {
+                  "queue": -1,
+                  "conversion": 0,
+                  "morale": -4,
+                  "revenue_impact": 0,
+                  "delivery_status": 0
+                },
+                "competency_scores": {
+                  "management_basics": 3,
+                  "communication": 1
+                }
+              },
+              {
+                "id": "TPL-QUEUE-C1-O3",
+                "level": 3,
+                "text": "Посмотреть график смены и отчёт",
+                "score": 3,
+                "effects": {
+                  "queue": 1,
+                  "conversion": 0,
+                  "morale": 0,
+                  "revenue_impact": 0,
+                  "delivery_status": 1
+                },
+                "competency_scores": {
+                  "management_basics": 5,
+                  "communication": 3
+                }
+              }
+            ]
+          },
+          {
+            "id": "TPL-QUEUE-C2",
+            "cycle": 2,
+            "situation": "Выяснилось: вторая касса закрыта, кассир разбирает поставку вместо кладовщика.",
+            "signal": {
+              "type": "message",
+              "content": "Кассир пишет: «Я на складе, некому принимать»."
+            },
+            "options": [
+              {
+                "id": "TPL-QUEUE-C2-O1",
+                "level": 1,
+                "text": "Оставить как есть до конца смены",
+                "score": 1,
+                "effects": {
+                  "queue": 5,
+                  "conversion": -3,
+                  "morale": -2,
+                  "revenue_impact": -4,
+                  "delivery_status": 2
+                },
+                "competency_scores": {
+                  "management_basics": 1,
+                  "communication": 3
+                }
+              },
+              {
+                "id": "TPL-QUEUE-C2-O2",
+                "level": 2,
+                "text": "Вернуть кассира и отложить поставку",
+                "score": 2,
+                "effects": {
+                  "queue": -4,
+                  "conversion": 2,
+                  "morale": 1,
+                  "revenue_impact": 3,
+                  "delivery_status": -4
+                },
+                "competency_scores": {
+                  "management_basics": 3,
+                  "communication": 1
+                }
+              },
+              {
+                "id": "TPL-QUEUE-C2-O3",
+                "level": 3,
+                "text": "Вернуть кассира, поставку передать продавцу зала",
+                "score": 3,
+                "effects": {
+                  "queue": -5,
+                  "conversion": 3,
+                  "morale": 1,
+                  "revenue_impact": 4,
+                  "delivery_status": -1
+                },
+                "competency_scores": {
+                  "management_basics": 5,
+                  "communication": 3
+                }
+              }
+            ]
+          }
+        ],
+        "imageAssetId": null,
+        "imageUrl": null,
+        "audioAssetId": null,
+        "audioUrl": null,
+        "sortOrder": 0,
+        "isActive": false
+      }
+    },
+    {
+      "id": "tpl-claim",
+      "title": "Претензия клиента на выдаче",
+      "summary": "Кейс с ветвлением: первый ответ определяет, каким будет разговор дальше",
+      "teaches": "Выбирать уместный ресурс: решить самому, поднять по регламенту или подключить руководителя",
+      "caseData": {
+        "id": "TPL-CLAIM",
+        "title": "Претензия клиента на выдаче",
+        "description": "Клиент забрал заказ и вернулся через час: товар с царапиной.",
+        "primaryCompetencies": [
+          "communication"
+        ],
+        "secondaryCompetencies": [
+          "business_processes"
+        ],
+        "trigger": {
+          "type": "visitor",
+          "source": "Клиент на выдаче",
+          "text": "Мне выдали товар с царапиной. Я хочу вернуть деньги прямо сейчас."
+        },
+        "zones_affected": [
+          "выдача"
+        ],
+        "businessProblem": "Неверно закрытая претензия возвращается жалобой и потерей лояльности",
+        "hiddenCause": "Царапина была до выдачи: сотрудник не проверил товар при клиенте и не отметил это в акте",
+        "dataPoints": [
+          {
+            "label": "Акт приёма-передачи заказа",
+            "costToRequest": "минута"
+          },
+          {
+            "label": "Запись камеры зоны выдачи",
+            "costToRequest": "десять минут"
+          }
+        ],
+        "falseTrails": [
+          "Кажется, что клиент повредил товар сам и теперь хитрит",
+          "Похоже, брак пришёл со склада и виноват поставщик"
+        ],
+        "qaStatus": "ready_launch",
+        "cycles": [
+          {
+            "id": "TPL-CLAIM-C1",
+            "cycle": 1,
+            "situation": "Клиент настроен решительно, рядом ждут другие покупатели.",
+            "signal": {
+              "type": "visitor",
+              "content": "Клиент повышает голос, очередь на выдаче слушает."
+            },
+            "options": [
+              {
+                "id": "TPL-CLAIM-C1-O1",
+                "level": 1,
+                "text": "Пообещать возврат денег сразу",
+                "score": 1,
+                "effects": {
+                  "queue": -1,
+                  "conversion": 0,
+                  "morale": -1,
+                  "revenue_impact": -4,
+                  "delivery_status": 0
+                },
+                "competency_scores": {
+                  "communication": 3,
+                  "business_processes": 1
+                },
+                "nextCycleId": "TPL-CLAIM-C2"
+              },
+              {
+                "id": "TPL-CLAIM-C1-O2",
+                "level": 2,
+                "text": "Сказать, что это не наша вина",
+                "score": 2,
+                "effects": {
+                  "queue": 2,
+                  "conversion": -2,
+                  "morale": -3,
+                  "revenue_impact": -1,
+                  "delivery_status": 0
+                },
+                "competency_scores": {
+                  "communication": 1,
+                  "business_processes": 3
+                },
+                "nextCycleId": "TPL-CLAIM-C3"
+              },
+              {
+                "id": "TPL-CLAIM-C1-O3",
+                "level": 3,
+                "text": "Выслушать, поднять акт приёма-передачи",
+                "score": 3,
+                "effects": {
+                  "queue": 1,
+                  "conversion": 1,
+                  "morale": 1,
+                  "revenue_impact": 0,
+                  "delivery_status": 1
+                },
+                "competency_scores": {
+                  "communication": 5,
+                  "business_processes": 3
+                },
+                "nextCycleId": "TPL-CLAIM-C2"
+              }
+            ]
+          },
+          {
+            "id": "TPL-CLAIM-C2",
+            "cycle": 2,
+            "situation": "В акте нет отметки о проверке товара при клиенте. Формально претензия обоснована.",
+            "signal": {
+              "type": "message",
+              "content": "Сотрудник выдачи признаёт: товар при клиенте не разворачивал."
+            },
+            "options": [
+              {
+                "id": "TPL-CLAIM-C2-O1",
+                "level": 1,
+                "text": "Отчитать сотрудника при клиенте",
+                "score": 1,
+                "effects": {
+                  "queue": 1,
+                  "conversion": -1,
+                  "morale": -5,
+                  "revenue_impact": -1,
+                  "delivery_status": 0
+                },
+                "competency_scores": {
+                  "communication": 1,
+                  "business_processes": 3
+                },
+                "nextCycleId": "__complete"
+              },
+              {
+                "id": "TPL-CLAIM-C2-O2",
+                "level": 2,
+                "text": "Оформить возврат и закрыть вопрос",
+                "score": 2,
+                "effects": {
+                  "queue": -2,
+                  "conversion": 1,
+                  "morale": 0,
+                  "revenue_impact": -3,
+                  "delivery_status": 1
+                },
+                "competency_scores": {
+                  "communication": 3,
+                  "business_processes": 5
+                },
+                "nextCycleId": "__complete"
+              },
+              {
+                "id": "TPL-CLAIM-C2-O3",
+                "level": 3,
+                "text": "Оформить возврат, с сотрудником разобрать после",
+                "score": 3,
+                "effects": {
+                  "queue": -2,
+                  "conversion": 2,
+                  "morale": 3,
+                  "revenue_impact": -3,
+                  "delivery_status": 2
+                },
+                "competency_scores": {
+                  "communication": 5,
+                  "business_processes": 3
+                },
+                "nextCycleId": "__complete"
+              }
+            ]
+          },
+          {
+            "id": "TPL-CLAIM-C3",
+            "cycle": 3,
+            "situation": "Клиент требует книгу отзывов и говорит, что напишет жалобу.",
+            "signal": {
+              "type": "visitor",
+              "content": "Клиент достаёт телефон и начинает снимать."
+            },
+            "options": [
+              {
+                "id": "TPL-CLAIM-C3-O1",
+                "level": 1,
+                "text": "Настаивать на своей позиции",
+                "score": 1,
+                "effects": {
+                  "queue": 3,
+                  "conversion": -3,
+                  "morale": -3,
+                  "revenue_impact": -2,
+                  "delivery_status": 0
+                },
+                "competency_scores": {
+                  "communication": 1,
+                  "business_processes": 1
+                },
+                "nextCycleId": "__complete"
+              },
+              {
+                "id": "TPL-CLAIM-C3-O2",
+                "level": 2,
+                "text": "Извиниться и поднять акт приёма",
+                "score": 2,
+                "effects": {
+                  "queue": -1,
+                  "conversion": 1,
+                  "morale": 1,
+                  "revenue_impact": 0,
+                  "delivery_status": 1
+                },
+                "competency_scores": {
+                  "communication": 5,
+                  "business_processes": 3
+                },
+                "nextCycleId": "TPL-CLAIM-C2"
+              }
+            ]
+          }
+        ],
+        "imageAssetId": null,
+        "imageUrl": null,
+        "audioAssetId": null,
+        "audioUrl": null,
+        "sortOrder": 0,
+        "isActive": false
+      }
+    },
+    {
+      "id": "tpl-delegation",
+      "title": "Задача, которую проще сделать самому",
+      "summary": "Линейный кейс: два цикла, управление через делегирование с ясной целью",
+      "teaches": "Ставить задачу с образом результата и точкой контроля вместо того, чтобы делать за сотрудника",
+      "caseData": {
+        "id": "TPL-DELEGATION",
+        "title": "Задача, которую проще сделать самому",
+        "description": "Молодой сотрудник зала просит помощь с переборкой полки чая. Начало смены, полка должна быть переделана к обеду.",
+        "primaryCompetencies": [
+          "org_control"
+        ],
+        "secondaryCompetencies": [
+          "communication"
+        ],
+        "trigger": {
+          "type": "message",
+          "source": "Сотрудник зала Маша",
+          "text": "Привет, с полкой чая нужна помощь? Там всё перепуталось."
+        },
+        "zones_affected": [
+          "торговый_зал"
+        ],
+        "businessProblem": "Сотрудник не знает критерий готовности, поэтому просит помощь вместо самостоятельной работы",
+        "hiddenCause": "Не ясна цель переборки: что конкретно не так, какой товар убрать, когда считать готово",
+        "dataPoints": [
+          {
+            "label": "История заказов товара чая на эту неделю",
+            "costToRequest": "минута"
+          },
+          {
+            "label": "Акт последней переборки полки чая",
+            "costToRequest": "две минуты"
+          }
+        ],
+        "falseTrails": [
+          "Сотрудник просто ленится и хочет чтобы его заменили",
+          "Качество товара совсем плохое и требует полной переборки вместо селективной"
+        ],
+        "qaStatus": "ready_launch",
+        "cycles": [
+          {
+            "id": "TPL-DELEGATION-C1",
+            "cycle": 1,
+            "situation": "Маша ждёт вас у полки. На полке хаос: товар без ценников, рядом товар с истёкшим сроком.",
+            "signal": {
+              "type": "message",
+              "content": "Маша смотрит на вас: чинить-то как?"
+            },
+            "options": [
+              {
+                "id": "TPL-DELEGATION-C1-O1",
+                "level": 1,
+                "text": "Давайте я сам переберу всё, быстрее будет так",
+                "score": 1,
+                "effects": {
+                  "learning": -2,
+                  "time_spent": 2,
+                  "efficiency": -1,
+                  "morale": -1,
+                  "workflow_quality": 0
+                },
+                "competency_scores": {
+                  "org_control": 1,
+                  "communication": 3
+                }
+              },
+              {
+                "id": "TPL-DELEGATION-C1-O2",
+                "level": 2,
+                "text": "Переберёшь полку к обеду? Только товар без срока убрать, пожалуйста",
+                "score": 2,
+                "effects": {
+                  "learning": 1,
+                  "time_spent": 0,
+                  "efficiency": 2,
+                  "morale": 0,
+                  "workflow_quality": 1
+                },
+                "competency_scores": {
+                  "org_control": 3,
+                  "communication": 5
+                }
+              },
+              {
+                "id": "TPL-DELEGATION-C1-O3",
+                "level": 3,
+                "text": "Отобери товар без срока и с ошибкой цены. Готово — проверю.",
+                "score": 3,
+                "effects": {
+                  "learning": 3,
+                  "time_spent": 0,
+                  "efficiency": 3,
+                  "morale": 1,
+                  "workflow_quality": 2
+                },
+                "competency_scores": {
+                  "org_control": 5,
+                  "communication": 3
+                }
+              }
+            ]
+          },
+          {
+            "id": "TPL-DELEGATION-C2",
+            "cycle": 2,
+            "situation": "Маша разобралась сама, но хотела убедиться что правильно. Она звонит когда полка готова.",
+            "signal": {
+              "type": "message",
+              "content": "Маша: полка готова, можешь проверить?"
+            },
+            "options": [
+              {
+                "id": "TPL-DELEGATION-C2-O1",
+                "level": 1,
+                "text": "Ты ждал помощи? Сам должен решать такое.",
+                "score": 1,
+                "effects": {
+                  "learning": -1,
+                  "time_spent": 0,
+                  "efficiency": 0,
+                  "morale": -3,
+                  "workflow_quality": -1
+                },
+                "competency_scores": {
+                  "org_control": 1,
+                  "communication": 1
+                }
+              },
+              {
+                "id": "TPL-DELEGATION-C2-O2",
+                "level": 2,
+                "text": "Хорошо, давай вместе пересчитаем. Я показываю, ты укладываешь.",
+                "score": 2,
+                "effects": {
+                  "learning": 2,
+                  "time_spent": 1,
+                  "efficiency": 1,
+                  "morale": 1,
+                  "workflow_quality": 1
+                },
+                "competency_scores": {
+                  "org_control": 3,
+                  "communication": 5
+                }
+              },
+              {
+                "id": "TPL-DELEGATION-C2-O3",
+                "level": 3,
+                "text": "Спасибо за проверку! Осталось 20 без цены — быстро исправим и готово.",
+                "score": 3,
+                "effects": {
+                  "learning": 3,
+                  "time_spent": -1,
+                  "efficiency": 3,
+                  "morale": 2,
+                  "workflow_quality": 2
+                },
+                "competency_scores": {
+                  "org_control": 5,
+                  "communication": 3
+                }
+              }
+            ]
+          }
+        ],
+        "imageAssetId": null,
+        "imageUrl": null,
+        "audioAssetId": null,
+        "audioUrl": null,
+        "sortOrder": 0,
+        "isActive": false
+      }
+    },
+    {
+      "id": "tpl-newcomer",
+      "title": "Новичок ошибается второй раз подряд",
+      "summary": "Кейс с ветвлением: первый ответ определяет качество обучения",
+      "teaches": "Разбирать причину ошибки и давать обратную связь по фактам, а не по эмоциям",
+      "caseData": {
+        "id": "TPL-NEWCOMER",
+        "title": "Новичок ошибается второй раз подряд",
+        "description": "Новый сотрудник выдачи второй день подряд отпустил заказ без проверки на брак.",
+        "primaryCompetencies": [
+          "staff_training"
+        ],
+        "secondaryCompetencies": [
+          "communication"
+        ],
+        "trigger": {
+          "type": "message",
+          "source": "Сотрудник решения Павел",
+          "text": "У нас вторая жалоба за два дня. Миша опять не проверил заказ."
+        },
+        "zones_affected": [
+          "выдача"
+        ],
+        "businessProblem": "Повторная ошибка: обучение не сработало, нужна переборка процесса",
+        "hiddenCause": "Новичок думает товар со склада уже проверен, его проверка это дубль",
+        "dataPoints": [
+          {
+            "label": "Чек-лист проверки на выдаче",
+            "costToRequest": "минута"
+          },
+          {
+            "label": "История жалоб по проверкам",
+            "costToRequest": "две минуты"
+          }
+        ],
+        "falseTrails": [
+          "Новичок просто неаккуратный и не подходит для этой работы",
+          "Товар со склада уже проверен и не требует повторной проверки"
+        ],
+        "qaStatus": "ready_launch",
+        "cycles": [
+          {
+            "id": "TPL-NEWCOMER-C1",
+            "cycle": 1,
+            "situation": "Миша новичок, вторая смена. Павел ждёт вашей реакции.",
+            "signal": {
+              "type": "message",
+              "content": "Как вы отреагируете на вторую ошибку?"
+            },
+            "options": [
+              {
+                "id": "TPL-NEWCOMER-C1-O1",
+                "level": 1,
+                "text": "Второй раз! Работу ищи, если не поможет.",
+                "score": 1,
+                "effects": {
+                  "learning": -3,
+                  "morale": -4,
+                  "retention": -2,
+                  "team_trust": -3,
+                  "quality": -1
+                },
+                "competency_scores": {
+                  "staff_training": 1,
+                  "communication": 3
+                },
+                "nextCycleId": "TPL-NEWCOMER-C3"
+              },
+              {
+                "id": "TPL-NEWCOMER-C1-O2",
+                "level": 2,
+                "text": "Опять упустил брак, это серьёзно. Обсудим что произошло.",
+                "score": 2,
+                "effects": {
+                  "learning": 1,
+                  "morale": -1,
+                  "retention": 0,
+                  "team_trust": 1,
+                  "quality": 1
+                },
+                "competency_scores": {
+                  "staff_training": 5,
+                  "communication": 1
+                },
+                "nextCycleId": "TPL-NEWCOMER-C2"
+              },
+              {
+                "id": "TPL-NEWCOMER-C1-O3",
+                "level": 3,
+                "text": "Вчера вернулся заказ, сегодня ещё. Разберёмся что происходит.",
+                "score": 3,
+                "effects": {
+                  "learning": 3,
+                  "morale": 1,
+                  "retention": 1,
+                  "team_trust": 2,
+                  "quality": 2
+                },
+                "competency_scores": {
+                  "staff_training": 5,
+                  "communication": 3
+                }
+              }
+            ]
+          },
+          {
+            "id": "TPL-NEWCOMER-C2",
+            "cycle": 2,
+            "situation": "Миша: я думал товар со склада уже проверили.",
+            "signal": {
+              "type": "message",
+              "content": "Миша: зачем проверять дважды если товар со склада?"
+            },
+            "options": [
+              {
+                "id": "TPL-NEWCOMER-C2-O1",
+                "level": 1,
+                "text": "Ты проверяешь. Вот чек-лист, учи по нему.",
+                "score": 1,
+                "effects": {
+                  "learning": -1,
+                  "morale": -2,
+                  "retention": -1,
+                  "team_trust": -1,
+                  "quality": 0
+                },
+                "competency_scores": {
+                  "staff_training": 1,
+                  "communication": 1
+                },
+                "nextCycleId": "__complete"
+              },
+              {
+                "id": "TPL-NEWCOMER-C2-O2",
+                "level": 2,
+                "text": "Да, на складе проверяют. Но нам нужна контрольная точка здесь.",
+                "score": 2,
+                "effects": {
+                  "learning": 2,
+                  "morale": 0,
+                  "retention": 1,
+                  "team_trust": 1,
+                  "quality": 1
+                },
+                "competency_scores": {
+                  "staff_training": 3,
+                  "communication": 5
+                },
+                "nextCycleId": "__complete"
+              },
+              {
+                "id": "TPL-NEWCOMER-C2-O3",
+                "level": 3,
+                "text": "На складе часто упускают. Два брака прошли там тоже.",
+                "score": 3,
+                "effects": {
+                  "learning": 3,
+                  "morale": 1,
+                  "retention": 2,
+                  "team_trust": 2,
+                  "quality": 2
+                },
+                "competency_scores": {
+                  "staff_training": 5,
+                  "communication": 3
+                }
+              }
+            ]
+          },
+          {
+            "id": "TPL-NEWCOMER-C3",
+            "cycle": 3,
+            "situation": "Миша обижен на ваши слова.",
+            "signal": {
+              "type": "message",
+              "content": "Миша молчит, смотрит вниз."
+            },
+            "options": [
+              {
+                "id": "TPL-NEWCOMER-C3-O1",
+                "level": 1,
+                "text": "Ладно, давайте продолжим работать дальше.",
+                "score": 1,
+                "effects": {
+                  "learning": 0,
+                  "morale": -3,
+                  "retention": -2,
+                  "team_trust": -2,
+                  "quality": -1
+                },
+                "competency_scores": {
+                  "staff_training": 1,
+                  "communication": 1
+                },
+                "nextCycleId": "__complete"
+              },
+              {
+                "id": "TPL-NEWCOMER-C3-O2",
+                "level": 3,
+                "text": "Погоди, я жестко говорил. Ты не проверял, я был грубо. Покажу как?",
+                "score": 2,
+                "effects": {
+                  "learning": 2,
+                  "morale": 2,
+                  "retention": 1,
+                  "team_trust": 2,
+                  "quality": 1
+                },
+                "competency_scores": {
+                  "staff_training": 5,
+                  "communication": 3
+                },
+                "nextCycleId": "__complete"
+              }
+            ]
+          }
+        ],
+        "imageAssetId": null,
+        "imageUrl": null,
+        "audioAssetId": null,
+        "audioUrl": null,
+        "sortOrder": 0,
+        "isActive": false
+      }
+    },
+    {
+      "id": "tpl-priority",
+      "title": "Три срочных задачи одновременно",
+      "summary": "Линейный кейс: два цикла, выбор приоритета и объяснение логики команде",
+      "teaches": "Отделять срочное от важного и объяснять свой выбор команде",
+      "caseData": {
+        "id": "TPL-PRIORITY",
+        "title": "Три срочных задачи одновременно",
+        "description": "В одну минуту три проблемы: звонок менеджера, клиент на парковке, кондиционер сломался.",
+        "primaryCompetencies": [
+          "systems_thinking"
+        ],
+        "secondaryCompetencies": [
+          "communication"
+        ],
+        "trigger": {
+          "type": "message",
+          "source": "Телефон, сотрудник зала",
+          "text": "Менеджер звонит, клиент на парковке машет, кондиционер шумит странно."
+        },
+        "zones_affected": [
+          "торговый_зал",
+          "парковка"
+        ],
+        "businessProblem": "Неверный выбор приоритета приводит к потере клиента или срыву отчётности",
+        "hiddenCause": "Все три кажутся срочными, но влияние разное: потеря клиента куда больнее",
+        "dataPoints": [
+          {
+            "label": "История жалоб по парковке",
+            "costToRequest": "минута"
+          },
+          {
+            "label": "Прогноз температуры на день",
+            "costToRequest": "минута"
+          }
+        ],
+        "falseTrails": [
+          "Нужно всё останавливать и везде помогать сразу",
+          "Менеджер это начальник, его задача самая срочная"
+        ],
+        "qaStatus": "ready_launch",
+        "cycles": [
+          {
+            "id": "TPL-PRIORITY-C1",
+            "cycle": 1,
+            "situation": "Менеджер, клиент, кондиционер — выбирайте порядок действий.",
+            "signal": {
+              "type": "message",
+              "content": "Что делать первым?"
+            },
+            "options": [
+              {
+                "id": "TPL-PRIORITY-C1-O1",
+                "level": 1,
+                "text": "Везде помогу сразу, скажу всем что всё срочно.",
+                "score": 1,
+                "effects": {
+                  "customer_retention": -2,
+                  "team_efficiency": -3,
+                  "reporting_quality": -1,
+                  "comfort": 0,
+                  "decision_clarity": -2
+                },
+                "competency_scores": {
+                  "systems_thinking": 1,
+                  "communication": 5
+                }
+              },
+              {
+                "id": "TPL-PRIORITY-C1-O2",
+                "level": 2,
+                "text": "Менеджер первый, потом клиент, кондиционер позже.",
+                "score": 2,
+                "effects": {
+                  "customer_retention": -1,
+                  "team_efficiency": 1,
+                  "reporting_quality": 2,
+                  "comfort": -1,
+                  "decision_clarity": 1
+                },
+                "competency_scores": {
+                  "systems_thinking": 3,
+                  "communication": 1
+                }
+              },
+              {
+                "id": "TPL-PRIORITY-C1-O3",
+                "level": 3,
+                "text": "Клиент на парковке может уехать. Менеджер подождёт.",
+                "score": 3,
+                "effects": {
+                  "customer_retention": 3,
+                  "team_efficiency": 2,
+                  "reporting_quality": 0,
+                  "comfort": -1,
+                  "decision_clarity": 2
+                },
+                "competency_scores": {
+                  "systems_thinking": 5,
+                  "communication": 3
+                }
+              }
+            ]
+          },
+          {
+            "id": "TPL-PRIORITY-C2",
+            "cycle": 2,
+            "situation": "Вернулись с парковки. Команда ждёт объяснения вашей логики.",
+            "signal": {
+              "type": "message",
+              "content": "Почему клиента раньше менеджера?"
+            },
+            "options": [
+              {
+                "id": "TPL-PRIORITY-C2-O1",
+                "level": 1,
+                "text": "Я решу всё, перестаньте ноить о приоритетах.",
+                "score": 1,
+                "effects": {
+                  "customer_retention": -1,
+                  "team_efficiency": -2,
+                  "reporting_quality": -1,
+                  "comfort": 0,
+                  "decision_clarity": -3
+                },
+                "competency_scores": {
+                  "systems_thinking": 1,
+                  "communication": 3
+                }
+              },
+              {
+                "id": "TPL-PRIORITY-C2-O2",
+                "level": 2,
+                "text": "Менеджер может подождать 20 минут, я ему позвоню.",
+                "score": 2,
+                "effects": {
+                  "customer_retention": 2,
+                  "team_efficiency": 1,
+                  "reporting_quality": 1,
+                  "comfort": 0,
+                  "decision_clarity": 1
+                },
+                "competency_scores": {
+                  "systems_thinking": 3,
+                  "communication": 5
+                }
+              },
+              {
+                "id": "TPL-PRIORITY-C2-O3",
+                "level": 3,
+                "text": "Клиент может уехать, это потеря лояльности. Менеджер согласится.",
+                "score": 3,
+                "effects": {
+                  "customer_retention": 3,
+                  "team_efficiency": 2,
+                  "reporting_quality": 1,
+                  "comfort": 0,
+                  "decision_clarity": 3
+                },
+                "competency_scores": {
+                  "systems_thinking": 5,
+                  "communication": 3
+                }
+              }
+            ]
+          }
+        ],
+        "imageAssetId": null,
+        "imageUrl": null,
+        "audioAssetId": null,
+        "audioUrl": null,
+        "sortOrder": 0,
+        "isActive": false
+      }
+    }
+  ]
+}

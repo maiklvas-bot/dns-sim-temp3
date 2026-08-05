@@ -21,6 +21,7 @@
 
 import { z } from "zod";
 import type { Request, Response, NextFunction } from "express";
+import type { AcceptedIssue } from "@shared/simulation-content";
 
 // =============================================================================
 // Общие валидаторы (реиспользуемые)
@@ -348,6 +349,22 @@ const caseQaStatusSchema = z.enum([
   "ready_launch",
 ]);
 
+const acceptedIssueSchema = z.object({
+  check: z.enum(["bars_conformance", "antigaming", "diagnostics", "effect_reality"]),
+  cycleId: idStringSchema.nullable().optional().default(null),
+  optionId: idStringSchema.nullable().optional().default(null),
+  reason: safeLooseTextSchema(5_000),
+  acceptedForMessage: safeLooseTextSchema(1_000).nullable().optional().default(null),
+});
+
+const caseCorrectionSchema = z.object({
+  check: z.enum(["bars_conformance", "antigaming", "diagnostics", "effect_reality", "content"]),
+  scope: safeLooseTextSchema(300),
+  was: safeLooseTextSchema(5_000),
+  became: safeLooseTextSchema(5_000),
+  why: safeLooseTextSchema(5_000),
+});
+
 export const editableSimCaseSchema = z.object({
   id: emptyOrIdStringSchema.optional().default(""),
   title: safeLooseTextSchema(300),
@@ -371,6 +388,9 @@ export const editableSimCaseSchema = z.object({
   timing: timingConfigSchema,
   sortOrder: boundedIntSchema(0, 100_000).optional().default(0),
   isActive: z.boolean().optional().default(true),
+  acceptedIssues: z.array(acceptedIssueSchema).optional().default([]),
+  correctionOfCaseId: nullableIdStringSchema.optional().default(null),
+  corrections: z.array(caseCorrectionSchema).max(500).optional().default([]),
 });
 
 const editableChannelBaseSchema = z.object({

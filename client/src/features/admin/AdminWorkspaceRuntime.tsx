@@ -76,6 +76,7 @@ import {
 import { BRAND_ASSETS } from "@/lib/brand-assets";
 import { FeedbackButton } from "@/components/feedback-dialog";
 import { ProductFooter } from "@/components/product-footer";
+import { ReleaseHistoryDialog } from "@/components/release-history-dialog";
 import { autoAssignScheduleTimes, buildScheduleRows, getScheduleSourceLabel, type ScheduleRow } from "./schedule/schedule-utils";
 import { ADMIN_NAV_ICONS, ADMIN_VISUALS } from "./admin-constants";
 import type { AdminChannelTab as ChannelTab, AdminTabKey as TabKey, SystemSoundSettingKey } from "./admin-types";
@@ -87,12 +88,15 @@ import { CompetencyRoleSelector, Field, FieldArea, MultiSelectField, SelectField
 import { CompetencyHorizontalImpactChart, type CompetencyImpactDatum } from "./components/CompetencyHorizontalImpactChart";
 import { EntityEditor } from "./components/EntityEditor";
 import {
-  CaseCreationWizard,
   CaseMediaPanel,
   SignalCreationWizard,
   StructuredCyclesEditor,
   StructuredOptionsEditor,
 } from "./cases/CaseEditors";
+import { CaseMaster, initialMasterView, type MasterView } from "./cases/master/CaseMaster";
+import { CaseRoadmap } from "./cases/master/CaseRoadmap";
+import { buildCaseSetupIssues, MASTER_STEP_TITLES } from "./cases/master/case-master-support";
+import { CaseCorrectionsDialog } from "./cases/CaseCorrectionsDialog";
 import { CASE_AUTHORING_WIKI } from "./admin-wiki-content";
 import { clearDraftFromStorage, deepClone, readDraftFromStorage, writeDraftToStorage } from "./hooks/useAdminDrafts";
 import { useAdminPermissions } from "./hooks/useAdminPermissions";
@@ -312,7 +316,6 @@ const STORE_EFFECT_FIELDS = [
 ] as const;
 
 const DRAFT_STORAGE_KEYS = {
-  caseWizard: "dns-simcenter.admin.caseWizardDraft",
   signalWizard: "dns-simcenter.admin.signalWizardDraft",
 } as const;
 
@@ -400,37 +403,6 @@ function buildEntityCompetencyProfile(entity: any) {
   }
 
   return {};
-}
-
-function buildCaseSetupIssues(caseItem: SimCase | null | undefined) {
-  if (!caseItem) {
-    return [];
-  }
-
-  const issues: string[] = [];
-  if (!caseItem.title?.trim()) issues.push("Не заполнено название кейса.");
-  if (!caseItem.trigger?.text?.trim()) issues.push("Не заполнен стартовый сигнал кейса.");
-  if (!caseItem.trigger?.source?.trim()) issues.push("Не заполнен источник сигнала.");
-  if (!caseItem.timing?.decisionDeadlineSeconds) issues.push("Не задан срок решения.");
-  if (!caseItem.cycles?.length) issues.push("Не создан ни один цикл.");
-
-  (caseItem.cycles || []).forEach((cycle, cycleIndex) => {
-    if (!cycle.situation?.trim()) issues.push(`Цикл ${cycleIndex + 1}: не заполнена ситуация.`);
-    if (!cycle.signal?.content?.trim()) issues.push(`Цикл ${cycleIndex + 1}: не заполнен текст сигнала.`);
-    const activeOptions = (cycle.options || []).filter((option: any) => (option.status || "active") === "active");
-    if (activeOptions.length === 0) issues.push(`Цикл ${cycleIndex + 1}: нет активных вариантов ответа.`);
-    activeOptions.forEach((option: any, optionIndex: number) => {
-      if (!option.text?.trim()) issues.push(`Цикл ${cycleIndex + 1}, ответ ${optionIndex + 1}: не заполнен текст ответа.`);
-      if (Object.keys(option.competency_scores || {}).length === 0) {
-        issues.push(`Цикл ${cycleIndex + 1}, ответ ${optionIndex + 1}: нет влияния на компетенции.`);
-      }
-      if (option.nextCycleId && option.nextCycleId !== "__complete" && !(caseItem.cycles || []).some((item) => item.id === option.nextCycleId)) {
-        issues.push(`Цикл ${cycleIndex + 1}, ответ ${optionIndex + 1}: ссылка ведёт на несуществующий цикл.`);
-      }
-    });
-  });
-
-  return issues;
 }
 
 function buildCaseRouteRows(caseItem: SimCase | null | undefined) {
@@ -1127,18 +1099,23 @@ export default function AdminPage() {
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
   const [selectedResultId, setSelectedResultId] = useState<number | null>(null);
-  const [selectedWeightCaseId, setSelectedWeightCaseId] = useState<string | null>(null);
   const [selectedCaseCycleIndex, setSelectedCaseCycleIndex] = useState(0);
   const [caseEditorOpen, setCaseEditorOpen] = useState(false);
+  // id кейса-исправления, для которого открыт разбор правок.
+  const [correctionsCaseId, setCorrectionsCaseId] = useState<string | null>(null);
+  // Вид мастера живёт здесь, а не внутри него: правая панель должна уметь открыть
+  // этап, на котором чинится замечание.
+  const [masterView, setMasterView] = useState<MasterView>(() => initialMasterView(false));
+  // Правая панель раньше шла одной длинной лентой. Разделы переключаются, а не громоздятся.
+  const [caseImpactTab, setCaseImpactTab] = useState<"impact" | "routes" | "issues">("impact");
   const [flowPreviewOpen, setFlowPreviewOpen] = useState(false);
   const [showAdminWiki, setShowAdminWiki] = useState(false);
-  const [caseWizardOpen, setCaseWizardOpen] = useState(false);
   const [signalWizardOpen, setSignalWizardOpen] = useState(false);
   const [adminWikiOpen, setAdminWikiOpen] = useState(false);
+  const [releaseHistoryOpen, setReleaseHistoryOpen] = useState(false);
   const [auditHistoryOpen, setAuditHistoryOpen] = useState(false);
   const [signalWizardStep, setSignalWizardStep] = useState(0);
   const [signalWizardMode, setSignalWizardMode] = useState<ChannelTab>("email");
-  const [caseWizardStep, setCaseWizardStep] = useState(0);
   const [caseDraft, setCaseDraft] = useState<SimCase | null>(null);
   const [emailDraft, setEmailDraft] = useState<EmailCase | null>(null);
   const [messengerDraft, setMessengerDraft] = useState<MessengerCase | null>(null);
@@ -1158,7 +1135,6 @@ export default function AdminPage() {
   const [deleteResultLoading, setDeleteResultLoading] = useState(false);
   const [activePreviewKey, setActivePreviewKey] = useState<string | null>(null);
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
-  const [caseWizardDraft, setCaseWizardDraft] = useState<SimCase>(() => createEmptyCase(1));
   const [signalWizardDraft, setSignalWizardDraft] = useState<EmailCase | MessengerCase | VideoCase>(() => createEmptyEmail(1));
   const [scheduleDraft, setScheduleDraft] = useState<ScheduleRow[]>([]);
   const [comparisonSelection, setComparisonSelection] = useState<number[]>([]);
@@ -1184,7 +1160,9 @@ export default function AdminPage() {
   useAdminPermissions(staffQuery.data, staffQuery.isLoading);
 
   useEffect(() => {
-    if (contentQuery.data?.cases && !selectedCaseId && contentQuery.data.cases[0]) {
+    // "" — сигнал "автор создаёт новый кейс" из startCaseCreation: осознанно нет выбора
+    // среди сохранённых. null — стартовое "ничего ещё не выбирали", тут можно подставить первый.
+    if (contentQuery.data?.cases && selectedCaseId === null && contentQuery.data.cases[0]) {
       setSelectedCaseId(contentQuery.data.cases[0].id);
     }
     if (contentQuery.data?.emailCases && !selectedEmailId && contentQuery.data.emailCases[0]) {
@@ -1211,6 +1189,11 @@ export default function AdminPage() {
   }, [contentQuery.data, resultsQuery.data, selectedCaseId, selectedChatId, selectedEmailId, selectedMessengerId, selectedResultId, selectedVideoId]);
 
   useEffect(() => {
+    // Пустая строка — черновик уже выставлен явно в startCaseCreation, синхронизация
+    // со списком сохранённых кейсов должна его не трогать, а не сбрасывать в null.
+    if (selectedCaseId === "") {
+      return;
+    }
     const found = contentQuery.data?.cases?.find((item: SimCase) => item.id === selectedCaseId);
     setCaseDraft(found ? deepClone(found) : null);
     setSelectedCaseCycleIndex(0);
@@ -1246,12 +1229,6 @@ export default function AdminPage() {
       setSelectedResultId(resultsQuery.data[0].id);
     }
   }, [resultsQuery.data, selectedResultId]);
-
-  useEffect(() => {
-    if (caseWizardOpen) {
-      writeDraftToStorage(DRAFT_STORAGE_KEYS.caseWizard, caseWizardDraft);
-    }
-  }, [caseWizardDraft, caseWizardOpen]);
 
   useEffect(() => {
     if (signalWizardOpen) {
@@ -1304,15 +1281,6 @@ export default function AdminPage() {
     () => normalizeCaseWeightsDraft(settingsDraft),
     [settingsDraft],
   );
-  const selectedWeightCase = useMemo(
-    () => activeCases.find((item) => item.id === selectedWeightCaseId) || activeCases[0] || null,
-    [activeCases, selectedWeightCaseId],
-  );
-  const selectedCaseWeight = selectedWeightCase ? getCaseWeightValue(caseWeightsDraft, selectedWeightCase.id) : 100;
-  const selectedCaseProfile = useMemo(
-    () => buildEntityCompetencyProfile(selectedWeightCase),
-    [selectedWeightCase],
-  );
   const aggregateCompetencyProfile = useMemo(
     () => buildWeightedCompetencyProfile(activeCases, {}),
     [activeCases],
@@ -1320,13 +1288,6 @@ export default function AdminPage() {
   const factCompetencyProfile = useMemo(
     () => (resultDetailQuery.data?.result?.competencyAverages || {}) as Record<string, number>,
     [resultDetailQuery.data],
-  );
-  // Синий («Профиль кейса» / статичная база) = базовый (невзвешенный) профиль ВЫБРАННОГО кейса.
-  // Бирюзовый («Регулируемый вклад») = тот же профиль × регулируемый вес (что настроил пользователь).
-  // При весе 100% они совпадают; снижая вес, пользователь видит, как падает фактический вклад.
-  const aggregateBarData = useMemo(
-    () => buildCompetencyBarData(competencies, selectedCaseProfile, selectedCaseProfile, selectedCaseWeight),
-    [competencies, selectedCaseProfile, selectedCaseWeight],
   );
   const radarChartData = useMemo(
     () => buildCompetencyRadarData(competencies, aggregateCompetencyProfile, factCompetencyProfile),
@@ -1509,17 +1470,6 @@ export default function AdminPage() {
     };
   }, []);
 
-  useEffect(() => {
-    if (!activeCases.length) {
-      setSelectedWeightCaseId(null);
-      return;
-    }
-
-    if (!selectedWeightCaseId || !activeCases.some((item) => item.id === selectedWeightCaseId)) {
-      setSelectedWeightCaseId(activeCases[0].id);
-    }
-  }, [activeCases, selectedWeightCaseId]);
-
   const handleUploadAsset = async (file: File) => {
     setUploading(true);
     setError("");
@@ -1554,7 +1504,7 @@ export default function AdminPage() {
         setSelectedCaseId(payload.id);
         const issueCount = Array.isArray(payload.validationIssues) ? payload.validationIssues.length : 0;
         if (issueCount > 0) {
-          setNotice(`Кейс сохранён как черновик. Автопроверка нашла замечаний: ${issueCount}. Откройте вкладку «Паспорт», чтобы посмотреть список.`);
+          setNotice(`Кейс сохранён как черновик. Автопроверка нашла замечаний: ${issueCount}. Откройте карточку кейса или этап «Оформление и запуск», чтобы посмотреть список.`);
         }
       }
       if (tab === "channels" && channelTab === "email" && emailDraft) {
@@ -1608,7 +1558,7 @@ export default function AdminPage() {
       // Но администратор должен видеть, что выпускает участникам кейс с известными дефектами.
       const issueCount = Array.isArray(payload.validationIssues) ? payload.validationIssues.length : 0;
       if (issueCount > 0) {
-        setNotice(`Кейс опубликован, но автопроверка нашла замечаний: ${issueCount}. Участники увидят его в текущем виде — проверьте вкладку «Паспорт».`);
+        setNotice(`Кейс опубликован, но автопроверка нашла замечаний: ${issueCount}. Участники увидят его в текущем виде — проверьте карточку кейса или этап «Оформление и запуск».`);
       }
     } catch (err: any) {
       setError(err.message || "Не удалось опубликовать кейс");
@@ -1618,6 +1568,9 @@ export default function AdminPage() {
   };
 
   const focusCaseLogicPreview = () => {
+    // Раньше просто скроллило к блоку. Теперь разделы переключаются, поэтому сначала
+    // открываем нужный: замечания, если они есть, иначе переходы.
+    setCaseImpactTab(caseSetupIssues.length > 0 ? "issues" : "routes");
     document.getElementById("admin-case-logic-preview")?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
@@ -1773,11 +1726,16 @@ export default function AdminPage() {
     }
   };
 
-  const openCaseWizard = () => {
-    const nextOrder = (contentQuery.data?.cases?.length || 0) + 1;
-    setCaseWizardDraft(readDraftFromStorage(DRAFT_STORAGE_KEYS.caseWizard, createEmptyCase(nextOrder)));
-    setCaseWizardStep(0);
-    setCaseWizardOpen(true);
+  const startCaseCreation = () => {
+    const draft = createEmptyCase((contentQuery.data?.cases?.length || 0) + 1);
+    setCaseDraft(draft);
+    setSelectedCaseId("");
+    setSelectedCaseCycleIndex(0);
+    setCaseEditorOpen(true);
+    // Диалог редактора кейса рендерится только пока активна вкладка «Кейсы» (см. ниже
+    // `{tab === "cases" && (...)}`) — иначе клик на дашборде откроет состояние диалога,
+    // но сам диалог не попадёт в дерево.
+    setTab("cases");
   };
 
   const openSignalWizard = (mode: ChannelTab) => {
@@ -1803,43 +1761,6 @@ export default function AdminPage() {
     setSignalWizardStep(0);
     setSignalWizardDraft(stored?.mode === mode ? stored.draft : fallbackDraft);
     setSignalWizardOpen(true);
-  };
-
-  const confirmCaseWizard = async () => {
-    const nextDraft = deepClone(caseWizardDraft);
-    nextDraft.id = nextDraft.id || `CASE-${String((contentQuery.data?.cases?.length || 0) + 1).padStart(2, "0")}`;
-    nextDraft.cycles = (nextDraft.cycles || []).map((cycle, index) => ({
-      ...cycle,
-      id: cycle.id || `${nextDraft.id}-C${index + 1}`,
-      cycle: index + 1,
-      options: (cycle.options || []).map((option: any, optionIndex: number) => ({
-        ...option,
-        id: option.id || `${nextDraft.id}-C${index + 1}-O${optionIndex + 1}`,
-        level: optionIndex + 1,
-      })),
-    }));
-
-    setSaving(true);
-    setError("");
-    setNotice("");
-    try {
-      const response = await apiRequest("POST", "/api/admin/cases", nextDraft);
-      const payload = await response.json();
-      const savedId = payload.id || nextDraft.id;
-      clearDraftFromStorage(DRAFT_STORAGE_KEYS.caseWizard);
-      await invalidateRuntimeContent();
-      setSelectedCaseId(savedId);
-      setCaseDraft({ ...nextDraft, id: savedId });
-      setCaseWizardOpen(false);
-      const issueCount = Array.isArray(payload.validationIssues) ? payload.validationIssues.length : 0;
-      if (issueCount > 0) {
-        setNotice(`Кейс создан как черновик. Автопроверка нашла замечаний: ${issueCount}. Откройте вкладку «Паспорт», чтобы посмотреть список.`);
-      }
-    } catch (err: any) {
-      setError(err.message || "Не удалось создать кейс. Черновик сохранён в браузере.");
-    } finally {
-      setSaving(false);
-    }
   };
 
   const confirmSignalWizard = async () => {
@@ -2274,7 +2195,7 @@ export default function AdminPage() {
               </button>
               <button type="button" className="dns-admin-structure-nav-item" onClick={() => setAuditHistoryOpen(true)}>
                 <History aria-hidden="true" />
-                <span>История</span>
+                <span>Журнал действий</span>
               </button>
               <div className="dns-admin-structure-profile">
                 <span>{staffQuery.data?.displayName?.slice(0, 1) || "A"}</span>
@@ -2305,16 +2226,16 @@ export default function AdminPage() {
             <section className="dns-admin-overview-hero relative overflow-hidden rounded-2xl border border-border p-6 2xl:p-7">
               <div className="relative flex items-center gap-6">
                 <div className="flex-1">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#FF6B00]">Центр управления симуляцией</div>
-                  <h2 className="mt-2 text-2xl 2xl:text-[27px] font-black leading-tight text-foreground">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-[#f68b1f]">Центр управления симуляцией</div>
+                  <h2 className="mt-2 text-2xl 2xl:text-[27px] font-bold leading-tight text-foreground">
                     Здравствуйте, {staffQuery.data?.displayName || "Администратор"}.
                   </h2>
                   <p className="mt-2 max-w-xl text-[13px] leading-relaxed text-muted-foreground">
                     Базовый профиль компетенций задан. Дальше вы настраиваете кейсы, веса и параметры — и сразу видите, как это меняет оценку.
                   </p>
                   <div className="mt-4 flex flex-wrap gap-3">
-                    <Button onClick={() => setTab("cases")} className="bg-[#FF6B00] text-white hover:bg-[#FF6B00]/90">Перейти к кейсам</Button>
-                    <Button variant="outline" onClick={openCaseWizard}>Создать кейс</Button>
+                    <Button onClick={() => setTab("cases")} className="bg-[#f68b1f] text-white hover:bg-[#f68b1f]/90">Перейти к кейсам</Button>
+                    <Button variant="outline" onClick={startCaseCreation}>Создать кейс</Button>
                   </div>
                 </div>
                 <img src={ADMIN_VISUALS.dashboard.primarySrc} alt={ADMIN_VISUALS.dashboard.primaryAlt}
@@ -2333,7 +2254,7 @@ export default function AdminPage() {
                 <div key={kpi.label} className="relative overflow-hidden rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-4 backdrop-blur">
                   <div className="absolute -right-7 -top-7 h-28 w-28 rounded-full opacity-50" style={{ background: `radial-gradient(circle, ${kpi.accent}, transparent 70%)` }} />
                   <div className="relative text-[11px] font-semibold uppercase tracking-[0.06em] text-[#8890a8]">{kpi.label}</div>
-                  <div className="relative mt-2 text-[30px] font-black leading-none tabular-nums text-white">{kpi.value}</div>
+                  <div className="relative mt-2 text-[30px] font-bold leading-none tabular-nums text-white">{kpi.value}</div>
                   <div className="relative mt-1.5 text-[11px] font-semibold text-[#8aa2c4]">{kpi.hint}</div>
                 </div>
               ))}
@@ -2343,14 +2264,14 @@ export default function AdminPage() {
             <div className="grid grid-cols-1 gap-5 xl:grid-cols-[1.4fr_1fr] items-stretch">
               <section className="flex flex-col rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-5 backdrop-blur">
                 <div className="flex items-center gap-2">
-                  <ClipboardCheck className="h-4 w-4 text-[#FF6B00]" />
-                  <h3 className="text-sm font-black text-white">Что проверить до запуска</h3>
+                  <ClipboardCheck className="h-4 w-4 text-[#f68b1f]" />
+                  <h3 className="text-sm font-bold text-white">Что проверить до запуска</h3>
                   <span className="ml-auto rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-2.5 py-0.5 text-[10px] font-semibold text-[#8aa2c4]">{overviewReadinessItems.length} пунктов</span>
                 </div>
                 <div className="mt-4 flex flex-col gap-2.5">
                   {overviewReadinessItems.map((it, i) => (
                     <div key={i} className="flex items-center gap-3 rounded-lg border border-[#243244] bg-[#101826]/55 px-3 py-2.5">
-                      <span className={`flex h-6 w-6 flex-none items-center justify-center rounded-md text-[13px] font-black ${
+                      <span className={`flex h-6 w-6 flex-none items-center justify-center rounded-md text-[13px] font-bold ${
                         it.tone === "ok" ? "bg-[#00d4aa]/16 text-[#00d4aa]" : it.tone === "warn" ? "bg-[#ffc107]/16 text-[#ffc107]" : "bg-[#ff4444]/16 text-[#ff4444]"
                       }`}>{it.tone === "ok" ? "✓" : it.tone === "warn" ? "▲" : "!"}</span>
                       <div className="min-w-0">
@@ -2358,7 +2279,7 @@ export default function AdminPage() {
                         <div className="text-[11.5px] text-[#8aa2c4]">{it.note}</div>
                       </div>
                       {it.tab && (
-                        <button type="button" onClick={() => setTab(it.tab as TabKey)} className="ml-auto flex-none text-[11.5px] font-bold text-[#FF6B00] hover:underline">Открыть →</button>
+                        <button type="button" onClick={() => setTab(it.tab as TabKey)} className="ml-auto flex-none text-[11.5px] font-bold text-[#f68b1f] hover:underline">Открыть →</button>
                       )}
                     </div>
                   ))}
@@ -2368,7 +2289,7 @@ export default function AdminPage() {
               <section className="rounded-xl border border-[#2a3a4e] bg-[#141c2b]/72 p-5 backdrop-blur">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-[#00d4aa]" />
-                  <h3 className="text-sm font-black text-white">Профиль компетенций</h3>
+                  <h3 className="text-sm font-bold text-white">Профиль компетенций</h3>
                   <span className="ml-auto rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-2.5 py-0.5 text-[10px] font-semibold text-[#8aa2c4]">НАДО / ФАКТ</span>
                 </div>
                 <p className="mt-1.5 text-[11.5px] leading-relaxed text-[#8aa2c4]">
@@ -2409,19 +2330,41 @@ export default function AdminPage() {
                   <Button size="sm" variant="outline" className="dns-admin-case-nav-action border-[#2a3a4e] bg-transparent text-[#8890a8]" onClick={() => selectedCaseId && reorderCase(selectedCaseId, 1)} disabled={!selectedCaseId} aria-label="Опустить выбранный кейс ниже" title="Опустить выбранный кейс ниже">
                     <ArrowDown className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" onClick={openCaseWizard}>Новый</Button>
+                  <Button size="sm" onClick={startCaseCreation}>Новый</Button>
                 </div>
               </div>
               <div className="dns-admin-case-list space-y-2 max-h-[70vh] overflow-y-auto pr-1">
-                {contentQuery.data.cases.map((item: SimCase, index: number) => (
-                  <div key={item.id} className={`dns-admin-case-list-item w-full rounded-lg border px-3 py-2 ${selectedCaseId === item.id ? "dns-admin-case-list-item--active border-[#FF6B00] bg-[#FF6B00]/10" : "border-[#2a3a4e]"}`}>
+                {contentQuery.data.cases.map((item: SimCase, index: number) => {
+                  // Список читает сохранённые кейсы. Пока открыт редактор, показываем название
+                  // из черновика — иначе автор переименовал кейс, а в списке висит старое.
+                  const isOpenInEditor = caseEditorOpen && caseDraft?.id === item.id;
+                  const draftTitle = isOpenInEditor ? caseDraft?.title : "";
+                  const hasUnsavedTitle = Boolean(draftTitle?.trim()) && draftTitle !== item.title;
+                  return (
+                  <div key={item.id} className={`dns-admin-case-list-item w-full rounded-lg border px-3 py-2 ${selectedCaseId === item.id ? "dns-admin-case-list-item--active border-[#f68b1f] bg-[#f68b1f]/10" : "border-[#2a3a4e]"}`}>
                     <div className="dns-admin-case-order-index" aria-hidden="true">{index + 1}</div>
                     <button onClick={() => { setSelectedCaseId(item.id); setCaseEditorOpen(true); }} className="dns-admin-case-list-main w-full text-left" title="Открыть редактор кейса">
-                      <div className="dns-admin-case-list-title text-sm text-white">{item.title || item.id}</div>
-                      <div className="dns-admin-case-list-meta text-xs text-[#8890a8]">{item.id}</div>
+                      <div className="dns-admin-case-list-title text-sm text-white">{draftTitle?.trim() || item.title || item.id}</div>
+                      <div className="dns-admin-case-list-meta text-xs text-[#8890a8]">
+                        {item.id}
+                        {hasUnsavedTitle && <span className="ml-1.5 text-[#ffd36e]">не сохранено</span>}
+                      </div>
                     </button>
+                    {/* У дубля-исправления разбор правок открывается прямо из списка:
+                        решение «верить ли этой версии» принимают до входа в редактор. */}
+                    {item.correctionOfCaseId && (
+                      <button
+                        type="button"
+                        onClick={() => setCorrectionsCaseId(item.id)}
+                        className="mt-1.5 rounded-md border border-[#54d28c]/40 bg-[#54d28c]/10 px-2 py-0.5 text-[11px] font-semibold text-[#54d28c] transition hover:bg-[#54d28c]/20"
+                        title={`Показать, что исправлено относительно ${item.correctionOfCaseId}`}
+                      >
+                        Исправление · что изменено ({(item.corrections || []).length})
+                      </button>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="dns-admin-case-note mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-[#8ec5ff]">Методическое пояснение</div>
@@ -2434,73 +2377,143 @@ export default function AdminPage() {
             </div>
           </div>
 
+          {/* Разбор правок кейса-исправления: что было в оригинале, что стало и почему. */}
+          {(() => {
+            const cases = contentQuery.data.cases as SimCase[];
+            const correctedCase = cases.find((item) => item.id === correctionsCaseId);
+            if (!correctedCase) return null;
+            return (
+              <CaseCorrectionsDialog
+                open
+                onOpenChange={(next) => { if (!next) setCorrectionsCaseId(null); }}
+                correctedCase={correctedCase}
+                originalCase={cases.find((item) => item.id === correctedCase.correctionOfCaseId) || null}
+                themeClass={themeClass}
+              />
+            );
+          })()}
+
           <Dialog open={caseEditorOpen} onOpenChange={setCaseEditorOpen}>
-            <DialogContent className={`dns-product-shell dns-admin-shell ${themeClass} flex h-[92vh] max-h-[92vh] w-[96vw] max-w-[1500px] flex-col gap-0 overflow-hidden p-0`}>
+            {/* Окно мастера занимает экран: при 1500px на широком мониторе по краям
+                оставалось больше 400px пустоты, а колонкам не хватало ширины. */}
+            <DialogContent className={`dns-product-shell dns-admin-shell ${themeClass} flex h-[94vh] max-h-[94vh] w-[98vw] max-w-[2400px] flex-col gap-0 overflow-hidden p-0`}>
               <DialogHeader className="space-y-0.5 border-b border-border px-5 py-3.5 text-left">
                 <DialogTitle className="text-[15px]">Редактор кейса · {caseDraft?.title || caseDraft?.id || "Новый кейс"}</DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground">Слева — настройка кейса, справа — влияние на профиль компетенций (меняется в моменте).</DialogDescription>
               </DialogHeader>
-              <div className="dns-admin-case-workspace grid flex-1 gap-5 overflow-hidden p-5 lg:grid-cols-[minmax(0,1fr),360px]">
+              <div className="dns-admin-case-workspace grid flex-1 gap-5 overflow-hidden p-5 lg:grid-cols-[minmax(0,1fr),360px] xl:grid-cols-[280px,minmax(0,1fr),360px]">
+                {/* Дерево кейса — постоянная левая полоса. Не зависит от текущего этапа
+                    и не исчезает при переключении: автор всё время видит кейс целиком. */}
+                {caseDraft && (
+                  <div className="dns-admin-case-roadmap-panel hidden min-h-0 min-w-0 overflow-hidden rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-3 xl:flex xl:flex-col">
+                    <CaseRoadmap
+                      caseInput={caseDraft}
+                      activeStepId={masterView.kind === "step" ? masterView.stepId : null}
+                    />
+                  </div>
+                )}
                 <div className="dns-admin-case-editor-panel min-w-0 overflow-y-auto rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4 2xl:p-5 custom-scroll">
                 {caseDraft && (
-                  <EntityEditor
-                    title="Редактор кейса"
+                  <CaseMaster
                     entity={caseDraft}
-                    assets={assets}
                     competencies={competencies}
+                    assets={assets}
                     caseSourceOptions={caseSourceOptions}
-                    emailSenderOptions={emailSenderOptions}
-                    emailDepartmentOptions={emailDepartmentOptions}
-                    messengerSenderOptions={messengerSenderOptions}
-                    messengerRoleOptions={messengerRoleOptions}
-                    videoSenderOptions={videoSenderOptions}
-                    videoRoleOptions={videoRoleOptions}
-                    onChange={setCaseDraft}
+                    isNew={!selectedCaseId}
                     onUploadAsset={handleUploadAsset}
-                    chats={[]}
-                    mode="case"
-                    onAddOption={() => addOption(setCaseDraft)}
                     onTogglePreviewAudio={togglePreviewAudio}
                     activePreviewKey={activePreviewKey}
                     selectedCycleIndex={selectedCaseCycleIndex}
                     onSelectedCycleIndexChange={setSelectedCaseCycleIndex}
+                    onChange={setCaseDraft}
+                    view={masterView}
+                    onViewChange={setMasterView}
+                    themeClass={themeClass}
                   />
                 )}
               </div>
               <div className="dns-admin-case-impact-panel min-w-0 overflow-y-auto rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4 2xl:p-5 custom-scroll">
-                <div className="text-sm font-semibold text-white">Влияние выбранного кейса</div>
-                <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
-                  Этот блок фиксирован рядом с редактором и показывает, как текущая настройка кейса влияет на ожидаемый профиль компетенций.
-                </div>
                 {caseDraft ? (
                   <>
-                    <div className="mt-3 rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
-                      <div className="text-xs uppercase tracking-[0.18em] text-[#6fa0ff]">{caseDraft.id || "Новый кейс"}</div>
-                      <div className="mt-1 text-sm font-semibold text-white">{caseDraft.title || "Без названия"}</div>
-                      <div className="mt-2 text-[11px] text-[#cbd8ef]">Вес кейса в симуляции: {caseDraftWeight}%</div>
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                      <span className="text-[11px] uppercase tracking-[0.16em] text-[#6fa0ff]">{caseDraft.id || "Новый кейс"}</span>
+                      <span className="min-w-0 flex-1 truncate text-sm font-semibold text-white">{caseDraft.title || "Без названия"}</span>
+                      <span className="text-[11px] text-[#cbd8ef]">вес {caseDraftWeight}%</span>
                     </div>
-                    <div className="mt-4">
-                      <CompetencyHorizontalImpactChart
-                        data={caseDraftBarData}
-                        series={[
-                          { key: "aggregate", label: "Профиль кейса", color: "#4a9eff" },
-                          { key: "selected", label: "Регулируемый вклад", color: "#00d4aa" },
-                        ]}
-                      />
+
+                    <div id="admin-case-logic-preview" className="mt-3 flex gap-1 rounded-lg border border-[#243244] bg-[#101826]/60 p-1">
+                      {([
+                        ["impact", "Влияние", 0],
+                        ["routes", "Переходы", caseRouteRows.length],
+                        ["issues", "Замечания", caseSetupIssues.length],
+                      ] as const).map(([key, label, count]) => (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => setCaseImpactTab(key)}
+                          className={`flex-1 whitespace-nowrap rounded-md border px-1.5 py-1.5 text-[11px] font-semibold transition ${
+                            caseImpactTab === key
+                              ? "border-[#f68b1f] bg-[#f68b1f]/15 text-white"
+                              : "border-transparent text-[#9aabc6] hover:border-[#3b5878]"
+                          }`}
+                        >
+                          {label}
+                          {count > 0 && (
+                            <span className={key === "issues" ? "ml-1 text-[#ffd36e]" : "ml-1 text-[#8aa2c4]"}>{count}</span>
+                          )}
+                        </button>
+                      ))}
                     </div>
-                    <div id="admin-case-logic-preview" className="mt-4 rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="text-sm font-semibold text-white">Предпросмотр логики</div>
-                          <div className="mt-1 text-[11px] leading-relaxed text-[#8aa2c4]">
-                            Проверка связей «ответ → цикл» без запуска реальной сессии.
+
+                    {caseImpactTab === "impact" && (
+                      <div className="mt-3">
+                        {/* Вес кейса живёт рядом с графиком, который показывает его действие.
+                            Раньше он был в «Настройках», отдельно от кейса и от результата. */}
+                        {caseDraft && (
+                          <div className="rounded-xl border border-[#243244] bg-[#101826]/70 p-3">
+                            <div className="flex items-baseline justify-between gap-2">
+                              <div className="text-[12px] font-semibold text-white">Вес кейса в симуляции</div>
+                              <div className="text-[13px] font-bold text-[#ffb27a]">{caseDraftWeight}%</div>
+                            </div>
+                            <div className="mt-1 text-[11px] leading-relaxed text-[#8aa2c4]">
+                              Чем выше вес, тем сильнее этот кейс влияет на итоговый портрет кандидата.
+                            </div>
+                            <div className="mt-3 px-1">
+                              <Slider
+                                value={[caseDraftWeight]}
+                                onValueChange={([nextValue]) => updateCaseWeight(caseDraft.id, nextValue)}
+                                min={0}
+                                max={100}
+                                step={10}
+                              />
+                              <div className="mt-2 flex justify-between text-[10px] uppercase tracking-[0.16em] text-[#7d9bc9]">
+                                <span>0</span>
+                                <span>50</span>
+                                <span>100</span>
+                              </div>
+                            </div>
                           </div>
+                        )}
+                        <div className="mt-3 text-[11px] leading-relaxed text-[#8aa2c4]">
+                          Синий — базовый профиль кейса, бирюзовый — фактический вклад с учётом веса.
                         </div>
-                        <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${caseSetupIssues.length === 0 ? "border-[#00d4aa]/40 text-[#7fffd4]" : "border-[#ffb000]/40 text-[#ffd36e]"}`}>
-                          {caseSetupIssues.length === 0 ? "Готово" : `${caseSetupIssues.length} замеч.`}
-                        </span>
+                        <div className="mt-2">
+                          <CompetencyHorizontalImpactChart
+                            data={caseDraftBarData}
+                            series={[
+                              { key: "aggregate", label: "Профиль кейса", color: "#4a9eff" },
+                              { key: "selected", label: "Регулируемый вклад", color: "#00d4aa" },
+                            ]}
+                          />
+                        </div>
                       </div>
-                      <div className="mt-3 max-h-48 space-y-2 overflow-y-auto pr-1 custom-scroll">
+                    )}
+
+                    {caseImpactTab === "routes" && (
+                      <div className="mt-3 space-y-2">
+                        <div className="text-[11px] leading-relaxed text-[#8aa2c4]">
+                          Куда ведёт каждый ответ — без запуска сессии.
+                        </div>
                         {caseRouteRows.length === 0 && (
                           <div className="rounded-lg border border-dashed border-[#31455f] px-3 py-3 text-[11px] text-[#8aa2c4]">
                             Добавьте активные варианты ответа, чтобы увидеть переходы.
@@ -2517,15 +2530,36 @@ export default function AdminPage() {
                           </div>
                         ))}
                       </div>
-                      {caseSetupIssues.length > 0 && (
-                        <div className="mt-3 rounded-lg border border-[#ffb000]/25 bg-[#ffb000]/8 p-3">
-                          <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#ffd36e]">Что исправить до запуска</div>
-                          <ul className="mt-2 space-y-1 text-[11px] leading-relaxed text-[#ffe6a6]">
-                            {caseSetupIssues.slice(0, 5).map((issue) => <li key={issue}>• {issue}</li>)}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
+                    )}
+
+                    {caseImpactTab === "issues" && (
+                      <div className="mt-3 space-y-2">
+                        {caseSetupIssues.length === 0 ? (
+                          <div className="rounded-lg border border-[#00d4aa]/35 bg-[#00d4aa]/8 px-3 py-3 text-[11px] text-[#7fffd4]">
+                            Всё необходимое заполнено — кейс можно публиковать.
+                          </div>
+                        ) : (
+                          <>
+                            <div className="text-[11px] leading-relaxed text-[#8aa2c4]">
+                              Нажмите на замечание — откроется этап, где оно чинится.
+                            </div>
+                            {caseSetupIssues.map((issue, issueIndex) => (
+                              <button
+                                key={`${issue.step}-${issueIndex}`}
+                                type="button"
+                                onClick={() => setMasterView({ kind: "step", stepId: issue.step })}
+                                className="flex w-full items-start gap-2 rounded-lg border border-[#ffb000]/25 bg-[#ffb000]/8 px-3 py-2 text-left text-[11px] leading-relaxed text-[#ffe6a6] transition hover:border-[#ffd36e]"
+                              >
+                                <span className="mt-0.5 shrink-0 rounded border border-[#ffb000]/40 px-1 text-[9px] uppercase tracking-wide text-[#ffd36e]">
+                                  {MASTER_STEP_TITLES[issue.step]}
+                                </span>
+                                <span className="min-w-0">{issue.text}</span>
+                              </button>
+                            ))}
+                          </>
+                        )}
+                      </div>
+                    )}
                     <div className="dns-admin-case-control-panel mt-4">
                       <div className="dns-admin-case-control-head">
                         <div>
@@ -2735,7 +2769,7 @@ export default function AdminPage() {
                 </Button>
                 <Button
                   type="button"
-                  className="bg-[#FF6B00] hover:bg-[#e06000]"
+                  className="bg-[#f68b1f] hover:bg-[#e06000]"
                   onClick={saveSchedule}
                   disabled={saving}
                 >
@@ -2750,7 +2784,7 @@ export default function AdminPage() {
                   <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-full border border-[#FF6B00]/35 bg-[#FF6B00]/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
+                        <span className="rounded-full border border-[#f68b1f]/35 bg-[#f68b1f]/12 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
                           {index + 1}
                         </span>
                         <span className="rounded-full border border-[#4a9eff]/35 bg-[#4a9eff]/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8ec5ff]">
@@ -3420,75 +3454,6 @@ export default function AdminPage() {
                 )}
               </div>
 
-              <div className="mt-4 rounded-xl border border-[#243244] bg-[#141c2b]/45 p-4">
-                <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-white">Вес каждого кейса</div>
-                    <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
-                      Вместо ручной настройки каждой компетенции для всей симуляции вы задаёте вес кейса целиком.
-                      Чем выше вес, тем сильнее именно этот кейс влияет на итоговый портрет кандидата.
-                    </div>
-                  </div>
-                  <label className="flex items-center gap-2 rounded-full border border-[#2a3a4e] bg-[#101826]/70 px-3 py-2 text-xs text-[#dbe2f0]">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(settingsDraft.timeInfluenceEnabled)}
-                      onChange={(e) => setSettingsDraft((current) => ({
-                        ...current,
-                        timeInfluenceEnabled: e.target.checked,
-                      }))}
-                      className="h-4 w-4 rounded border-[#3b4b61] bg-[#141c2b]"
-                    />
-                    Влияние времени на итоговую оценку
-                  </label>
-                </div>
-
-                <div className="space-y-3">
-                  {activeCases.map((caseItem) => {
-                    const weightValue = getCaseWeightValue(caseWeightsDraft, caseItem.id);
-                    const isSelected = selectedWeightCase?.id === caseItem.id;
-
-                    return (
-                      <div
-                        key={caseItem.id}
-                        onClick={() => setSelectedWeightCaseId(caseItem.id)}
-                        className={`w-full rounded-xl border p-3 text-left transition ${
-                          isSelected
-                            ? "border-[#4a9eff]/50 bg-[#4a9eff]/10"
-                            : "border-[#243244] bg-[#101826]/70 hover:border-[#34506f]"
-                        }`}
-                      >
-                        <div className="flex flex-wrap items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-xs uppercase tracking-[0.18em] text-[#6fa0ff]">{caseItem.id}</div>
-                            <div className="mt-1 text-sm font-semibold text-white">{caseItem.title}</div>
-                            <div className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-[#8aa2c4]">
-                              {caseItem.description}
-                            </div>
-                          </div>
-                          <div className="rounded-full border border-[#2a3a4e] bg-[#141c2b]/70 px-3 py-1 text-sm font-semibold text-white">
-                            {weightValue}%
-                          </div>
-                        </div>
-                        <div className="mt-3 px-1">
-                          <Slider
-                            value={[weightValue]}
-                            onValueChange={([nextValue]) => updateCaseWeight(caseItem.id, nextValue)}
-                            min={0}
-                            max={100}
-                            step={10}
-                          />
-                          <div className="mt-2 flex justify-between text-[10px] uppercase tracking-[0.16em] text-[#71839d]">
-                            <span>0</span>
-                            <span>50</span>
-                            <span>100</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
 
               <div className="mt-4 rounded-xl border border-[#243244] bg-[#141c2b]/45 p-4">
                 <div className="text-sm font-semibold text-white mb-4">Системные медиа</div>
@@ -3739,32 +3704,6 @@ export default function AdminPage() {
             </div>
 
             <div className="space-y-4 xl:sticky xl:top-4 xl:max-h-[calc(100vh-2rem)] xl:self-start xl:overflow-y-auto xl:overflow-x-hidden xl:pr-2 custom-scroll">
-              <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-white">Влияние выбранного кейса</div>
-                    <div className="mt-1 text-xs leading-relaxed text-[#8aa2c4]">
-                      График показывает статичный профиль симуляции по контенту и регулируемый вклад кейса, который вы сейчас настраиваете.
-                    </div>
-                  </div>
-                  {selectedWeightCase && (
-                    <div className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-[#2a3a4e] bg-[#101826]/80 px-3 py-1.5 text-[11px] font-semibold text-[#dbe2f0]">
-                      <span className="font-mono tracking-[0.06em] text-[#8ec5ff]">{selectedWeightCase.id}</span>
-                      <span className="text-[#4a607e]">·</span>
-                      <span>{selectedCaseWeight}%</span>
-                    </div>
-                  )}
-                </div>
-                <div className="mt-4">
-                  <CompetencyHorizontalImpactChart
-                    data={aggregateBarData}
-                    series={[
-                      { key: "aggregate", label: "Статичный профиль", color: "#4a9eff" },
-                      { key: "selected", label: "Регулируемый вклад", color: "#00d4aa" },
-                    ]}
-                  />
-                </div>
-              </div>
 
               <div className="rounded-xl border border-[#2a3a4e] bg-[#141c2bcc] p-4">
                 <div className="text-sm font-semibold text-white">Автоматическая оценка ожиданий</div>
@@ -3862,14 +3801,14 @@ export default function AdminPage() {
                       <ul className="mt-3 space-y-2 text-xs leading-relaxed text-[#b8c5db]">
                         {section.items.map((item) => (
                           <li key={item} className="flex gap-2">
-                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#FF6B00]" />
+                            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#f68b1f]" />
                             <span>{item}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                   ))}
-                  <div className="rounded-xl border border-[#FF6B00]/30 bg-[#FF6B00]/10 p-3 text-xs leading-relaxed text-[#ffd9bf]">
+                  <div className="rounded-xl border border-[#f68b1f]/30 bg-[#f68b1f]/10 p-3 text-xs leading-relaxed text-[#ffd9bf]">
                     Пример: вариант “провести планёрку и перераспределить людей” может дать Команда / мораль +5,
                     Выдача / скорость +3 и Финансы / выручка +3. Если решение грубое и без контроля, ставьте отрицательные
                     значения там, где магазин реально проседает.
@@ -3880,17 +3819,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        <CaseCreationWizard
-          open={caseWizardOpen}
-          step={caseWizardStep}
-          draft={caseWizardDraft}
-          competencies={competencies}
-          caseSourceOptions={caseSourceOptions}
-          onOpenChange={setCaseWizardOpen}
-          onStepChange={setCaseWizardStep}
-          onDraftChange={setCaseWizardDraft}
-          onConfirm={confirmCaseWizard}
-        />
         <SignalCreationWizard
           open={signalWizardOpen}
           mode={signalWizardMode}
@@ -3912,7 +3840,7 @@ export default function AdminPage() {
 
         {tab !== "dashboard" && tab !== "results" && tab !== "schedule" && tab !== "comparison" && (
           <div className="dns-admin-action-block mt-6 justify-start">
-            <Button className="bg-[#FF6B00] hover:bg-[#e06000]" onClick={saveCurrent} disabled={saving || uploading}>
+            <Button className="bg-[#f68b1f] hover:bg-[#e06000]" onClick={saveCurrent} disabled={saving || uploading}>
               {saving ? "Сохранение..." : "Сохранить"}
             </Button>
             {(tab === "cases" || tab === "channels") && (
@@ -3926,7 +3854,8 @@ export default function AdminPage() {
         )}
           </main>
         </div>
-        <ProductFooter />
+        <ProductFooter onVersionClick={() => setReleaseHistoryOpen(true)} />
+        <ReleaseHistoryDialog open={releaseHistoryOpen} onOpenChange={setReleaseHistoryOpen} themeClass={themeClass} />
       </div>
       {mailDialog && (() => {
         const row = comparisonRows.find((r) => r.id === mailDialog.rowId);

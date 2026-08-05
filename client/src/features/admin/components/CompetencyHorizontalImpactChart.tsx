@@ -43,10 +43,10 @@ export function CompetencyHorizontalImpactChart({ data, series, emptyText = "П�
               key={row.name}
               onMouseEnter={() => setHover(row.name)}
               onMouseLeave={() => setHover((prev) => (prev === row.name ? null : prev))}
-              className={`rounded-lg border px-3 py-2 transition-colors ${isActive ? "border-[#FF6B00] bg-[#16233a]/80" : "border-[#1f3045] bg-[#0d1522]/80"}`}
+              className={`rounded-lg border px-3 py-2 transition-colors ${isActive ? "border-[#f68b1f] bg-[#16233a]/80" : "border-[#1f3045] bg-[#0d1522]/80"}`}
             >
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <div className="min-w-0 text-[12px] font-semibold leading-4 text-[#f3f7ff]">{row.name}</div>
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <div className="min-w-0 truncate text-[12px] font-semibold leading-4 text-[#f3f7ff]" title={row.name}>{row.name}</div>
                 {isActive && delta !== null ? (
                   <div
                     className="flex-none rounded-full px-2 py-0.5 text-[10px] font-bold tabular-nums"
@@ -58,14 +58,15 @@ export function CompetencyHorizontalImpactChart({ data, series, emptyText = "П�
                   >
                     Δ {delta > 0 ? "+" : ""}{delta.toFixed(1)}
                   </div>
-                ) : (
-                  <div className="text-[10px] uppercase tracking-[0.14em] text-[#71839d]">{row.shortName}</div>
-                )}
+                ) : null}
               </div>
               <div className="space-y-1.5">
                 {series.map((item) => {
                   const value = Math.max(0, Math.min(5, Number(row[item.key] || 0)));
-                  return <div key={item.key} className="grid grid-cols-[64px,1fr,32px] items-center gap-2"><div className="truncate text-[10px] text-[#93a7c3]">{item.label}</div><div className="h-2.5 overflow-hidden rounded-full bg-[#1b2638]"><div className="h-full rounded-full transition-[width] duration-500 ease-out" style={{ width: `${(value / 5) * 100}%`, backgroundColor: item.color, boxShadow: isActive ? `0 0 0 1px ${item.color}66` : "none" }} /></div><div className="text-right text-[11px] font-semibold tabular-nums text-[#e9f1ff]">{value > 0 ? value.toFixed(1) : "—"}</div></div>;
+                  // Подпись серии не дублируем в каждой строке: в узкой панели она
+                  // обрезалась в «Профиль ке…» и съедала половину ширины под шкалу.
+                  // Цвет ряда объяснён легендой сверху, здесь достаточно точки.
+                  return <div key={item.key} className="grid grid-cols-[10px,1fr,30px] items-center gap-2" title={item.label}><span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} /><div className="h-2.5 overflow-hidden rounded-full bg-[#152238]"><div className="h-full rounded-full transition-[width] duration-500 ease-out" style={{ width: `${(value / 5) * 100}%`, backgroundColor: item.color, boxShadow: isActive ? `0 0 0 1px ${item.color}66` : "none" }} /></div><div className="text-right text-[11px] font-semibold tabular-nums text-[#e9f1ff]">{value > 0 ? value.toFixed(1) : "—"}</div></div>;
                 })}
               </div>
             </div>

@@ -21,7 +21,7 @@ import {
 } from "./case-editor-support";
 import { CaseMediaPanel } from "./CaseMediaPanel";
 import { StructuredOptionsEditor } from "./StructuredOptionsEditor";
-import { createEmptyStructuredOption } from "./case-editor-support";
+import { createEmptyCycle, createEmptyStructuredOption } from "./case-editor-support";
 
 export function StructuredCyclesEditor({
   cycles,
@@ -33,6 +33,7 @@ export function StructuredCyclesEditor({
   activePreviewKey,
   selectedCycleIndex: controlledSelectedCycleIndex,
   onSelectedCycleIndexChange,
+  caseSourceOptions = [],
 }: {
   cycles: any[];
   onChange: (cycles: any[]) => void;
@@ -43,6 +44,8 @@ export function StructuredCyclesEditor({
   activePreviewKey: string | null;
   selectedCycleIndex?: number;
   onSelectedCycleIndexChange?: (index: number) => void;
+  /** Готовые источники сигнала. Без них поле обещает выбор, а список пустой. */
+  caseSourceOptions?: string[];
 }) {
   const [internalSelectedCycleIndex, setInternalSelectedCycleIndex] = useState(0);
   const normalizedCycles = cycles || [];
@@ -66,26 +69,7 @@ export function StructuredCyclesEditor({
   const addCycle = () => {
     onChange([
       ...(cycles || []),
-      {
-        id: `draft-cycle-${Date.now()}`,
-        cycle: (cycles?.length || 0) + 1,
-        title: `Цикл ${(cycles?.length || 0) + 1}`,
-        description: "",
-        source: "",
-        situation: "",
-        signal: { type: "message", content: "" },
-        zonesAffected: [],
-        timing: { decisionDeadlineSeconds: 180, reminderIntervalSeconds: 180 },
-        status: "draft",
-        isFinal: false,
-        priority: "normal",
-        criticality: "normal",
-        options: [createEmptyStructuredOption(1)],
-        imageAssetId: null,
-        imageUrl: null,
-        audioAssetId: null,
-        audioUrl: null,
-      },
+      createEmptyCycle(`draft-cycle-${Date.now()}`, (cycles?.length || 0) + 1),
     ]);
     setSelectedCycleIndex(cycles?.length || 0);
   };
@@ -127,14 +111,14 @@ export function StructuredCyclesEditor({
               title={`${cycle.title || `Цикл ${index + 1}`} · ${(cycle.options || []).length} отв.`}
               className={`flex h-10 w-10 flex-none items-center justify-center rounded-lg border text-sm font-bold transition ${
                 index === selectedCycleIndex
-                  ? "border-[#FF6B00] bg-[#FF6B00] text-white shadow-[0_6px_16px_rgba(255,107,0,0.3)]"
+                  ? "border-[#f68b1f] bg-[#f68b1f] text-white shadow-[0_6px_16px_rgba(255,107,0,0.3)]"
                   : "border-[#2a3a4e] bg-[#0d1522]/75 text-[#9aabc6] hover:border-[#3b5878]"
               }`}
             >
               {index + 1}
             </button>
           ))}
-          <Button type="button" size="icon" variant="outline" className="h-10 w-10 border-dashed border-[#FF6B00]/45 bg-transparent text-[#ffb27a]" onClick={addCycle} title="Добавить цикл">+</Button>
+          <Button type="button" size="icon" variant="outline" className="h-10 w-10 border-dashed border-[#f68b1f]/45 bg-transparent text-[#ffb27a]" onClick={addCycle} title="Добавить цикл">+</Button>
         </div>
 
         <div className="min-w-0 flex-1">
@@ -171,7 +155,7 @@ export function StructuredCyclesEditor({
 
             <div className="dns-admin-cycle-meta-grid">
               <Field label="Название цикла" value={selectedCycle.title || ""} onChange={(value) => updateCycle(selectedCycleIndex, { title: value })} />
-              <SuggestField label="Источник сигнала" value={selectedCycle.source || ""} onChange={(value) => updateCycle(selectedCycleIndex, { source: value })} options={[]} />
+              <SuggestField label="Источник сигнала" value={selectedCycle.source || ""} onChange={(value) => updateCycle(selectedCycleIndex, { source: value })} options={caseSourceOptions} />
               <SelectField
                 label="Статус"
                 value={selectedCycle.status || "active"}

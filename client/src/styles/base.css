@@ -5,10 +5,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Все три начертания DNS RotondaC. Раньше был объявлен только Regular, и любой
+   font-weight ≥ 600 браузер синтезировал сам — искусственное утолщение выглядит
+   грубее настоящего Bold, особенно на крупных заголовках. */
 @font-face {
   font-family: "DNS RotondaC";
   src: url("/fonts/DNS RotondaC.ttf") format("truetype");
   font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DNS RotondaC";
+  src: url("/fonts/DNS RotondaC-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "DNS RotondaC";
+  src: url("/fonts/DNS RotondaC-Black.ttf") format("truetype");
+  font-weight: 900;
   font-style: normal;
   font-display: swap;
 }
@@ -1058,12 +1075,21 @@
   color: #24354a !important;
 }
 
+/* Белый текст — только на СПЛОШНОЙ заливке акцентом. Полупрозрачные варианты
+   (bg-[#hex]/15 у активных вкладок) в светлой теме почти белые: белый текст на
+   них не читался. Исключаем их из правила по наличию слеша в классе. */
 .dns-product-shell.dns-theme-light .dns-assessor-v2-primary,
-.dns-product-shell.dns-theme-light button[class*="bg-[#ff6b00"],
-.dns-product-shell.dns-theme-light button[class*="bg-[#FF6B00"],
-.dns-product-shell.dns-theme-light button[class*="bg-[#5eb1ff"] {
+.dns-product-shell.dns-theme-light button[class*="bg-[#ff6b00"]:not([class*="/"]),
+.dns-product-shell.dns-theme-light button[class*="bg-[#f68b1f"]:not([class*="/"]),
+.dns-product-shell.dns-theme-light button[class*="bg-[#5eb1ff"]:not([class*="/"]) {
   color: #ffffff !important;
-  box-shadow: 0 12px 24px rgba(255, 107, 0, 0.18);
+  box-shadow: 0 12px 24px rgba(246, 139, 31, 0.18);
+}
+
+/* Активная вкладка на полупрозрачной заливке: текст брендовым тёмно-оранжевым. */
+.dns-product-shell.dns-theme-light button[class*="bg-[#f68b1f]/"],
+.dns-product-shell.dns-theme-light button[class*="bg-[#ff6b00]/"] {
+  color: #9a4f06 !important;
 }
 
 .dns-product-shell.dns-theme-light .dns-assessor-v2-code-button {

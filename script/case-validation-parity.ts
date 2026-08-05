@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { hasMeaningfulText, spearmanRho, validateCase, shouldBlockCaseSave } from "../shared/case-validation";
-import type { SimCase } from "../shared/simulation-content";
+import { hasMeaningfulText, spearmanRho, validateCase, shouldBlockCaseSave, isIssueAccepted } from "../shared/case-validation";
+import type { AcceptedIssue, SimCase } from "../shared/simulation-content";
 
 const baseEffects = { queue: 0, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 };
 
@@ -187,6 +187,62 @@ assert.equal(
   validateCase(gapCase).filter((issue) => issue.check === "antigaming" && issue.message.includes("шкала хорошести")).length,
   0,
   "a gap drops the competency from the set — documented limitation, not silent behaviour",
+);
+
+// Осознанный отказ: автор может принять замечание с обоснованием, и оно перестаёт
+// блокировать сохранение — но только ровно то замечание, которое принято.
+const acceptedCase = buildCase({ hiddenCause: null });
+const acceptedIssues = validateCase(acceptedCase);
+assert.ok(acceptedIssues.length > 0, "кейс без скрытой причины даёт замечания");
+
+const accepted = [{ check: "diagnostics" as const, reason: "Причина очевидна из сигнала, расследование не нужно" }];
+assert.equal(isIssueAccepted(acceptedIssues[0], accepted), true);
+assert.equal(isIssueAccepted(acceptedIssues[0], []), false);
+// Принятие без обоснования не считается принятием
+assert.equal(isIssueAccepted(acceptedIssues[0], [{ check: "diagnostics" as const, reason: "  " }]), false);
+
+// Принятое замечание другой проверки не влияет
+const barsIssue = { check: "bars_conformance" as const, message: "деталь", cycleId: "C1", optionId: "O1" };
+assert.equal(isIssueAccepted(barsIssue, accepted), false);
+
+// Гейт: все замечания приняты -> не блокирует даже при статусе готовности
+const allAccepted = acceptedIssues.map((item) => ({ check: item.check, cycleId: item.cycleId, optionId: item.optionId, reason: "осознанно" }));
+assert.equal(shouldBlockCaseSave("ready_launch", acceptedIssues, allAccepted), false);
+// Часть принята, часть нет -> блокирует
+assert.equal(shouldBlockCaseSave("ready_launch", acceptedIssues, [allAccepted[0]]), acceptedIssues.length > 1);
+// Без списка принятых поведение прежнее (обратная совместимость)
+assert.equal(shouldBlockCaseSave("ready_launch", acceptedIssues), true);
+
+// Принятие адресное: обоснование по одному варианту не должно снимать
+// замечания того же типа по другим вариантам — иначе одна запись молча
+// отключает проверку по всему кейсу.
+const adressCase = buildCase();
+adressCase.cycles[0].options[0].effects = { queue: 0, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 };
+adressCase.cycles[0].options[1].effects = { queue: 0, conversion: 0, morale: 0, revenue_impact: 0, delivery_status: 0 };
+const adressIssues = validateCase(adressCase).filter((item) => item.check === "effect_reality");
+assert.ok(adressIssues.length >= 2, "два варианта без эффектов дают два замечания");
+assert.notEqual(adressIssues[0].optionId, adressIssues[1].optionId, "замечания адресованы разным вариантам");
+
+const acceptedFirstOnly = [
+  {
+    check: "effect_reality" as const,
+    cycleId: adressIssues[0].cycleId,
+    optionId: adressIssues[0].optionId,
+    reason: "в этом варианте бездействие и должно быть без последствий",
+  },
+];
+assert.equal(isIssueAccepted(adressIssues[0], acceptedFirstOnly), true, "принятое замечание снято");
+assert.equal(
+  isIssueAccepted(adressIssues[1], acceptedFirstOnly),
+  false,
+  "соседний вариант остаётся с замечанием: принятие адресное, а не на всю проверку",
+);
+
+// Запись без привязки не должна покрывать замечание, у которого привязка есть
+assert.equal(
+  isIssueAccepted(adressIssues[0], [{ check: "effect_reality" as const, reason: "так задумано" }]),
+  false,
+  "принятие без указания варианта не снимает замечание по конкретному варианту",
 );
 
 console.log("case-validation parity checks passed");

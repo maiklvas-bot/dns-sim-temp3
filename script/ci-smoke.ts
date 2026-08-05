@@ -338,6 +338,36 @@ async function runAdminStorageAcceptanceChecks() {
     assertCondition(persistedDossierCase?.falseTrails?.[0] === "Distraction", "False trail content must survive persistence");
     assertCondition(persistedDossierCase?.qaStatus === "ready_prototype", "QA status must survive persistence");
 
+    // Осознанно принятое замечание должно пережить сохранение: без записи в saveCase
+    // обоснование терялось при перезагрузке, и замечание снова блокировало кейс.
+    contentStorage.saveCase({
+      ...(persistedDossierCase as Parameters<typeof contentStorage.saveCase>[0]),
+      acceptedIssues: [
+        {
+          check: "effect_reality",
+          cycleId: "TASK-030-DOSSIER-COMPLETE-C1",
+          optionId: "OPT-2",
+          reason: "В этом варианте бездействие и должно быть без последствий",
+          acceptedForMessage: "Вариант \"OPT-2\": все эффекты на состояние равны нулю",
+        },
+      ],
+    });
+    const persistedAccepted = contentStorage
+      .getPublicContent(true)
+      .cases.find((item) => item.id === "TASK-030-DOSSIER-COMPLETE");
+    assertCondition(
+      persistedAccepted?.acceptedIssues?.length === 1,
+      "Accepted issue must survive persistence",
+    );
+    assertCondition(
+      persistedAccepted?.acceptedIssues?.[0]?.reason?.startsWith("В этом варианте"),
+      "Accepted issue reason must survive persistence — without it the author's justification is lost",
+    );
+    assertCondition(
+      persistedAccepted?.acceptedIssues?.[0]?.optionId === "OPT-2",
+      "Accepted issue must keep its option binding — otherwise acceptance stops being addressable",
+    );
+
     // Контракт гейта на уровне обработчика: без этой проверки удаление гейта из routes.ts
     // не уронило бы ни один тест — валидация и сохранение покрыты по отдельности.
     const gateHandler = (body: Parameters<typeof validateCase>[0] & { qaStatus?: string }) => {

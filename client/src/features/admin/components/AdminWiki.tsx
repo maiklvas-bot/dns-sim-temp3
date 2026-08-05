@@ -56,11 +56,11 @@ const ADMIN_WIKI_BLOCKS: Array<{
     title: "Кейсы · библиотека",
     label: "Список кейсов сеткой + кнопка «Новый»",
     icon: ClipboardCheck,
-    summary: "Библиотека управленческих ситуаций. Каждый кейс — это сигнал, контекст, циклы развития и варианты ответа. Клик по кейсу открывает окно редактора.",
+    summary: "Библиотека управленческих ситуаций. Каждый кейс — это сигнал, контекст, циклы развития и варианты ответа. Клик по кейсу открывает мастер кейса.",
     controls: [
-      "«Новый» — мастер создания кейса (4 шага: контекст, сигнал, первый цикл, тайминги).",
+      "«Новый» — мастер кейса с первого этапа: замысел, ситуация, структура, решения, запуск.",
       "Стрелки ↑↓ — порядок показа кейса.",
-      "Клик по карточке — открыть редактор кейса в отдельном окне.",
+      "Клик по карточке — открыть мастер на анкете кейса: видно состояние всех пяти этапов и замечания по каждому.",
     ],
     dynamics: [
       { type: "up", text: "Больше проработанных кейсов → шире доказательная база по компетенциям." },
@@ -70,30 +70,31 @@ const ADMIN_WIKI_BLOCKS: Array<{
   },
   {
     id: "editor-card",
-    title: "Редактор · Карточка кейса",
-    label: "Название, описание, тайминг, медиа, компетенции",
+    title: "Мастер · Замысел и Ситуация",
+    label: "Название, компетенции, сигнал, скрытая причина, данные",
     icon: ListChecks,
-    summary: "Базовые свойства кейса. Здесь задаётся, что проверяет кейс (основные/вторичные компетенции), медиа по умолчанию и тайминг хода симуляции.",
+    summary: "Первые два этапа. «Замысел» отвечает, зачем кейс существует и что он проверяет. «Ситуация» задаёт, что видит участник и что от него скрыто — без этого кейс проходится без расследования.",
     controls: [
       "Компетенции кейса — основные (главный фокус) и вторичные (дополнительное наблюдение).",
-      "Медиа по умолчанию — fallback-изображение и озвучка, если у цикла нет своих.",
-      "Тайминг — мин/макс интервал, срок решения, повтор напоминания.",
+      "Бизнес-проблема — чем ситуация вредит магазину, если её решают плохо.",
+      "Сигнал — источник, тип, текст и зоны магазина: это первое, что получит участник.",
+      "Паспорт — скрытая причина, данные для запроса с ценой, ложные следы.",
     ],
     dynamics: [
       { type: "up", text: "Точно заданные основные компетенции делают оценку прозрачной." },
       { type: "down", text: "Если компетенции не выбраны — вклад кейса в профиль почти не объясняется." },
     ],
-    example: "Основные: «Эмпатия», «Деэскалация»; вторичная: «Регламент». Тайминг: интервал 45–90 сек, решение 180 сек.",
+    example: "Основные: «Эмпатия», «Деэскалация»; вторичная: «Регламент». Симптом — очередь на кассе; скрытая причина — вторая касса закрыта на пересчёт.",
   },
   {
     id: "cycles",
-    title: "Редактор · Циклы (степпер)",
-    label: "Номера циклов слева, один цикл — одно окно",
+    title: "Мастер · Структура",
+    label: "Схема переходов: линейный путь или ветвление",
     icon: GitBranch,
-    summary: "Цикл — этап развития ситуации внутри кейса. Простой кейс = 1 сценарий-ответ; кейс с циклами = ветвление. Степпер слева показывает структуру целиком.",
+    summary: "Цикл — этап развития ситуации внутри кейса. Линейный кейс идёт шагами подряд; ветвящийся — ответ участника определяет, какой шаг будет следующим. Схема на этапе показывает всю структуру целиком.",
     controls: [
-      "Номера 1·2·3 на левой грани — переключение между циклами.",
-      "«+ Цикл» — добавить этап (простой кейс превращается в кейс с циклами).",
+      "«+ Цикл» — добавить этап (линейный кейс превращается в кейс с ветвлением, когда у ответа задан переход).",
+      "Схема переходов — видно, куда ведёт каждый ответ и где ветка обрывается.",
       "Ситуация, тип и текст сигнала, медиа цикла, зоны магазина, «Финальный цикл».",
     ],
     dynamics: [
@@ -104,13 +105,13 @@ const ADMIN_WIKI_BLOCKS: Array<{
   },
   {
     id: "options",
-    title: "Редактор · Варианты ответа",
-    label: "Аккордеон вариантов: текст, балл, влияние на компетенции, переход",
+    title: "Мастер · Решения",
+    label: "Варианты ответа: текст, уровень проявления, эффекты, переход",
     icon: SlidersHorizontal,
-    summary: "Варианты ответа формируют фактический вклад кейса в результат. Каждый вариант даёт балл, усиливает компетенции и может вести к следующему циклу.",
+    summary: "Варианты ответа формируют фактический вклад кейса в результат. Каждый вариант даёт балл, показывает уровень проявления компетенций и может вести к следующему циклу.",
     controls: [
       "Текст варианта (видит участник) и балл (+/−).",
-      "Влияние на компетенции — ползунки силы по каждой компетенции.",
+      "Уровень проявления компетенции — слабо, средне или сильно; произвольные баллы не выставляются.",
       "«После ответа запустить» — связь ответа с конкретным циклом.",
       "Статус: «Активен» показывается участнику; «Скрыт»/«Черновик» — нет.",
     ],
@@ -118,11 +119,11 @@ const ADMIN_WIKI_BLOCKS: Array<{
       { type: "up", text: "Чёткий эталонный ответ с весами компетенций даёт честный балл." },
       { type: "down", text: "Вариант без верного эталона в цикле → балл за цикл не учитывается." },
     ],
-    example: "Ответ «Признать эмоцию, уточнить причину»: +10, Эмпатия ×1.4, Деэскалация ×1.2 → переход к Циклу 3.",
+    example: "Ответ «Признать эмоцию, уточнить причину»: +10, Эмпатия — сильно, Деэскалация — средне → переход к Циклу 3.",
   },
   {
     id: "impact",
-    title: "Редактор · Влияние выбранного кейса",
+    title: "Мастер · Влияние выбранного кейса",
     label: "Правая панель: бары компетенций, обновляется в моменте",
     icon: Target,
     summary: "Показывает, как настройка кейса влияет на профиль компетенций. Синий — базовый профиль выбранного кейса (статичен), бирюзовый — фактический вклад с учётом веса.",
@@ -319,117 +320,8 @@ function getScoreC(v: number) {
   return v >= 3.5 ? "#00d4aa" : v >= 2.5 ? "#ffc107" : "#ff6b6b";
 }
 
+import { AdminWikiReference } from "../wiki/AdminWikiReference";
+
 export function AdminWiki({ onBack }: { onBack: () => void }) {
-  return (
-    <div className="dns-assessor-wiki dns-admin-wiki space-y-5">
-      <section className="dns-assessor-wiki-hero">
-        <div>
-          <div className="dns-assessor-wiki-kicker">WIKI администратора</div>
-          <h2>Как устроено меню администратора</h2>
-          <p>
-            Эта страница объясняет каждый элемент кабинета администратора: что он делает, как менять,
-            как влияет на сценарий и оценку, и какой результат это даёт — с живыми примерами.
-          </p>
-        </div>
-        <button type="button" onClick={onBack} className="dns-assessor-wiki-back">
-          <ArrowLeft className="h-4 w-4" />
-          Вернуться в кабинет
-        </button>
-      </section>
-
-      <section className="dns-assessor-wiki-summary">
-        <div><MousePointerClick className="h-5 w-5" /><span>1. Админ собирает контент</span></div>
-        <div><GitBranch className="h-5 w-5" /><span>2. Система строит сценарий</span></div>
-        <div><BarChart3 className="h-5 w-5" /><span>3. Прохождение даёт данные</span></div>
-        <div><ClipboardCheck className="h-5 w-5" /><span>4. Анализ и балансировка</span></div>
-      </section>
-
-      <section className="dns-assessor-wiki-note">
-        <Info className="h-5 w-5" />
-        <div>
-          <h3>Главный принцип</h3>
-          <p>
-            Кейсы и каналы задают ситуации, варианты ответа дают вклад в компетенции и баллы,
-            а веса и тайминги балансируют итог. Всё, что вы настраиваете слева, в моменте видно
-            в правой панели «Влияние» — настраивайте, опираясь на неё.
-          </p>
-        </div>
-      </section>
-
-      <section className="dns-assessor-wiki-grid">
-        {ADMIN_WIKI_BLOCKS.map((block) => {
-          const Icon = block.icon;
-          return (
-            <article key={block.id} className="dns-assessor-wiki-card">
-              <div className="dns-assessor-wiki-card-head">
-                <div className="dns-assessor-wiki-icon"><Icon className="h-5 w-5" /></div>
-                <div>
-                  <h3>{block.title}</h3>
-                  <p>{block.label}</p>
-                </div>
-              </div>
-              <AdminWikiShot id={block.id} />
-              <p className="dns-assessor-wiki-card-summary">{block.summary}</p>
-              <div className="dns-admin-wiki-example">
-                <Sparkles className="h-3.5 w-3.5" />
-                <span><b>Пример:</b> {block.example}</span>
-              </div>
-              <div className="dns-assessor-wiki-columns">
-                <div>
-                  <h4>Как менять</h4>
-                  <ul>{block.controls.map((item) => <li key={item}>{item}</li>)}</ul>
-                </div>
-                <div>
-                  <h4>Динамика</h4>
-                  <ul>
-                    {block.dynamics.map((item) => (
-                      <li key={item.text} className={`dns-assessor-wiki-dynamic dns-assessor-wiki-dynamic--${item.type}`}>
-                        {item.type === "up" && <ArrowUpRight className="h-3.5 w-3.5" />}
-                        {item.type === "down" && <ArrowDownRight className="h-3.5 w-3.5" />}
-                        {item.type === "neutral" && <Info className="h-3.5 w-3.5" />}
-                        <span>{item.text}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </article>
-          );
-        })}
-      </section>
-
-      <section className="dns-assessor-wiki-process">
-        <div className="dns-assessor-wiki-process-toggle" style={{ cursor: "default" }}>
-          <div>
-            <div className="dns-assessor-wiki-kicker">Процесс администрирования</div>
-            <h3>От сборки контента до анализа результата</h3>
-            <p>Полный путь: что делает админ, что — система, что — оценщик и участник.</p>
-          </div>
-        </div>
-        <div className="dns-assessor-bpmn">
-          <div className="dns-assessor-bpmn-lanes">
-            <span>Админ</span>
-            <span>Система</span>
-            <span>Оценщик / Участник</span>
-          </div>
-          <div className="dns-assessor-bpmn-flow">
-            {ADMIN_PROCESS_STEPS.map((step, index) => (
-              <div key={`${step.lane}-${step.title}`} className="dns-assessor-bpmn-node">
-                <div className="dns-assessor-bpmn-lane">{step.lane}</div>
-                <div className="dns-assessor-bpmn-title">{step.title}</div>
-                <div className="dns-assessor-bpmn-note">{step.note}</div>
-                {index < ADMIN_PROCESS_STEPS.length - 1 && <ArrowRight className="dns-assessor-bpmn-arrow h-4 w-4" />}
-              </div>
-            ))}
-          </div>
-          <div className="dns-assessor-bpmn-dependencies">
-            <div><Target className="h-4 w-4" />Компетенции кейсов определяют, что реально проверяется в оценке.</div>
-            <div><SlidersHorizontal className="h-4 w-4" />Варианты ответа и веса формируют фактический вклад в профиль.</div>
-            <div><Radio className="h-4 w-4" />Каналы и расписание задают нагрузку и ритм симуляции.</div>
-            <div><Map className="h-4 w-4" />Результаты и сравнение замыкают цикл — по ним правят настройку.</div>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
+  return <AdminWikiReference onBack={onBack} blocks={ADMIN_WIKI_BLOCKS} processSteps={ADMIN_PROCESS_STEPS} Shot={AdminWikiShot} />;
 }

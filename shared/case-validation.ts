@@ -1,4 +1,4 @@
-import type { SimCase } from "./simulation-content";
+import type { AcceptedIssue, SimCase } from "./simulation-content";
 
 export const BARS_LEVEL_SCORES = { weak: 1, mid: 3, strong: 5 } as const;
 const BARS_SCORE_VALUES: number[] = Object.values(BARS_LEVEL_SCORES);
@@ -186,6 +186,35 @@ const BLOCKING_QA_STATUSES: ReadonlySet<string> = new Set([
   "ready_launch",
 ]);
 
-export function shouldBlockCaseSave(qaStatus: string | undefined, issues: CaseValidationIssue[]): boolean {
-  return issues.length > 0 && BLOCKING_QA_STATUSES.has(qaStatus || "draft");
+/**
+ * Замечание считается принятым, если автор отметил ровно его — с обоснованием.
+ * Пустое обоснование не принимается: отказ должен быть осознанным, а не кликом.
+ */
+/**
+ * Принятие адресное: покрывает ровно то замечание, к которому его написали.
+ *
+ * Привязка сравнивается с обеих сторон. Раньше пустой `cycleId` в принятии
+ * означал «подходит к любому», и одно обоснование по одному варианту молча
+ * снимало все замечания этого типа во всём кейсе — то есть отключало проверку.
+ * Замечания без привязки (диагностика — она про кейс целиком) принимаются
+ * записью тоже без привязки.
+ */
+export function isIssueAccepted(issue: CaseValidationIssue, accepted: AcceptedIssue[] | undefined): boolean {
+  return (accepted || []).some((item) => {
+    if (item.check !== issue.check) return false;
+    // Обоснование обязательно: без него принятия нет.
+    if (!item.reason || !item.reason.trim()) return false;
+    if ((item.cycleId ?? null) !== (issue.cycleId ?? null)) return false;
+    if ((item.optionId ?? null) !== (issue.optionId ?? null)) return false;
+    return true;
+  });
+}
+
+export function shouldBlockCaseSave(
+  qaStatus: string | undefined,
+  issues: CaseValidationIssue[],
+  accepted?: AcceptedIssue[],
+): boolean {
+  const blocking = issues.filter((issue) => !isIssueAccepted(issue, accepted));
+  return blocking.length > 0 && BLOCKING_QA_STATUSES.has(qaStatus || "draft");
 }

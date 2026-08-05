@@ -40,7 +40,7 @@ export function CaseDossierEditor({
             {summary.filled} из {summary.total}
           </div>
         </div>
-        <div className="mt-1 text-[11px] leading-relaxed text-[#8890a8]">
+        <div className="mt-1 text-[11px] leading-relaxed text-[#8fa8cf]">
           Скрытая причина, данные и ложные следы — то, что заставляет участника диагностировать ситуацию, а не угадывать «правильную кнопку». Без них автопроверка не пропустит кейс дальше черновика.
         </div>
       </div>
@@ -60,7 +60,7 @@ export function CaseDossierEditor({
         <div className="mb-2 flex items-center justify-between gap-3">
           <div>
             <div className="text-sm font-semibold text-white">Данные для запроса</div>
-            <div className="mt-1 text-[11px] text-[#8890a8]">Что участник может запросить, чтобы понять причину.</div>
+            <div className="mt-1 text-[11px] text-[#8fa8cf]">Что участник может запросить, чтобы понять причину.</div>
           </div>
           <Button
             type="button"
@@ -75,7 +75,7 @@ export function CaseDossierEditor({
           {dataPoints.map((point, index) => (
             <div key={`data-point-${index}`} className="grid gap-2 md:grid-cols-[2fr,1fr,auto]">
               <div>
-                <Label className="mb-1.5 block text-xs text-[#8890a8]">Что доступно</Label>
+                <Label className="mb-1.5 block text-xs text-[#8fa8cf]">Что доступно</Label>
                 <Input
                   value={point.label}
                   onChange={(event) => updateDataPoint(index, { label: event.target.value })}
@@ -83,7 +83,7 @@ export function CaseDossierEditor({
                 />
               </div>
               <div>
-                <Label className="mb-1.5 block text-xs text-[#8890a8]">Цена запроса</Label>
+                <Label className="mb-1.5 block text-xs text-[#8fa8cf]">Цена запроса</Label>
                 <Input
                   value={point.costToRequest || ""}
                   onChange={(event) => updateDataPoint(index, { costToRequest: event.target.value || null })}
@@ -113,7 +113,7 @@ export function CaseDossierEditor({
         <div className="mb-2 flex items-center justify-between gap-3">
           <div>
             <div className="text-sm font-semibold text-white">Ложные следы</div>
-            <div className="mt-1 text-[11px] text-[#8890a8]">Правдоподобные, но неверные объяснения ситуации.</div>
+            <div className="mt-1 text-[11px] text-[#8fa8cf]">Правдоподобные, но неверные объяснения ситуации.</div>
           </div>
           <Button
             type="button"
@@ -128,7 +128,7 @@ export function CaseDossierEditor({
           {falseTrails.map((trail, index) => (
             <div key={`false-trail-${index}`} className="flex items-end gap-2">
               <div className="flex-1">
-                <Label className="mb-1.5 block text-xs text-[#8890a8]">Ложный след {index + 1}</Label>
+                <Label className="mb-1.5 block text-xs text-[#8fa8cf]">Ложный след {index + 1}</Label>
                 <Input
                   value={trail}
                   onChange={(event) =>

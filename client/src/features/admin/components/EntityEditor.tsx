@@ -1,13 +1,11 @@
-import { useEffect, useState } from "react";
 import type { ChatInfo, CompetencyDefinition } from "@shared/simulation-content";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pause, Play } from "lucide-react";
-import { CaseMediaPanel, StructuredCyclesEditor, StructuredOptionsEditor } from "../cases/CaseEditors";
-import { CaseDossierEditor } from "../cases/CaseDossierEditor";
-import { getPreviewAudioUrl, CASE_SIGNAL_TYPE_OPTIONS, STORE_ZONE_OPTIONS } from "../cases/case-editor-support";
-import { CompetencyRoleSelector, Field, FieldArea, MultiSelectField, SelectField, SuggestField } from "./AdminFields";
+import { StructuredOptionsEditor } from "../cases/CaseEditors";
+import { getPreviewAudioUrl } from "../cases/case-editor-support";
+import { Field, FieldArea, SelectField, SuggestField } from "./AdminFields";
 
 export function EntityEditor({
   title,
@@ -64,34 +62,22 @@ export function EntityEditor({
     value: competency.id,
     label: competency.name,
   }));
-  const [caseEditorSection, setCaseEditorSection] = useState<"details" | "dossier" | "cycles">("details");
-
-  useEffect(() => {
-    if (mode === "case" && typeof selectedCycleIndex === "number") {
-      setCaseEditorSection("cycles");
-    }
-  }, [entity.id, mode, selectedCycleIndex]);
-
   const update = (patch: Record<string, any>) => onChange({ ...entity, ...patch });
   const updateTiming = (patch: Record<string, number | null>) => {
     update({
       timing: {
         ...entity.timing,
-        ...(mode === "case" ? {} : { arrivalMinute: entity.arrivalMinute }),
+        arrivalMinute: entity.arrivalMinute,
         ...patch,
       },
     });
   };
-  const timingTitle = mode === "case"
-    ? "Тайминг основного кейса"
-    : mode === "email"
+  const timingTitle = mode === "email"
     ? "Тайминг письма"
     : mode === "messenger"
     ? "Тайминг сообщения"
     : "Тайминг видеозвонка";
-  const timingHelper = mode === "case"
-    ? "Регулирует паузы между основными событиями, срок решения и повторное напоминание участнику."
-    : "Регулирует минуту появления канального события, срок решения и повторное напоминание участнику.";
+  const timingHelper = "Регулирует минуту появления канального события, срок решения и повторное напоминание участнику.";
   const audioTitle = mode === "email"
     ? "Аудио письма"
     : mode === "messenger"
@@ -104,71 +90,32 @@ export function EntityEditor({
     <div className="space-y-4">
       <div className="text-sm font-semibold text-white">{title}</div>
       <Field label="Порядок показа" value={entity.sortOrder} onChange={(value) => update({ sortOrder: Number(value) })} />
-      {mode === "case" && (
-        <div className="flex flex-wrap gap-2 rounded-xl border border-[#243244] bg-[#101826]/60 p-2">
-          {([
-            ["details", "Карточка кейса"],
-            ["dossier", "Паспорт"],
-            ["cycles", "Циклы и медиа"],
-          ] as const).map(([section, label]) => (
-            <button
-              key={section}
-              type="button"
-              onClick={() => setCaseEditorSection(section)}
-              className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
-                caseEditorSection === section
-                  ? "border-[#FF6B00] bg-[#FF6B00]/15 text-white"
-                  : "border-[#2a3a4e] bg-[#0d1522]/70 text-[#9aabc6] hover:border-[#3b5878]"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-      {(mode !== "case" || caseEditorSection === "details") && (
-      <div className="rounded-2xl border border-[#FF6B00]/35 bg-gradient-to-br from-[#FF6B00]/14 via-[#1a2537]/88 to-[#101826]/92 p-4 shadow-[0_18px_45px_rgba(255,107,0,0.12)]">
+      <div className="rounded-2xl border border-[#f68b1f]/35 bg-gradient-to-br from-[#f68b1f]/14 via-[#1a2537]/88 to-[#101826]/92 p-4 shadow-[0_18px_45px_rgba(255,107,0,0.12)]">
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#ffb27a]">Настройки хода симуляции</div>
             <div className="mt-1 text-base font-bold text-white">{timingTitle}</div>
             <div className="mt-1 max-w-2xl text-xs leading-relaxed text-[#b8c7df]">{timingHelper}</div>
           </div>
-          <div className="rounded-full border border-[#FF6B00]/35 bg-[#FF6B00]/12 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
+          <div className="rounded-full border border-[#f68b1f]/35 bg-[#f68b1f]/12 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
             Видно сразу
           </div>
         </div>
         <div className="grid gap-4 lg:grid-cols-2 2xl:grid-cols-4">
-          {mode !== "case" && (
-            <Field
-              label="Минута прихода"
-              value={entity.timing?.arrivalMinute ?? entity.arrivalMinute ?? ""}
-              onChange={(value) => {
-                const nextValue = value ? Number(value) : 0;
-                update({
-                  arrivalMinute: nextValue,
-                  timing: {
-                    ...entity.timing,
-                    arrivalMinute: value ? nextValue : null,
-                  },
-                });
-              }}
-            />
-          )}
-          {mode === "case" && (
-            <>
-              <Field
-                label="Мин. интервал, сек"
-                value={entity.timing?.minIntervalSeconds ?? ""}
-                onChange={(value) => updateTiming({ minIntervalSeconds: value ? Number(value) : null })}
-              />
-              <Field
-                label="Макс. интервал, сек"
-                value={entity.timing?.maxIntervalSeconds ?? ""}
-                onChange={(value) => updateTiming({ maxIntervalSeconds: value ? Number(value) : null })}
-              />
-            </>
-          )}
+          <Field
+            label="Минута прихода"
+            value={entity.timing?.arrivalMinute ?? entity.arrivalMinute ?? ""}
+            onChange={(value) => {
+              const nextValue = value ? Number(value) : 0;
+              update({
+                arrivalMinute: nextValue,
+                timing: {
+                  ...entity.timing,
+                  arrivalMinute: value ? nextValue : null,
+                },
+              });
+            }}
+          />
           <Field
             label="Срок решения, сек"
             value={entity.timing?.decisionDeadlineSeconds ?? ""}
@@ -179,67 +126,15 @@ export function EntityEditor({
             value={entity.timing?.reminderIntervalSeconds ?? (mode === "messenger" ? 5 : 180)}
             onChange={(value) => updateTiming({ reminderIntervalSeconds: value ? Number(value) : null })}
           />
-          {mode !== "case" && (
-            <div className="rounded-xl border border-[#30445f] bg-[#101826]/75 px-3 py-2">
-              <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8ec5ff]">Канал</div>
-              <div className="mt-1 text-sm font-semibold text-white">
-                {mode === "email" ? "Почта" : mode === "messenger" ? "Мессенджер" : "Видео звонок"}
-              </div>
-              <div className="mt-1 text-[11px] leading-relaxed text-[#8aa2c4]">Эти значения применяются без изменения текста и вариантов ответа.</div>
+          <div className="rounded-xl border border-[#30445f] bg-[#101826]/75 px-3 py-2">
+            <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8ec5ff]">Канал</div>
+            <div className="mt-1 text-sm font-semibold text-white">
+              {mode === "email" ? "Почта" : mode === "messenger" ? "Мессенджер" : "Видео звонок"}
             </div>
-          )}
+            <div className="mt-1 text-[11px] leading-relaxed text-[#8aa2c4]">Эти значения применяются без изменения текста и вариантов ответа.</div>
+          </div>
         </div>
       </div>
-      )}
-      {mode === "case" && (
-        <>
-          {caseEditorSection === "details" && (
-            <>
-              <CaseMediaPanel
-                title="Медиа кейса по умолчанию"
-                helper="Эти файлы используются как fallback, если у конкретного цикла не выбраны свои изображение или озвучка."
-                target={entity}
-                assets={assets}
-                onChange={(patch) => update(patch)}
-                onUploadAsset={onUploadAsset}
-                onTogglePreviewAudio={onTogglePreviewAudio}
-                activePreviewKey={activePreviewKey}
-                previewKey={`case-default:${entity.id}`}
-              />
-              <Field label="Название" value={entity.title} onChange={(value) => update({ title: value })} />
-              <FieldArea label="Описание" value={entity.description} onChange={(value) => update({ description: value })} />
-              <div className="grid gap-4 md:grid-cols-3">
-                <SuggestField label="Источник сигнала" value={entity.trigger.source} onChange={(value) => update({ trigger: { ...entity.trigger, source: value } })} options={caseSourceOptions} />
-                <SelectField label="Тип сигнала" value={entity.trigger.type} onChange={(value) => update({ trigger: { ...entity.trigger, type: value } })} options={[...CASE_SIGNAL_TYPE_OPTIONS]} />
-                <MultiSelectField label="Зоны магазина" values={entity.zones_affected || []} onChange={(values) => update({ zones_affected: values })} options={[...STORE_ZONE_OPTIONS]} />
-              </div>
-              <FieldArea label="Текст сигнала" value={entity.trigger.text} onChange={(value) => update({ trigger: { ...entity.trigger, text: value } })} />
-              <CompetencyRoleSelector
-                primaryValues={entity.primaryCompetencies || []}
-                secondaryValues={entity.secondaryCompetencies || []}
-                onChange={(next) => update(next)}
-                competencies={competencies}
-              />
-            </>
-          )}
-          {caseEditorSection === "dossier" && (
-            <CaseDossierEditor entity={entity} onChange={(patch) => update(patch)} />
-          )}
-          {caseEditorSection === "cycles" && (
-            <StructuredCyclesEditor
-              cycles={entity.cycles || []}
-              competencies={competencies}
-              assets={assets}
-              onUploadAsset={onUploadAsset}
-              onTogglePreviewAudio={onTogglePreviewAudio}
-              activePreviewKey={activePreviewKey}
-              selectedCycleIndex={selectedCycleIndex}
-              onSelectedCycleIndexChange={onSelectedCycleIndexChange}
-              onChange={(cycles) => update({ cycles })}
-            />
-          )}
-        </>
-      )}
       {mode === "email" && (
         <>
           <Field label="Тема" value={entity.subject} onChange={(value) => update({ subject: value })} />
@@ -318,7 +213,7 @@ export function EntityEditor({
         </>
       )}
 
-      {mode === "case" ? null : mode === "video" ? (
+      {mode === "video" ? (
         <div className="rounded-lg border border-[#2a3a4e] bg-[#141c2b]/40 p-4">
           <div className="text-xs font-semibold text-[#8890a8] mb-3 uppercase tracking-wider">Видеофайл</div>
           <div className="grid gap-3 sm:grid-cols-[1fr,auto]">
