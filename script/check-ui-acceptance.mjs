@@ -337,6 +337,25 @@ assertCondition(
   "Поле из одних пробелов не должно считаться заполненным",
 );
 
+// Редактор сигнала канала разбирается теми же секциями, что и кейс. Раньше
+// поля шли сплошным списком, а тайминг выделялся градиентной плашкой — рядом
+// с мастером кейса это читалось как другой продукт.
+const entityEditor = readText("client/src/features/admin/components/EntityEditor.tsx");
+assertCondition(
+  /function EditorSection\(/.test(entityEditor) && /<EditorSection[\s>]/.test(entityEditor),
+  "Редактор сигнала должен собираться из секций с общей анатомией",
+);
+for (const section of ["Замысел сигнала", "Что увидит участник", "Решения"]) {
+  assertCondition(
+    entityEditor.includes(section),
+    `В редакторе сигнала должна быть секция «${section}»`,
+  );
+}
+assertCondition(
+  !/from-\[#f68b1f\]\/14/.test(entityEditor),
+  "Градиентная плашка тайминга заменена обычной секцией — как в мастере кейса",
+);
+
 const releaseHistory = readText("client/src/data/release-history.ts");
 assertCondition(
   releaseHistory.includes("problems") && releaseHistory.includes("solved"),
