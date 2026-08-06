@@ -119,6 +119,10 @@ function seedCompetencies(definitions: CompetencyDefinition[] = []) {
       category: competency.category,
       sortOrder: index + 1,
       isActive: true,
+      // Пометка критичных приходит из описания: без неё свежая установка
+      // получила бы справочник без стоп-факторов, а миграция уже отмечена
+      // выполненной и второй раз их не проставит.
+      isStopFactor: competency.isStopFactor === true,
     }).run();
   });
 }
@@ -236,7 +240,11 @@ function main() {
   const content = loadBootstrapContent(sourcePath);
 
   const existing = countExistingContent();
-  const hasContent = existing.cases > 0 || existing.competencies > 0 || existing.channels > 0;
+  // Компетенции сюда не входят: их заводят миграции, и на свежей базе после
+  // `db:migrate` они уже есть. Если считать их «контентом», сид на пустой базе
+  // отказывается работать и сборка образа падает. Настроенное человеком — это
+  // кейсы и события каналов, по ним и судим.
+  const hasContent = existing.cases > 0 || existing.channels > 0;
   if (hasContent && !force) {
     console.error(
       [

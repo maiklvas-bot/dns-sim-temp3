@@ -14,7 +14,7 @@ VALUES (
   'systems_thinking',
   'Системность мышления',
   'Объясняет причины своих действий, называет причинно-следственные связи, не противоречит себе. Отличается от принятия решений: там — выбор под давлением, здесь — связность картины.',
-  'skills',
+  'leadership',
   0,
   (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM competencies),
   1
@@ -25,7 +25,7 @@ VALUES (
   'staff_motivation',
   'Мотивация сотрудников',
   'Выясняет, что движет сотрудником, и действует исходя из этого. Оценивает, сработало ли.',
-  'skills',
+  'leadership',
   0,
   (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM competencies),
   1
@@ -36,7 +36,7 @@ VALUES (
   'staff_training',
   'Обучение сотрудников',
   'Учит на рабочем месте: объясняет, показывает, даёт обратную связь с опорой на факты и конкретными рекомендациями.',
-  'skills',
+  'leadership',
   0,
   (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM competencies),
   1
@@ -46,3 +46,7 @@ VALUES (
 UPDATE competencies
 SET is_stop_factor = 1
 WHERE id IN ('planning', 'control', 'responsibility', 'communication', 'result_orientation');
+
+-- Категория выравнивается по проекту: basic | advanced | leadership.
+-- Отдельным UPDATE, потому что INSERT OR IGNORE не трогает уже созданные строки.
+UPDATE competencies SET category = 'leadership' WHERE category = 'skills';

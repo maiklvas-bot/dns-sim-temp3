@@ -16,7 +16,8 @@
       "id": "planning",
       "name": "Планирование",
       "description": "Способность выстраивать приоритеты, распределять время и ресурсы, прогнозировать последствия решений",
-      "category": "leadership"
+      "category": "leadership",
+      "isStopFactor": true
     },
     {
       "id": "management_basics",
@@ -34,13 +35,15 @@
       "id": "responsibility",
       "name": "Ответственность",
       "description": "Готовность принимать решения и нести за них ответственность, системный подход к обязательствам",
-      "category": "leadership"
+      "category": "leadership",
+      "isStopFactor": true
     },
     {
       "id": "communication",
       "name": "Коммуникация",
       "description": "Эффективное общение с сотрудниками, руководством и клиентами в различных ситуациях",
-      "category": "advanced"
+      "category": "advanced",
+      "isStopFactor": true
     },
     {
       "id": "decision_making",
@@ -70,7 +73,8 @@
       "id": "control",
       "name": "Контроль",
       "description": "Умение отслеживать выполнение задач, выявлять отклонения и корректировать действия команды",
-      "category": "leadership"
+      "category": "leadership",
+      "isStopFactor": true
     },
     {
       "id": "flexibility",
@@ -82,7 +86,8 @@
       "id": "result_orientation",
       "name": "Ориентация на результат",
       "description": "Фокус на достижении конкретных показателей и бизнес-целей магазина",
-      "category": "leadership"
+      "category": "leadership",
+      "isStopFactor": true
     },
     {
       "id": "product_knowledge",
@@ -95,6 +100,24 @@
       "name": "ИТ-инструменты",
       "description": "Владение кассовыми системами, 1С, CRM и другими рабочими программами магазина",
       "category": "advanced"
+    },
+    {
+      "id": "systems_thinking",
+      "name": "Системность мышления",
+      "description": "Объясняет причины своих действий, называет причинно-следственные связи, не противоречит себе. Отличается от принятия решений: там — выбор под давлением, здесь — связность картины.",
+      "category": "leadership"
+    },
+    {
+      "id": "staff_motivation",
+      "name": "Мотивация сотрудников",
+      "description": "Выясняет, что движет сотрудником, и действует исходя из этого. Оценивает, сработало ли.",
+      "category": "leadership"
+    },
+    {
+      "id": "staff_training",
+      "name": "Обучение сотрудников",
+      "description": "Учит на рабочем месте: объясняет, показывает, даёт обратную связь с опорой на факты и конкретными рекомендациями.",
+      "category": "leadership"
     }
   ],
   "assets": [
