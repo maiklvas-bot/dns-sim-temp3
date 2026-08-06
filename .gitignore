@@ -23,7 +23,11 @@ data.db
 data.db-shm
 data.db-wal
 storage/
-uploads/
+# Загруженные через админку файлы — НАМЕРЕННО в git.
+# Это контент: картинки кейсов, скриншоты материалов справочника. Без них на
+# новом стенде кейсы остаются без медиа. Синхронизация только на добавление:
+# `npm run uploads:sync` — см. script/sync-uploads.ts.
+# uploads/
 backups/
 vendor/
 release/*
