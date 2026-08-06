@@ -1363,3 +1363,256 @@
 .dns-wiki-diagram {
   background: var(--roadmap-dim-fill, #0d1522);
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Раздел «Пользователи»: учётные записи и права ролей.
+   Цвета берутся из токенов оболочки, поэтому раздел одинаково
+   читается в светлой и тёмной теме.
+   ───────────────────────────────────────────────────────────── */
+.dns-admin-users {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.dns-admin-users-empty {
+  padding: 2rem;
+  color: var(--dns-admin-text-muted);
+  text-align: center;
+}
+
+.dns-admin-users-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem;
+}
+
+.dns-admin-users-summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--dns-admin-border);
+  border-radius: 0.75rem;
+  background: var(--dns-admin-surface-soft, rgba(24, 52, 92, 0.06));
+}
+
+.dns-admin-users-summary-item strong {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--dns-admin-text-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.dns-admin-users-summary-item span {
+  font-size: 0.75rem;
+  color: var(--dns-admin-text-dim);
+}
+
+.dns-admin-users-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dns-admin-users-block-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--dns-admin-text-soft);
+}
+
+/* Таблица прокручивается внутри своей обёртки: страница вбок не едет. */
+.dns-admin-users-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--dns-admin-border);
+  border-radius: 0.75rem;
+}
+
+.dns-admin-users-table {
+  width: 100%;
+  min-width: 34rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.82rem;
+  color: var(--dns-admin-text-soft);
+}
+
+.dns-admin-users-table th,
+.dns-admin-users-table td {
+  padding: 0.7rem 0.9rem;
+  text-align: left;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--dns-admin-border-soft);
+}
+
+.dns-admin-users-table th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--dns-admin-text-dim);
+}
+
+.dns-admin-users-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.dns-admin-users-login {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  color: var(--dns-admin-text-muted);
+}
+
+.dns-admin-users-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid var(--dns-admin-border);
+  color: var(--dns-admin-text-muted);
+}
+
+.dns-admin-users-role svg {
+  width: 0.85rem;
+  height: 0.85rem;
+}
+
+.dns-admin-users-role--admin {
+  border-color: rgba(255, 107, 0, 0.45);
+  background: rgba(255, 107, 0, 0.12);
+  color: #ff6b00;
+}
+
+.dns-admin-users-state {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--dns-admin-text-dim);
+}
+
+.dns-admin-users-state--on {
+  color: var(--dns-admin-text-muted);
+}
+
+.dns-admin-users-note {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--dns-admin-text-dim);
+}
+
+.dns-admin-users-note code {
+  padding: 0.1rem 0.35rem;
+  border-radius: 0.3rem;
+  border: 1px solid var(--dns-admin-border-soft);
+  font-size: 0.72rem;
+}
+
+/* Плитки ролей одного размера: одинаковая анатомия у обеих. */
+.dns-admin-users-access-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 0.9rem;
+}
+
+.dns-admin-users-access-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 0.85rem;
+  padding: 1rem;
+  border: 1px solid var(--dns-admin-border);
+  border-radius: 0.85rem;
+  background: var(--dns-admin-surface-soft, rgba(24, 52, 92, 0.06));
+}
+
+.dns-admin-users-access-card--admin {
+  border-color: rgba(255, 107, 0, 0.35);
+}
+
+.dns-admin-users-access-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+}
+
+.dns-admin-users-access-head svg {
+  flex: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.1rem;
+  color: #ff6b00;
+}
+
+.dns-admin-users-access-head div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.dns-admin-users-access-head strong {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--dns-admin-text-soft);
+}
+
+.dns-admin-users-access-head span {
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--dns-admin-text-dim);
+}
+
+.dns-admin-users-access-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.dns-admin-users-access-list h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--dns-admin-text-dim);
+}
+
+.dns-admin-users-access-list ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dns-admin-users-access-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--dns-admin-text-muted);
+}
+
+.dns-admin-users-access-list li svg {
+  flex: none;
+  width: 0.85rem;
+  height: 0.85rem;
+  margin-top: 0.22rem;
+  color: #ff6b00;
+}
+
+.dns-admin-users-access-list--denied li svg {
+  color: var(--dns-admin-text-dim);
+}
+
+.dns-admin-users-access-full {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--dns-admin-text-dim);
+}

@@ -1,4 +1,4 @@
-import { BarChart3, CalendarClock, Gauge, LayoutDashboard, Radio, Settings, Workflow } from "lucide-react";
+import { BarChart3, CalendarClock, Gauge, LayoutDashboard, Radio, Settings, Users, Workflow } from "lucide-react";
 import { BRAND_ASSETS } from "@/lib/brand-assets";
 import type { AdminTabKey, AdminVisualIdentity } from "./admin-types";
 
@@ -66,6 +66,15 @@ export const ADMIN_VISUALS: Record<AdminTabKey, AdminVisualIdentity> = {
     primaryClassName: "dns-admin-visual-primary--monitoring",
     tone: "cyan",
   },
+  users: {
+    label: "Пользователи",
+    title: "Учётные записи персонала",
+    subtitle: "Кто заведён в системе, с какой ролью и что этой ролью разрешено делать.",
+    primarySrc: ADMIN_BRAND_ASSETS.assistant,
+    primaryAlt: "Фирменный персонаж для раздела учётных записей",
+    primaryClassName: "dns-admin-visual-primary--assistant",
+    tone: "orange",
+  },
   settings: {
     label: "Настройки",
     title: "Системные параметры",
@@ -84,5 +93,6 @@ export const ADMIN_NAV_ICONS: Record<AdminTabKey, typeof LayoutDashboard> = {
   schedule: CalendarClock,
   results: BarChart3,
   comparison: LayoutDashboard,
+  users: Users,
   settings: Settings,
 };

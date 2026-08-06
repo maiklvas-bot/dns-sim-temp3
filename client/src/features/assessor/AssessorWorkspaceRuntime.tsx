@@ -49,19 +49,10 @@ function ResultsBarsIcon({ className }: { className?: string }) {
   );
 }
 
-// Грейс-период административной сессии: после подтверждения админ-доступом
-// возврат в кабинет администратора без повторного пароля доступен 10 минут.
-const ADMIN_GRACE_MS = 10 * 60 * 1000;
-const ADMIN_CONFIRM_KEY = "dns-admin-confirmed-at";
-function markAdminConfirmed() {
-  try { localStorage.setItem(ADMIN_CONFIRM_KEY, String(Date.now())); } catch { /* нет доступа к storage */ }
-}
-function isAdminSessionFresh() {
-  try {
-    const ts = Number(localStorage.getItem(ADMIN_CONFIRM_KEY) || 0);
-    return Number.isFinite(ts) && ts > 0 && Date.now() - ts < ADMIN_GRACE_MS;
-  } catch { return false; }
-}
+// Раньше здесь жил десятиминутный «грейс-период» на возврат в администратора.
+// Он опирался на отметку в localStorage, которой не было у того, кто вошёл
+// администратором и просто перешёл к оценщику, — и такой человек упирался в пароль
+// на пути обратно. Право входа определяется ролью в серверной сессии, её и проверяем.
 import { primeAudioPlayback } from "@/data/audio-map";
 import {
   createRemoteLiveSimulation,
@@ -198,14 +189,15 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   };
 
   const handleAdminAccess = () => {
-    // Свежая админ-сессия (вход/подтверждение < 10 мин назад) — переход без пароля.
-    if (staffRole === "admin" && isAdminSessionFresh()) {
-      markAdminConfirmed();
+    // Сессия уже административная — кабинет откроется без пароля: `useAdminPermissions`
+    // пускает по роли из сессии. Спрашивать пароль здесь бессмысленно — тот же переход
+    // делается прямым адресом #/admin, так что окно только мешало возвращаться.
+    if (staffRole === "admin") {
       navigate("/admin");
       return;
     }
 
-    // Иначе (оценщик ИЛИ админ с истёкшим грейсом) — требуем пароль администратора.
+    // Оценщику нужно повышение роли: его проверяет сервер в /api/staff/elevate.
     setAdminPassword("");
     setAdminAccessError("");
     setAdminAccessOpen(true);
@@ -227,8 +219,8 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     try {
       const response = await apiRequest("POST", "/api/staff/elevate", { password: adminPassword });
       const principal = await response.json();
+      // После повышения сессия стала административной — обратный переход пароля не потребует.
       queryClient.setQueryData(["/api/staff/me"], principal);
-      markAdminConfirmed();
       setAdminAccessOpen(false);
       navigate("/admin");
     } catch (error: any) {
@@ -913,7 +905,14 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={() => setShowWiki(true)} title="База знаний">
           <BookOpen className="h-4 w-4" /><span>Wiki</span>
         </button>
-        <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={handleAdminAccess} title="Перейти в кабинет администратора (нужен пароль администратора)">
+        <button
+          type="button"
+          className="dns-assessor-v2-rail-footer-button"
+          onClick={handleAdminAccess}
+          title={staffRole === "admin"
+            ? "Вернуться в кабинет администратора"
+            : "Перейти в кабинет администратора (нужен пароль администратора)"}
+        >
           <ShieldCheck className="h-4 w-4" /><span>В администратора</span>
         </button>
         <button type="button" className="dns-assessor-v2-rail-footer-button" onClick={handleLogout} title="Выйти">
@@ -1784,6 +1783,18 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
           <div className="dns-header-actions dns-assessor-v2-header-actions">
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
             <FeedbackButton />
+            {/* Возврат в администратора — в шапке, там же где он у администратора выход
+                к оценщику. Иначе переход находят только в подвале боковой панели. */}
+            {staffRole === "admin" && (
+              <button
+                onClick={handleAdminAccess}
+                className="dns-assessor-v2-header-button"
+                data-testid="to-admin-button"
+                title="Вернуться в кабинет администратора"
+              >
+                <ShieldCheck className="w-4 h-4" /> В администратора
+              </button>
+            )}
             <button
               onClick={() => navigate("/")}
               className="dns-assessor-v2-header-button"
