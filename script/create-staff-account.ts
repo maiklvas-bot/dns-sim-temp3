@@ -33,11 +33,18 @@ function generatePassword(): string {
   return Array.from(bytes, (byte) => alphabet[byte % alphabet.length]).join("");
 }
 
+/**
+ * Записи разделяются пустой строкой. Если предыдущая запись её потеряла,
+ * следующая приклеится к ней и файл станет нечитаемым — поэтому разделитель
+ * восстанавливается перед добавлением, а не предполагается.
+ */
 function appendCredentials(role: string, username: string, displayName: string, password: string) {
   fs.mkdirSync(path.dirname(CREDENTIALS_FILE), { recursive: true });
+  const existing = fs.existsSync(CREDENTIALS_FILE) ? fs.readFileSync(CREDENTIALS_FILE, "utf8") : "";
+  const separator = existing.length === 0 || existing.endsWith("\n\n") ? "" : existing.endsWith("\n") ? "\n" : "\n\n";
   const stamp = new Date().toISOString();
   const record = `[${stamp}] ${displayName} — роль ${role}\n  логин:  ${username}\n  пароль: ${password}\n\n`;
-  fs.appendFileSync(CREDENTIALS_FILE, record, { mode: 0o600 });
+  fs.appendFileSync(CREDENTIALS_FILE, separator + record, { mode: 0o600 });
 }
 
 async function main() {
