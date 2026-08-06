@@ -19,6 +19,11 @@ export interface AssessorParticipantConfig {
   showAdvanced: boolean;
   manualSelection: boolean;
   repeatCases: boolean;
+  /**
+   * Разбор после симуляции: вместе с оценщиком или участник сам.
+   * Совместный требует, чтобы обе стороны были на связи.
+   */
+  debriefJoint: boolean;
   selectedCases: string[];
   channels: AssessorChannels;
   selectedChannelItemIds: AssessorChannelItemIds;

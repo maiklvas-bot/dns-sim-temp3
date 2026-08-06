@@ -375,4 +375,10 @@ export interface SimulationSettingsSnapshot {
   isTestMode: boolean;
   speedMultiplier: number;
   enabledChannels: { audio: boolean; email: boolean; messenger: boolean; video: boolean };
+  /**
+   * Как разбирать прохождение после симуляции: вместе с оценщиком или
+   * участник сам. Выбирает оценщик при настройке. Старые сессии поля не имеют —
+   * для них разбор считается самостоятельным.
+   */
+  debriefMode?: "joint" | "solo";
 }

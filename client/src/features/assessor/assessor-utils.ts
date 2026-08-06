@@ -35,6 +35,8 @@ export function createDefaultParticipantSetup(id = createAssessorParticipantId()
     showAdvanced: false,
     manualSelection: false,
     repeatCases: false,
+    // По умолчанию разбор совместный: смысл процедуры — разговор, а не анкета.
+    debriefJoint: true,
     selectedCases: CASES_DATA.map((item) => item.id),
     channels: { ...DIFFICULTY_INFO.medium.channels },
     selectedChannelItemIds: {

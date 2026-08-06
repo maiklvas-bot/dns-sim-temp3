@@ -88,6 +88,51 @@ export const mediaAssets = sqliteTable("media_assets", {
 });
 
 /**
+ * Дебриф — разбор прохождения после симуляции. Привязан к результату сессии;
+ * в совместном режиме дополнительно к живой сессии, по которой проверяется
+ * присутствие обеих сторон.
+ */
+export const debriefs = sqliteTable("debriefs", {
+  id: text("id").primaryKey(),
+  sessionResultId: integer("session_result_id").notNull(),
+  liveSessionId: text("live_session_id"),
+  mode: text("mode").notNull().default("solo"),
+  status: text("status").notNull().default("pending"),
+  conclusion: text("conclusion"),
+  actionPlan: text("action_plan"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  completedAt: text("completed_at"),
+}, (table) => ({
+  resultIdx: index("debriefs_result_idx").on(table.sessionResultId),
+}));
+
+/** Разбор одного решения: вопрос участнику и его объяснение своего хода. */
+export const debriefReviews = sqliteTable("debrief_reviews", {
+  id: text("id").primaryKey(),
+  debriefId: text("debrief_id").notNull(),
+  answerId: integer("answer_id").notNull(),
+  question: text("question").notNull(),
+  explanation: text("explanation").notNull().default(""),
+  assessorNote: text("assessor_note"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  debriefIdx: index("debrief_reviews_debrief_idx").on(table.debriefId),
+}));
+
+/** Переписка участника и оценщика во время совместного разбора. */
+export const debriefMessages = sqliteTable("debrief_messages", {
+  id: text("id").primaryKey(),
+  debriefId: text("debrief_id").notNull(),
+  author: text("author").notNull(),
+  authorName: text("author_name").notNull().default(""),
+  text: text("text").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  debriefIdx: index("debrief_messages_debrief_idx").on(table.debriefId),
+}));
+
+/**
  * Материалы справочника, добавленные людьми: методические заметки, разборы,
  * скриншоты своих экранов. Живут рядом с зашитыми разделами и крепятся к ним
  * через `sectionId`.

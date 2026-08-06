@@ -80,6 +80,7 @@ import { ReleaseHistoryDialog } from "@/components/release-history-dialog";
 import { autoAssignScheduleTimes, buildScheduleRows, getScheduleSourceLabel, type ScheduleRow } from "./schedule/schedule-utils";
 import { ADMIN_NAV_ICONS, ADMIN_VISUALS } from "./admin-constants";
 import type { AdminChannelTab as ChannelTab, AdminTabKey as TabKey, SystemSoundSettingKey } from "./admin-types";
+import AdminUsersPanel from "./components/AdminUsersPanel";
 import { AdminVisualPanel } from "./components/AdminVisualPanel";
 import { AdminWiki } from "./components/AdminWiki";
 import { CaseFlowDiagram } from "./components/CaseFlowDiagram";
@@ -2185,8 +2186,10 @@ export default function AdminPage() {
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
             {/* «История» — только внизу навигации (по просьбе пользователя убрана из шапки) */}
             <FeedbackButton size="sm" />
-            <Button variant="outline" size="sm" onClick={() => navigate("/evaluator")}>
-              В оценщик
+            {/* Переход без пароля: роль в сессии остаётся административной,
+                поэтому обратно в администратора тоже пустит без подтверждения. */}
+            <Button variant="outline" size="sm" onClick={() => navigate("/evaluator")} title="Перейти в кабинет оценщика (вернуться можно без пароля)">
+              В оценщика
             </Button>
             <Button variant="outline" size="sm" onClick={async () => { await apiRequest("POST", "/api/staff/logout"); navigate("/staff-login"); }}>
               Выйти
@@ -2201,7 +2204,7 @@ export default function AdminPage() {
               <strong>Управление</strong>
             </div>
             <nav>
-              {(["dashboard", "cases", "channels", "schedule", "results", "comparison", "settings"] as TabKey[]).map((item) => {
+              {(["dashboard", "cases", "channels", "schedule", "results", "comparison", "users", "settings"] as TabKey[]).map((item) => {
                 const itemVisual = ADMIN_VISUALS[item];
                 const ItemIcon = ADMIN_NAV_ICONS[item];
                 return (
@@ -3415,6 +3418,8 @@ export default function AdminPage() {
           </div>
         )}
 
+        {tab === "users" && <AdminUsersPanel />}
+
         {tab === "settings" && (
           <div className="grid gap-4 xl:grid-cols-[minmax(0,1.35fr),420px]">
             <div className="rounded-xl border border-[#2a3a4e] bg-[#1e2a3acc] p-4">
@@ -3875,7 +3880,7 @@ export default function AdminPage() {
           onConfirm={confirmSignalWizard}
         />
 
-        {tab !== "dashboard" && tab !== "results" && tab !== "schedule" && tab !== "comparison" && (
+        {tab !== "dashboard" && tab !== "results" && tab !== "schedule" && tab !== "comparison" && tab !== "users" && (
           <div className="dns-admin-action-block mt-6 justify-start">
             <Button className="bg-[#f68b1f] hover:bg-[#e06000]" onClick={saveCurrent} disabled={saving || uploading}>
               {saving ? "Сохранение..." : "Сохранить"}
