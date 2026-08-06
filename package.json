@@ -24,7 +24,9 @@
     "staff:reset": "tsx script/reset-staff-accounts.ts",
     "media:import-local": "tsx script/import-local-media.ts",
     "media:import": "npm run media:import-local --",
-    "typecheck": "npm run check"
+    "typecheck": "npm run check",
+    "uploads:sync": "tsx script/sync-uploads.ts",
+    "uploads:check": "tsx script/sync-uploads.ts --check"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

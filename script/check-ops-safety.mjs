@@ -48,4 +48,42 @@ assertCondition(
   "Backup plan must document the executable restore procedure",
 );
 
-console.log("Operational safety checks passed: backup integrity, retention and guarded restore verified.");
+// Обновление приложения не должно стоить данных.
+//
+// Миграции доливают структуру и запоминаются в app_migrations — повторно не
+// применяются. Опасен сид контента: он чистит таблицы и заливает заново.
+// На пустой базе это разворачивание, на рабочей — потеря настроенного.
+const seedScript = readText("script/seed-simulation-content.ts");
+assertCondition(
+  /if \(hasContent && !force\)[\s\S]{0,900}process\.exit\(1\)/.test(seedScript),
+  "Сид контента должен останавливаться на непустой базе, пока не передан --force",
+);
+assertCondition(
+  seedScript.indexOf("clearContentTables();\n  seedDefaultAssets") > seedScript.indexOf("if (hasContent && !force)"),
+  "Проверка непустой базы обязана стоять до очистки таблиц, а не после",
+);
+const migrationFiles = readText("server/migrations.ts");
+assertCondition(
+  /applied\.has\(file\)/.test(migrationFiles),
+  "Миграции должны применяться однократно: повторный прогон не должен трогать данные",
+);
+
+// Загруженные файлы — это контент кейсов и материалов справочника. Они едут в
+// репозитории, и синхронизация обязана быть только на добавление: случайное
+// удаление на стенде или влетевшее с чужим PR не должно терять файл.
+const gitignore = readText(".gitignore");
+assertCondition(
+  !/^uploads\/\s*$/m.test(gitignore),
+  "Папка uploads не должна исключаться из репозитория: без неё кейсы теряют медиа",
+);
+const syncUploads = readText("script/sync-uploads.ts");
+assertCondition(
+  !/\brm\b|unlinkSync|rmSync|git\(\["rm"/.test(syncUploads),
+  "Синхронизация загруженных файлов не должна ничего удалять",
+);
+assertCondition(
+  /=\s*listHistoricalFiles\(\)/.test(syncUploads) && /\.\.\.lost\]/.test(syncUploads),
+  "Файл, удалённый и с диска, и из репозитория, должен восстанавливаться из истории",
+);
+
+console.log("Operational safety checks passed: backup integrity, retention, guarded restore, non-destructive seed and uploads sync verified.");
