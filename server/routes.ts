@@ -6,6 +6,8 @@ import { z } from "zod";
 import { accumulateCompetencyTotals } from "@shared/simulation-scoring";
 import { validateCase, shouldBlockCaseSave } from "@shared/case-validation";
 import { WIKI_NOTE_REQUIRED_FIELDS } from "@shared/simulation-content";
+import { canContinueDebrief } from "@shared/debrief";
+import { debriefStorage } from "./debrief-storage";
 import { buildWorkbookBuffer } from "./excel-export";
 import { requireExportAccess } from "./export-access";
 import { generatePdfBuffer } from "./pdf-export";
@@ -69,6 +71,10 @@ import {
   editableMessengerCaseSchema,
   editableSimCaseSchema,
   wikiNoteSchema,
+  createDebriefSchema,
+  debriefExplanationSchema,
+  debriefMessageSchema,
+  debriefCompleteSchema,
   editableVideoCaseSchema,
   excelExportSchema,
   feedbackBodySchema,
@@ -1457,6 +1463,105 @@ export async function registerRoutes(
     } catch (error) {
       next(error);
     }
+  });
+
+  /**
+   * Разбор прохождения (дебриф).
+   *
+   * Совместный разбор требует обеих сторон: если кто-то отключился, сервер
+   * отказывает в записи. Проверять это только на клиенте нельзя — запрос
+   * уходит напрямую, а объяснение, написанное в пустоту, никто не прочитает.
+   */
+  const assertDebriefWritable = (debrief: { mode: string; liveSessionId: string | null }) => {
+    if (debrief.mode !== "joint") return null;
+    const live = debrief.liveSessionId ? liveSessionService.getSessionById(debrief.liveSessionId) : null;
+    if (!live) {
+      return "Живая сессия не найдена — совместный разбор продолжить нельзя.";
+    }
+    const verdict = canContinueDebrief("joint", live.presence);
+    return verdict.allowed ? null : verdict.reason || "Совместный разбор ждёт вторую сторону.";
+  };
+
+  app.get("/api/debriefs/:id", (req, res) => {
+    const debrief = debriefStorage.getById(String(req.params.id));
+    if (!debrief) {
+      return res.status(404).json({ error: "debrief_not_found" });
+    }
+    const live = debrief.liveSessionId ? liveSessionService.getSessionById(debrief.liveSessionId) : null;
+    const presence = live?.presence || { assessorConnected: false, studentConnected: false };
+    res.json({
+      debrief,
+      reviews: debriefStorage.listReviews(debrief.id),
+      messages: debriefStorage.listMessages(debrief.id),
+      presence,
+      gate: canContinueDebrief(debrief.mode, presence),
+    });
+  });
+
+  app.post("/api/debriefs", requireStaff, validateBody(createDebriefSchema), (req, res) => {
+    const body = req.validatedBody as z.infer<typeof createDebriefSchema>;
+    try {
+      const debrief = debriefStorage.ensureForSession({
+        sessionId: body.sessionId,
+        liveSessionId: body.liveSessionId || null,
+        mode: body.mode,
+      });
+      res.json({ debrief, reviews: debriefStorage.listReviews(debrief.id) });
+    } catch (error) {
+      res.status(400).json({ error: "debrief_create_failed", message: (error as Error).message });
+    }
+  });
+
+  app.post("/api/debriefs/:id/reviews/:reviewId", validateBody(debriefExplanationSchema), (req, res) => {
+    const debrief = debriefStorage.getById(String(req.params.id));
+    if (!debrief) {
+      return res.status(404).json({ error: "debrief_not_found" });
+    }
+    const blocked = assertDebriefWritable(debrief);
+    if (blocked) {
+      return res.status(409).json({ error: "debrief_waiting", message: blocked });
+    }
+    const body = req.validatedBody as z.infer<typeof debriefExplanationSchema>;
+    debriefStorage.saveExplanation(debrief.id, String(req.params.reviewId), body.explanation.trim());
+    res.json({ reviews: debriefStorage.listReviews(debrief.id), debrief: debriefStorage.getById(debrief.id) });
+  });
+
+  app.post("/api/debriefs/:id/messages", validateBody(debriefMessageSchema), (req, res) => {
+    const debrief = debriefStorage.getById(String(req.params.id));
+    if (!debrief) {
+      return res.status(404).json({ error: "debrief_not_found" });
+    }
+    const blocked = assertDebriefWritable(debrief);
+    if (blocked) {
+      return res.status(409).json({ error: "debrief_waiting", message: blocked });
+    }
+    const body = req.validatedBody as z.infer<typeof debriefMessageSchema>;
+    debriefStorage.addMessage({
+      debriefId: debrief.id,
+      author: body.author,
+      authorName: body.authorName,
+      text: body.text.trim(),
+    });
+    res.json({ messages: debriefStorage.listMessages(debrief.id) });
+  });
+
+  app.post("/api/debriefs/:id/complete", validateBody(debriefCompleteSchema), (req, res) => {
+    const debrief = debriefStorage.getById(String(req.params.id));
+    if (!debrief) {
+      return res.status(404).json({ error: "debrief_not_found" });
+    }
+    const body = req.validatedBody as z.infer<typeof debriefCompleteSchema>;
+    // Разбор без вывода и без действия — это «поговорили и разошлись».
+    const reviews = debriefStorage.listReviews(debrief.id);
+    const unanswered = reviews.filter((review) => !review.explanation.trim()).length;
+    if (unanswered > 0) {
+      return res.status(400).json({ error: "debrief_incomplete", unanswered });
+    }
+    debriefStorage.complete(debrief.id, {
+      conclusion: body.conclusion.trim(),
+      actionPlan: body.actionPlan.trim(),
+    });
+    res.json({ debrief: debriefStorage.getById(debrief.id) });
   });
 
   /**

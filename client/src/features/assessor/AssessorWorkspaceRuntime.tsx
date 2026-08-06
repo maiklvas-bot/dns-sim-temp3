@@ -134,6 +134,8 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [manualSelection, setManualSelection] = useState(false);
   const [repeatCases, setRepeatCases] = useState(false);
+  // Разбор после симуляции: совместно с оценщиком или участник сам.
+  const [debriefJoint, setDebriefJoint] = useState(true);
   const [selectedCases, setSelectedCases] = useState<string[]>(CASES_DATA.map(c => c.id));
   const [isTestMode, setIsTestMode] = useState(false);
   const [speedMultiplier, setSpeedMultiplier] = useState(1);
@@ -270,6 +272,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     showAdvanced,
     manualSelection,
     repeatCases,
+    debriefJoint,
     selectedCases: [...selectedCases],
     channels: { ...channels },
     selectedChannelItemIds: cloneChannelItemIds(selectedChannelItemIds),
@@ -289,6 +292,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
     setShowAdvanced(setup.showAdvanced);
     setManualSelection(setup.manualSelection);
     setRepeatCases(setup.repeatCases);
+    setDebriefJoint(setup.debriefJoint ?? true);
     setSelectedCases([...setup.selectedCases]);
     setChannels({ ...setup.channels });
     setSelectedChannelItemIds(cloneChannelItemIds(setup.selectedChannelItemIds));
@@ -418,6 +422,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
       selectedCaseIds: casesToUse,
       manualSelection: setup.manualSelection,
       repeatCases: setup.repeatCases,
+      debriefMode: (setup.debriefJoint ? "joint" : "solo") as "joint" | "solo",
       timeLimit: resolvedTimeLimit,
       isTestMode: setup.isTestMode,
       speedMultiplier: setup.isTestMode ? setup.speedMultiplier : 1,
@@ -1272,6 +1277,21 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
             </div>
           </div>
         )}
+      </div>
+
+      {/* Разбор — обязательная часть прохождения, поэтому здесь выбирается не
+          «делать или нет», а как именно: вместе с оценщиком или участник сам.
+          Совместный разбор требует, чтобы обе стороны были на связи. */}
+      <div className="dns-assessor-v2-toggle-line">
+        <div>
+          <strong>Разбор вместе с оценщиком</strong>
+          <p>
+            {debriefJoint
+              ? "После симуляции откроется совместный разбор: участник объясняет свои решения, вы задаёте вопросы в диалоге. Нужны обе стороны на связи."
+              : "Участник разберёт свои решения самостоятельно. Ответы и план действий вы увидите в результатах."}
+          </p>
+        </div>
+        <Switch checked={debriefJoint} onCheckedChange={setDebriefJoint} />
       </div>
 
       <div className="dns-assessor-v2-toggle-line">

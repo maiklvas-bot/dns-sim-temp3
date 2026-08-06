@@ -358,6 +358,28 @@ const acceptedIssueSchema = z.object({
   acceptedForMessage: safeLooseTextSchema(1_000).nullable().optional().default(null),
 });
 
+/** Разбор прохождения: создание и записи внутри него. */
+export const createDebriefSchema = z.object({
+  sessionId: boundedIntSchema(1, 1_000_000_000),
+  liveSessionId: safeLooseTextSchema(200).optional().default(""),
+  mode: z.enum(["joint", "solo"]),
+});
+
+export const debriefExplanationSchema = z.object({
+  explanation: safeLooseTextSchema(10_000),
+});
+
+export const debriefMessageSchema = z.object({
+  author: z.enum(["student", "assessor"]),
+  authorName: safeLooseTextSchema(200),
+  text: safeLooseTextSchema(5_000),
+});
+
+export const debriefCompleteSchema = z.object({
+  conclusion: safeLooseTextSchema(5_000),
+  actionPlan: safeLooseTextSchema(5_000),
+});
+
 /**
  * Материал справочника. Обязательные поля непустые: заметка без заголовка,
  * описания, содержания или скриншота ничего не объясняет.
