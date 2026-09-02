@@ -239,7 +239,7 @@ export default function RoleSelectPage() {
           </article>
         </section>
 
-        <ProductFooter version="v3.0" />
+        <ProductFooter version="v4.2" />
       </main>
     </BrandAccessShell>
   );
