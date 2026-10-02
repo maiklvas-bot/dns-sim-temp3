@@ -160,6 +160,21 @@ export const CRITICAL_COMPETENCIES = [
 
 export const CRITICAL_THRESHOLD = 2.0;
 
+/**
+ * Ниже скольких разных кейсов оценке нельзя доверять как основанию для решения.
+ *
+ * Сейчас «Ориентация на результат» встречается в трёх кейсах, а «Коммуникация» —
+ * в одиннадцати. В отчёте оба флага выглядят одинаково уверенно, хотя стоят они
+ * очень разного. Флаг по компетенции, измеренной меньше чем в пяти кейсах, —
+ * повод для разговора на разборе, но не основание для отказа.
+ */
+export const RELIABLE_CASE_COUNT = 5;
+
+/** Достаточно ли разных кейсов, чтобы опираться на оценку при решении. */
+export function isReliablyMeasured(caseCount: number | null | undefined): boolean {
+  return Number(caseCount || 0) >= RELIABLE_CASE_COUNT;
+}
+
 /** Компетенции симуляции, которые в профиль не входят: нужны кейсам для правдоподобия. */
 export const OUT_OF_PROFILE_COMPETENCIES = ["legal_basics", "it_tools", "product_knowledge"] as const;
 

@@ -53,6 +53,22 @@ export function getTimeEvaluationCoefficient(
   return timeInfluenceEnabled ? TIME_PROFILE_EVALUATION_COEFFICIENT[difficulty] : 1;
 }
 
+/**
+ * Накопить оценки компетенции по решениям.
+ *
+ * Оценка компетенции внутри варианта уже говорит, насколько сильное поведение
+ * показал человек: слабо=1, средне=3, сильно=5. Отдельно домножать её на
+ * «качество варианта» нельзя — слабый ответ тогда штрафуется дважды, и среднее
+ * уходит ниже единицы, хотя единица и есть нижняя граница шкалы. Так «Контроль»
+ * в реальных прохождениях выходил 0.4 и поднимал красный флаг там, где его быть
+ * не должно.
+ *
+ * Вес кейса входит и в числитель, и в знаменатель: он меняет долю кейса
+ * в среднем, но не сдвигает шкалу.
+ *
+ * `resolvedScore` в расчёте не участвует — параметр оставлен, потому что он
+ * часть подписи, которую зовут движок, сервер и контракт.
+ */
 export function accumulateCompetencyTotals(
   currentTotals: CompetencyTotals,
   competencyScores: Record<string, number> | null | undefined,
@@ -62,19 +78,57 @@ export function accumulateCompetencyTotals(
   settings: SimulationScoringSettings | null | undefined,
 ): CompetencyTotals {
   const weightRatio = getCaseWeightRatio(caseId, sourceType, settings);
-  const qualityRatio = clamp(Number(resolvedScore || 0) / 5, 0.1, 1);
   const nextTotals = { ...currentTotals };
 
   Object.entries(competencyScores || {}).forEach(([competencyId, rawScore]) => {
     const score = Number(rawScore || 0);
     const current = nextTotals[competencyId] || { total: 0, count: 0 };
     nextTotals[competencyId] = {
-      total: current.total + score * weightRatio * qualityRatio,
+      total: current.total + score * weightRatio,
       count: current.count + weightRatio,
     };
   });
 
   return nextTotals;
+}
+
+/** Сколько раз и в скольких разных кейсах компетенция вообще измерялась. */
+export interface CompetencyCoverage {
+  decisions: number;
+  cases: number;
+}
+
+/**
+ * Посчитать охват каждой компетенции.
+ *
+ * Среднему баллу можно верить тем больше, чем в большем числе РАЗНЫХ кейсов
+ * компетенция встретилась. Пятнадцать решений внутри одного кейса говорят
+ * о том, как человек прошёл этот кейс, а не о том, как он себя ведёт вообще.
+ * Поэтому кейсы считаются по уникальным идентификаторам, а не по решениям.
+ */
+export function buildCompetencyCoverage(
+  decisions: SimulationScoringDecision[],
+): Record<string, CompetencyCoverage> {
+  const seen: Record<string, { decisions: number; cases: Set<string> }> = {};
+
+  decisions.forEach((decision) => {
+    const caseId = String(decision.caseId || decision.contentId || "");
+    Object.keys(decision.competencyScores || {}).forEach((competencyId) => {
+      const current = seen[competencyId] || { decisions: 0, cases: new Set<string>() };
+      current.decisions += 1;
+      if (caseId) {
+        current.cases.add(caseId);
+      }
+      seen[competencyId] = current;
+    });
+  });
+
+  return Object.fromEntries(
+    Object.entries(seen).map(([competencyId, value]) => [
+      competencyId,
+      { decisions: value.decisions, cases: value.cases.size },
+    ]),
+  );
 }
 
 export function buildCompetencyAverageMap(totals: CompetencyTotals): Record<string, number> {
