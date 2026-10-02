@@ -2,23 +2,25 @@
 
 ## Актуальное уточнение 03.10.2026
 
-Разделы ниже сохраняют исторический отчёт попытки 3. Её исправления уже входят в `753106fee8fb7bc0d91dec883a6c528418dfdd0a`: четыре репозиторных документа. Read-back публичного API PR #71 от 03.10 подтвердил `state=open`, `merged=false` и этот же `head.sha`; локальный HEAD совпал. Формулировки ниже «новый», «следующий HEAD» и результаты для `8e1ce55` относятся к прошлой попытке, не к окончательному результату текущей доработки.
+Разделы ниже сохраняют исторический отчёт попытки 3. Его команды и результаты относятся к прошлой редакции, а не к окончательному результату текущей доработки. SHA документационных коммитов фиксируются только во внешних артефактах: запись текущего HEAD внутри изменяемого документа неизбежно устаревает после следующего commit handoff.
 
 ### Отдельные артефакты и финальный handoff
 
-В локальном каталоге `<OBSIDIAN_VAULT>/01-projects/simcenter/evidence/2026-10-02-review/` прежние `verification.json`, `run3.diff` и `run1-reconstructed.diff` сохранены без перезаписи. Это доступные проверяющему фактические артефакты; реконструированный diff первой попытки сохраняет указанные ниже ограничения.
+Локальный каталог: `<OBSIDIAN_VAULT>/01-projects/simcenter/evidence/2026-10-02-review/`. Прежние `verification.json`, `run3.diff`, `run1-reconstructed.diff`, `baseline-run7.json`, `run7.diff`, `run7-verification.json` и `run7-pr-readback.json` сохранены без перезаписи. Полные артефакты остаются локальными, поскольку содержат машинные пути и операционные идентификаторы.
 
-Текущая доработка использует `baseline-run7.json` (снимок заметок до правок), `verify-run7.py`, `run7.diff` (фактическая разница заметок), `run7-verification.json` (SHA, время, dirty state, stdout/stderr и exit codes Git, frontmatter и ссылки) и `run7-pr-readback.json` (ответ read-only API в сокращённом виде). Конкретные ссылки доступны в локальном snapshot Obsidian. Результат запуска здесь не дублируется: проверяемый документ остаётся неизменным после проверки.
+По замечанию ревью выполнена повторная проверка уже закоммиченной входной редакции в чистом worktree. `run9-input-commit-verification.json` содержит полный SHA, время, stdout/stderr/exit code `git diff --check aa82156..<INPUT_SHA>`, frontmatter, wikilinks/Markdown-ссылки и хеши девяти заметок. `run9-input-pr-readback.json` содержит свежий read-back PR #71 и сравнение с локальным коммитом. Это доказательства входного коммита; последующие изменения текста ими не покрываются.
 
-После финального коммита хост должен выполнить отдельно, подставив полный SHA полученного коммита:
+`run9-working-tree-verification.json` фиксирует проверку этой доработки до handoff; `run9-working-tree.diff` сохраняет изменения vault относительно baseline попытки 7. Прямые ссылки и фактический diff только попытки 9 находятся в локальном snapshot Obsidian. Результаты не дописываются в проверяемый Markdown после проверки.
+
+После финального коммита хост выполняет, подставив полный SHA полученного коммита:
 
 ```text
 python <LOCAL_EVIDENCE>/verify-run7.py --repo <ASSIGNED_WORKTREE> --primary <PRIMARY_CHECKOUT> --expected-head <FINAL_SHA> --require-clean --label post-commit-<FINAL_SHA>
 ```
 
-Скрипт проверяет совпадение SHA и чистоту working tree, запускает `git diff --check aa82156..<FINAL_SHA>`, сохраняет stdout/stderr/exit code в отдельном `post-commit-<FINAL_SHA>-verification.json` вне репозитория. Проверяемые документы и Git metadata не изменяются. При несовпадении SHA, dirty state или ошибке проверки возвращает ненулевой код. Хост прикладывает этот JSON к ревью и выполняет отдельный read-back опубликованного HEAD PR #71. До такого запуска критерий проверки финального коммита остаётся открытым; результат `run7` относится к рабочему дереву на базе `753106f`. CI и production этой процедурой не подтверждаются.
+Скрипт проверяет SHA и чистоту дерева, запускает `git diff --check aa82156..<FINAL_SHA>` и сохраняет stdout/stderr/exit code в отдельном `post-commit-<FINAL_SHA>-verification.json` вне репозитория. При несовпадении SHA, dirty state или ошибке проверки возвращает ненулевой код. Хост прикладывает JSON и отдельный read-back опубликованного HEAD PR #71, который должен совпадать с FINAL_SHA. Документы после этого не переписываются ради нового SHA. До выполнения обоих шагов финальный коммит и его публикация не считаются проверенными. CI и production эта процедура не подтверждает.
 
-Проверяемая исходная редакция: `8e1ce553b931ff391d9f129ae791c79d4eebe15c`, база `aa82156380acafa8367b821c3f9ae22f6759ba8b`. [Snapshot](HERMES_SYNC_SNAPSHOT.md) · [Статус](HERMES_STATE.md).
+Исторические SHA документационных редакций ниже заменены обозначением `<HISTORICAL_DOC_SHA>`; точные значения сохранены в прежних JSON-артефактах. База сравнения — `aa82156380acafa8367b821c3f9ae22f6759ba8b`. [Snapshot](HERMES_SYNC_SNAPSHOT.md) · [Статус](HERMES_STATE.md).
 
 ## Все девять заметок первой редакции
 
@@ -70,14 +72,14 @@ Final whitespace check: PASS, 12 files
 ?? docs/project/HERMES_SYNC_SNAPSHOT.md
 ```
 
-Это доказательство состояния до handoff. Слово `untracked` не описывает опубликованный `8e1ce55`.
+Это доказательство состояния до handoff. Слово `untracked` не описывает опубликованный `<HISTORICAL_DOC_SHA>`.
 
 ## Commit read-back и границы
 
-02.10 публичный GitHub API `pulls/71` вернул `state=open`, `merged=false`, `head.sha=8e1ce553b931ff391d9f129ae791c79d4eebe15c`; локальный `git rev-parse HEAD` совпал. [PR #71](https://github.com/maiklvas-bot/dns-sim-temp3/pull/71).
+02.10 публичный GitHub API `pulls/71` вернул `state=open`, `merged=false`, `head.sha=<HISTORICAL_DOC_SHA>`; локальный `git rev-parse HEAD` совпал. [PR #71](https://github.com/maiklvas-bot/dns-sim-temp3/pull/71).
 
 ```text
-git diff --check aa82156..8e1ce553b931ff391d9f129ae791c79d4eebe15c
+git diff --check aa82156..<HISTORICAL_DOC_SHA>
 exit code: 0
 stdout: empty
 stderr: empty
@@ -95,7 +97,7 @@ exit code: 0
 PASS: 4 repository docs, 9 vault notes, 148 link occurrences
 BROKEN LINKS / ERRORS: []
 Primary run-3 hashes: PASS
-git diff --check aa82156..8e1ce553b931ff391d9f129ae791c79d4eebe15c: exit=0
+git diff --check aa82156..<HISTORICAL_DOC_SHA>: exit=0
 git diff --check aa82156: exit=0
 git diff --check: exit=0
 ```
