@@ -1,5 +1,23 @@
 # DNS SimCenter — доказательства доработки ревью 02.10.2026
 
+## Актуальное уточнение 03.10.2026
+
+Разделы ниже сохраняют исторический отчёт попытки 3. Её исправления уже входят в `753106fee8fb7bc0d91dec883a6c528418dfdd0a`: четыре репозиторных документа. Read-back публичного API PR #71 от 03.10 подтвердил `state=open`, `merged=false` и этот же `head.sha`; локальный HEAD совпал. Формулировки ниже «новый», «следующий HEAD» и результаты для `8e1ce55` относятся к прошлой попытке, не к окончательному результату текущей доработки.
+
+### Отдельные артефакты и финальный handoff
+
+В локальном каталоге `<OBSIDIAN_VAULT>/01-projects/simcenter/evidence/2026-10-02-review/` прежние `verification.json`, `run3.diff` и `run1-reconstructed.diff` сохранены без перезаписи. Это доступные проверяющему фактические артефакты; реконструированный diff первой попытки сохраняет указанные ниже ограничения.
+
+Текущая доработка использует `baseline-run7.json` (снимок заметок до правок), `verify-run7.py`, `run7.diff` (фактическая разница заметок), `run7-verification.json` (SHA, время, dirty state, stdout/stderr и exit codes Git, frontmatter и ссылки) и `run7-pr-readback.json` (ответ read-only API в сокращённом виде). Конкретные ссылки доступны в локальном snapshot Obsidian. Результат запуска здесь не дублируется: проверяемый документ остаётся неизменным после проверки.
+
+После финального коммита хост должен выполнить отдельно, подставив полный SHA полученного коммита:
+
+```text
+python <LOCAL_EVIDENCE>/verify-run7.py --repo <ASSIGNED_WORKTREE> --primary <PRIMARY_CHECKOUT> --expected-head <FINAL_SHA> --require-clean --label post-commit-<FINAL_SHA>
+```
+
+Скрипт проверяет совпадение SHA и чистоту working tree, запускает `git diff --check aa82156..<FINAL_SHA>`, сохраняет stdout/stderr/exit code в отдельном `post-commit-<FINAL_SHA>-verification.json` вне репозитория. Проверяемые документы и Git metadata не изменяются. При несовпадении SHA, dirty state или ошибке проверки возвращает ненулевой код. Хост прикладывает этот JSON к ревью и выполняет отдельный read-back опубликованного HEAD PR #71. До такого запуска критерий проверки финального коммита остаётся открытым; результат `run7` относится к рабочему дереву на базе `753106f`. CI и production этой процедурой не подтверждаются.
+
 Проверяемая исходная редакция: `8e1ce553b931ff391d9f129ae791c79d4eebe15c`, база `aa82156380acafa8367b821c3f9ae22f6759ba8b`. [Snapshot](HERMES_SYNC_SNAPSHOT.md) · [Статус](HERMES_STATE.md).
 
 ## Все девять заметок первой редакции

@@ -2,6 +2,8 @@
 
 Дата чтения источников: **2026-10-02**, Asia/Yekaterinburg. [Статус](HERMES_STATE.md) · [Ближайшие действия](HERMES_ROADMAP.md).
 
+Повторное чтение documentation HEAD и PR #71: **2026-10-03**, Asia/Yekaterinburg. Остальные факты ниже относятся к сверке 02.10, если не указано иное.
+
 ## Источники и происхождение
 
 | Источник | Версия / дата | Что подтверждает и чего не подтверждает |
@@ -11,7 +13,7 @@
 | [Knowledge commit](https://github.com/maiklvas-bot/dns-sim-temp3/commit/9328bbd498903ba99d91e23b84aebd2ded4c0198) | `9328bbd`, 25.09 | Публикация 14 файлов контекста в отдельной ветке; не доставка смешанного UI-пакета и не merge |
 | Remote refs: `git ls-remote` по URL из `git remote -v` | Повторно прочитаны 02.10, без credential flow | `main=855bb8b`, `feature/methodology-v2=aa82156`, `chore/hermes-knowledge-sync=9328bbd`, `chore/unified-hermes-context=6bde4c3` |
 | GitHub REST `pulls?state=open`, `actions/runs`, `actions/runs/{id}/jobs` | Первичная сверка 02.10, до публикации этой редакции; даты runs — 02/21.09 | На момент первичной сверки открыт только PR #70; два failed run и их упавший шаг. На ветках methodology/knowledge API вернул 0 runs |
-| GitHub REST `pulls/71`, локальный `git rev-parse HEAD` | Повторная сверка 02.10 после замечаний ревью | PR #71 открыт, не слит; его HEAD и локальный HEAD — `8e1ce553b931ff391d9f129ae791c79d4eebe15c`. Это публикация документации, не подтверждение CI или production |
+| GitHub REST `pulls/71`, локальные `git rev-parse HEAD`, `git status --short`, `git diff --stat aa82156..HEAD` | Повторная сверка 03.10 после замечаний ревью | PR #71 открыт, не слит; его HEAD и локальный HEAD — `753106fee8fb7bc0d91dec883a6c528418dfdd0a`. В коммите четыре документа; до текущих правок worktree чистый. Это публикация документации, не подтверждение CI или production |
 | `<OBSIDIAN_VAULT>/01-projects/simcenter/WORKLOG.md` | Записи 21–25.09; просмотр заголовков по всему файлу | Последние записи 25.09 находятся в начале, а v4 от 22.09 — в конце. Порядок строк не равен хронологии |
 | `01-projects/simcenter/EMPLOYEE-DEVELOPMENT-JOURNEY.md`, `SIMCENTER-DEVELOPMENT-MEMORY.md`, `reviews/2026-09-18-review.md` в vault | 21.09, обсуждение 18.09 | Полный карьерный путь, продуктовый гейт и незакрытые методические решения |
 | `01-projects/simcenter/DNS-LEARNING-SYSTEM-OWNER-INTERVIEW-2026-09-22.md` в vault | 22.09 | Подтверждённая владельцем логика; факты отделены от желаемых границ и проектных следствий |
@@ -32,13 +34,15 @@ Fetch/pull не выполнялись: текущий контракт запр
 
 ## Синхронизируемый слой и история
 
-Первичная редакция добавила три `docs/project/HERMES_*.md` в назначенной рабочей копии и обновила связанные локальные заметки Obsidian. Доработка ревью уточняет статус публикации и добавляет [проверяемый отчёт](HERMES_SYNC_REVIEW_EVIDENCE.md). Код, UI, `.env`, `.business`, SQLite/runtime, raw exports и чужой staged-пакет не переносятся. Репозиторные документы не содержат локальных абсолютных путей, delivery IDs или идентификаторов маршрутизации.
+Первичная редакция добавила три `docs/project/HERMES_*.md` в назначенной рабочей копии и обновила связанные локальные заметки Obsidian. Закоммиченная доработка `753106f` добавила [отчёт ревью](HERMES_SYNC_REVIEW_EVIDENCE.md): всего четыре документа. Код, UI, `.env`, `.business`, SQLite/runtime, raw exports и чужой staged-пакет не переносятся. Репозиторные документы не содержат локальных абсолютных путей, delivery IDs или идентификаторов маршрутизации.
 
 Локальная counterpart: `<OBSIDIAN_VAULT>/01-projects/simcenter/HERMES-GIT-OBSIDIAN-SNAPSHOT-2026-10-02.md`; навигация — проектный README, WORKLOG и `claude-kb/wiki/proekt-simcenter.md`. Там сохранены конкретные пути и контракт привязки.
 
 Срез 25.09 сохранён в Obsidian и в [историческом Git snapshot](https://github.com/maiklvas-bot/dns-sim-temp3/blob/9328bbd498903ba99d91e23b84aebd2ded4c0198/docs/project/HERMES_SYNC_SNAPSHOT.md). Его формулировки о полном пакете и исключённых UI-файлах относятся к разным попыткам доставки: read-back подтверждает только отдельный knowledge commit. Это уточнение сохраняет историю, но снимает неоднозначное утверждение о публикации всех изменений.
 
-При подготовке первичной редакции 02.10 файлы оставались в working tree для host-owned commit handoff. Затем хост закоммитил их в `8e1ce553b931ff391d9f129ae791c79d4eebe15c` и опубликовал в [PR #71](https://github.com/maiklvas-bot/dns-sim-temp3/pull/71); это подтверждено повторным чтением локального HEAD и публичного API 02.10. Исправления по ревью готовятся поверх этого коммита; их будущий commit/CI нельзя подтверждать результатом проверки `8e1ce55`.
+При подготовке первичной редакции 02.10 файлы оставались в working tree для host-owned commit handoff. Затем хост закоммитил их в `8e1ce553b931ff391d9f129ae791c79d4eebe15c` и опубликовал в [PR #71](https://github.com/maiklvas-bot/dns-sim-temp3/pull/71). Предыдущие исправления по ревью уже закоммичены в `753106fee8fb7bc0d91dec883a6c528418dfdd0a` и опубликованы: локальный HEAD и публичный API совпали 03.10. Текущая правка формулировок готовится поверх `753106f`; её будущий SHA не известен исполнителю до host handoff.
+
+Новые результаты проверки сохраняются отдельным локальным JSON-артефактом с SHA и состоянием working tree, а не дописываются в проверяемый Markdown. Команда финальной проверки после host commit и расположение доказательств указаны в [отчёте](HERMES_SYNC_REVIEW_EVIDENCE.md). Проверка рабочего дерева не заменяет проверку окончательного коммита.
 
 ## Проверка редакции 02.10
 
