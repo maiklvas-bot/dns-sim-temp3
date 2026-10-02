@@ -16,7 +16,7 @@
 | Remote `main` | `855bb8bba0e8d9d1ddb15d467c098c667e26aad0`; относительно HEAD основного checkout: 2 уникальных коммита в `main`, 4 в checkout |
 | Remote `feature/methodology-v2` | `aa82156`; совпадение HEAD не означает совпадения с dirty working tree |
 | Опубликованный knowledge snapshot | `chore/hermes-knowledge-sync`, `9328bbd498903ba99d91e23b84aebd2ded4c0198` от 2026-09-25: отдельные 14 файлов контекста; в `main` не влит |
-| PR | Единственный открытый [#70](https://github.com/maiklvas-bot/dns-sim-temp3/pull/70), `chore/unified-hermes-context`, HEAD `6bde4c31d991908a6dd3bde2672e26a41c2972cb`; не является PR методических исправлений или snapshot `9328bbd` |
+| PR | При первичной сверке 02.10 открыт только [#70](https://github.com/maiklvas-bot/dns-sim-temp3/pull/70), HEAD `6bde4c31d991908a6dd3bde2672e26a41c2972cb`. После handoff опубликована эта документация: повторный API read-back 02.10 подтверждает открытый, не слитый [#71](https://github.com/maiklvas-bot/dns-sim-temp3/pull/71), HEAD `8e1ce553b931ff391d9f129ae791c79d4eebe15c`. Ни один из этих фактов не подтверждает интеграцию методических исправлений |
 
 Последние изменения кода на базе `aa82156`: `aff99ce`, `caae9b2`, `a003e05` от 2026-09-03 исправляют двойной штраф скоринга, влияние очереди на время выдачи и валидацию одинаковых оценок всех компетенций. Коммит `aa82156` меняет только правила агентов/CI. Эти четыре коммита не входят в проверенный `main`.
 
@@ -33,7 +33,7 @@
 - **CI:** [main, run 33638880325](https://github.com/maiklvas-bot/dns-sim-temp3/actions/runs/33638880325) от 2026-09-02 и [PR #70, run 35631182202](https://github.com/maiklvas-bot/dns-sim-temp3/actions/runs/35631182202) от 2026-09-21 имеют `failure`; API jobs подтверждает упавший шаг `Verify Docker data safety` в обоих случаях. Точная причина с исключённым upload известна из старых записей; сейчас повторно не воспроизводилась.
 - **Локальные проверки кода:** PASS для check/UI/ops/build и BLOCKED для smoke из-за Node 24 / `better-sqlite3` относятся к 2026-09-25 и тогдашнему dirty-пакету. Сегодня они не запускались; текущая исправность кода ими не доказана.
 - **Документация:** проверяется отдельно — Markdown, frontmatter, ссылки, сохранение истории и whitespace; результат проверки документации не означает green CI.
-- **Production/staging:** не проверялись; изменений приложения, публикаций и деплоя в этой работе нет.
+- **Production/staging:** не проверялись; изменений приложения и деплоя в этой работе нет. Документацию опубликовал хост в PR #71; это отдельное состояние.
 
 ## Блокеры и ближайшие действия
 
