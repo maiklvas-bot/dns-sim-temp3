@@ -118,14 +118,14 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(8,12,22,0.7)", backdropFilter: "blur(4px)" }} role="dialog" aria-modal="true" aria-label="Запуск симуляции ЗРД">
       <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border" style={{ background: "#101725", borderColor: "rgba(255,255,255,0.09)" }}>
         <header className="flex items-center gap-3 border-b px-5 py-4" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: "rgba(255,107,0,0.14)", color: "#FF6B00" }}>
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg" style={{ background: "rgba(255,107,0,0.14)", color: "#f68b1f" }}>
             <Play className="h-4 w-4" aria-hidden />
           </span>
           <div className="leading-tight">
             <div className="text-base font-extrabold text-white">Запуск матча ЗРД</div>
             <div className="text-xs text-white/50">
               Институт ЗРД · Покорение новых территорий · 4 квартала (12 месячных тактов) ·{" "}
-              <a href="/#/zrd/manual" target="_blank" rel="noreferrer" style={{ color: "#FF6B00", textDecoration: "underline" }}>инструкция к игре</a>
+              <a href="/#/zrd/manual" target="_blank" rel="noreferrer" style={{ color: "#f68b1f", textDecoration: "underline" }}>инструкция к игре</a>
             </div>
           </div>
           <button type="button" onClick={onClose} aria-label="Закрыть" className="ml-auto rounded-lg border p-1.5 text-white/60" style={{ borderColor: "rgba(255,255,255,0.12)", cursor: "pointer" }}>
@@ -146,7 +146,7 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
                     <button key={id} type="button" onClick={() => pickScenario(id)} aria-pressed={active}
                       className="rounded-xl border p-3 text-left transition-colors"
                       style={active
-                        ? { borderColor: "#FF6B00", background: "rgba(255,107,0,0.1)", cursor: "pointer" }
+                        ? { borderColor: "#f68b1f", background: "rgba(255,107,0,0.1)", cursor: "pointer" }
                         : { borderColor: "rgba(255,255,255,0.1)", cursor: "pointer" }}>
                       <div className="text-sm font-bold text-white">{sc.title}</div>
                       <div className="mt-0.5 text-[11px] text-white/50">{sc.tagline}</div>
@@ -162,7 +162,7 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
                       <button key={l} type="button" onClick={() => setDifficulty(l)} aria-pressed={difficulty === l}
                         className="h-8 w-8 rounded-lg border text-sm font-bold"
                         style={difficulty === l
-                          ? { borderColor: "#FF6B00", background: "rgba(255,107,0,0.14)", color: "#FF6B00", cursor: "pointer" }
+                          ? { borderColor: "#f68b1f", background: "rgba(255,107,0,0.14)", color: "#f68b1f", cursor: "pointer" }
                           : { borderColor: "rgba(255,255,255,0.12)", color: "#fff", cursor: "pointer" }}>{l}</button>
                     ))}
                   </div>
@@ -177,7 +177,7 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
                       <button key={mode} type="button" onClick={() => setWinMode(mode)} aria-pressed={winMode === mode}
                         className="rounded-lg border px-3 py-1.5 text-sm font-semibold"
                         style={winMode === mode
-                          ? { borderColor: "#FF6B00", background: "rgba(255,107,0,0.14)", color: "#FF6B00", cursor: "pointer" }
+                          ? { borderColor: "#f68b1f", background: "rgba(255,107,0,0.14)", color: "#f68b1f", cursor: "pointer" }
                           : { borderColor: "rgba(255,255,255,0.12)", color: "#fff", cursor: "pointer" }}>{label}</button>
                     ))}
                   </div>
@@ -213,7 +213,7 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
                           <button key={mode} type="button" onClick={() => updateSeat(i, { mode })} aria-pressed={seat.mode === mode}
                             className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold"
                             style={seat.mode === mode
-                              ? { borderColor: "#FF6B00", background: "rgba(255,107,0,0.14)", color: "#FF6B00", cursor: "pointer" }
+                              ? { borderColor: "#f68b1f", background: "rgba(255,107,0,0.14)", color: "#f68b1f", cursor: "pointer" }
                               : { borderColor: "rgba(255,255,255,0.12)", color: "#fff", cursor: "pointer" }}>{icon}{label}</button>
                         ))}
                       </div>
@@ -277,7 +277,7 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
                   <button key={mode} type="button" onClick={() => setMissionMode(mode)} aria-pressed={missionMode === mode}
                     className="rounded-lg border px-3 py-1.5 text-sm font-semibold"
                     style={missionMode === mode
-                      ? { borderColor: "#FF6B00", background: "rgba(255,107,0,0.14)", color: "#FF6B00", cursor: "pointer" }
+                      ? { borderColor: "#f68b1f", background: "rgba(255,107,0,0.14)", color: "#f68b1f", cursor: "pointer" }
                       : { borderColor: "rgba(255,255,255,0.12)", color: "#fff", cursor: "pointer" }}>{label}</button>
                 ))}
               </div>
@@ -350,7 +350,7 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
                   <button key={f} type="button" onClick={() => setSwanFrequency(f)} aria-pressed={swanFrequency === f}
                     className="rounded-lg border px-3 py-1.5 text-sm font-semibold"
                     style={swanFrequency === f
-                      ? { borderColor: f === "storm" ? "#e85a5a" : "#FF6B00", background: f === "storm" ? "rgba(232,90,90,0.14)" : "rgba(255,107,0,0.14)", color: f === "storm" ? "#e85a5a" : "#FF6B00", cursor: "pointer" }
+                      ? { borderColor: f === "storm" ? "#e85a5a" : "#f68b1f", background: f === "storm" ? "rgba(232,90,90,0.14)" : "rgba(255,107,0,0.14)", color: f === "storm" ? "#e85a5a" : "#f68b1f", cursor: "pointer" }
                       : { borderColor: "rgba(255,255,255,0.12)", color: "#fff", cursor: "pointer" }}>{SWAN_FREQ_LABEL[f]}</button>
                 ))}
               </div>
@@ -370,7 +370,7 @@ export function ZrdLaunchWizard({ onClose, knownNames = [] }: { onClose: () => v
                   aria-label="Минут на такт"
                   style={{ cursor: "pointer" }}
                 />
-                <span className="w-28 font-bold" style={{ color: "#FF6B00" }}>{minutesPerTick} мин</span>
+                <span className="w-28 font-bold" style={{ color: "#f68b1f" }}>{minutesPerTick} мин</span>
               </label>
               <p className="mt-1 text-[11px] text-white/40">12 тактов × {minutesPerTick} мин ≈ {Math.round(12 * minutesPerTick / 60 * 10) / 10} ч игрового времени. Не походившие к дедлайну пропускают ход.</p>
             </section>
@@ -476,7 +476,7 @@ export function ZrdMatchCodesAndMonitor({ matchId, seats, knownNames = [] }: { m
                 <div className="text-sm font-bold text-white">{s.participantName}</div>
                 <div className="text-[11px] text-white/45">{RRS_LABEL[s.rrsId]}</div>
               </div>
-              <code className="rounded-lg px-3 py-1.5 text-lg font-extrabold tracking-[0.2em]" style={{ background: "rgba(255,107,0,0.12)", color: "#FF6B00" }}>{s.accessCode}</code>
+              <code className="rounded-lg px-3 py-1.5 text-lg font-extrabold tracking-[0.2em]" style={{ background: "rgba(255,107,0,0.12)", color: "#f68b1f" }}>{s.accessCode}</code>
               <button type="button" onClick={() => copy(s.accessCode ?? "", `code-${s.seatIdx}`)}
                 className="inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs text-white/70" style={{ borderColor: "rgba(255,255,255,0.12)", cursor: "pointer" }}>
                 {copied === `code-${s.seatIdx}` ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Copy className="h-3.5 w-3.5" aria-hidden />} Код
@@ -519,7 +519,7 @@ export function ZrdMatchCodesAndMonitor({ matchId, seats, knownNames = [] }: { m
                 <button type="button" disabled={!(attachNames[s.seatIdx] ?? "").trim() || attaching === s.seatIdx}
                   onClick={() => attach(s.seatIdx)}
                   className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-40"
-                  style={{ borderColor: "rgba(255,107,0,0.5)", color: "#FF6B00", cursor: "pointer" }}>
+                  style={{ borderColor: "rgba(255,107,0,0.5)", color: "#f68b1f", cursor: "pointer" }}>
                   {attaching === s.seatIdx ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <Users className="h-3.5 w-3.5" aria-hidden />}
                   Подключить
                 </button>
@@ -547,7 +547,7 @@ export function ZrdMatchCodesAndMonitor({ matchId, seats, knownNames = [] }: { m
                   <div className="mt-1 grid grid-cols-3 gap-1 text-center">
                     {([["Продажи", s.kpi.sales_growth], ["Сервис", s.kpi.service_level], ["Охват", s.kpi.market_coverage]] as [string, number][]).map(([l, v]) => (
                       <div key={l}>
-                        <div className="text-sm font-extrabold" style={{ color: "#FF6B00" }}>{v}%</div>
+                        <div className="text-sm font-extrabold" style={{ color: "#f68b1f" }}>{v}%</div>
                         <div className="text-[9px] text-white/40">{l}</div>
                       </div>
                     ))}
@@ -604,7 +604,7 @@ export function ZrdMatchCodesAndMonitor({ matchId, seats, knownNames = [] }: { m
                       {r.isWinner && <Crown className="h-4 w-4" style={{ color: "#f0b429" }} aria-hidden />}
                       <span className="font-semibold">{seat ? RRS_LABEL[seat.rrsId as RrsId] : `Место ${r.seatIdx}`}</span>
                       <span className="text-white/50">{seat?.name}</span>
-                      <span className="ml-auto font-extrabold" style={{ color: "#FF6B00" }}>ТР {r.tr}</span>
+                      <span className="ml-auto font-extrabold" style={{ color: "#f68b1f" }}>ТР {r.tr}</span>
                     </div>
                   );
                 })}

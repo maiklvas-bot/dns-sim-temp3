@@ -19,7 +19,7 @@ export function WizardSteps({ currentStep }: { currentStep: number }) {
             <div
               className={`flex items-center gap-2 rounded-full border px-4 py-2.5 transition-all ${
                 isActive
-                  ? "border-[#FF6B00] bg-[#FF6B00]/10 text-[#FF6B00]"
+                  ? "border-[#f68b1f] bg-[#f68b1f]/10 text-[#f68b1f]"
                   : isDone
                     ? "border-[#00C853] bg-[#00C853]/10 text-[#00C853]"
                     : "border-[#2a3a4e] bg-[#141c2b]/50 text-[#6f7990]"

@@ -22,7 +22,7 @@ export function OptionCard({
   return (
     <button
       onClick={onClick}
-      className={`flex w-full flex-col rounded-xl border border-border bg-card p-4 text-left shadow-sm transition-all hover:border-[#FF6B00]/45 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF6B00]/55 focus-visible:ring-offset-0 active:scale-[0.99] cursor-pointer ${className}`}
+      className={`flex w-full flex-col rounded-xl border border-border bg-card p-4 text-left shadow-sm transition-all hover:border-[#f68b1f]/45 hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f68b1f]/55 focus-visible:ring-offset-0 active:scale-[0.99] cursor-pointer ${className}`}
       data-testid={`option-${idx}`}
       title={option.text}
     >
@@ -161,7 +161,7 @@ export default function ResponseBar() {
     return (
       <div className="flex flex-col h-full min-h-0">
         <PanelHeader
-          accentClass="text-[#FF6B00]"
+          accentClass="text-[#f68b1f]"
           title="Варианты ответа на звонок"
           subtitle={currentSignal.title}
           helper="Выберите управленческое действие по текущему звонку."

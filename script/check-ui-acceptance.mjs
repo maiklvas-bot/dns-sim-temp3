@@ -521,10 +521,25 @@ const isNeutralColor = (hex) => {
   const saturation = chromaRange === 0 ? 0 : (max - min) / chromaRange;
   return saturation < 0.2 && lightness > 0.1 && lightness < 0.92;
 };
+// Бренд-система DNS (dns-design-system-v2.html) строит светлую тему Light Retail
+// на нейтральных значениях, а text/muted тёмной темы — на синем с насыщенностью
+// 18%, что чуть ниже порога и формально читается как «серый». Это решение
+// заказчика в пользу канона Figma, оно перекрывает прежний запрет, который
+// писался до появления бренд-системы. Запрет остаётся в силе для всего
+// остального: произвольный серый по-прежнему не допускается.
+const BRAND_NEUTRALS = new Set([
+  "1a1a1a", // text/primary   светлая тема
+  "3a3a3a", // text/secondary светлая тема
+  "6b6b6b", // text/muted     светлая тема
+  "d8d4c8", // border/subtle  светлая тема
+  "edebe4", // surface/raised светлая тема
+  "f7f5f0", // bg/canvas      светлая тема
+  "6b7699", // text/muted     тёмная тема (226° 18% — синий, не нейтраль)
+]);
 const neutralHexes = [...adminCssDeclarations.matchAll(/#([0-9a-fA-F]{6})\b/g)]
   .map((match) => match[1].toLowerCase())
   .filter((hex) => {
-    return isNeutralColor(hex);
+    return isNeutralColor(hex) && !BRAND_NEUTRALS.has(hex);
   });
 assertCondition(
   neutralHexes.length === 0,

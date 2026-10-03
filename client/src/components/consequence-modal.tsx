@@ -20,7 +20,7 @@ export default function ConsequenceModal() {
           <X className="w-5 h-5" />
         </button>
 
-        <div className="text-sm font-semibold text-[#FF6B00] mb-1">Результат решения</div>
+        <div className="text-sm font-semibold text-[#f68b1f] mb-1">Результат решения</div>
         <p className="text-xs text-muted-foreground mb-4 line-clamp-2">
           {state.lastOptionText}
         </p>
@@ -72,7 +72,7 @@ export default function ConsequenceModal() {
 
         <Button
           onClick={() => dispatch({ type: "DISMISS_CONSEQUENCE" })}
-          className="w-full bg-[#FF6B00] hover:bg-[#e06000] text-white text-sm"
+          className="w-full bg-[#f68b1f] hover:bg-[#e06000] text-white text-sm"
           data-testid="button-dismiss-consequence"
         >
           Продолжить работу

@@ -69,7 +69,7 @@ export default function ToastNotifications() {
       {visibleToasts.map(toast => (
         <div
           key={toast.id}
-          className="toast-enter rounded-lg border border-[#FF6B00]/40 bg-card/95 backdrop-blur-md p-3 shadow-xl"
+          className="toast-enter rounded-lg border border-[#f68b1f]/40 bg-card/95 backdrop-blur-md p-3 shadow-xl"
           data-testid={`toast-${toast.id}`}
         >
           <div className="flex items-start justify-between gap-2">
@@ -87,7 +87,7 @@ export default function ToastNotifications() {
           <div className="flex gap-2 mt-2">
             <button
               onClick={() => handleOpenToast(toast)}
-              className="flex-1 px-3 py-1.5 rounded bg-[#FF6B00] text-white text-xs font-medium hover:bg-[#e06000] transition-colors"
+              className="flex-1 px-3 py-1.5 rounded bg-[#f68b1f] text-white text-xs font-medium hover:bg-[#e06000] transition-colors"
               data-testid={`toast-respond-${toast.id}`}
             >
               {getPrimaryLabel(toast)}

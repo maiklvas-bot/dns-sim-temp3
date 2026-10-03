@@ -24,17 +24,17 @@ import type { CompetencyKey } from "@shared/zrd/types";
 // ── локальные примитивы вёрстки ─────────────────────────────────────────────
 const S = {
   h2: { color: "var(--zrd-text)", fontSize: 22, fontWeight: 800, margin: "0 0 4px" } as CSSProperties,
-  kicker: { color: "#FF6B00", fontSize: 11, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase" } as CSSProperties,
+  kicker: { color: "#f68b1f", fontSize: 11, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase" } as CSSProperties,
   p: { color: "var(--zrd-text-dim)", fontSize: 14, lineHeight: 1.55, margin: "6px 0" } as CSSProperties,
   strongP: { color: "var(--zrd-text)", fontSize: 14, lineHeight: 1.55, margin: "6px 0" } as CSSProperties,
-  chip: { display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 8, padding: "3px 8px", fontSize: 12, fontWeight: 600, background: "rgba(255,107,0,0.12)", color: "#FF6B00" } as CSSProperties,
+  chip: { display: "inline-flex", alignItems: "center", gap: 6, borderRadius: 8, padding: "3px 8px", fontSize: 12, fontWeight: 600, background: "rgba(255,107,0,0.12)", color: "#f68b1f" } as CSSProperties,
 };
 
 function Section({ id, icon, kicker, title, children }: { id: string; icon: ReactNode; kicker: string; title: string; children: ReactNode }) {
   return (
     <section id={id} className="zrd-panel" style={{ padding: 24, scrollMarginTop: 80 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-        <span style={{ display: "inline-flex", width: 38, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 10, background: "rgba(255,107,0,0.14)", color: "#FF6B00", flexShrink: 0 }}>{icon}</span>
+        <span style={{ display: "inline-flex", width: 38, height: 38, alignItems: "center", justifyContent: "center", borderRadius: 10, background: "rgba(255,107,0,0.14)", color: "#f68b1f", flexShrink: 0 }}>{icon}</span>
         <div>
           <div style={S.kicker}>{kicker}</div>
           <h2 style={S.h2}>{title}</h2>
@@ -136,7 +136,7 @@ function AdminNote({ sectionId }: { sectionId: string }) {
           {err && <div style={{ color: "#e85a5a", fontSize: 12, marginTop: 4 }}>{err}</div>}
           <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
             <button type="button" onClick={submit} disabled={busy}
-              style={{ display: "inline-flex", alignItems: "center", gap: 5, borderRadius: 8, border: "none", padding: "6px 12px", fontSize: 12.5, fontWeight: 700, color: "#fff", background: "#FF6B00", cursor: busy ? "wait" : "pointer" }}>
+              style={{ display: "inline-flex", alignItems: "center", gap: 5, borderRadius: 8, border: "none", padding: "6px 12px", fontSize: 12.5, fontWeight: 700, color: "#fff", background: "#f68b1f", cursor: busy ? "wait" : "pointer" }}>
               {busy ? <Loader2 size={13} className="animate-spin" aria-hidden /> : <Save size={13} aria-hidden />} Сохранить
             </button>
             <button type="button" onClick={() => setEditing(false)} disabled={busy}
@@ -157,7 +157,7 @@ function Table({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
         <thead>
           <tr>
             {head.map((h) => (
-              <th key={h} style={{ textAlign: "left", padding: "8px 10px", color: "#FF6B00", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", borderBottom: "1px solid var(--zrd-border)" }}>{h}</th>
+              <th key={h} style={{ textAlign: "left", padding: "8px 10px", color: "#f68b1f", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.08em", borderBottom: "1px solid var(--zrd-border)" }}>{h}</th>
             ))}
           </tr>
         </thead>
@@ -178,7 +178,7 @@ function Table({ head, rows }: { head: string[]; rows: ReactNode[][] }) {
 /** нумерованный маркер-«выноска» для схемы интерфейса */
 function Pin({ n }: { n: number }) {
   return (
-    <span aria-hidden style={{ position: "absolute", top: -9, left: -9, zIndex: 2, display: "inline-flex", width: 22, height: 22, alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "#FF6B00", color: "#fff", fontSize: 12, fontWeight: 800, boxShadow: "0 0 0 2px rgba(0,0,0,0.35)" }}>{n}</span>
+    <span aria-hidden style={{ position: "absolute", top: -9, left: -9, zIndex: 2, display: "inline-flex", width: 22, height: 22, alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "#f68b1f", color: "#fff", fontSize: 12, fontWeight: 800, boxShadow: "0 0 0 2px rgba(0,0,0,0.35)" }}>{n}</span>
   );
 }
 
@@ -267,7 +267,7 @@ export default function ZrdManualPage() {
               style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--zrd-border)", borderRadius: 8, padding: "6px 10px", color: "var(--zrd-text-dim)", fontSize: 13, fontWeight: 600, background: "transparent", cursor: "pointer" }}>
               <ArrowLeft size={15} aria-hidden /> К игре
             </button>
-            <span style={{ display: "inline-flex", width: 32, height: 32, alignItems: "center", justifyContent: "center", borderRadius: 8, background: "rgba(255,107,0,0.14)", color: "#FF6B00" }}><BookOpen size={16} aria-hidden /></span>
+            <span style={{ display: "inline-flex", width: 32, height: 32, alignItems: "center", justifyContent: "center", borderRadius: 8, background: "rgba(255,107,0,0.14)", color: "#f68b1f" }}><BookOpen size={16} aria-hidden /></span>
             <div style={{ lineHeight: 1.15 }}>
               <div style={{ color: "var(--zrd-text)", fontWeight: 800, fontSize: 14 }}>Институт ЗРД · Инструкция</div>
               <div style={{ color: "var(--zrd-text-dim)", fontSize: 11 }}>Правила стратегического матча «Покорение новых территорий»</div>
@@ -382,7 +382,7 @@ export default function ZrdManualPage() {
                         const tick = (q - 1) * 3 + m;
                         const isQEnd = m === 3;
                         return (
-                          <div key={m} style={{ flex: 1, textAlign: "center", borderRadius: 8, padding: "8px 4px", fontSize: 11, fontWeight: 700, color: isQEnd ? "#fff" : "var(--zrd-text)", background: isQEnd ? "#FF6B00" : "var(--zrd-surface-2)", border: "1px solid var(--zrd-border)" }}>
+                          <div key={m} style={{ flex: 1, textAlign: "center", borderRadius: 8, padding: "8px 4px", fontSize: 11, fontWeight: 700, color: isQEnd ? "#fff" : "var(--zrd-text)", background: isQEnd ? "#f68b1f" : "var(--zrd-surface-2)", border: "1px solid var(--zrd-border)" }}>
                             Мес {tick}
                             <div style={{ fontSize: 9, fontWeight: 500, opacity: 0.85 }}>{isQEnd ? "рубеж квартала" : "4 недели"}</div>
                           </div>
@@ -396,7 +396,7 @@ export default function ZrdManualPage() {
             <p style={S.p}>
               <b style={{ color: "var(--zrd-text)" }}>Каждый месяц (такт):</b> добор карт → действия всех столов одновременно →
               бросок чёрного лебедя → прогресс проектов (−4 недели) → месячный доход.
-              На <b style={{ color: "#FF6B00" }}>рубеже квартала</b> (месяцы 3, 6, 9, 12) дополнительно: производство ресурсов
+              На <b style={{ color: "#f68b1f" }}>рубеже квартала</b> (месяцы 3, 6, 9, 12) дополнительно: производство ресурсов
               и показателей, пересмотр целей миссий и каждому столу выдаётся квартальная дилемма.
             </p>
             <p style={S.p}>
@@ -418,7 +418,7 @@ export default function ZrdManualPage() {
                 ["Завершите месяц", "Оранжевая кнопка в центре. После неё — ждём остальных; когда все спасуют (или дедлайн), месяц закрывается и начинается следующий."],
               ].map(([t, d], i) => (
                 <li key={t} style={{ display: "flex", gap: 12, alignItems: "flex-start", border: "1px solid var(--zrd-border)", borderRadius: 12, padding: "10px 12px" }}>
-                  <span style={{ flexShrink: 0, display: "inline-flex", width: 26, height: 26, alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "#FF6B00", color: "#fff", fontWeight: 800, fontSize: 13 }}>{i + 1}</span>
+                  <span style={{ flexShrink: 0, display: "inline-flex", width: 26, height: 26, alignItems: "center", justifyContent: "center", borderRadius: "50%", background: "#f68b1f", color: "#fff", fontWeight: 800, fontSize: 13 }}>{i + 1}</span>
                   <span>
                     <b style={{ color: "var(--zrd-text)", fontSize: 14 }}>{t}.</b>{" "}
                     <span style={{ color: "var(--zrd-text-dim)", fontSize: 13.5, lineHeight: 1.5 }}>{d}</span>

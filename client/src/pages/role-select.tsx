@@ -132,7 +132,7 @@ export default function RoleSelectPage() {
                     <div className="max-h-[80vh] overflow-y-auto custom-scroll p-6">
                       <DialogHeader className="border-b border-[#2a3a4e] pb-4 text-left">
                         <DialogTitle className="flex items-center gap-2 text-xl text-white">
-                          <BookOpen className="h-5 w-5 text-[#FF6B00]" />
+                          <BookOpen className="h-5 w-5 text-[#f68b1f]" />
                           Инструкция для космонавта
                         </DialogTitle>
                         <DialogDescription className="text-sm text-[#8890a8]">

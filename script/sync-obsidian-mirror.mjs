@@ -2,19 +2,24 @@
 // Источник истины — репозиторий (docs/); это зеркало для чтения в Obsidian.
 // Запуск: node script/sync-obsidian-mirror.mjs
 import { cpSync, mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const REPO = 'D:/MyProject/Simulacia Claude/docs';
-const DST = 'D:/MyProject/Obsidian/Pedro78/claude-kb/wiki';
+const REPO = fileURLToPath(new URL('../docs/', import.meta.url));
+const obsidianVault = process.env.OBSIDIAN_VAULT;
+if (!obsidianVault) {
+  throw new Error('Set OBSIDIAN_VAULT to the local Obsidian vault before syncing.');
+}
+const DST = join(obsidianVault, 'claude-kb', 'wiki');
 
 const jobs = [
-  [`${REPO}/zrd-wiki`, `${DST}/zrd/wiki`], // вся ЗРД-wiki (каталог)
-  [`${REPO}/zrd-economy-v1.md`, `${DST}/zrd/zrd-economy-v1.md`],
-  [`${REPO}/zrd-scoring-v1.md`, `${DST}/zrd/zrd-scoring-v1.md`],
-  [`${REPO}/zrd-simulation-plan.md`, `${DST}/zrd/zrd-simulation-plan.md`],
-  [`${REPO}/PROJECT_BRIEF.md`, `${DST}/simcenter/PROJECT_BRIEF.md`],
-  [`${REPO}/ARCHITECTURE.md`, `${DST}/simcenter/ARCHITECTURE.md`],
-  [`${REPO}/MODULE_MAP.md`, `${DST}/simcenter/MODULE_MAP.md`],
+  [join(REPO, 'zrd-wiki'), join(DST, 'zrd', 'wiki')], // вся ЗРД-wiki (каталог)
+  [join(REPO, 'zrd-economy-v1.md'), join(DST, 'zrd', 'zrd-economy-v1.md')],
+  [join(REPO, 'zrd-scoring-v1.md'), join(DST, 'zrd', 'zrd-scoring-v1.md')],
+  [join(REPO, 'zrd-simulation-plan.md'), join(DST, 'zrd', 'zrd-simulation-plan.md')],
+  [join(REPO, 'PROJECT_BRIEF.md'), join(DST, 'simcenter', 'PROJECT_BRIEF.md')],
+  [join(REPO, 'ARCHITECTURE.md'), join(DST, 'simcenter', 'ARCHITECTURE.md')],
+  [join(REPO, 'MODULE_MAP.md'), join(DST, 'simcenter', 'MODULE_MAP.md')],
 ];
 
 let n = 0;

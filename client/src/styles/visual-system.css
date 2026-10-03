@@ -696,7 +696,7 @@
 .dns-auth-mini-chart span {
   min-height: 0.35rem;
   border-radius: 0.2rem 0.2rem 0 0;
-  background: linear-gradient(180deg, #ff9f4f, #ff6b00);
+  background: linear-gradient(180deg, #ff9f4f, #f68b1f);
   opacity: 0.76;
 }
 

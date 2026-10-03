@@ -70,7 +70,7 @@ export default function ZrdGameWorkspace() {
             <ArrowLeft className="h-4 w-4" aria-hidden /> Выход
           </button>
           <div className="flex items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: "rgba(255,107,0,0.14)", color: "#FF6B00" }}>
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg" style={{ background: "rgba(255,107,0,0.14)", color: "#f68b1f" }}>
               <Layers className="h-4 w-4" aria-hidden />
             </span>
             <div className="leading-tight">
@@ -122,7 +122,7 @@ export default function ZrdGameWorkspace() {
             </div>
           )}
           {match.paused && view && !showResults && (
-            <div className="mx-2 mt-2 flex items-center gap-2 rounded-lg px-3 py-2 text-sm" style={{ background: "rgba(255,107,0,0.14)", color: "#FF6B00" }}>
+            <div className="mx-2 mt-2 flex items-center gap-2 rounded-lg px-3 py-2 text-sm" style={{ background: "rgba(255,107,0,0.14)", color: "#f68b1f" }}>
               <PauseCircle className="h-4 w-4" aria-hidden /> Матч на паузе — оценщик скоро продолжит игру.
             </div>
           )}

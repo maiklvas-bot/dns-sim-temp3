@@ -23,7 +23,7 @@ export function ZrdRrsPicker({ view, onPick }: { view: ZrdSeatView; onPick: (rrs
       style={{ background: "rgba(8,12,22,0.78)", backdropFilter: "blur(4px)" }}
       role="dialog" aria-modal="true" aria-label="Выбор РРС">
       <div className="zrd-panel w-full max-w-3xl p-6 text-center" style={{ background: "var(--zrd-surface-2)" }}>
-        <div className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "#FF6B00" }}>
+        <div className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "#f68b1f" }}>
           {view.you.controller.kind === "human" ? view.you.controller.name : ""} · выбор РРС
         </div>
         <h2 className="mb-1 mt-1 text-2xl font-extrabold" style={{ color: "var(--zrd-text)" }}>За какую РРС играете?</h2>
@@ -43,7 +43,7 @@ export function ZrdRrsPicker({ view, onPick }: { view: ZrdSeatView; onPick: (rrs
                 style={{ textAlign: "left" }}
               >
                 <span className="inline-flex items-center gap-1.5 text-sm font-bold" style={{ color: "var(--zrd-text)" }}>
-                  <MapPin className="h-4 w-4" style={{ color: "#FF6B00" }} aria-hidden />
+                  <MapPin className="h-4 w-4" style={{ color: "#f68b1f" }} aria-hidden />
                   {RRS_LABEL[id]}
                 </span>
                 <span className="mt-1 block text-xs leading-relaxed" style={{ color: "var(--zrd-text-dim)" }}>

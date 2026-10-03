@@ -169,6 +169,7 @@ export default function ResultsPage(props: any) {
     strengths,
     weaknesses,
     weakForPlan,
+    redFlags,
     patterns,
     finalMetrics,
   } = report;
@@ -399,7 +400,7 @@ export default function ResultsPage(props: any) {
             </div>
           </div>
           <div className="dns-header-actions">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#FF6B00]/35 bg-[#FF6B00]/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#f68b1f]/35 bg-[#f68b1f]/12 px-4 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-[#ffb27a]">
               <Award className="w-4 h-4" />
               Результаты
             </div>
@@ -559,6 +560,31 @@ export default function ResultsPage(props: any) {
               </div>
             </div>
           </div>
+
+          {/* ═══════════════════════════════════════════
+              КРИТИЧЕСКИЕ ФЛАГИ
+          ═══════════════════════════════════════════ */}
+          {redFlags.length > 0 && (
+            <div className="rounded-xl border p-5 mb-6" style={{ borderColor: DNS_COLORS.error + '70', background: DNS_COLORS.error + '10' }}>
+              <h3 className="text-sm font-semibold uppercase tracking-wider mb-2 flex items-center gap-2" style={{ color: DNS_COLORS.error }}>
+                <AlertTriangle className="w-4 h-4" /> Критические зоны внимания
+              </h3>
+              <p className="text-xs mb-3" style={{ color: DNS_COLORS.textSecondary }}>
+                Балл ниже критического порога 2.0/5. Эти компетенции требуют отдельного разбора и не компенсируются средним результатом профиля.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {redFlags.map((flag) => {
+                  const competency = compScores.find((item) => item.id === flag.id);
+                  return (
+                    <div key={flag.id} className="flex items-center justify-between rounded-lg border px-3 py-2" style={{ borderColor: DNS_COLORS.error + '40', background: DNS_COLORS.error + '08' }}>
+                      <span className="text-xs" style={{ color: DNS_COLORS.textSecondary }}>{competency?.name || flag.id}</span>
+                      <span className="text-sm font-bold tabular-nums" style={{ color: DNS_COLORS.error }}>{flag.score.toFixed(1)}/5</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* ═══════════════════════════════════════════
               PAUSE ENTRIES
@@ -823,7 +849,7 @@ export default function ResultsPage(props: any) {
               <Button
                 onClick={handleRestart}
                 variant="outline"
-                className="border-[#2a3a4e] text-[#a0a0b8] hover:text-white hover:border-[#FF6B00] bg-transparent transition-all"
+                className="border-[#2a3a4e] text-[#a0a0b8] hover:text-white hover:border-[#f68b1f] bg-transparent transition-all"
                 data-testid="button-restart"
               >
                 <RotateCcw className="w-4 h-4 mr-2" /> Новая симуляция

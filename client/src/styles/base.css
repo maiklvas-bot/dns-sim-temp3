@@ -770,7 +770,7 @@
   padding: 0.92rem;
   border: 0;
   border-radius: 0.85rem;
-  background: #ff6b00;
+  background: #f68b1f;
   color: #fff;
   font-size: 1.05rem;
   font-weight: 700;
@@ -1079,7 +1079,6 @@
    (bg-[#hex]/15 у активных вкладок) в светлой теме почти белые: белый текст на
    них не читался. Исключаем их из правила по наличию слеша в классе. */
 .dns-product-shell.dns-theme-light .dns-assessor-v2-primary,
-.dns-product-shell.dns-theme-light button[class*="bg-[#ff6b00"]:not([class*="/"]),
 .dns-product-shell.dns-theme-light button[class*="bg-[#f68b1f"]:not([class*="/"]),
 .dns-product-shell.dns-theme-light button[class*="bg-[#5eb1ff"]:not([class*="/"]) {
   color: #ffffff !important;
@@ -1087,8 +1086,7 @@
 }
 
 /* Активная вкладка на полупрозрачной заливке: текст брендовым тёмно-оранжевым. */
-.dns-product-shell.dns-theme-light button[class*="bg-[#f68b1f]/"],
-.dns-product-shell.dns-theme-light button[class*="bg-[#ff6b00]/"] {
+.dns-product-shell.dns-theme-light button[class*="bg-[#f68b1f]/"] {
   color: #9a4f06 !important;
 }
 
@@ -2213,7 +2211,7 @@
   }
   .zone-orange {
     animation: zone-pulse-orange 1.2s ease-in-out infinite;
-    border-color: #FF6B00;
+    border-color: #f68b1f;
     background: rgba(255, 107, 0, 0.1);
   }
   .zone-red {
@@ -2389,4 +2387,27 @@
   .tabular-nums {
     font-variant-numeric: tabular-nums lining-nums;
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Контраст светлой темы — вне @layer намеренно.
+
+   Эти классы задавались один раз, цветом под тёмный фон, и светлого варианта
+   у них не было вовсе. Замер на живой странице дал 1.81–3.37 при норме AA 4.5:
+   голубой #8ec5ff и оранжевый #ff7a1a на белом не читаются.
+
+   Оранжевый как ЦВЕТ ТЕКСТА на светлом фоне не проходит AA в принципе — даже
+   бренд-оттенки дают 3.6–4.2. Поэтому для текста берётся затемнённый оттенок
+   того же семейства, а сам оранжевый остаётся для заливок, где текст поверх
+   него тёмный. Правила вне слоя, потому что .dns-brand-kicker объявлен внутри
+   @layer components и специфичностью его не перебить.
+   ───────────────────────────────────────────────────────────────────────────── */
+.dns-product-shell.dns-theme-light .dns-brand-kicker {
+  color: #3a3a3a;
+}
+.dns-product-shell.dns-theme-light .dns-assessor-v2-kicker {
+  color: #8a5200;
+}
+.dns-product-shell.dns-theme-light .dns-assessor-v2-rail-title {
+  color: #1a1a1a;
 }

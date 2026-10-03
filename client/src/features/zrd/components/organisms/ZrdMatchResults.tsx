@@ -22,7 +22,7 @@ export function ZrdMatchResults({ view, onLeave }: { view: ZrdSeatView; onLeave:
 
   return (
     <div className="zrd-panel mx-auto max-w-2xl p-6">
-      <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "#FF6B00" }}>Матч завершён</div>
+      <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "#f68b1f" }}>Матч завершён</div>
       <h1 className="mb-1 text-2xl font-extrabold" style={{ color: "var(--zrd-text)" }}>
         {view.winnerSeat == null
           ? "Ничья — даже тай-брейк не разделил лидеров"
@@ -41,7 +41,7 @@ export function ZrdMatchResults({ view, onLeave }: { view: ZrdSeatView; onLeave:
           const missions = o.missionsCompleted.map((id) => getMission(id)?.label ?? id);
           return (
             <div key={seatIdx} className="flex items-center gap-3 rounded-xl border p-3"
-              style={{ borderColor: isYou ? "#FF6B00" : "var(--zrd-border)", background: isYou ? "rgba(255,107,0,0.07)" : undefined }}>
+              style={{ borderColor: isYou ? "#f68b1f" : "var(--zrd-border)", background: isYou ? "rgba(255,107,0,0.07)" : undefined }}>
               <span className="w-6 text-center text-lg font-extrabold" style={{ color: "var(--zrd-text-dim)" }}>{i + 1}</span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 text-sm font-bold" style={{ color: "var(--zrd-text)" }}>
@@ -54,7 +54,7 @@ export function ZrdMatchResults({ view, onLeave }: { view: ZrdSeatView; onLeave:
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-xl font-extrabold" style={{ color: "#FF6B00" }}>{o.tr}</div>
+                <div className="text-xl font-extrabold" style={{ color: "#f68b1f" }}>{o.tr}</div>
                 <div className="text-[10px] uppercase tracking-wide" style={{ color: "var(--zrd-text-dim)" }}>ТР</div>
               </div>
             </div>

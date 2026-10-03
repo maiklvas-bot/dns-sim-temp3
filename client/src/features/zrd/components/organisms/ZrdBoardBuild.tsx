@@ -63,7 +63,7 @@ export function ZrdBoardBuild({ view, openDeck, onToggleDeck, onStandard, onPlay
             onClick={onPass}
             disabled={!canPass}
             className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-xl px-6 py-2.5 text-sm font-extrabold text-white transition-opacity disabled:opacity-40"
-            style={{ background: "#FF6B00", cursor: canPass ? "pointer" : "default", boxShadow: "0 6px 18px rgba(0,0,0,0.5)" }}
+            style={{ background: "#f68b1f", cursor: canPass ? "pointer" : "default", boxShadow: "0 6px 18px rgba(0,0,0,0.5)" }}
             title={view.you.pendingEvent ? "Сначала решите событие квартала" : view.you.passed ? "Ход завершён — ждём остальных" : "Завершить ход месяца"}
           >
             {view.you.passed ? "Ход завершён — ждём остальных" : `Завершить месяц (осталось действий: ${view.you.actionsLeft})`}

@@ -84,7 +84,7 @@ export function ZrdResults({ result, onLeave }: { result: ZrdResultView; onLeave
                 <PolarGrid stroke="rgba(127,140,165,0.35)" />
                 <PolarAngleAxis dataKey="name" tick={{ fill: "var(--zrd-text-dim)", fontSize: 11 }} />
                 <PolarRadiusAxis domain={[0, 5]} tick={{ fill: "var(--zrd-text-dim)", fontSize: 9 }} axisLine={false} />
-                <Radar dataKey="value" stroke="#FF6B00" fill="#FF6B00" fillOpacity={0.32} />
+                <Radar dataKey="value" stroke="#f68b1f" fill="#f68b1f" fillOpacity={0.32} />
               </RadarChart>
             </ResponsiveContainer>
           </div>

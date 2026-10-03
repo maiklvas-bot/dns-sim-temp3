@@ -17,6 +17,6 @@ import captainFigure from "@/assets/brand/zrd/mascots/m4-cut.png";
 export const MASCOT_VISUAL: Record<MascotId, { img: string; figure: string; name: string; style: string; accent: string }> = {
   strateg: { img: strategImg, figure: strategFigure, name: MASCOT_META.strateg.name, style: MASCOT_META.strateg.style, accent: "#8a93a6" },
   media: { img: mediaImg, figure: mediaFigure, name: MASCOT_META.media.name, style: MASCOT_META.media.style, accent: "#2ec4b6" },
-  dispatcher: { img: dispatcherImg, figure: dispatcherFigure, name: MASCOT_META.dispatcher.name, style: MASCOT_META.dispatcher.style, accent: "#FF6B00" },
+  dispatcher: { img: dispatcherImg, figure: dispatcherFigure, name: MASCOT_META.dispatcher.name, style: MASCOT_META.dispatcher.style, accent: "#f68b1f" },
   captain: { img: captainImg, figure: captainFigure, name: MASCOT_META.captain.name, style: MASCOT_META.captain.style, accent: "#f0b429" },
 };

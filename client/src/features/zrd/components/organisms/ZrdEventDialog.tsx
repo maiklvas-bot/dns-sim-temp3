@@ -22,11 +22,11 @@ export function ZrdEventDialog({ event, resources, onChoose }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(8,12,22,0.66)", backdropFilter: "blur(3px)" }} role="dialog" aria-modal="true" aria-labelledby="zrd-event-title">
       <div className="zrd-panel w-full max-w-2xl p-6" style={{ background: "var(--zrd-surface-2)" }}>
         <div className="mb-1 flex items-center gap-2">
-          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: "rgba(255,107,0,0.14)", color: "#FF6B00" }}>
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: "rgba(255,107,0,0.14)", color: "#f68b1f" }}>
             <Zap className="h-5 w-5" aria-hidden />
           </span>
           <div>
-            <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "#FF6B00" }}>Событие квартала</div>
+            <div className="text-[11px] font-bold uppercase tracking-wide" style={{ color: "#f68b1f" }}>Событие квартала</div>
             <h2 id="zrd-event-title" className="text-lg font-extrabold" style={{ color: "var(--zrd-text)" }}>{event.title}</h2>
           </div>
         </div>

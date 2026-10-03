@@ -90,7 +90,7 @@
 Знания живут в **одном месте** — Obsidian-vault `Pedro78`, папка `claude-kb/`.
 
 - **MCP-сервер:** `obsidian`, префикс путей — `Pedro78/`.
-- **Vault на диске:** `D:\MyProject\Obsidian\Pedro78`.
+- **Vault на диске:** `<OBSIDIAN_VAULT>`.
 - **База знаний (единая точка):** `Pedro78/claude-kb/`.
 - **Точка входа:** `Pedro78/claude-kb/INDEX.md` — **читать первой** при работе со знаниями.
 

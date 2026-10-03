@@ -19,7 +19,7 @@ export interface ZrdRrsRegion {
 }
 
 export const ZRD_DIVISION_RRS: ZrdRrsRegion[] = [
-  { id: "ekb", name: "РРС Екатеринбург", accent: "#FF6B00", mascot: BRAND_ASSETS.heroes.alienPoint,
+  { id: "ekb", name: "РРС Екатеринбург", accent: "#f68b1f", mascot: BRAND_ASSETS.heroes.alienPoint,
     cities: ["Екатеринбург", "Каменск-Уральский", "Нижний Тагил", "Первоуральск"] },
   { id: "perm", name: "РРС Пермь", accent: "#4ea8de", mascot: BRAND_ASSETS.heroes.alienObserve,
     cities: ["Пермь", "Березники", "Соликамск", "Чайковский"] },
@@ -40,9 +40,9 @@ export function buildKpis(state: PublicZrdState): ZrdKpi[] {
   return [
     { id: "sales", label: "Рост продаж", value: pct(m.sales), delta: +3, color: "#2ec4b6", derived: true },
     { id: "market", label: "Покрытие рынка", value: pct(m.coverage), delta: +1, color: "#34c3a8", derived: true },
-    { id: "efficiency", label: "Эффективность", value: Math.min(99, 60 + r.tech * 6), delta: -1, color: "#FF6B00", derived: false },
+    { id: "efficiency", label: "Эффективность", value: Math.min(99, 60 + r.tech * 6), delta: -1, color: "#f68b1f", derived: false },
     { id: "service", label: "Уровень сервиса", value: pct(m.nps), delta: +2, color: "#4ea8de", derived: true },
-    { id: "logistics", label: "Логистика", value: Math.min(99, 55 + r.warehouse * 8), delta: -2, color: "#FF6B00", derived: false },
+    { id: "logistics", label: "Логистика", value: Math.min(99, 55 + r.warehouse * 8), delta: -2, color: "#f68b1f", derived: false },
     { id: "staff", label: "Персонал", value: Math.min(99, 60 + r.staff * 5), delta: +1, color: "#2ec4b6", derived: false },
   ];
 }
@@ -50,7 +50,7 @@ export function buildKpis(state: PublicZrdState): ZrdKpi[] {
 // ── Колоды карт по категориям (3 стопки из 5 категорий движка) ─────────────
 export interface ZrdDeck { id: string; label: string; color: string; icon: LucideIcon; categories: CardCategory[] }
 export const ZRD_DECKS: ZrdDeck[] = [
-  { id: "logistics", label: "Логистика", color: "#FF6B00", icon: Boxes, categories: ["infra", "it"] },
+  { id: "logistics", label: "Логистика", color: "#f68b1f", icon: Boxes, categories: ["infra", "it"] },
   { id: "projects", label: "Проекты", color: "#b48cff", icon: Lightbulb, categories: ["marketing", "strategic"] },
   { id: "staff", label: "Сотрудники", color: "#34c3a8", icon: Users, categories: ["hr"] },
 ];

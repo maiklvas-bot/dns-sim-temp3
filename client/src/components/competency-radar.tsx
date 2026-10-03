@@ -114,7 +114,7 @@ export default function CompetencyRadar({ getAverage, size = 320, showExpectedLi
                 y1={center}
                 x2={p.x}
                 y2={p.y}
-                stroke={isActive ? "#FF6B00" : "#2a3a4e"}
+                stroke={isActive ? "#f68b1f" : "#2a3a4e"}
                 strokeWidth={isActive ? 1.75 : 0.5}
                 opacity={isActive ? 0.9 : 0.4}
                 style={{ transition: "stroke 0.15s, stroke-width 0.15s, opacity 0.15s" }}
@@ -194,7 +194,7 @@ export default function CompetencyRadar({ getAverage, size = 320, showExpectedLi
                   cy={p.y}
                   r={12}
                   fill={isActive ? baseColor : "#0F1923"}
-                  stroke={isActive ? "#FF6B00" : baseColor}
+                  stroke={isActive ? "#f68b1f" : baseColor}
                   strokeWidth={isActive ? 2 : 1.5}
                 />
                 <text
@@ -293,7 +293,7 @@ export default function CompetencyRadar({ getAverage, size = 320, showExpectedLi
               onMouseEnter={() => setActive(index)}
               onMouseLeave={() => setActive(prev => (prev === index ? null : prev))}
               className={`flex items-start gap-2 rounded-lg border bg-[#0F1923]/60 px-3 py-2 transition-colors ${
-                isActive ? "border-[#FF6B00]" : "border-[#2a3a4e]"
+                isActive ? "border-[#f68b1f]" : "border-[#2a3a4e]"
               }`}
             >
               {/* Номер компетенции */}

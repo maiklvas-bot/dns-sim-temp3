@@ -736,7 +736,7 @@ export default function DevelopmentPlan({ weakCompetencies }: DevelopmentPlanPro
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {plan.tools.map((tool, ti) => (
-                    <span key={ti} className="px-2 py-0.5 rounded-full text-[10px] bg-[#FF6B00]/10 border border-[#FF6B00]/20 text-[#FF6B00]">
+                    <span key={ti} className="px-2 py-0.5 rounded-full text-[10px] bg-[#f68b1f]/10 border border-[#f68b1f]/20 text-[#f68b1f]">
                       {tool}
                     </span>
                   ))}
@@ -761,8 +761,8 @@ export default function DevelopmentPlan({ weakCompetencies }: DevelopmentPlanPro
             {/* Weeks plan */}
             <div className="p-4 space-y-4">
               {plan.weeks.map((week, wi) => (
-                <div key={wi} className="pl-3 border-l-2 border-[#FF6B00]/40">
-                  <div className="text-xs font-bold text-[#FF6B00] mb-2">{week.period}</div>
+                <div key={wi} className="pl-3 border-l-2 border-[#f68b1f]/40">
+                  <div className="text-xs font-bold text-[#f68b1f] mb-2">{week.period}</div>
                   <div className="space-y-2">
                     <div>
                       <div className="text-[10px] uppercase tracking-wider text-[#555570] mb-1 flex items-center gap-1">

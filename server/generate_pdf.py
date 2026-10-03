@@ -584,6 +584,7 @@ def generate(data: dict) -> bytes:
     metrics       = data.get("finalMetrics", {})
     patterns      = data.get("patterns", [])
     impactful_decisions = data.get("impactfulDecisions", [])
+    red_flags    = data.get("redFlags", [])
     avg_score     = data.get("avgScore", 0.0)
     total_time    = data.get("totalTimeMinutes", 0)
     pauses        = data.get("pauses", [])
@@ -792,6 +793,27 @@ def generate(data: dict) -> bytes:
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
     ]))
     story.append(sw_t)
+
+    if red_flags:
+        story.append(Spacer(1, 6*mm))
+        story.append(Paragraph("Критические зоны внимания", styles["h1"]))
+        story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#e0e0e0"), spaceAfter=6))
+        red_rows = [[
+            Paragraph(comp_map.get(flag.get("id"), {}).get("name", flag.get("id", "—")), styles["body"]),
+            Paragraph(f"{float(flag.get('score', 0)):.1f}/5", ParagraphStyle("rf_score", fontName=FONT_BOLD, fontSize=9, textColor=HexColor("#b71c1c"), alignment=TA_RIGHT)),
+        ] for flag in red_flags]
+        red_t = Table(red_rows, colWidths=[140*mm, 24*mm])
+        red_t.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), HexColor("#fff5f5")),
+            ("GRID", (0, 0), (-1, -1), 0.4, HexColor("#ef9a9a")),
+            ("TEXTCOLOR", (0, 0), (-1, -1), HexColor("#7f1d1d")),
+            ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("LEFTPADDING", (0, 0), (-1, -1), 8),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+        ]))
+        story.append(red_t)
+        story.append(Paragraph("Порог критического флага: ниже 2.0/5. Зона требует отдельного разбора и не компенсируется средним результатом профиля.", ParagraphStyle("rf_note", parent=styles["body"], fontSize=7.5, textColor=HexColor("#7f1d1d"), spaceBefore=4)))
 
     # ══════════════════════════════════════════════════════════════════════════
     # PAGE 3 — Behavioral Patterns + Final Store Metrics (combined)

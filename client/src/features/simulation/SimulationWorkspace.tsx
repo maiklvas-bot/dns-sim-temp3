@@ -151,14 +151,14 @@ export default function SimulationPage() {
       {/* Content */}
       <div className={`relative ${useTabbedPanels ? "z-[60]" : "z-10"} flex flex-col h-full`}>
         {/* HEADER */}
-        <header className="mx-2 mt-2 flex flex-col gap-2 rounded-xl border border-[#FF6B00]/20 bg-[#101826]/88 px-3 py-2 shadow-2xl backdrop-blur-xl md:mx-3 md:flex-row md:items-center md:justify-between md:px-4">
+        <header className="mx-2 mt-2 flex flex-col gap-2 rounded-xl border border-[#f68b1f]/20 bg-[#101826]/88 px-3 py-2 shadow-2xl backdrop-blur-xl md:mx-3 md:flex-row md:items-center md:justify-between md:px-4">
           {/* Left header group */}
           <div className="flex items-center gap-2 md:gap-4 overflow-x-auto">
             {/* Timer */}
             <div className={`flex items-center gap-1 md:gap-1.5 px-2 py-1 md:px-3 rounded-lg flex-shrink-0 ${
               isLowTime ? "bg-[#ff4444]/10 border border-[#ff4444]/30" : "bg-[#1e2a3a] border border-[#2a3a4e]"
             }`}>
-              <Timer className={`w-3.5 h-3.5 md:w-4 md:h-4 ${isLowTime ? "text-[#ff4444] animate-pulse" : "text-[#FF6B00]"}`} />
+              <Timer className={`w-3.5 h-3.5 md:w-4 md:h-4 ${isLowTime ? "text-[#ff4444] animate-pulse" : "text-[#f68b1f]"}`} />
               <span className="hidden sm:inline text-[10px] uppercase tracking-[0.14em] text-[#8b93ab]">До конца</span>
               <span className={`text-xs md:text-sm font-mono font-bold tabular-nums ${isLowTime ? "text-[#ff4444]" : "text-white"}`}>
                 {formatTime(state.timeRemaining)}
@@ -188,9 +188,9 @@ export default function SimulationPage() {
 
             {/* Session code (student) */}
             {mode === "student" && liveSessionConfig && !state.isCompleted && (
-              <div className="flex items-center gap-1.5 rounded-lg border border-[#FF6B00]/30 bg-[#FF6B00]/10 px-2 md:px-3 py-1 flex-shrink-0">
+              <div className="flex items-center gap-1.5 rounded-lg border border-[#f68b1f]/30 bg-[#f68b1f]/10 px-2 md:px-3 py-1 flex-shrink-0">
                 <span className="hidden sm:inline text-[10px] uppercase tracking-[0.14em] text-[#8b93ab]">Код сессии</span>
-                <span className="text-xs font-mono font-bold tabular-nums text-[#FF6B00]">{liveSessionConfig.accessCode}</span>
+                <span className="text-xs font-mono font-bold tabular-nums text-[#f68b1f]">{liveSessionConfig.accessCode}</span>
               </div>
             )}
 
@@ -218,7 +218,7 @@ export default function SimulationPage() {
             {/* Channel counts — desktop only */}
             <div className="hidden items-center gap-2 rounded-xl border border-[#2a3a4e] bg-[#141c2b]/70 px-3 py-2 lg:flex">
               {[
-                { key: "calls", label: "Звонки", count: channelCounts.calls, color: "#FF6B00" },
+                { key: "calls", label: "Звонки", count: channelCounts.calls, color: "#f68b1f" },
                 { key: "email", label: "Почта", count: channelCounts.email, color: "#4a9eff" },
                 { key: "messenger", label: "ТёркоГрамм", count: channelCounts.messenger, color: "#00d4aa" },
                 { key: "video", label: "Видео", count: channelCounts.video, color: "#a78bfa" },
@@ -237,12 +237,12 @@ export default function SimulationPage() {
 
             {/* Pending signals indicator */}
             {pendingSignals > 0 && (
-              <div className="flex items-center gap-1 px-1.5 md:px-2 py-1 rounded bg-[#FF6B00]/10 border border-[#FF6B00]/30 flex-shrink-0">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#FF6B00] animate-pulse" />
-                <span className="text-[10px] text-[#FF6B00] font-medium hidden sm:inline">
+              <div className="flex items-center gap-1 px-1.5 md:px-2 py-1 rounded bg-[#f68b1f]/10 border border-[#f68b1f]/30 flex-shrink-0">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#f68b1f] animate-pulse" />
+                <span className="text-[10px] text-[#f68b1f] font-medium hidden sm:inline">
                   {pendingSignals} сигнал{pendingSignals > 1 ? (pendingSignals < 5 ? "а" : "ов") : ""}
                 </span>
-                <span className="text-[10px] text-[#FF6B00] font-medium sm:hidden">{pendingSignals}</span>
+                <span className="text-[10px] text-[#f68b1f] font-medium sm:hidden">{pendingSignals}</span>
               </div>
             )}
 
@@ -320,7 +320,7 @@ export default function SimulationPage() {
                 onClick={() => setActivePanel(tab.key)}
                 className={`flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-medium transition-all ${
                   isActive
-                    ? "bg-[#FF6B00]/15 border border-[#FF6B00]/40 text-[#FF6B00]"
+                    ? "bg-[#f68b1f]/15 border border-[#f68b1f]/40 text-[#f68b1f]"
                     : "border border-[#2a3a4e]/50 text-[#6a7088] hover:text-[#8890a8] hover:border-[#3a4a5e]"
                 }`}
                 aria-pressed={isActive}

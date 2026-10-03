@@ -335,7 +335,7 @@
 .dns-product-shell.dns-theme-light .dns-assessor-v2-mode-note--active,
 .dns-product-shell.dns-theme-light .dns-assessor-v2-participant-card--active {
   background: rgba(255, 107, 0, 0.14) !important;
-  border-color: #ff6b00 !important;
+  border-color: #f68b1f !important;
   border-width: 2px !important;
   box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.28), 0 10px 26px rgba(255, 107, 0, 0.16) !important;
 }

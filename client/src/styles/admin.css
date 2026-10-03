@@ -51,51 +51,27 @@
    нормализующие --dns-admin-* + ремап доминирующих фонов панелей.
    ============================================================ */
 
-/* Нейтральный серый в кабинете не используется: ни фоны, ни текст, ни границы.
-   Палитра — фирменная: тёмно-синий графит, светлый холодный текст, оранжевый акцент.
-   Все нейтрали (saturation 0%) заменены на синие с той же светлотой. */
+/* Семантические токены кабинет НЕ переопределяет: палитра одна на все роли и
+   живёт в tokens.css по бренд-системе DNS. Раньше здесь стоял свой синий набор,
+   а у оценщика — свой серый Gravity, и два кабинета выглядели как разные
+   продукты. Ниже остаются только собственные токены админки, выровненные
+   по бренду. */
 
-/* — Светлая тема — */
+/* — Светлая тема (Light Retail) — */
 .dns-product-shell.dns-admin-shell.dns-theme-light {
-  --background: 213 40% 98%;
-  --foreground: 214 55% 12%;
-  --card: 0 0% 100%;
-  --card-foreground: 214 55% 12%;
-  --card-border: 213 32% 87%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 214 55% 12%;
-  --popover-border: 213 32% 87%;
-  --muted: 213 40% 96%;
-  --muted-foreground: 214 30% 34%;
-  --secondary: 213 40% 96%;
-  --secondary-foreground: 214 45% 20%;
-  --border: 213 30% 86%;
-  --input: 213 30% 80%;
-  --dns-admin-border: rgba(24, 52, 92, 0.20);
-  --dns-admin-border-soft: rgba(24, 52, 92, 0.12);
-  --dns-admin-text-soft: #0e1c30;
-  --dns-admin-text-muted: #2b4568;
-  --dns-admin-text-dim: #41618c;
+  --dns-admin-border: rgba(26, 26, 26, 0.20);
+  --dns-admin-border-soft: rgba(26, 26, 26, 0.12);
+  --dns-admin-text-soft: #1a1a1a;    /* text/primary */
+  --dns-admin-text-muted: #3a3a3a;   /* text/secondary */
+  --dns-admin-text-dim: #6b6b6b;     /* text/muted */
 }
-/* — Тёмная тема — */
+/* — Тёмная тема (Signature Dark) — */
 .dns-product-shell.dns-admin-shell.dns-theme-dark {
-  --foreground: 213 60% 94%;
-  --card: 214 38% 13%;
-  --card-foreground: 213 60% 94%;
-  --card-border: 214 30% 28%;
-  --popover: 214 38% 13%;
-  --popover-foreground: 213 60% 94%;
-  --popover-border: 214 30% 28%;
-  --muted: 214 34% 18%;
-  --muted-foreground: 213 40% 78%;
-  --secondary: 214 32% 21%;
-  --border: 214 30% 28%;
-  --input: 214 30% 30%;
-  --dns-admin-border: rgba(150, 185, 235, 0.22);
-  --dns-admin-border-soft: rgba(150, 185, 235, 0.14);
-  --dns-admin-text-soft: #eaf1fb;
-  --dns-admin-text-muted: #c6d6ee;
-  --dns-admin-text-dim: #a7bcda;
+  --dns-admin-border: rgba(38, 50, 79, 0.90);
+  --dns-admin-border-soft: rgba(38, 50, 79, 0.55);
+  --dns-admin-text-soft: #eaf0ff;    /* text/primary */
+  --dns-admin-text-muted: #aeb8d4;   /* text/secondary */
+  --dns-admin-text-dim: #6b7699;     /* text/muted */
 }
 
 /* Ремап доминирующих фонов панелей (хардкод-hex) на поверхности темы.
@@ -709,7 +685,7 @@
 
 /* Structural-dynamics admin shell: persistent navigation, focused workspace and action rail. */
 .dns-product-shell .dns-admin-dashboard-shell {
-  --dns-admin-scene-accent: #ff6b00;
+  --dns-admin-scene-accent: #f68b1f;
   --dns-admin-scene-accent-rgb: 255, 107, 0;
   --dns-admin-scene-secondary-rgb: 74, 158, 255;
   display: grid;
@@ -727,7 +703,7 @@
 }
 
 .dns-product-shell .dns-admin-dashboard-shell--cases {
-  --dns-admin-scene-accent: #ff6b00;
+  --dns-admin-scene-accent: #f68b1f;
   --dns-admin-scene-accent-rgb: 255, 107, 0;
   --dns-admin-scene-secondary-rgb: 74, 158, 255;
 }
@@ -919,7 +895,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 0.45rem;
-  background: #ff6b00;
+  background: #f68b1f;
   color: white;
   font-weight: 700;
 }
@@ -1005,7 +981,7 @@
   display: block;
   height: 100%;
   border-radius: inherit;
-  background: linear-gradient(90deg, #ff6b00, #00d4aa);
+  background: linear-gradient(90deg, #f68b1f, #00d4aa);
 }
 
 .dns-product-shell .dns-admin-case-control-stats {
@@ -1047,7 +1023,7 @@
 
 .dns-product-shell .dns-admin-publish-button {
   justify-content: center !important;
-  background: #ff6b00 !important;
+  background: #f68b1f !important;
   color: #fff !important;
 }
 
@@ -1072,7 +1048,7 @@
 
 .dns-product-shell .dns-admin-cycle-final-toggle input {
   margin-top: 0.2rem;
-  accent-color: #ff6b00;
+  accent-color: #f68b1f;
 }
 
 .dns-product-shell .dns-admin-cycle-final-toggle span {
@@ -1133,7 +1109,7 @@
 .dns-admin-shell.dns-theme-light .dns-admin-option-card {
   background: #ffffff !important;
   border-color: rgba(0, 0, 0, 0.09) !important;
-  border-left: 3px solid var(--dns-admin-scene-accent, #ff6b00) !important;
+  border-left: 3px solid var(--dns-admin-scene-accent, #f68b1f) !important;
   box-shadow: 0 2px 8px rgba(20, 34, 56, 0.07);
 }
 .dns-admin-shell.dns-theme-light .dns-admin-option-routing-grid,
@@ -1153,7 +1129,7 @@
 .dns-admin-shell.dns-theme-dark .dns-admin-option-card {
   background: rgba(255, 255, 255, 0.055) !important;
   border-color: rgba(255, 255, 255, 0.12) !important;
-  border-left: 3px solid var(--dns-admin-scene-accent, #ff6b00) !important;
+  border-left: 3px solid var(--dns-admin-scene-accent, #f68b1f) !important;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.28);
 }
 .dns-admin-shell.dns-theme-dark .dns-admin-option-routing-grid,
@@ -1236,7 +1212,7 @@
   font-weight: 700;
   font-size: 0.82rem;
   color: #fff;
-  background: var(--dns-admin-scene-accent, #ff6b00);
+  background: var(--dns-admin-scene-accent, #f68b1f);
   box-shadow: 0 0 0 4px rgba(var(--dns-admin-scene-accent-rgb, 255, 107, 0), 0.18);
 }
 .dns-flow-cycle-body {
@@ -1484,7 +1460,7 @@
 .dns-admin-users-role--admin {
   border-color: rgba(255, 107, 0, 0.45);
   background: rgba(255, 107, 0, 0.12);
-  color: #ff6b00;
+  color: #f68b1f;
 }
 
 .dns-admin-users-state {
@@ -1545,7 +1521,7 @@
   width: 1.1rem;
   height: 1.1rem;
   margin-top: 0.1rem;
-  color: #ff6b00;
+  color: #f68b1f;
 }
 
 .dns-admin-users-access-head div {
@@ -1604,7 +1580,7 @@
   width: 0.85rem;
   height: 0.85rem;
   margin-top: 0.22rem;
-  color: #ff6b00;
+  color: #f68b1f;
 }
 
 .dns-admin-users-access-list--denied li svg {

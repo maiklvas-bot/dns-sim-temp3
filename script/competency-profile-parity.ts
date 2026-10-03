@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import {
   CRITICAL_COMPETENCIES,
   CRITICAL_THRESHOLD,
@@ -80,6 +81,14 @@ assert.equal(communication?.score, 4, "при одном измерении из
 assert.equal(findRedFlags({ control: CRITICAL_THRESHOLD - 0.1 }).length, 1, "ниже порога — флаг");
 assert.equal(findRedFlags({ control: CRITICAL_THRESHOLD }).length, 0, "ровно на пороге флага нет");
 assert.equal(findRedFlags({ flexibility: 0.5 }).length, 0, "некритичная компетенция флага не даёт");
+
+// Расчёт флага без подключения к отчёту бесполезен: он полгода считался
+// и никуда не доходил. Проверяем сам факт вызова, а не только формулу.
+const reportData = readFileSync(new URL("../client/src/lib/report-data.tsx", import.meta.url), "utf8");
+assert.ok(
+  reportData.includes("findRedFlags("),
+  "отчёт не вызывает расчёт красных флагов — комиссия провал по критичной компетенции не увидит",
+);
 
 console.log(
   `competency-profile parity checks passed (${PROFILE_COMPETENCIES.filter((i) => i.measuredBy.length).length} из 14 измеряются, критичных ${CRITICAL_COMPETENCIES.length}, порог ${CRITICAL_THRESHOLD})`,

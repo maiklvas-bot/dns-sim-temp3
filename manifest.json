@@ -1,0 +1,22 @@
+{
+  "name": "DNS SimCenter Hermes Project Rules",
+  "version": "1.0.0",
+  "project_slug": "hermes-dns-sim",
+  "board_slug": "hermes-dns-sim",
+  "primary_repo": "<REPO_ROOT>",
+  "obsidian_worklog": "<OBSIDIAN_WORKLOG>",
+  "files": [
+    ".hermes.md",
+    ".hermes/skills/project-development/SKILL.md",
+    "PROJECT_BRIEF.md",
+    "README_START_HERE.md",
+    "docs/project/HERMES_AUTOMATION.md",
+    "docs/project/HERMES_ROADMAP.md",
+    "docs/project/HERMES_STATE.md",
+    "docs/project/HERMES_TELEGRAM_CONTROL.md",
+    "docs/project/HERMES_SYNC_SNAPSHOT.md",
+    "prompts/BOOTSTRAP_PROJECT.md",
+    "prompts/CONTINUE_PROJECT.md",
+    "templates/TELEGRAM_CHANNEL_OVERRIDE.yaml"
+  ]
+}
