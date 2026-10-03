@@ -1,4 +1,4 @@
-import type { AcceptedIssue, SimCase } from "./simulation-content";
+import type { AcceptedIssue, CaseCheckId, SimCase } from "./simulation-content";
 
 export const BARS_LEVEL_SCORES = { weak: 1, mid: 3, strong: 5 } as const;
 const BARS_SCORE_VALUES: number[] = Object.values(BARS_LEVEL_SCORES);
@@ -7,7 +7,7 @@ const ANTIGAMING_RHO_THRESHOLD = 0.9;
 const ANTIGAMING_LENGTH_RATIO_LIMIT = 2;
 
 export interface CaseValidationIssue {
-  check: "bars_conformance" | "antigaming" | "diagnostics" | "effect_reality";
+  check: CaseCheckId;
   cycleId?: string;
   optionId?: string;
   /**
@@ -159,6 +159,42 @@ function checkDiagnostics(caseInput: SimCase): CaseValidationIssue[] {
   return issues;
 }
 
+/**
+ * Оценки внутри одного варианта обязаны различаться.
+ *
+ * Это и было настоящей поломкой прежнего комплекта: в 91% вариантов всем
+ * компетенциям выставлялось одно и то же число, и был вариант, где двенадцать
+ * компетенций разом получили пятёрку. При такой разметке оценка компетенции
+ * ничего не говорит о компетенции — она просто повторяет, какой это по счёту
+ * вариант в ряду от слабого к сильному, и разбирать на дебрифинге нечего.
+ *
+ * Правило именно про разброс, а не про количество: сокращение списка
+ * компетенций плоскую разметку не лечит — 5/5/5/5 просто станет 5/5/5.
+ */
+function checkScoreSpread(caseInput: SimCase): CaseValidationIssue[] {
+  const issues: CaseValidationIssue[] = [];
+  caseInput.cycles.forEach((cycle) => {
+    cycle.options.forEach((option) => {
+      const scores = Object.values(option.competency_scores || {})
+        .map((value) => Number(value))
+        .filter((value) => Number.isFinite(value));
+      // Одна компетенция разброса иметь не может — там правило неприменимо.
+      if (scores.length < 2) return;
+
+      const distinct = new Set(scores);
+      if (distinct.size === 1) {
+        issues.push({
+          check: "flat_scoring",
+          cycleId: cycle.id,
+          optionId: option.id,
+          message: `Вариант "${option.id}": всем ${scores.length} компетенциям выставлен один балл (${scores[0]}) — оценка повторяет номер варианта, а не описывает поведение. Разведите баллы: сильное по одному, слабое по другому.`,
+        });
+      }
+    });
+  });
+  return issues;
+}
+
 function checkEffectReality(caseInput: SimCase): CaseValidationIssue[] {
   const issues: CaseValidationIssue[] = [];
   caseInput.cycles.forEach((cycle) => {
@@ -184,6 +220,7 @@ function checkEffectReality(caseInput: SimCase): CaseValidationIssue[] {
 export function validateCase(caseInput: SimCase): CaseValidationIssue[] {
   return [
     ...checkBarsConformance(caseInput),
+    ...checkScoreSpread(caseInput),
     ...checkAntigaming(caseInput),
     ...checkDiagnostics(caseInput),
     ...checkEffectReality(caseInput),

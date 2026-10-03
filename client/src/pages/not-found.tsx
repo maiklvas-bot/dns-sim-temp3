@@ -8,12 +8,12 @@ export default function NotFound() {
   return (
     <div className="min-h-dvh flex items-center justify-center bg-background">
       <div className="text-center">
-        <AlertTriangle className="w-12 h-12 text-[#FF6B00] mx-auto mb-4" />
+        <AlertTriangle className="w-12 h-12 text-[#f68b1f] mx-auto mb-4" />
         <h1 className="text-xl font-bold text-foreground mb-2">Страница не найдена</h1>
         <p className="text-sm text-muted-foreground mb-6">Запрошенная страница не существует</p>
         <Button
           onClick={() => navigate("/")}
-          className="bg-[#FF6B00] hover:bg-[#e06000] text-white"
+          className="bg-[#f68b1f] hover:bg-[#e06000] text-white"
         >
           На главную
         </Button>

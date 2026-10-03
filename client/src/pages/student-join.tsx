@@ -98,8 +98,8 @@ export default function StudentJoinPage() {
           </div>
 
           <div className="mb-5 flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#FF6B00]/30 bg-[#FF6B00]/10">
-              <Rocket className="h-6 w-6 text-[#FF6B00]" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#f68b1f]/30 bg-[#f68b1f]/10">
+              <Rocket className="h-6 w-6 text-[#f68b1f]" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Вход космонавта</h1>
@@ -128,7 +128,7 @@ export default function StudentJoinPage() {
             <button
               onClick={handleJoin}
               disabled={isJoining}
-              className="dns-visual-cta-glow rounded-lg border border-[#FF6B00]/45 bg-[#FF6B00] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#e86000] disabled:cursor-not-allowed disabled:opacity-60"
+              className="dns-visual-cta-glow rounded-lg border border-[#f68b1f]/45 bg-[#f68b1f] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#e86000] disabled:cursor-not-allowed disabled:opacity-60"
               data-testid="student-join-live-session"
             >
               {isJoining ? "Подключаем..." : "Войти в сессию"}

@@ -11,22 +11,12 @@
    перекрывает базовые .dns-product-shell .dns-assessor-v2-* (2 класса).
    ============================================================ */
 
-/* — Семантические токены (для shadcn-примитивов и border-border/text-foreground) — */
-.dns-product-shell.dns-assessor-shell.dns-theme-light {
-  --background: 210 20% 98%; --foreground: 0 0% 11%;
-  --card: 0 0% 100%; --card-foreground: 0 0% 11%; --card-border: 220 13% 91%;
-  --popover: 0 0% 100%; --popover-foreground: 0 0% 11%;
-  --muted: 220 14% 96%; --muted-foreground: 0 0% 42%;
-  --secondary: 220 14% 96%; --border: 220 13% 90%; --input: 220 13% 86%;
-  --radius: 0.5rem;
-}
-.dns-product-shell.dns-assessor-shell.dns-theme-dark {
-  --foreground: 0 0% 92%;
-  --card: 220 9% 14%; --card-foreground: 0 0% 92%; --card-border: 0 0% 24%;
-  --popover: 220 9% 14%; --popover-foreground: 0 0% 92%;
-  --muted: 220 8% 18%; --muted-foreground: 0 0% 62%;
-  --secondary: 220 8% 20%; --border: 0 0% 24%; --input: 0 0% 26%; --radius: 0.5rem;
-}
+/* — Семантические токены —
+   Кабинет оценщика их НЕ переопределяет: палитра одна на все роли и живёт
+   в tokens.css по бренд-системе DNS. Раньше здесь стоял отдельный набор
+   Gravity (нейтральный серый и charcoal) плюс свой --radius: 0.5rem против
+   1rem в остальном продукте — из-за этого оценщик и админка выглядели
+   как два разных приложения. */
 
 /* — Тёмная: charcoal-поверхности — */
 .dns-assessor-shell.dns-theme-dark .dns-assessor-v2-rail {
@@ -289,10 +279,13 @@
    выбор — отсюда «клацаешь, а не выделяется». */
 .dns-product-shell.dns-assessor-shell .dns-assessor-v2-choice-card--active,
 .dns-product-shell.dns-assessor-shell .dns-assessor-v2-info-card--active {
-  border-color: var(--dns-orange-hex, #ff6b00) !important;
+  border-color: var(--dns-orange-hex, #f68b1f) !important;
   border-width: 2px !important;
   background: rgba(255, 107, 0, 0.18) !important;
-  transform: scale(1.03);
+  /* Масштаба у выбранной карточки нет намеренно: scale(1.03) поднимал её на 4px
+     над соседями и ряд переставал быть ровным. Выбор и так читается рамкой,
+     заливкой, свечением и отметкой в углу — увеличение ничего не добавляло,
+     а ровность плиток ломало. */
   box-shadow: 0 0 0 2px rgba(255, 107, 0, 0.35), 0 10px 28px rgba(255, 107, 0, 0.22);
   position: relative;
   z-index: 1;
@@ -311,7 +304,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  background: var(--dns-orange-hex, #ff6b00);
+  background: var(--dns-orange-hex, #f68b1f);
   color: #fff;
   font-size: 0.72rem;
   font-weight: 800;
@@ -338,7 +331,7 @@
   border-color: rgba(255, 122, 26, 0.95) !important;
   background: rgba(255, 122, 26, 0.18) !important;
   color: #fff !important;
-  transform: scale(1.03);
+  /* Без scale — по той же причине, что и у карточек выбора выше. */
   box-shadow: 0 0 0 1.5px rgba(255, 122, 26, 0.5), 0 8px 22px rgba(255, 122, 26, 0.22);
 }
 .dns-assessor-shell.dns-theme-light .dns-assessor-v2-mode--active {
@@ -1038,10 +1031,11 @@
   }
 }
 
-/* Assessor v2: final step-driven evaluator workspace. */
-.dns-product-shell .dns-assessor-v2-frame {
-  max-width: min(1220px, calc(100vw - 2rem));
-}
+/* Assessor v2: final step-driven evaluator workspace.
+   Своего ограничения ширины у кабинета нет: он идёт по общей шкале
+   .dns-page-frame, как и админка. Раньше здесь стояло min(1220px, …),
+   ниже по файлу перебитое на 1500px, и на FullHD оценщик был у́же админки
+   на 300px — справа оставалось пустое поле. */
 
 .dns-product-shell .dns-assessor-v2-header {
   margin-bottom: 0;
@@ -1284,8 +1278,24 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+/* Типов симуляции четыре, а колонок было три: четвёртая плитка («ЗРД») висела
+   одна во втором ряду и ряд читался как оборванный. Плюс высоты разъезжались
+   на 3–6px, потому что ряд подстраивался под содержимое каждой плитки.
+   Правило проекта: набор карточек — это равные плитки (auto-rows: 1fr + высота
+   на всю ячейку), а не разнокалиберные блоки. */
 .dns-product-shell .dns-assessor-v2-card-grid--roles {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+}
+
+@media (min-width: 1280px) {
+  .dns-product-shell .dns-assessor-v2-card-grid--roles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.dns-product-shell .dns-assessor-v2-card-grid--roles > * {
+  height: 100%;
 }
 
 .dns-product-shell .dns-assessor-v2-card-grid--scenarios {
@@ -2457,10 +2467,10 @@
   }
 }
 
-/* Assessor workspace TASK-038–041: persistent navigation and dense control center. */
-.dns-product-shell .dns-assessor-v2-frame {
-  max-width: min(1500px, calc(100vw - 1.5rem));
-}
+/* Assessor workspace TASK-038–041: persistent navigation and dense control center.
+   Ограничение ширины снято — см. комментарий выше: кабинет тянется по общей
+   шкале .dns-page-frame (до 2140px на FullHD), иначе на широком мониторе
+   справа зияет пустое поле, а админка рядом заметно шире. */
 
 .dns-product-shell .dns-assessor-v2-header {
   padding-block: 0.8rem;
@@ -2505,7 +2515,7 @@
   flex: 0 0 auto;
   place-items: center;
   border-radius: 0.58rem;
-  background: #ff6b00;
+  background: #f68b1f;
   color: #fff;
   font-size: 0.85rem;
   font-weight: 950;
@@ -2602,7 +2612,7 @@
 }
 
 .dns-product-shell .dns-assessor-v2-rail-profile > span {
-  background: linear-gradient(135deg, #ff6b00, #ff9d4d);
+  background: linear-gradient(135deg, #f68b1f, #ff9d4d);
 }
 
 .dns-product-shell .dns-assessor-v2-rail-footer-button {

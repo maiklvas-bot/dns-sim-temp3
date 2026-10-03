@@ -37,7 +37,7 @@ export default function DecisionJournal() {
                 data-testid={`journal-entry-${idx}`}
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs text-[#FF6B00] font-medium">
+                  <span className="text-xs text-[#f68b1f] font-medium">
                     {d.caseId} • Этап {d.cycle}
                   </span>
                   <span className="text-[11px] text-muted-foreground">{d.simTime}</span>

@@ -35,7 +35,7 @@ export function ZrdProjectCard({ card, onClick, disabled, selected, title }: Pro
       aria-pressed={selected}
       aria-label={`${card.title}. ${cat.label}. Стоимость ${formatCost(card.cost) || "—"}`}
       title={title}
-      style={selected ? { borderColor: "#FF6B00", boxShadow: "0 0 0 2px rgba(255,107,0,0.45)" } : undefined}
+      style={selected ? { borderColor: "#f68b1f", boxShadow: "0 0 0 2px rgba(255,107,0,0.45)" } : undefined}
     >
       <span className="zrd-card__band" style={{ background: cat.color }} />
       <div className="zrd-card__head">

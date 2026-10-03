@@ -54,7 +54,7 @@ export function ZrdRoundBadge({ quarter, tick, deadlineAt, paused }: { quarter: 
       <span className="zrd-round-badge__dt">
         {pad(now.getHours())}:{pad(now.getMinutes())} · {pad(now.getDate())}.{pad(now.getMonth() + 1)}.{now.getFullYear()}
         {timer && (
-          <span style={{ marginLeft: 8, fontWeight: 700, color: urgent ? "#e85a5a" : "#FF6B00" }}>
+          <span style={{ marginLeft: 8, fontWeight: 700, color: urgent ? "#e85a5a" : "#f68b1f" }}>
             ⏱ {timer}
           </span>
         )}

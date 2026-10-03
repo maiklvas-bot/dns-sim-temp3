@@ -92,7 +92,7 @@ export default function MetricsPanel() {
       <div className="mb-3 rounded-2xl border border-border bg-[linear-gradient(180deg,rgba(20,28,43,0.82),rgba(11,18,28,0.9))] px-3 py-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#FF6B00]">Метрики магазина</div>
+            <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#f68b1f]">Метрики магазина</div>
             <div className="mt-1 text-[12px] text-muted-foreground">Живой срез смены по клиентам, людям и операционке</div>
           </div>
           <div className="flex min-w-[102px] flex-col items-center justify-center rounded-2xl border border-border bg-background px-3 py-2 text-center">

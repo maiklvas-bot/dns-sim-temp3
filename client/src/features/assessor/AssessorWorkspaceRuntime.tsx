@@ -585,7 +585,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
   };
 
   const channelInfo = [
-    { key: "audio", label: "Аудиозвонки", icon: Phone, color: "#FF6B00" },
+    { key: "audio", label: "Аудиозвонки", icon: Phone, color: "#f68b1f" },
     { key: "email", label: "Корпоративная почта", icon: Mail, color: "#4a9eff" },
     { key: "messenger", label: "ТёрКограмм", icon: MessageSquare, color: "#00C853" },
     { key: "video", label: "Видеосообщения", icon: Video, color: "#a78bfa" },
@@ -709,7 +709,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         type="button"
         title={copied ? "Скопировано" : "Скопировать"}
         aria-label={`Скопировать код ${code}`}
-        className="dns-assessor-v2-code-button group relative inline-flex items-center gap-1.5 rounded-lg border border-[#4a9eff]/35 bg-[#101826]/90 px-2 py-1 font-mono text-sm font-black tracking-[0.16em] text-white transition-all hover:border-[#ff6b00] hover:bg-[#ff6b00]/12 focus:outline-none focus:ring-2 focus:ring-[#ff6b00]/50"
+        className="dns-assessor-v2-code-button group relative inline-flex items-center gap-1.5 rounded-lg border border-[#4a9eff]/35 bg-[#101826]/90 px-2 py-1 font-mono text-sm font-black tracking-[0.16em] text-white transition-all hover:border-[#f68b1f] hover:bg-[#f68b1f]/12 focus:outline-none focus:ring-2 focus:ring-[#f68b1f]/50"
         onClick={() => copyAccessCode(code)}
       >
         <span>{code}</span>
@@ -1480,7 +1480,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
         <div><span>Идут</span><strong className="text-[#35d38a]">{monitorSessions.filter((item) => item.status === "running").length}</strong></div>
         <div><span>Ожидают</span><strong className="text-[#f5c04e]">{monitorSessions.filter((item) => item.status === "waiting").length}</strong></div>
         <div><span>Завершены</span><strong className="text-[#5eb1ff]">{monitorSessions.filter((item) => item.status === "completed").length}</strong></div>
-        <div><span>Матчи ЗРД</span><strong className="text-[#FF6B00]">{monitorZrdMatches.filter((item) => item.status !== "completed").length}</strong></div>
+        <div><span>Матчи ЗРД</span><strong className="text-[#f68b1f]">{monitorZrdMatches.filter((item) => item.status !== "completed").length}</strong></div>
       </div>}
 
       {!resultsOnly && launchResults.length > 0 && (
@@ -1867,7 +1867,7 @@ export default function AssessorPage({ staffRole = "evaluator" }: AssessorPagePr
                 <Button
                   type="submit"
                   disabled={adminAccessLoading}
-                  className="border border-[#FF6B00] bg-[#FF6B00] text-white hover:bg-[#e06000]"
+                  className="border border-[#f68b1f] bg-[#f68b1f] text-white hover:bg-[#e06000]"
                   data-testid="confirm-admin-access"
                 >
                   {adminAccessLoading ? "Проверка..." : "Перейти"}

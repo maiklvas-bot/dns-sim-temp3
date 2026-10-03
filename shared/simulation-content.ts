@@ -76,8 +76,22 @@ export interface CaseDataPoint {
   costToRequest?: string | null;
 }
 
+/**
+ * Проверки качества кейса — один список на валидатор и на принятые замечания.
+ *
+ * Раньше эти два списка жили отдельно и молча разошлись: добавленную проверку
+ * валидатор возвращал, а принять её было нельзя. Тип объявлен здесь, потому что
+ * валидатор импортирует из этого модуля, а не наоборот.
+ */
+export type CaseCheckId =
+  | "bars_conformance"
+  | "flat_scoring"
+  | "antigaming"
+  | "diagnostics"
+  | "effect_reality";
+
 export interface AcceptedIssue {
-  check: "bars_conformance" | "antigaming" | "diagnostics" | "effect_reality";
+  check: CaseCheckId;
   cycleId?: string | null;
   optionId?: string | null;
   /** Компетенция замечания — различает несколько замечаний у одного варианта. */

@@ -37,7 +37,7 @@ export function ZrdLobby({ onJoinCode, onAdoptSeat, loading, error }: Props) {
 
   return (
     <div className="zrd-panel mx-auto max-w-lg p-6">
-      <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "#FF6B00" }}>Симуляция ЗРД</div>
+      <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "#f68b1f" }}>Симуляция ЗРД</div>
       <h1 className="mb-1 text-2xl font-extrabold" style={{ color: "var(--zrd-text)" }}>Покорение новых территорий</h1>
       <p className="mb-5 text-sm" style={{ color: "var(--zrd-text-dim)" }}>
         Матч 4 РРС Дивизиона Урал: 4 квартала × 3 месячных такта. За столом — люди и ИИ-управленцы;
@@ -62,7 +62,7 @@ export function ZrdLobby({ onJoinCode, onAdoptSeat, loading, error }: Props) {
           onClick={() => onJoinCode(code.trim())}
           disabled={loading || code.trim().length !== 6}
           className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-bold text-white transition-opacity disabled:opacity-50"
-          style={{ background: "#FF6B00", cursor: loading ? "wait" : "pointer" }}
+          style={{ background: "#f68b1f", cursor: loading ? "wait" : "pointer" }}
         >
           <KeyRound className="h-4 w-4" aria-hidden /> {loading ? "Входим…" : "Войти"}
         </button>
@@ -94,7 +94,7 @@ export function ZrdLobby({ onJoinCode, onAdoptSeat, loading, error }: Props) {
         type="button"
         onClick={() => navigate("/zrd/manual")}
         className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-bold"
-        style={{ borderColor: "rgba(255,107,0,0.4)", color: "#FF6B00", cursor: "pointer" }}
+        style={{ borderColor: "rgba(255,107,0,0.4)", color: "#f68b1f", cursor: "pointer" }}
       >
         <BookOpen className="h-4 w-4" aria-hidden /> Инструкция к игре (правила, интерфейс, компетенции)
       </button>

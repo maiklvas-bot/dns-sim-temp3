@@ -1,24 +1,34 @@
 /* client/src/styles/tokens.css
  * Единственный источник правды для цвета/моушена/z-index SimCenter.
- * Канон и происхождение значений: docs/superpowers/specs/2026-07-10-design-system-foundation-design.md
+ *
+ * Значения взяты из бренд-системы DNS (dns-design-system-v2.html):
+ * тёмная — «Signature Dark», светлая — «Light Retail». Hex переведён в HSL,
+ * потому что shadcn-слой ожидает тройку «H S% L%» без функции.
  *
  * Селекторы ниже — НЕ новые: :root уже безусловно тёмный (был так и раньше),
  * .dns-product-shell.dns-theme-light — существующий светлый оверрайд,
- * управляемый хуком useDnsTheme() (client/src/components/brand-access-shell.tsx).
- * Здесь только заменяются ЗНАЧЕНИЯ, механизм переключения не меняется.
+ * управляемый хуком useDnsTheme() (client/src/components/theme-toggle.tsx).
+ * Здесь меняются ЗНАЧЕНИЯ, механизм переключения остаётся прежним.
+ *
+ * Светлая тема бренда построена на нейтральных серых — это осознанное решение
+ * заказчика в пользу канона Figma, оно перекрывает прежнее правило «серый
+ * запрещён», которое писалось до появления бренд-системы.
  */
 
 :root {
   /* ---- Базовый слой: бренд-примитивы (не зависят от темы) ---- */
   --dns-navy: 225 100% 14%;      /* #001145 */
-  --dns-orange: 30 92% 54%;      /* #f68b1f */
-  --dns-blue: 203 66% 49%;       /* #2a91d0 */
-  --dns-teal: 168 100% 36%;      /* #00ba95 */
+  --dns-orange: 30 92% 54%;      /* #F68B1F  accent/primary */
+  --dns-orange-hover: 31 100% 62%; /* #FFA23E  accent/hover */
+  --dns-gold: 41 79% 57%;        /* #E8B23A  accent/premium */
+  --dns-alien: 116 71% 58%;      /* #55E04A  accent/alien, маскот */
+  --dns-blue: 203 66% 49%;       /* #2A91D0  state/info */
+  --dns-teal: 168 100% 36%;      /* #00BA95 */
   --dns-gray: 0 0% 31%;          /* #505050 */
-  --dns-success: 148 48% 43%;    /* #38a169 */
-  --dns-warning: 45 100% 55%;    /* #f6ad55, согласовано с --chart-3 */
+  --dns-success: 152 69% 52%;    /* #2FD98A */
+  --dns-warning: 40 67% 51%;     /* #D69E2E */
   --dns-info: 203 66% 49%;       /* = --dns-blue */
-  --dns-error: 0 76% 57%;        /* #e53e3e */
+  --dns-error: 0 76% 57%;        /* #E53E3E */
 
   /* ---- Моушен (тема-независимый) ---- */
   --duration-fast: 150ms;
@@ -34,87 +44,107 @@
   --z-toast: 60;
   --z-tooltip: 70;
 
-  /* ---- Семантика: ТЁМНАЯ тема (default) ---- */
-  --background: 225 40% 8%;
-  --foreground: 210 35% 93%;
-  --border: 220 24% 26%;
-  --input: 220 24% 26%;
+  /* ---- Семантика: ТЁМНАЯ тема Signature Dark (default) ---- */
+  --background: 225 50% 8%;      /* #0A0F1E  bg/body */
+  --foreground: 223 100% 96%;    /* #EAF0FF  text/primary */
+  --border: 222 35% 23%;         /* #26324F  border/subtle */
+  --input: 222 35% 23%;
 
-  --card: 224 35% 13%;
-  --card-foreground: 210 35% 93%;
-  --card-border: 220 24% 26%;
+  --card: 224 44% 10%;           /* #0E1424  surface/panel */
+  --card-foreground: 223 100% 96%;
+  --card-border: 222 35% 23%;
 
-  --sidebar: 226 42% 11%;
-  --sidebar-foreground: 0 0% 90%;
-  --sidebar-border: 220 24% 20%;
+  --sidebar: 233 47% 4%;         /* #05060E  bg/base */
+  --sidebar-foreground: 224 31% 76%;   /* #AEB8D4  text/secondary */
+  --sidebar-border: 222 35% 23%;
   --sidebar-primary: 30 92% 54%;
-  --sidebar-primary-foreground: 0 0% 100%;
-  --sidebar-accent: 222 26% 19%;
-  --sidebar-accent-foreground: 0 0% 90%;
+  --sidebar-primary-foreground: 233 47% 4%;
+  --sidebar-accent: 223 43% 13%;       /* #131B30  surface/raised */
+  --sidebar-accent-foreground: 223 100% 96%;
   --sidebar-ring: 30 92% 54%;
 
-  --popover: 224 35% 13%;
-  --popover-foreground: 210 35% 93%;
-  --popover-border: 220 24% 26%;
+  --popover: 224 44% 10%;
+  --popover-foreground: 223 100% 96%;
+  --popover-border: 222 35% 23%;
 
-  --primary: 30 92% 54%;
-  --primary-foreground: 0 0% 100%;
+  --primary: 30 92% 54%;         /* #F68B1F */
+  --primary-foreground: 233 47% 4%;    /* тёмный текст на оранжевом — так в бренд-системе */
 
-  --secondary: 222 28% 17%;
-  --secondary-foreground: 0 0% 88%;
+  --secondary: 223 43% 13%;      /* #131B30  surface/raised */
+  --secondary-foreground: 223 100% 96%;
 
-  --muted: 222 22% 17%;
-  --muted-foreground: 225 15% 60%;
+  --muted: 223 43% 13%;
+  --muted-foreground: 226 18% 51%;     /* #6B7699  text/muted */
 
-  --accent: 222 26% 19%;
-  --accent-foreground: 0 0% 88%;
+  --accent: 223 43% 13%;
+  --accent-foreground: 223 100% 96%;
 
-  --destructive: 0 76% 57%;
-  --destructive-foreground: 0 0% 100%;
+  --destructive: 0 76% 57%;      /* #E53E3E */
+  --destructive-foreground: 223 100% 96%;
 
   --ring: 30 92% 54%;
 
-  --chart-1: 30 92% 54%;
-  --chart-2: 168 100% 36%;
-  --chart-3: 45 100% 55%;
-  --chart-4: 203 66% 49%;
-  --chart-5: 0 76% 57%;
+  --chart-1: 30 92% 54%;         /* оранжевый  */
+  --chart-2: 152 69% 52%;        /* зелёный    */
+  --chart-3: 41 79% 57%;         /* золото     */
+  --chart-4: 203 66% 49%;        /* синий      */
+  --chart-5: 0 76% 57%;          /* красный    */
 
   --radius: 1rem;
 }
 
-/* ---- Семантика: СВЕТЛАЯ тема (оверрайд) ---- */
+/* ---- Семантика: СВЕТЛАЯ тема Light Retail (оверрайд) ---- */
 .dns-product-shell.dns-theme-light {
-  --background: 210 40% 98%;
-  --foreground: 213 43% 14%;
-  --border: 214 28% 80%;
-  --input: 214 26% 82%;
+  --background: 43 30% 95%;      /* #F7F5F0  bg/canvas */
+  --foreground: 0 0% 10%;        /* #1A1A1A  text/primary */
+  --border: 45 17% 82%;          /* #D8D4C8  border/subtle */
+  --input: 45 17% 82%;
 
-  --card: 0 0% 100%;
-  --card-foreground: 213 43% 14%;
-  --card-border: 214 30% 80%;
+  --card: 0 0% 100%;             /* #FFFFFF  bg/surface */
+  --card-foreground: 0 0% 10%;
+  --card-border: 45 17% 82%;
 
   --popover: 0 0% 100%;
-  --popover-foreground: 213 43% 14%;
-  --popover-border: 214 30% 80%;
+  --popover-foreground: 0 0% 10%;
+  --popover-border: 45 17% 82%;
 
-  --secondary: 214 36% 94%;
-  --secondary-foreground: 213 43% 18%;
+  --secondary: 47 20% 91%;       /* #EDEBE4  surface/raised */
+  --secondary-foreground: 0 0% 23%;    /* #3A3A3A  text/secondary */
 
-  --muted: 214 32% 92%;
-  --muted-foreground: 212 19% 39%;
+  --muted: 47 20% 91%;
+  --muted-foreground: 0 0% 42%;        /* #6B6B6B  text/muted */
 
-  --accent: 214 40% 92%;
-  --accent-foreground: 213 43% 18%;
+  --accent: 47 20% 91%;
+  --accent-foreground: 0 0% 23%;
 
-  --sidebar: 210 40% 97%;
-  --sidebar-foreground: 213 30% 22%;
-  --sidebar-border: 214 28% 82%;
-  --sidebar-accent: 214 36% 92%;
-  --sidebar-accent-foreground: 213 43% 18%;
+  --sidebar: 47 20% 91%;
+  --sidebar-foreground: 0 0% 23%;
+  --sidebar-border: 45 17% 82%;
+  --sidebar-accent: 43 30% 95%;
+  --sidebar-accent-foreground: 0 0% 10%;
 
-  /* --primary/--destructive не переопределяются — наследуются из :root
-     (подтверждено: текущий светлый блок base.css:885-908 их тоже не переопределял) */
+  /* Светлая тема бренда живёт на жёлтом, а не на оранжевом. Жёлтый требует
+     тёмного текста поверх: белый на #FFCC00 нечитаем. */
+  --primary: 48 100% 50%;        /* #FFCC00  accent/primary */
+  --primary-foreground: 0 0% 10%;
+  --sidebar-primary: 48 100% 50%;
+  --sidebar-primary-foreground: 0 0% 10%;
+  --ring: 34 100% 45%;           /* #E68400  accent/dark — на светлом фоне заметнее жёлтого */
+  --sidebar-ring: 34 100% 45%;
+
+  /* Состояния светлой темы темнее: на белом фоне тёмные оттенки читаются,
+     а неоновые из тёмной темы теряются. */
+  --dns-success: 120 39% 30%;    /* #2F6B2F */
+  --dns-warning: 36 100% 35%;    /* #B26A00 */
+  --dns-error: 0 53% 35%;        /* #8A2A2A */
+  --destructive: 0 53% 35%;
+  --destructive-foreground: 0 0% 100%;
+
+  --chart-1: 34 100% 45%;        /* #E68400 */
+  --chart-2: 120 39% 30%;        /* #2F6B2F */
+  --chart-3: 36 100% 35%;        /* #B26A00 */
+  --chart-4: 203 66% 39%;
+  --chart-5: 0 53% 35%;          /* #8A2A2A */
 
   --radius: 1rem;
 }

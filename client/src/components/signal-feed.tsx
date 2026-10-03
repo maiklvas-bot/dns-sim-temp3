@@ -54,7 +54,7 @@ export default function SignalFeed() {
   }, [state.actionPanelSource]);
 
   const tabs = [
-    { key: "signals" as Tab, label: "Звонки", icon: Phone, count: visibleChannelCounts.calls, color: "#FF6B00", enabled: true },
+    { key: "signals" as Tab, label: "Звонки", icon: Phone, count: visibleChannelCounts.calls, color: "#f68b1f", enabled: true },
     { key: "email" as Tab, label: "Почта", icon: Mail, count: visibleChannelCounts.email, color: "#4a9eff", enabled: state.enabledChannels.email },
     { key: "messenger" as Tab, label: "ТёркоГрамм", icon: MessageSquare, count: visibleChannelCounts.messenger, color: "#00d4aa", enabled: state.enabledChannels.messenger },
     { key: "video" as Tab, label: "Видео", icon: Video, count: visibleChannelCounts.video, color: "#a78bfa", enabled: state.enabledChannels.video },
@@ -143,7 +143,7 @@ export default function SignalFeed() {
                         dispatch({ type: "SELECT_SIGNAL", payload: signal.id });
                       }}
                       className={`w-full text-left rounded-lg border transition-all cursor-pointer overflow-hidden flex items-stretch ${
-                        isSelected ? "border-[#FF6B00] bg-[#FF6B00]/8" : "border-border bg-card/60 hover:border-border"
+                        isSelected ? "border-[#f68b1f] bg-[#f68b1f]/8" : "border-border bg-card/60 hover:border-border"
                       }`}
                       data-testid={`signal-${signal.id}`}
                     >
@@ -205,7 +205,7 @@ export default function SignalFeed() {
                       {currentSignal.audioUrl && (
                         <button
                           onClick={handleReplayAudio}
-                          className="inline-flex items-center gap-1 rounded-full border border-[#FF6B00]/35 bg-[#1a2435] px-2.5 py-1 text-[11px] font-semibold text-[#FFD19B] transition-all hover:border-[#FF6B00] hover:text-white"
+                          className="inline-flex items-center gap-1 rounded-full border border-[#f68b1f]/35 bg-[#1a2435] px-2.5 py-1 text-[11px] font-semibold text-[#FFD19B] transition-all hover:border-[#f68b1f] hover:text-white"
                         >
                           <RotateCcw className="w-3 h-3" />
                           <Volume2 className="w-3 h-3" />

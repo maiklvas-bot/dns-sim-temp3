@@ -12,7 +12,7 @@ import {
 import type { ResourceKey, MetricKey, CardCategory, StrategyKey, Effects } from "@shared/zrd/types";
 
 export const RESOURCE_META: Record<ResourceKey, { label: string; short: string; icon: LucideIcon; color: string }> = {
-  capital: { label: "Капитал", short: "К", icon: Coins, color: "#FF6B00" },
+  capital: { label: "Капитал", short: "К", icon: Coins, color: "#f68b1f" },
   staff: { label: "Персонал", short: "П", icon: Users, color: "#2ec4b6" },
   tech: { label: "Технологии", short: "Т", icon: Cpu, color: "#4ea8de" },
   warehouse: { label: "Склады", short: "С", icon: Warehouse, color: "#b48cff" },
@@ -26,7 +26,7 @@ export const METRIC_META: Record<MetricKey, { label: string; short: string; icon
 };
 
 export const CATEGORY_META: Record<CardCategory, { label: string; icon: LucideIcon; color: string }> = {
-  infra: { label: "Инфраструктура", icon: Building2, color: "#FF6B00" },
+  infra: { label: "Инфраструктура", icon: Building2, color: "#f68b1f" },
   hr: { label: "Персонал", icon: GraduationCap, color: "#2ec4b6" },
   marketing: { label: "Маркетинг", icon: Megaphone, color: "#ffb703" },
   it: { label: "IT", icon: Database, color: "#4ea8de" },
@@ -35,7 +35,7 @@ export const CATEGORY_META: Record<CardCategory, { label: string; icon: LucideIc
 
 export const STRATEGY_META: Record<StrategyKey, { label: string; tagline: string; bonus: string; color: string; icon: LucideIcon }> = {
   service: { label: "Сервис", tagline: "Лояльность клиентов превыше всего", bonus: "+1 ТР за каждый NPS сверх порога", color: "#34c3a8", icon: Heart },
-  expansion: { label: "Экспансия", tagline: "Захват территории и присутствие", bonus: "+1 ТР за каждый Охват сверх порога", color: "#FF6B00", icon: MapPin },
+  expansion: { label: "Экспансия", tagline: "Захват территории и присутствие", bonus: "+1 ТР за каждый Охват сверх порога", color: "#f68b1f", icon: MapPin },
   efficiency: { label: "Эффективность", tagline: "Сильный движок и резерв ресурсов", bonus: "+2 ТР за резерв ресурсов ≥ 30", color: "#4ea8de", icon: Cpu },
 };
 

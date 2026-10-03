@@ -581,6 +581,11 @@ const pdfImpactfulDecisionSchema = z.object({
   impactMagnitude: pdfNumberSchema.optional().default(0),
 }).strict();
 
+const pdfRedFlagSchema = z.object({
+  id: pdfSafeText(120),
+  score: pdfScoreSchema,
+}).strict();
+
 export const pdfExportSchema = z.object({
   sessionId: z.number().int().positive().optional(),
   participantName: pdfSafeText(100).optional().default(""),
@@ -597,6 +602,7 @@ export const pdfExportSchema = z.object({
   verdict: pdfVerdictSchema.optional().default({}),
   retestDate: pdfSafeText(120).optional().default(""),
   impactfulDecisions: z.array(pdfImpactfulDecisionSchema).max(100).optional().default([]),
+  redFlags: z.array(pdfRedFlagSchema).max(20).optional().default([]),
 }).strict();
 
 /** «Отправить обратную связь на почту» — итоги/отчёт участнику, PDF формируется на сервере из того же payload, что и /api/export-pdf. */

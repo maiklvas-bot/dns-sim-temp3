@@ -7,11 +7,11 @@ import { affordable } from "../../zrd-match-board";
 import { ZrdTip } from "./ZrdTip";
 
 const ACTIONS: { action: StandardAction; label: string; icon: LucideIcon; color: string; desc: string }[] = [
-  { action: "improve_logistics", label: "Улучшить логистику", icon: Truck, color: "#FF6B00",
+  { action: "improve_logistics", label: "Улучшить логистику", icon: Truck, color: "#f68b1f",
     desc: "Развивает склад и доставку: +производство склада каждый квартал. Тратит действие месяца и финансы." },
   { action: "open_basic", label: "Открыть магазин", icon: Store, color: "#4ea8de",
     desc: "Новая базовая точка: +охват сети РРС. Тратит действие месяца и финансы." },
-  { action: "improve_service", label: "Усилить сервис", icon: Headset, color: "#FF6B00",
+  { action: "improve_service", label: "Усилить сервис", icon: Headset, color: "#f68b1f",
     desc: "Повышает уровень сервиса (NPS) РРС. Тратит действие месяца и финансы." },
   { action: "promo", label: "Маркетинг и реклама", icon: Megaphone, color: "#4ea8de",
     desc: "Промо-акция: +продажи. Тратит действие месяца и финансы." },

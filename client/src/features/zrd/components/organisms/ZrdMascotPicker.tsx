@@ -27,7 +27,7 @@ export function ZrdMascotPicker({ playerName, onComplete }: { playerName: string
         style={{ background: "rgba(8,12,22,0.78)", backdropFilter: "blur(4px)" }}
         role="dialog" aria-modal="true" aria-label="Корпоративная почта">
         <div className="zrd-panel w-full max-w-md p-6 text-center" style={{ background: "var(--zrd-surface-2)" }}>
-          <div className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "#FF6B00" }}>
+          <div className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "#f68b1f" }}>
             {playerName} · последний шаг
           </div>
           <h2 className="mb-1 mt-1 text-xl font-extrabold" style={{ color: "var(--zrd-text)" }}>Корпоративная почта</h2>
@@ -47,7 +47,7 @@ export function ZrdMascotPicker({ playerName, onComplete }: { playerName: string
           <div className="mt-5 flex justify-center gap-3">
             <button type="button" onClick={submit} disabled={!valid || submitting}
               className="rounded-xl px-6 py-2.5 text-sm font-extrabold text-white disabled:opacity-40"
-              style={{ background: "#FF6B00", cursor: valid ? "pointer" : "default" }}>
+              style={{ background: "#f68b1f", cursor: valid ? "pointer" : "default" }}>
               {email.trim() ? "Продолжить" : "Пропустить и начать"}
             </button>
           </div>
@@ -61,7 +61,7 @@ export function ZrdMascotPicker({ playerName, onComplete }: { playerName: string
       style={{ background: "rgba(8,12,22,0.78)", backdropFilter: "blur(4px)" }}
       role="dialog" aria-modal="true" aria-label="Выбор фигурки">
       <div className="zrd-panel w-full max-w-4xl p-6 text-center" style={{ background: "var(--zrd-surface-2)" }}>
-        <div className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "#FF6B00" }}>
+        <div className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "#f68b1f" }}>
           {playerName} · выбор фигурки
         </div>
         <h2 className="mb-1 mt-1 text-2xl font-extrabold" style={{ color: "var(--zrd-text)" }}>Кем играете?</h2>

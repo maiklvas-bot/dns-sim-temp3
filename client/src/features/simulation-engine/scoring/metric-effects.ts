@@ -66,7 +66,12 @@ export function applyMetricEffects(
   const nextAvgCheck = Math.round(metrics.avgCheck + effects.conversion * 80 * weights.avgCheck * diffMod + effects.revenue_impact * 12 * weights.avgCheck);
   const nextConversion = Math.round(metrics.conversion + effects.conversion * weights.conversion * diffMod - effects.queue * 0.15 * weights.conversion);
   const nextClientRating = Math.round((metrics.nps + effects.delivery_status * 0.08 * weights.nps + effects.morale * 0.006 * weights.nps) * 100) / 100;
-  const nextPickupSpeed = Math.round(metrics.pickupSpeed + effects.queue * -0.35 * weights.pickupSpeed + effects.delivery_status * -0.12 * weights.pickupSpeed);
+  // pickupSpeed измеряется в МИНУТАХ ожидания: меньше — лучше (зелёная зона ≤10).
+  // Знак у queue был перевёрнут: растущий затор вычитал минуты, и система рисовала
+  // «выдача ускорилась» там, где очередь выросла — в том числе на худшем варианте
+  // кейса. Во всей остальной модели положительный queue — это затор: он снижает
+  // покупателей, конверсию и мораль и повышает загрузку склада.
+  const nextPickupSpeed = Math.round(metrics.pickupSpeed + effects.queue * 0.35 * weights.pickupSpeed + effects.delivery_status * -0.12 * weights.pickupSpeed);
   const nextWarehouseLoad = Math.round(metrics.warehouseLoad + effects.delivery_status * -3 * weights.warehouseLoad + effects.queue * 0.2 * weights.warehouseLoad);
   const nextTeamMorale = Math.round((metrics.teamMorale + effects.morale / 10 * weights.teamMorale + effects.queue * -0.01 * weights.teamMorale) * 10) / 10;
   const nextDailyRevenue = Math.round(metrics.dailyRevenue + (effects.revenue_impact * 45 + effects.conversion * 10) * weights.dailyRevenue * diffMod);

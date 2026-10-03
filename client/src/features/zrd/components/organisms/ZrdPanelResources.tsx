@@ -8,9 +8,9 @@ import { ZrdTip } from "./ZrdTip";
 const RESOURCES: { key: keyof Resources; label: string; icon: LucideIcon; tile: string; fill: string; scale: number; desc: string }[] = [
   { key: "capital",   label: "Финансы",    icon: RussianRuble, tile: "#C8901E", fill: "#5BBF3A", scale: 50,
     desc: "Деньги РРС. Оплачивают карты, действия и найм. Пополняются месячным доходом и квартальным производством." },
-  { key: "staff",     label: "Люди",       icon: Users,        tile: "#E0701A", fill: "#FF6B00", scale: 6,
+  { key: "staff",     label: "Люди",       icon: Users,        tile: "#E0701A", fill: "#f68b1f", scale: 6,
     desc: "Персонал точек и склада. Нужен для проектов и сервиса; производство даёт прирост каждый квартал." },
-  { key: "warehouse", label: "Материалы",  icon: Package,      tile: "#D9772A", fill: "#FF6B00", scale: 6,
+  { key: "warehouse", label: "Материалы",  icon: Package,      tile: "#D9772A", fill: "#f68b1f", scale: 6,
     desc: "Складские запасы и товар. Держат продажи и логистику; нехватка усиливает урон от сбоев и лебедей." },
   { key: "tech",      label: "Технологии", icon: Cpu,          tile: "#2E78C7", fill: "#FF8C1A", scale: 6,
     desc: "Технологическая база. Повышает эффективность и открывает продвинутые карты." },

@@ -7,7 +7,7 @@ const ORDER: StrategyKey[] = ["service", "expansion", "efficiency"];
 export function ZrdGoalDeclaration({ onDeclare }: { onDeclare: (s: StrategyKey) => void }) {
   return (
     <div className="zrd-panel mx-auto max-w-4xl p-6">
-      <div className="mb-1 text-center text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "#FF6B00" }}>Начало партии</div>
+      <div className="mb-1 text-center text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "#f68b1f" }}>Начало партии</div>
       <h2 className="mb-1 text-center text-2xl font-extrabold" style={{ color: "var(--zrd-text)" }}>Объявите цель развития региона</h2>
       <p className="mb-6 text-center text-sm" style={{ color: "var(--zrd-text-dim)" }}>
         Стратегия даёт бонус к итоговому рейтингу и оценивает последовательность ваших решений.

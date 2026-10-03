@@ -176,7 +176,7 @@ export function FeedbackButton({ className, size = "default" }: { className?: st
                 type="button"
                 onClick={handleSubmit}
                 disabled={status === "sending" || status === "sent" || message.trim().length < 5}
-                className="bg-[#FF6B00] text-white hover:bg-[#FF6B00]/90"
+                className="bg-[#f68b1f] text-white hover:bg-[#f68b1f]/90"
               >
                 <Send className="mr-2 h-4 w-4" />
                 {status === "sending" ? "Отправка…" : status === "sent" ? "Отправлено" : "Отправить"}

@@ -276,4 +276,56 @@ assert.equal(
   "вторая компетенция того же варианта остаётся с замечанием",
 );
 
+// ── Разброс оценок внутри варианта ──────────────────────────────────────────
+// Настоящая поломка прежнего комплекта: в 91% вариантов всем компетенциям
+// выставлялось одно число, и оценка компетенции просто повторяла номер
+// варианта. Правило именно про разброс, а не про количество компетенций:
+// сокращение списка плоскую разметку не лечит.
+
+const flatCase = buildCase();
+flatCase.cycles[0].options[0].competency_scores = { planning: 5, communication: 5, control: 5 };
+const flatIssues = validateCase(flatCase).filter((issue) => issue.check === "flat_scoring");
+assert.equal(flatIssues.length, 1, "три одинаковые пятёрки в одном варианте — одно замечание");
+assert.equal(flatIssues[0].optionId, "O1", "замечание адресовано конкретному варианту");
+
+// Разведённая разметка — то, как должно быть. Пример живого решения:
+// «раздал участки сам, открылись вовремя» — сильное планирование, слабая коммуникация.
+const spreadCase = buildCase();
+spreadCase.cycles[0].options[0].competency_scores = { planning: 5, control: 5, communication: 1, delegation: 1 };
+assert.equal(
+  validateCase(spreadCase).filter((issue) => issue.check === "flat_scoring").length,
+  0,
+  "сильное по одному и слабое по другому — замечания нет",
+);
+
+// Одна компетенция разброса иметь не может: правило к ней неприменимо,
+// иначе любой однокомпетентностный кейс стал бы незаконным.
+const singleCompetency = buildCase();
+singleCompetency.cycles[0].options[0].competency_scores = { planning: 5 };
+assert.equal(
+  validateCase(singleCompetency).filter((issue) => issue.check === "flat_scoring").length,
+  0,
+  "одна компетенция — правило неприменимо",
+);
+
+// Фикстура антигейминга размечена плоско во всех трёх вариантах — это ровно та
+// болезнь, ради которой правило вводилось. Закреплено, чтобы правило не ослабили молча.
+assert.equal(
+  validateCase(antigamingCase).filter((issue) => issue.check === "flat_scoring").length,
+  3,
+  "лестница 1/1 → 3/3 → 5/5 плоская в каждом варианте",
+);
+
+// Замечание блокирует выпуск кейса, но принимается адресно с обоснованием.
+const flatAccepted: AcceptedIssue[] = [
+  {
+    check: "flat_scoring",
+    cycleId: flatIssues[0].cycleId,
+    optionId: flatIssues[0].optionId,
+    reason: "здесь все три компетенции действительно проявлены одинаково сильно",
+  },
+];
+assert.equal(isIssueAccepted(flatIssues[0], flatAccepted), true, "принятие с обоснованием снимает замечание");
+assert.equal(isIssueAccepted(flatIssues[0], []), false, "без принятия замечание остаётся");
+
 console.log("case-validation parity checks passed");

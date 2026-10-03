@@ -129,9 +129,9 @@ const CAPITAL: Axial = { q: 0, r: 0 };
 
 // ── постройки из сыгранных карт ─────────────────────────────────────────────
 const BUILDING_BY_ANCHOR: Record<string, { icon: LucideIcon; label: string; color: string }> = {
-  pj_open_store: { icon: Store, label: "Магазин", color: "#FF6B00" },
-  pj_pickup: { icon: Store, label: "Пункт выдачи", color: "#FF6B00" },
-  pj_new_loc: { icon: Store, label: "Новая локация", color: "#FF6B00" },
+  pj_open_store: { icon: Store, label: "Магазин", color: "#f68b1f" },
+  pj_pickup: { icon: Store, label: "Пункт выдачи", color: "#f68b1f" },
+  pj_new_loc: { icon: Store, label: "Новая локация", color: "#f68b1f" },
   pj_warehouse: { icon: Warehouse, label: "Склад", color: "#b48cff" },
   lg_warehouse: { icon: Warehouse, label: "Склад", color: "#b48cff" },
   gd_storage: { icon: Warehouse, label: "Склад", color: "#b48cff" },
@@ -252,7 +252,7 @@ function DistrictBlock({ data, interactive }: { data: BlockData; interactive: bo
             key={key}
             d={hexPath(b, corners, c, 0.85)}
             fill={lit ? "rgba(255,196,90,0.16)" : "rgba(6,10,18,0.30)"}
-            stroke={canStep ? "#FF6B00" : lit ? "rgba(255,196,90,0.6)" : "rgba(120,140,170,0.25)"}
+            stroke={canStep ? "#f68b1f" : lit ? "rgba(255,196,90,0.6)" : "rgba(120,140,170,0.25)"}
             strokeWidth={canStep ? 3.5 : 1.4}
             strokeDasharray={canStep ? "9 7" : undefined}
             style={{ cursor: canStep ? "pointer" : "default", transition: "fill 300ms ease, stroke 200ms ease", outline: "none" }}
@@ -311,7 +311,7 @@ function DistrictBlock({ data, interactive }: { data: BlockData; interactive: bo
           fill="rgba(10,14,24,0.78)" stroke={data.isYou ? "rgba(255,107,0,0.6)" : "rgba(140,160,190,0.3)"} strokeWidth={1.5} />
         <text x={cap.x} y={labelY} textAnchor="middle"
           fontSize={17} fontWeight={800} letterSpacing={1}
-          fill={data.isYou ? "#FF6B00" : "rgba(224,232,244,0.92)"}>
+          fill={data.isYou ? "#f68b1f" : "rgba(224,232,244,0.92)"}>
           {RRS_LABEL[data.rrsId].toUpperCase()}{data.isYou ? " · ВЫ" : ""} {off ? "· —" : `· ${Math.round(data.coveragePct)}%`}
         </text>
       </g>

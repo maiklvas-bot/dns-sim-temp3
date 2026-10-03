@@ -4,6 +4,7 @@ import type { SimulationRuntimeSettings } from "@shared/simulation-content";
 import type { SimulationState } from "@/context/SimulationContext";
 import { BarChart3, Brain, Target, Users } from "lucide-react";
 import { calculateSimulationScoreSummary } from "@shared/simulation-scoring";
+import { findRedFlags } from "@shared/competency-profile";
 
 const EXPECTED_COMPETENCY_LEVEL = 4.0;
 
@@ -39,7 +40,7 @@ export function getVerdict(avgScore: number): { level: string; color: string; de
   };
   if (avgScore >= 1.5) return {
     level: "Низкая готовность",
-    color: "#FF6B00",
+    color: "#f68b1f",
     description: "Требуется значительное развитие управленческих компетенций. Рекомендуется интенсивная программа обучения и стажировка под руководством опытного управляющего.",
   };
   return {
@@ -141,7 +142,13 @@ function buildCompetencyRows(source: Record<string, number>) {
     overallAvg,
     strengths: sorted.slice(0, 3),
     weaknesses: sorted.slice(-3).reverse(),
-    weakForPlan: [...sorted].reverse().filter((c) => c.avg < 5),
+    // В план развития попадает то, что не дотянуло до ожидаемого уровня.
+    // Раньше сюда падало всё, кроме безупречной пятёрки, и план развития
+    // выписывали даже там, где человек отвечал сильно.
+    weakForPlan: [...sorted].reverse().filter((c) => c.avg < EXPECTED_COMPETENCY_LEVEL),
+    // Провал по критичной компетенции суммой остальных не закрывается.
+    // Считался и раньше, но до отчёта не доходил — комиссия его не видела.
+    redFlags: findRedFlags(source),
   };
 }
 
@@ -299,5 +306,6 @@ export function buildPdfPayloadFromReport(report: ReturnType<typeof buildReportF
       taskType: decision.taskType,
       impactMagnitude: decision.impactMagnitude,
     })),
+    redFlags: report.redFlags.map((flag) => ({ id: flag.id, score: flag.score })),
   };
 }

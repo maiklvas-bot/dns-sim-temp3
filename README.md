@@ -82,7 +82,7 @@ script/bootstrap-content.example.json
 Если у вас сохранилась старая версия проекта в архиве или распакованной папке, используйте генератор:
 
 ```bash
-npm run db:generate-bootstrap -- "C:\Users\al72o\Downloads\dns-simcenter-working-source.tar.gz" ./script/bootstrap-content.json
+npm run db:generate-bootstrap -- "<LOCAL_ARCHIVE>" ./script/bootstrap-content.json
 ```
 
 Генератор читает старые файлы `client/src/data/*.ts`, собирает из них `bootstrap-content.json` и подставляет стандартные изображения из `attached_assets`.
@@ -93,7 +93,7 @@ npm run db:generate-bootstrap -- "C:\Users\al72o\Downloads\dns-simcenter-working
 Личные медиафайлы не коммитятся в Git: `uploads/`, `.env` и `data.db` остаются локальными. Чтобы перенести медиа из внешней папки в локальную папку сайта и зарегистрировать файлы в SQLite, используйте:
 
 ```powershell
-npm.cmd run media:import-local -- --source "C:\Users\maikl\Downloads\uploads"
+npm.cmd run media:import-local -- --source "<LOCAL_UPLOADS>"
 ```
 
 Скрипт рекурсивно ищет изображения, аудио и видео, копирует их в `./uploads`, сопоставляет файлы с уже существующими asset-записями по имени файла, создает недостающие записи в `media_assets` и печатает отчет по отсутствующим файлам или битым ссылкам. Если исходная папка содержит вложенную папку `uploads`, ведущий сегмент `uploads` автоматически убирается, чтобы на сайте не получались пути вида `/uploads/uploads/...`.
@@ -101,8 +101,8 @@ npm.cmd run media:import-local -- --source "C:\Users\maikl\Downloads\uploads"
 Полезные режимы:
 
 ```powershell
-npm.cmd run media:import-local -- --source "C:\Users\maikl\Downloads\uploads" --dry-run
-npm.cmd run media:import-local -- --source "C:\Users\maikl\Downloads\uploads" --copy-only
+npm.cmd run media:import-local -- --source "<LOCAL_UPLOADS>" --dry-run
+npm.cmd run media:import-local -- --source "<LOCAL_UPLOADS>" --copy-only
 ```
 
 После импорта соберите и запустите сайт:
