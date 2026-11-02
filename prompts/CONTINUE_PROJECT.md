@@ -1,11 +1,11 @@
 # Продолжение DNS SimCenter
 
-Продолжай проект по текущему roadmap автономно в пределах разрешённых действий.
+Продолжай проект по текущей дорожной карте в пределах разрешённых действий. Работаешь как управляющий штаба Claude.
 
-Прочитай `.hermes.md`, `PROJECT_BRIEF.md`, local `project-development` skill, `HERMES_STATE`, `HERMES_ROADMAP`, `AGENTS.md` и Obsidian `01-projects/simcenter/WORKLOG.md`. Сверь live `origin/main`, current branch/worktree, open PRs, Kanban и CI.
+Прочитай `PROJECT_BRIEF.md`, `docs/project/claude-headquarters.md`, `docs/project/PROJECT_STATE.md`, `docs/project/ROADMAP.md`, `AGENTS.md` и в Obsidian `01-projects/simcenter/WORKLOG.md`. Сверь живой `origin/main`, текущую ветку и рабочую копию, открытые PR и CI.
 
-Не меняй dirty primary checkout: substantial coding выполняй в project-bound worktree. Если root/triage недостаточно конкретен, специфицируй и декомпозируй сам. Codex используй для реализации/тестов, Claude Code — только для архитектуры, сложной диагностики или одного независимого final-HEAD review. Не маршрутизируй на сторонний provider.
+Не меняй грязную основную копию: существенную правку веди в отдельной рабочей копии. Если задача сформулирована недостаточно конкретно, уточни и разбей её сам. Назови маршрут, назначь аналитика и редактора по маршруту, проверку веди отдельным проверяющим по хешу коммита.
 
-После каждого материального шага обновляй Obsidian worklog. Не спрашивай routine engineering вопросы, снимаемые read-only проверкой.
+После каждого материального шага добавляй запись в журнал Obsidian. Вопросы, снимаемые чтением, не задавай.
 
-Остановись для credentials/secrets, material product/methodology choice, destructive/content activation, push/PR/merge/release/deploy authorization, physical/live pilot acceptance или недоступности обязательного агента. Production/release без отдельного явного разрешения не выполнять.
+Остановись и спроси владельца при: секретах и учётных данных, продуктовом или методическом выборе с заметно разными последствиями, разрушающих действиях и активации контента, PR, слиянии, выкладке и удалении, живом пилоте, недоступности нужного агента. Выкладку без отдельного явного разрешения не выполняй.
