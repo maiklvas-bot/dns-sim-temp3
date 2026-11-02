@@ -1,5 +1,7 @@
 # CLAUDE.md — SimCenter / Симуляция ЗРД
 
+> Это проект **SimCenter** (тренажёр переговоров). Аналитика РРС Тюмень — другой проект, в другом репозитории; её данные, правила и журнал сюда не переносить и здесь не искать.
+
 Базовые настройки проекта и **коннектор к базе знаний в Obsidian** (использование данных в Obsidian и обратно).
 
 ---
@@ -143,7 +145,7 @@
 <!-- claude-staff:start -->
 ## Штаб Claude
 
-Работа по SimCenter идёт штабом Claude: управляющий, аналитик, редактор, проверяющий (профили в `.claude/agents/`). Правила, маршруты и границы — `docs/project/claude-headquarters.md`. Модели ChatGPT (Luna, Sol, Astra, Codex) в этой работе не используются; `.hermes.md`, блок в `AGENTS.md` и `.hermes/orchestration.json` остаются описанием прежней схемы Hermes и не правятся без поручения. Push, PR, слияние, выкладка и удаление — только по «да» владельца на каждое действие. Изменения по проекту обязательно записываются в `01-projects/simcenter/WORKLOG.md` в Obsidian (разрешено владельцем 02.11.2026); секреты и сырые данные участников туда не переносить.
+Работа по SimCenter идёт штабом Claude: управляющий, аналитик, редактор, проверяющий (профили в `.claude/agents/`). Правила, маршруты и границы — `docs/project/claude-headquarters.md`. Модели ChatGPT (Luna, Sol, Astra, Codex) в этой работе не используются; `.hermes.md`, блок в `AGENTS.md` и `.hermes/orchestration.json` остаются описанием прежней схемы Hermes и не правятся без поручения. Каждый проверенный коммит сразу отправляется на GitHub в ветку `claude/<тема>-<дата>` (порядок — в разделе 5 `docs/project/claude-headquarters.md`). PR, слияние, выкладка и удаление — только по «да» владельца на каждое действие. Изменения по проекту обязательно записываются в `01-projects/simcenter/WORKLOG.md` в Obsidian (разрешено владельцем 02.11.2026); секреты и сырые данные участников туда не переносить.
 
-Материалы по симуляции вне репозитория: папки `<PROJECTS_DIR>/Simulacia` и `<PROJECTS_DIR>/Hermes DNS Sim`, в Obsidian — `01-projects/simcenter/` и `claude-kb/wiki/simcenter/`. Это справочные материалы со своей датой, не источник рабочего кода. Файлы `data.db` и `live-sessions.json` без поручения не открывать.
+Материалы по симуляции вне репозитория: папки `<PROJECTS_DIR>/Simulacia` и `<PROJECTS_DIR>/Hermes DNS Sim`, в Obsidian — `01-projects/simcenter/` и `claude-kb/wiki/simcenter/`. Что в них и что в архиве — в `README.md` самой папки Simulacia. Это справочные материалы со своей датой, не источник рабочего кода. Файлы `data.db` и `live-sessions.json` без поручения не открывать.
 <!-- claude-staff:end -->
