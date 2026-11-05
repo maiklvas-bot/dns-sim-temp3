@@ -256,6 +256,16 @@ details.card>summary{cursor:pointer;font-family:var(--f-display);font-size:16px;
   .hr{font-size:18px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+.quick{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.quick .hint{font-size:13px;color:var(--fg2)}
+.qnew{border:1px dashed var(--line);border-radius:10px;padding:8px 12px;margin-top:8px}
+.qnew summary{cursor:pointer;font-weight:600;font-size:13.5px;color:var(--accent)}
+.qnew .qb{display:grid;gap:10px;margin-top:10px}
+.depl label small{display:block;color:var(--fg2);font-size:12px}
+.shprev{font-size:13px;color:var(--fg2);background:var(--panel);border:1px dashed var(--line);border-radius:10px;padding:8px 12px}
+.howto{margin:0;padding-left:20px;display:grid;gap:8px;font-size:14px}
+.bar.dragging{opacity:.85;outline:2px solid var(--fg);z-index:5}
 </style>
 
 <div class="wrap">
@@ -280,6 +290,13 @@ details.card>summary{cursor:pointer;font-family:var(--f-display);font-size:16px;
 
   <section class="kpis" id="kpis" aria-label="Показатели"></section>
 
+  <section class="quick" aria-label="Что можно сделать">
+    <button class="btn primary" id="qTask" type="button">＋ Добавить задачу</button>
+    <button class="btn primary" id="qEv" type="button">＋ Записать событие</button>
+    <button class="btn" id="qShift" type="button">Сдвинуть сроки</button>
+    <button class="btn" id="qHelp" type="button">Как вносить информацию</button>
+  </section>
+
   <nav class="tabs" role="tablist" aria-label="Представления">
     <button class="tab" role="tab" id="tab-gantt" data-v="gantt" aria-controls="v-gantt">Диаграмма Ганта</button>
     <button class="tab" role="tab" id="tab-board" data-v="board" aria-controls="v-board">По исполнителям</button>
@@ -303,6 +320,7 @@ details.card>summary{cursor:pointer;font-family:var(--f-display);font-size:16px;
         <button class="btn sm" id="autoBtn" type="button">Сдвинуть по зависимостям</button>
       </div>
     </div>
+    <p class="note">Тяните полоску мышью, чтобы сдвинуть срок. Тяните за левый или правый край, чтобы изменить длину. Клик по полоске открывает задачу. Сдвинуть сразу несколько задач: кнопка «Сдвинуть сроки» вверху.</p>
     <p class="note" id="draftNote"></p>
     <div class="gscroll" id="gscroll"><div class="ginner" id="ginner"></div></div>
   </section>
@@ -340,10 +358,29 @@ details.card>summary{cursor:pointer;font-family:var(--f-display);font-size:16px;
         </div>
         <div class="fld"><label for="e-title">Что произошло</label><input class="in" id="e-title" maxlength="160" placeholder="Например: заказчица утвердила критерии допуска"></div>
         <div class="fld"><label for="e-text">Почему так решили (контекст, аргументы)</label><textarea class="in" id="e-text"></textarea></div>
-        <div class="fld"><span class="lbl">Каких задач касается</span><div class="depl" id="e-tasks"></div></div>
+        <div class="fld"><span class="lbl">Каких задач касается</span>
+          <input class="in" id="e-tq" type="search" placeholder="Найти задачу по названию или человеку" aria-label="Поиск задачи">
+          <div class="depl" id="e-tasks" style="max-height:220px"></div>
+          <details class="qnew" id="qnew"><summary>＋ Нужной задачи нет? Добавить новую здесь</summary>
+            <div class="qb">
+              <div class="fld"><label for="q-title">Что нужно сделать</label><input class="in" id="q-title" maxlength="160"></div>
+              <div class="row2">
+                <div class="fld"><label for="q-lane">Направление</label><select class="in" id="q-lane"></select></div>
+                <div class="fld"><label for="q-owners">Кто отвечает</label><input class="in" id="q-owners" list="ownerlist"></div>
+              </div>
+              <div class="row2">
+                <div class="fld"><label for="q-start">Начало</label><input class="in" type="date" id="q-start"></div>
+                <div class="fld"><label for="q-end">Конец</label><input class="in" type="date" id="q-end"></div>
+              </div>
+              <div class="fld"><label for="q-done">Что должно получиться</label><input class="in" id="q-done" maxlength="300"></div>
+              <div class="fld"><label for="q-src">Основание</label><select class="in" id="q-src"></select></div>
+              <div class="info" id="q-info">Без результата, срока или основания задача попадёт в «Черновики» на канбан-доске и на диаграмме не появится, пока вы не дозаполните.</div>
+              <div class="btns"><button class="btn primary" type="button" id="q-add">Добавить задачу и отметить</button></div>
+            </div>
+          </details></div>
         <div class="fld"><label for="e-links">Ссылки на источники (по одной в строке: название | адрес)</label><textarea class="in" id="e-links" placeholder="Рецензия 18.09 | obsidian://open?vault=Pedro78&file=..."></textarea><div class="chips" id="e-chips"></div></div>
         <div class="fx">
-          <label class="chk" for="e-apply"><input type="checkbox" id="e-apply"> Изменить карту по этому событию</label>
+          <label class="chk" for="e-apply"><input type="checkbox" id="e-apply"> Изменить карту по этому событию (сдвинуть срок, статус, процент готовности)</label>
           <div class="fxb" id="e-fxbody">
             <div class="fld"><label for="e-ftask">Какую задачу менять</label><select class="in" id="e-ftask"></select></div>
             <div class="row3">
@@ -373,6 +410,7 @@ details.card>summary{cursor:pointer;font-family:var(--f-display);font-size:16px;
         <div class="info" id="evInfo">Укажите дату и название события.</div>
         <div class="btns">
           <button class="btn primary" type="submit" id="evSave">Сохранить событие</button>
+          <button class="btn" type="button" id="evCancel">Отмена</button>
           <button class="btn" type="button" id="evNew">Новое событие</button>
           <button class="btn warn" type="button" id="evDel">Удалить</button>
         </div>
@@ -416,6 +454,7 @@ details.card>summary{cursor:pointer;font-family:var(--f-display);font-size:16px;
         <div class="info" id="formInfo">Заполните название и сохраните.</div>
         <div class="btns">
           <button class="btn primary" type="submit" id="saveTask">Сохранить задачу</button>
+          <button class="btn" type="button" id="tCancel">Отмена</button>
           <button class="btn" type="button" id="newTask">Новая задача</button>
           <button class="btn warn" type="button" id="delTask">Удалить</button>
         </div>
@@ -796,6 +835,7 @@ function renderAll(){renderStages();renderKPI();renderGantt();renderBoard();fill
   $('#dataNote').textContent=OFFLINE?'Работает без интернета. Правки сохраняются в этом браузере. Раз в день-два скачивайте копию (JSON): так данные не потеряются, если очистить браузер, и их можно перенести на другой компьютер.':db?'Данные лежат в общей базе страницы: их видят все, кто открыл её, и может прочитать Claude. Копия на всякий случай есть и в браузере.':'Данные хранятся в этом браузере. Чтобы перенести их, скачайте копию (JSON) и загрузите на другом устройстве.'}
 function refresh(){renderStages();renderKPI();renderGantt();renderBoard();ownerList();renderTable();renderHist();renderKanban();showInfo(selId?byId()[selId]:null);persist()}
 function setView(v){
+  if(v!==view)prevView=view;
   view=v;VIEWS.forEach(function(k){var s=$('#v-'+k);s.hidden=(k!==v);s.style.display=(k===v)?'grid':'none';$('#tab-'+k).setAttribute('aria-selected',String(k===v))});
   if(v==='gantt')renderGantt();
   if(v==='hist')renderHist();
@@ -993,7 +1033,7 @@ function loadEvForm(id,preTask){
   $('#evTitleH').textContent=e?'Событие от '+dmy(e.date):'Новое событие';
   $('#e-date').value=e?e.date:today();$('#e-type').value=e?e.type:'meeting';$('#e-title').value=e?e.title:'';$('#e-text').value=e?e.text||'':'';
   var sel=e?e.taskIds:(preTask?[preTask]:[]);
-  $('#e-tasks').innerHTML=S.tasks.map(function(x){return '<label><input type="checkbox" value="'+esc(x.id)+'"'+(sel.indexOf(x.id)>=0?' checked':'')+'><span>'+esc(x.title)+'</span></label>'}).join('')||'<span class="muted">Задач пока нет</span>';
+  renderETasks(sel);$('#e-tq').value='';$('#qnew').open=false;
   $('#e-links').value=e?linksText(e.links):'';chips('#e-chips','#e-links');
   $('#e-apply').checked=false;$('#e-newtask').checked=false;
   $('#e-ftask').innerHTML='<option value="">выберите задачу</option>'+S.tasks.map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.title.slice(0,70))+'</option>'}).join('');
@@ -1045,6 +1085,126 @@ function evSubmit(ev){
   if(fx.length)e.effect=(e.effect?e.effect+'. ':'')+fx.join('. ')+'.';
   refresh();loadEvForm(null);toast(isNew?'Событие записано'+(fx.length?', карта пересчитана':''):'Событие сохранено');
 }
+
+/* ---------- возврат, поиск задач, новая задача в событии ---------- */
+var prevView='gantt',backDrawer=null,dragFlag=false;
+function renderETasks(sel){
+  $('#e-tasks').innerHTML=S.tasks.map(function(x){
+    var meta=(x.owners&&x.owners!=='не назначен'?x.owners:'без ответственного')+' · '+(x.start&&x.end?rngTxt(x.start,x.end):'без срока');
+    return '<label data-q="'+esc((x.title+' '+(x.owners||'')).toLowerCase())+'"><input type="checkbox" value="'+esc(x.id)+'"'+(sel.indexOf(x.id)>=0?' checked':'')+'><span>'+esc(x.title)+'<small>'+esc(meta)+'</small></span></label>'
+  }).join('')||'<span class="muted">Задач пока нет. Добавьте первую ниже.</span>';
+  $('#q-lane').innerHTML=$('#e-nlane').innerHTML;$('#q-src').innerHTML=$('#f-src').innerHTML;
+}
+function filterETasks(){
+  var q=($('#e-tq').value||'').toLowerCase().trim();
+  $$('#e-tasks label').forEach(function(l){l.style.display=(!q||(l.dataset.q||'').indexOf(q)>=0)?'':'none'});
+}
+function addQuickTask(){
+  var title=$('#q-title').value.trim(),el=$('#q-info');
+  if(!title){el.className='info bad';el.textContent='Напишите, что нужно сделать.';return}
+  var st=$('#q-start').value,en=$('#q-end').value;if(st&&!en)en=st;if(en&&!st)st=en;
+  if(st&&en&&D(en)<D(st)){el.className='info bad';el.textContent='Конец раньше начала.';return}
+  var sel=$$('#e-tasks input:checked').map(function(i){return i.value});
+  var t={id:'t'+Date.now().toString(36),lane:$('#q-lane').value,title:title,owners:$('#q-owners').value.trim(),start:st||'',end:en||'',pct:0,status:'todo',deps:[],src:$('#q-src').value,est:true,done:$('#q-done').value.trim(),note:'',links:[]};
+  S.tasks.push(t);logTaskChange(t,null,'добавлена из формы события');
+  sel.push(t.id);refresh();renderETasks(sel);
+  var ts=byId();$('#e-ftask').innerHTML='<option value="">выберите задачу</option>'+S.tasks.map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.title.slice(0,70))+'</option>'}).join('');
+  ['#q-title','#q-owners','#q-start','#q-end','#q-done'].forEach(function(k){$(k).value=''});
+  var miss=checkTask(t).filter(function(c){return !c.ok}).map(function(c){return c.l.toLowerCase()});
+  el.className='info';el.textContent=miss.length?'Задача добавлена и отмечена. Не хватает: '+miss.join(', ')+'. Пока она в «Черновиках».':'Задача добавлена, отмечена и уже на диаграмме.';
+  toast('Задача добавлена');
+}
+function cancelForm(kind){
+  if(kind==='ev')loadEvForm(null);else loadForm(selId&&byId()[selId]?selId:null);
+  var d=backDrawer;backDrawer=null;
+  var pv=(prevView==='hist'||prevView==='form'||!prevView)?'gantt':prevView;
+  setView(pv);
+  if(d){if(d.kind==='task')taskDrawer(d.id);else eventDrawer(d.id)}
+  toast('Изменения не сохранены');
+}
+
+/* ---------- сдвиг сроков ---------- */
+function shiftSet(sel,mode){
+  var m=byId(),out={};
+  if(mode==='all'){S.tasks.forEach(function(t){if(t.start&&t.end&&t.pct<100)out[t.id]=1});return Object.keys(out)}
+  sel.forEach(function(i){if(m[i]&&m[i].start&&m[i].end)out[i]=1});
+  if(mode==='dep'){var ch=true,g=0;while(ch&&g++<60){ch=false;S.tasks.forEach(function(t){if(out[t.id]||!t.start||!t.end)return;if((t.deps||[]).some(function(d){return out[d]})){out[t.id]=1;ch=true}})}}
+  return Object.keys(out).filter(function(i){return m[i].pct<100})
+}
+function shiftState(){
+  var sel=$$('#sh-list input:checked').map(function(i){return i.value}),mode=($('input[name=sh-mode]:checked')||{}).value||'sel';
+  var n=parseInt($('#sh-days').value,10)||0,ids=shiftSet(sel,mode),m=byId(),el=$('#sh-prev');
+  $('#sh-list').style.display=(mode==='all')?'none':'grid';
+  if(!ids.length){el.textContent=(mode==='all'?'Нет незавершённых задач со сроком.':'Отметьте задачи в списке. Готовые задачи не двигаются.');return null}
+  if(!n){el.textContent='Укажите, на сколько дней сдвинуть: минус раньше, плюс позже.';return null}
+  el.textContent='Сдвинется '+ids.length+' '+(ids.length===1?'задача':'задач(и)')+' на '+(n>0?'+':'−')+Math.abs(n)+' дн. Например, «'+m[ids[0]].title.slice(0,50)+'»: '+rngTxt(m[ids[0]].start,m[ids[0]].end)+' → '+rngTxt(iso(D(m[ids[0]].start)+n),iso(D(m[ids[0]].end)+n))+'.';
+  return {ids:ids,n:n}
+}
+function shiftDrawer(pre,from){
+  var ts=S.tasks.filter(function(t){return t.start&&t.end&&t.pct<100});
+  var h='<div class="dhead"><div><span class="eyebrow">Сроки</span><h2 class="dtitle">Сдвинуть сроки</h2></div></div>';
+  h+='<form id="shForm" data-from="'+esc(from||'')+'" style="display:grid;gap:14px"><p class="muted" style="margin:0;font-size:13.5px">Выберите задачи и на сколько дней их сдвинуть. Готовые задачи и задачи без срока не двигаются. В историю запишется одно событие.</p>';
+  h+='<div class="fld"><span class="lbl">Что двигаем</span><label class="chk"><input type="radio" name="sh-mode" value="sel"'+(pre?' checked':' checked')+'> Только отмеченные задачи</label><label class="chk"><input type="radio" name="sh-mode" value="dep"> Отмеченные и всё, что от них зависит</label><label class="chk"><input type="radio" name="sh-mode" value="all"> Все незавершённые задачи</label></div>';
+  h+='<div class="depl" id="sh-list" style="max-height:230px">'+(ts.map(function(t){return '<label><input type="checkbox" value="'+esc(t.id)+'"'+(t.id===pre?' checked':'')+'><span>'+esc(t.title)+'<small>'+rngTxt(t.start,t.end)+'</small></span></label>'}).join('')||'<span class="muted">Нет задач со сроком.</span>')+'</div>';
+  h+='<div class="fld"><label for="sh-days">На сколько дней (минус раньше, плюс позже)</label><div class="btns"><button class="btn sm" type="button" data-shd="-7">−7</button><button class="btn sm" type="button" data-shd="-1">−1</button><input class="in" id="sh-days" type="number" step="1" value="7" style="width:90px"><button class="btn sm" type="button" data-shd="1">+1</button><button class="btn sm" type="button" data-shd="7">+7</button><button class="btn sm" type="button" data-shd="14">+14</button></div></div>';
+  h+='<div class="fld"><label for="sh-why">Почему сдвигаем</label><input class="in" id="sh-why" maxlength="240" placeholder="Например: заказчица перенесла встречу на неделю"></div>';
+  h+='<div class="shprev" id="sh-prev"></div>';
+  h+='<div class="btns"><button class="btn primary" type="submit">Применить сдвиг</button><button class="btn" type="button" id="sh-cancel">Отмена</button></div></form>';
+  openDrawer(h);shiftState();
+}
+function applyShift(){
+  var st=shiftState();if(!st)return;
+  var m=byId(),n=st.n,why=$('#sh-why').value.trim(),lines=[];
+  st.ids.forEach(function(i){var t=m[i],o=rngTxt(t.start,t.end);t.start=iso(D(t.start)+n);t.end=iso(D(t.end)+n);lines.push('«'+t.title+'»: '+o+' → '+rngTxt(t.start,t.end))});
+  S.events.push({id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),date:today(),type:'change',title:'Сдвиг сроков на '+(n>0?'+':'−')+Math.abs(n)+' дн. ('+st.ids.length+' задач)',text:lines.join('. ')+'.'+(why?' Причина: '+why:''),taskIds:st.ids.slice(),links:[],auto:true});
+  closeDrawer();refresh();toast('Сроки сдвинуты: '+st.ids.length)
+}
+function helpDrawer(){
+  openDrawer('<div class="dhead"><div><span class="eyebrow">Подсказка</span><h2 class="dtitle">Как вносить информацию</h2></div><button class="btn sm" id="dclose" type="button">Закрыть</button></div>'
+  +'<ol class="howto">'
+  +'<li><b>Новая задача.</b> Кнопка «Добавить задачу» вверху. Заполните шесть полей: что сделать, направление, кто отвечает, срок, результат, основание. Пока чего-то нет, задача лежит в «Черновиках» на канбан-доске и на диаграмме не рисуется.</li>'
+  +'<li><b>Перенести срок.</b> Три способа: потянуть полоску на диаграмме Ганта; открыть задачу и нажать «Сдвинуть срок»; кнопка «Сдвинуть сроки» вверху для нескольких задач сразу.</li>'
+  +'<li><b>Записать событие.</b> Встреча, решение, риск. Отметьте задачи, которых оно касается, и при необходимости поставьте «Изменить карту по этому событию». Нужной задачи нет в списке: добавьте её тут же.</li>'
+  +'<li><b>Не сохранять.</b> В каждой форме есть «Отмена»: изменения пропадут, откроется предыдущее окно.</li>'
+  +'<li><b>Откуда решение.</b> У задачи и события есть ссылки на документы и рецензии. Старые записи в истории не стираются.</li>'
+  +'<li><b>Стикеры из Miro.</b> Вкладка «Канбан-доска», кнопка «Вставить стикеры из Miro».</li>'
+  +'</ol>');
+}
+
+/* ---------- перетаскивание полосок на Ганте ---------- */
+(function(){
+  var g=$('#ginner'),drag=null;
+  function zone(b,x){var w=b.getBoundingClientRect().width;return x<8?'l':(x>w-8?'r':'m')}
+  g.addEventListener('pointerdown',function(e){
+    var b=e.target.closest('.bar');if(!b||e.button!==0||e.pointerType==='touch')return;
+    var r=b.getBoundingClientRect();
+    drag={b:b,id:b.dataset.id,mode:zone(b,e.clientX-r.left),x0:e.clientX,L:parseFloat(b.style.left),W:parseFloat(b.style.width),moved:false,dd:0};
+    try{b.setPointerCapture(e.pointerId)}catch(x){}
+  });
+  g.addEventListener('pointermove',function(e){
+    if(!drag){var b=e.target.closest&&e.target.closest('.bar');if(b){var r=b.getBoundingClientRect();b.style.cursor=zone(b,e.clientX-r.left)==='m'?'grab':'ew-resize'}return}
+    var dx=e.clientX-drag.x0;if(!drag.moved&&Math.abs(dx)<5)return;drag.moved=true;drag.b.classList.add('dragging');
+    var dd=Math.round(dx/dayW),b=drag.b;drag.dd=dd;
+    if(drag.mode==='m')b.style.left=(drag.L+dd*dayW)+'px';
+    else if(drag.mode==='l'){var w=Math.max(drag.W-dd*dayW,dayW);b.style.left=(drag.L+drag.W-w)+'px';b.style.width=w+'px'}
+    else b.style.width=Math.max(drag.W+dd*dayW,dayW)+'px';
+  });
+  function fin(e){
+    if(!drag)return;var d=drag;drag=null;d.b.classList.remove('dragging');
+    if(!d.moved)return;
+    dragFlag=true;setTimeout(function(){dragFlag=false},80);
+    if(!d.dd){renderGantt();return}
+    var t=byId()[d.id];if(!t)return;
+    var old={start:t.start,end:t.end,pct:t.pct,status:t.status},s0=D(t.start),e0=D(t.end);
+    if(d.mode==='m'){t.start=iso(s0+d.dd);t.end=iso(e0+d.dd)}
+    else if(d.mode==='l'){t.start=iso(Math.min(s0+d.dd,e0))}
+    else{t.end=iso(Math.max(e0+d.dd,s0))}
+    logTaskChange(t,old,'сдвинуто на диаграмме');refresh();
+    toast('Срок «'+t.title.slice(0,40)+'»: '+rngTxt(t.start,t.end));
+  }
+  g.addEventListener('pointerup',fin);g.addEventListener('pointercancel',function(){if(drag){drag.b.classList.remove('dragging');drag=null;renderGantt()}});
+})();
+
 /* карточка (drawer) */
 function openDrawer(html){
   lastFocus=document.activeElement;$('#drawerBody').innerHTML=html;$('#drawer').hidden=false;$('#scrim').hidden=false;
@@ -1071,7 +1231,7 @@ function taskDrawer(id){
   if(next.length)h+='<div><h3>От неё зависят</h3><div class="linkrow" style="margin-top:6px">'+next.map(btn).join('')+'</div></div>';
   h+='<div><h3>Откуда это взято и почему</h3><div style="margin-top:6px">'+(t.links.length?linkRow(t.links):'<span class="muted">Ссылок нет. Добавьте в форме задачи.</span>')+'</div></div>';
   h+='<div><h3>История задачи</h3><div class="hist" style="margin-top:10px">'+(evs.length?evs.map(histItem).join(''):'<span class="muted">Событий по задаче нет.</span>')+'</div></div>';
-  h+='<div class="btns"><button class="btn primary" type="button" data-edit="'+esc(id)+'">Править в форме</button><button class="btn" type="button" data-newev="'+esc(id)+'">Записать событие</button></div>';
+  h+='<div class="btns"><button class="btn primary" type="button" data-edit="'+esc(id)+'">Править в форме</button><button class="btn" type="button" data-newev="'+esc(id)+'">Записать событие</button><button class="btn" type="button" data-shift="'+esc(id)+'">Сдвинуть срок</button></div>';
   openDrawer(h);
 }
 function eventDrawer(id){
@@ -1122,6 +1282,12 @@ function attachDraft(X){
 
 /* ---------- события ---------- */
 document.addEventListener('click',function(e){
+  if(dragFlag){e.preventDefault();e.stopPropagation();return}
+  var shd=e.target.closest('[data-shd]');
+  if(shd){var inp=$('#sh-days');if(inp){inp.value=String(shd.dataset.shd);shiftState()}return}
+  var shb=e.target.closest('[data-shift]');
+  if(shb){var fid=shb.dataset.shift;closeDrawer();shiftDrawer(fid,fid);return}
+  if(e.target.closest('#sh-cancel')){var fr=$('#shForm').dataset.from;closeDrawer();if(fr)taskDrawer(fr);return}
   var mv=e.target.closest('[data-mv]');
   if(mv){stickMove(mv.dataset.sid,+mv.dataset.mv);return}
   var sd=e.target.closest('.stk');
@@ -1135,12 +1301,12 @@ document.addEventListener('click',function(e){
   if(e.target.closest('a'))return;
   var el=e.target.closest('[data-id],[data-open],[data-delms],[data-ev],[data-edit],[data-newev],[data-evedit],#dclose,#scrim,.stg,.tab');if(!el)return;
   if(el.id==='dclose'||el.id==='scrim'){closeDrawer();return}
-  if(el.classList.contains('tab')){setView(el.dataset.v);return}
+  if(el.classList.contains('tab')){backDrawer=null;setView(el.dataset.v);return}
   if(el.classList.contains('stg')){stageSel=+el.dataset.i;renderStages();return}
   if(el.dataset.delms!=null){S.milestones.splice(+el.dataset.delms,1);renderMs();refresh();return}
-  if(el.dataset.edit){closeDrawer();openTask(el.dataset.edit);return}
-  if(el.dataset.newev){closeDrawer();loadEvForm(null,el.dataset.newev);setView('hist');return}
-  if(el.dataset.evedit){closeDrawer();loadEvForm(el.dataset.evedit);setView('hist');return}
+  if(el.dataset.edit){backDrawer={kind:'task',id:el.dataset.edit};closeDrawer();openTask(el.dataset.edit);return}
+  if(el.dataset.newev){backDrawer={kind:'task',id:el.dataset.newev};closeDrawer();loadEvForm(null,el.dataset.newev);setView('hist');return}
+  if(el.dataset.evedit){backDrawer={kind:'ev',id:el.dataset.evedit};closeDrawer();loadEvForm(el.dataset.evedit);setView('hist');return}
   if(el.dataset.ev){eventDrawer(el.dataset.ev);return}
   if(el.tagName==='TR'){loadForm(el.dataset.id);return}
   var id=el.dataset.open||el.dataset.id;if(id)taskDrawer(id);
@@ -1254,7 +1420,19 @@ window.addEventListener('hashchange',function(){var v=location.hash.replace('#',
 var rzT;window.addEventListener('resize',function(){clearTimeout(rzT);rzT=setTimeout(function(){if(view==='gantt')renderGantt()},200)});
 
 try{var th=localStorage.getItem('simcenter-theme');if(th)document.documentElement.setAttribute('data-theme',th)}catch(e){}
+$('#evCancel').addEventListener('click',function(){cancelForm('ev')});
+$('#tCancel').addEventListener('click',function(){cancelForm('task')});
+$('#e-tq').addEventListener('input',filterETasks);
+$('#q-add').addEventListener('click',addQuickTask);
+$('#qTask').addEventListener('click',function(){backDrawer=null;loadForm(null);setView('form');var f=$('#tform');if(f.scrollIntoView)f.scrollIntoView({block:'start',behavior:'smooth'});$('#f-title').focus()});
+$('#qEv').addEventListener('click',function(){backDrawer=null;loadEvForm(null);setView('hist');$('#e-title').focus()});
+$('#qShift').addEventListener('click',function(){shiftDrawer(null,null)});
+$('#qHelp').addEventListener('click',helpDrawer);
+document.addEventListener('input',function(e){if(e.target.closest&&e.target.closest('#shForm'))shiftState()});
+document.addEventListener('change',function(e){if(e.target.closest&&e.target.closest('#shForm'))shiftState()});
+document.addEventListener('submit',function(e){if(e.target&&e.target.id==='shForm'){e.preventDefault();applyShift()}});
 initStore();
 var v0=location.hash.replace('#','');setView(VIEWS.indexOf(v0)>=0?v0:'gantt');
 })();
+
 </script>
