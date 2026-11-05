@@ -1,0 +1,1260 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Дорожная карта SimCenter</title><style>html{-webkit-text-size-adjust:100%}body{margin:0}</style></head><body>
+
+<style>
+/* Раскладка: шапка с логотипом → полоса пяти этапов → показатели → вкладки: Гант / По исполнителям / Форма.
+   Тёмная тема «Signature · Космос» по умолчанию, светлая — для печати и дневного света. */
+:root{
+  --bg:#0A0F1E; --panel:#0E1424; --raised:#131B30; --line:#26324F; --grid:#1B2540;
+  --fg:#EAF0FF; --fg2:#AEB8D4; --muted:#8D98BD;
+  --accent:#F68B1F; --accent-ink:#0A0F1E; --gold:#E8B23A; --ok:#2FD98A; --bad:#FF6B6B; --warn:#E8B23A; --info:#2A91D0;
+  --l1:#2A91D0; --l2:#A98BF0; --l3:#F68B1F; --l4:#E8B23A; --l5:#2FD98A; --l6:#8D98BD;
+  --bar-ink:#0A0F1E; --shadow:0 0 0 1px rgba(246,139,31,.35),0 0 24px rgba(246,139,31,.18);
+  --f-display:'Unbounded','Onest',system-ui,sans-serif; --f-body:'Onest',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#F3F5FA; --panel:#FFFFFF; --raised:#FFFFFF; --line:#D5DBEA; --grid:#E6EAF4;
+    --fg:#14213D; --fg2:#3F4C6B; --muted:#5E6B8C;
+    --accent:#B45309; --accent-ink:#FFFFFF; --gold:#8A6700; --ok:#0F7A4C; --bad:#C0262D; --warn:#8A6700; --info:#1B74AE;
+    --l1:#1B74AE; --l2:#7656CF; --l3:#B45309; --l4:#8A6700; --l5:#0F7A4C; --l6:#5E6B8C;
+    --bar-ink:#FFFFFF; --shadow:0 0 0 1px rgba(180,83,9,.4),0 4px 18px rgba(180,83,9,.12); color-scheme:light;
+  }
+}
+:root[data-theme="light"]{
+  --bg:#F3F5FA; --panel:#FFFFFF; --raised:#FFFFFF; --line:#D5DBEA; --grid:#E6EAF4;
+  --fg:#14213D; --fg2:#3F4C6B; --muted:#5E6B8C;
+  --accent:#B45309; --accent-ink:#FFFFFF; --gold:#8A6700; --ok:#0F7A4C; --bad:#C0262D; --warn:#8A6700; --info:#1B74AE;
+  --l1:#1B74AE; --l2:#7656CF; --l3:#B45309; --l4:#8A6700; --l5:#0F7A4C; --l6:#5E6B8C;
+  --bar-ink:#FFFFFF; --shadow:0 0 0 1px rgba(180,83,9,.4),0 4px 18px rgba(180,83,9,.12); color-scheme:light;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;
+  padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-block:20px 56px}
+.wrap{max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+h1,h2,h3,p{margin:0}
+h2{font-family:var(--f-display);font-weight:500;font-size:17px;letter-spacing:.01em;text-wrap:balance}
+h3{font-size:15px;font-weight:600}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.eyebrow{font-size:12.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.muted{color:var(--muted)}
+.btn{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:8px 14px;font-weight:600;font-size:14px;min-height:38px}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.warn{border-color:var(--bad);color:var(--bad)}
+.btn.sm{padding:4px 10px;min-height:30px;font-size:13px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);display:inline-block}
+
+/* шапка */
+.top{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:center;justify-content:space-between}
+.brand{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:center;min-width:0}
+.brandmark{display:flex;align-items:center;gap:12px}
+.logo{height:34px;width:auto;display:block}
+.hr{font-family:var(--f-display);font-weight:700;font-size:22px;letter-spacing:.02em;border-left:2px solid var(--line);padding-left:12px;white-space:nowrap}
+.top h1{font-family:var(--f-display);font-weight:700;font-size:clamp(26px,4vw,40px);line-height:1.05;text-wrap:balance}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.save.ok .dot{background:var(--ok)} .save.wait .dot{background:var(--warn)} .save.err .dot{background:var(--bad)}
+
+/* этапы */
+.stages{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;position:relative}
+.stages::before{content:"";position:absolute;left:4%;right:4%;top:20px;height:3px;border-radius:3px;
+  background:linear-gradient(90deg,var(--l6),var(--l6) 45%,var(--accent) 72%,var(--info));opacity:.8}
+.stg{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:8px;position:relative;min-width:0;padding-top:0}
+.stg .nb{width:42px;height:42px;border-radius:50%;background:var(--bg);border:3px solid var(--l6);display:grid;place-items:center;
+  font-family:var(--f-display);font-size:14px;font-weight:700;z-index:1}
+.stg.now .nb{border-color:var(--accent);color:var(--accent);box-shadow:var(--shadow)}
+.stg.next .nb{border-color:var(--info);color:var(--info)}
+.stg .tt{font-weight:700;font-size:15px}
+.stg .pr{font-size:13px;color:var(--muted)}
+.stg:focus-visible .nb,.stg.sel .nb{outline:2px solid var(--fg);outline-offset:2px}
+.stgbody{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 20px;display:grid;gap:6px;max-width:100ch}
+.tag{display:inline-block;font-size:12px;font-weight:600;border:1px solid var(--line);border-radius:6px;padding:1px 8px;color:var(--fg2);margin-right:6px}
+
+/* показатели */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 18px;display:grid;gap:2px;min-width:0}
+.kpi b{font-family:var(--f-display);font-size:30px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi span{color:var(--fg2);font-size:13.5px}
+.kpi.hot{border-color:var(--accent);box-shadow:var(--shadow)}
+.kpi.bad b{color:var(--bad)} .kpi.good b{color:var(--ok)}
+
+/* вкладки */
+.tabs{display:flex;gap:6px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tab{all:unset;box-sizing:border-box;cursor:pointer;padding:10px 18px;font-weight:600;color:var(--fg2);border-bottom:3px solid transparent;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.tab:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;justify-content:space-between}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13px;color:var(--fg2);align-items:center}
+.lg{display:inline-flex;align-items:center;gap:6px}
+.sw{width:26px;height:12px;border-radius:4px;background:var(--l1);display:inline-block}
+.sw.est{background:transparent;border:2px dashed var(--l1)}
+.sw.crit{box-shadow:0 0 0 2px var(--accent)}
+.sw.bad{box-shadow:0 0 0 2px var(--bad)}
+.note{background:var(--panel);border:1px dashed var(--line);border-radius:12px;padding:10px 14px;font-size:13.5px;color:var(--fg2)}
+
+/* Гант */
+.gscroll{overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel);max-height:78vh}
+.ginner{position:relative;--LW:340px}
+.grow{display:flex;height:38px;border-bottom:1px solid var(--grid)}
+.lab{position:sticky;left:0;z-index:4;width:var(--LW);flex:none;background:var(--panel);border-right:1px solid var(--line);padding:0 12px;display:flex;flex-direction:column;justify-content:center;min-width:0;cursor:pointer}
+.lab:hover .lt{color:var(--accent)}
+.lab .lt{font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lab .lo{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl{position:relative;flex:none;background-image:linear-gradient(to right,var(--grid) 1px,transparent 1px)}
+.ghead{position:sticky;top:0;z-index:6;background:var(--panel)}
+.ghead .grow{height:26px;border-bottom:1px solid var(--line)}
+.ghead .lab{cursor:default;font-size:12.5px;color:var(--muted);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.mo{position:absolute;top:0;height:100%;border-left:1px solid var(--line);padding:3px 8px;font-size:12.5px;font-weight:600;color:var(--fg2);white-space:nowrap;overflow:hidden}
+.wk{position:absolute;top:0;height:100%;border-left:1px solid var(--grid);padding:5px 4px;font-size:11px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.mrow{height:44px}
+.msl{position:absolute;top:6px;display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.msl svg{flex:none}
+.lanehd{height:30px;background:var(--raised);border-bottom:1px solid var(--line)}
+.lanehd .lab{background:var(--raised);flex-direction:row;align-items:center;justify-content:flex-start;gap:8px;cursor:default;white-space:nowrap;overflow:hidden}
+.lanehd .lab b{overflow:hidden;text-overflow:ellipsis}
+.lanehd .lab b{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--lc)}
+.lanehd .lab i{width:10px;height:10px;border-radius:3px;background:var(--lc);flex:none}
+.bar{all:unset;box-sizing:border-box;position:absolute;top:6px;height:26px;border-radius:7px;background:var(--lc);color:var(--bar-ink);cursor:pointer;
+  display:flex;align-items:center;padding:0 8px;font-size:12.5px;font-weight:600;overflow:hidden;white-space:nowrap}
+.bar:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.bar .bi{overflow:hidden;text-overflow:ellipsis;position:relative;z-index:1}
+.bar .pg{position:absolute;left:0;bottom:0;height:4px;width:100%;background:rgba(0,0,0,.22)}
+.bar .pg::after{content:"";position:absolute;left:0;top:0;bottom:0;width:var(--p);background:rgba(255,255,255,.9)}
+:root[data-theme="light"] .bar .pg{background:rgba(255,255,255,.3)}
+.bar.est{background:color-mix(in srgb,var(--lc) 22%,var(--panel));color:var(--fg);border:2px dashed var(--lc)}
+.bar.est .pg::after{background:var(--lc)} .bar.est .pg{background:color-mix(in srgb,var(--lc) 25%,transparent)}
+.bar.done{opacity:.72}
+.bar.crit{box-shadow:0 0 0 2px var(--accent),0 0 16px rgba(246,139,31,.55)}
+.bar.bad{box-shadow:0 0 0 2px var(--bad)}
+.bar:hover{filter:brightness(1.1)}
+.bo{position:absolute;top:10px;font-size:12.5px;font-weight:600;color:var(--fg2);white-space:nowrap;pointer-events:none}
+.nodate{position:absolute;left:14px;top:10px;font-size:12.5px;color:var(--muted);font-style:italic}
+.gover{position:absolute;top:0;bottom:0;left:var(--LW);z-index:3;pointer-events:none}
+.gover svg{position:absolute;left:0;top:0;overflow:visible}
+.today{position:absolute;top:0;bottom:0;width:0;border-left:2px solid var(--accent)}
+.today span{position:absolute;top:56px;left:4px;background:var(--accent);color:var(--accent-ink);font-size:11.5px;font-weight:700;padding:1px 7px;border-radius:5px;white-space:nowrap}
+.mline{position:absolute;top:0;bottom:0;width:0;border-left:2px dashed var(--gold);opacity:.7}
+.slk{font-size:11.5px;font-weight:700;padding:0 6px;border-radius:5px;position:absolute;top:10px;white-space:nowrap;pointer-events:none}
+.slk.neg{background:var(--bad);color:#fff} .slk.pos{background:var(--raised);color:var(--ok);border:1px solid var(--line)}
+
+/* доска */
+.bscroll{overflow:auto;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.bgrid{display:grid;grid-template-columns:150px repeat(4,minmax(220px,1fr));min-width:1000px}
+.bh{padding:12px 10px;font-weight:700;font-size:13px;text-align:center;color:var(--bar-ink);background:var(--lc);position:sticky;top:0;z-index:2}
+.bo-lab{background:#1F4E91;color:#fff;font-weight:700;padding:14px 12px;display:flex;align-items:center;border-top:6px solid var(--panel);position:sticky;left:0;z-index:1}
+.bcell{padding:8px;border-top:6px solid var(--panel);display:flex;flex-direction:column;gap:8px;min-height:60px;background:var(--panel)}
+.bcard{all:unset;box-sizing:border-box;cursor:pointer;background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:8px 10px;display:grid;gap:5px}
+.bcard:hover{border-color:var(--accent)}
+.bcard b{font-size:13px;font-weight:600;line-height:1.3}
+.bcard small{font-size:12px;color:var(--muted)}
+.bprog{height:6px;border-radius:4px;background:var(--grid);position:relative;overflow:hidden}
+.bprog i{position:absolute;left:0;top:0;bottom:0;background:var(--lc);width:var(--p)}
+.bcard.est{border-style:dashed}
+
+/* форма */
+.formgrid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:22px;align-items:start}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px 20px;display:grid;gap:14px;min-width:0}
+.fld{display:grid;gap:5px;min-width:0}
+.fld>label,.fld>.lbl{font-size:13px;font-weight:600;color:var(--fg2)}
+.in{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:9px;padding:8px 10px;min-height:38px;min-width:0}
+.in:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 35%,transparent)}
+textarea.in{min-height:64px;resize:vertical}
+.stedrow textarea.in{min-height:110px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.depl{display:grid;gap:4px;max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:var(--bg)}
+.depl label{display:flex;gap:8px;align-items:flex-start;font-size:13.5px;cursor:pointer}
+.depl input{margin-top:3px;accent-color:var(--accent)}
+.chk{display:flex;gap:8px;align-items:center;font-size:13.5px}
+.chk input{accent-color:var(--accent);width:16px;height:16px}
+.rng{display:flex;gap:12px;align-items:center}
+.rng input[type=range]{flex:1;accent-color:var(--accent)}
+.rng input[type=number]{width:84px}
+.info{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px;color:var(--fg2);min-height:40px}
+.info.bad{border-color:var(--bad);color:var(--bad)} .info.good{border-color:var(--ok)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.tscroll{overflow:auto;border:1px solid var(--line);border-radius:10px;max-height:540px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{position:sticky;top:0;background:var(--raised);text-align:left;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);padding:8px 10px;white-space:nowrap}
+td{padding:8px 10px;border-top:1px solid var(--grid);vertical-align:top}
+tr.sel td{background:color-mix(in srgb,var(--accent) 14%,transparent)}
+tr[data-id]{cursor:pointer} tr[data-id]:hover td{background:var(--raised)}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.st-done{color:var(--ok)} .st-block{color:var(--bad)} .st-doing{color:var(--info)}
+.edrow{display:grid;grid-template-columns:2fr 1.2fr 1.6fr auto;gap:8px;align-items:end;padding-bottom:10px;border-bottom:1px solid var(--grid)}
+.stedrow{display:grid;grid-template-columns:1.2fr 1fr 3fr;gap:8px;align-items:start;padding-bottom:10px;border-bottom:1px solid var(--grid)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:10px;font-weight:600;font-size:14px;z-index:30;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+
+.evrow{height:34px}
+.evdot{all:unset;box-sizing:border-box;position:absolute;top:8px;width:16px;height:16px;border-radius:50%;background:var(--ec);border:2px solid var(--panel);cursor:pointer}
+.evdot:hover{transform:scale(1.3)} .evdot:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:39}
+.scrim[hidden],.drawer[hidden]{display:none}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(500px,100vw);background:var(--panel);border-left:1px solid var(--line);z-index:40;overflow:auto;padding:20px 22px calc(28px + env(safe-area-inset-bottom,0px));box-shadow:-12px 0 40px rgba(0,0,0,.35);display:grid;gap:16px;align-content:start}
+.dhead{display:flex;justify-content:space-between;gap:12px;align-items:start}
+.dtitle{font-family:var(--f-display);font-size:18px;font-weight:500;line-height:1.25;margin-top:4px;text-wrap:balance}
+.kv{display:grid;grid-template-columns:120px 1fr;gap:6px 12px;font-size:13.5px;margin:0}
+.kv dt{color:var(--muted)} .kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.hist{display:grid;gap:14px;border-left:2px solid var(--line);margin-left:6px;padding-left:18px}
+.hv{position:relative;display:grid;gap:4px}
+.hv::before{content:"";position:absolute;left:-25px;top:4px;width:10px;height:10px;border-radius:50%;background:var(--ec,var(--muted));border:2px solid var(--panel)}
+.hv .hd{font-size:12.5px;color:var(--muted)} .hv b{font-size:14px} .hv p{font-size:13.5px;color:var(--fg2)}
+.linkrow{display:flex;flex-wrap:wrap;gap:6px}
+.lnk{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:8px;padding:3px 10px;font-size:12.5px;color:var(--fg);background:var(--raised);max-width:100%}
+.lnk:hover{border-color:var(--accent)} .lnk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.lnk span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .lnk small{color:var(--muted);white-space:nowrap}
+.chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.chip{all:unset;box-sizing:border-box;cursor:pointer;border:1px dashed var(--line);border-radius:999px;padding:2px 10px;font-size:12.5px;color:var(--fg2)}
+.chip:hover{border-color:var(--accent);color:var(--fg)} .chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.evcard{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--ec,var(--muted));border-radius:12px;padding:12px 16px;display:grid;gap:6px;cursor:pointer}
+.evcard:hover{border-color:var(--accent);border-left-color:var(--ec)} .evcard:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.evcard .hd{font-size:12.5px;color:var(--muted)} .evcard p{font-size:13.5px;color:var(--fg2);margin:0}
+.evlist{display:grid;gap:10px;max-height:820px;overflow:auto;padding-right:4px}
+
+.kgrid{display:grid;grid-template-columns:repeat(5,minmax(240px,1fr));gap:12px;overflow-x:auto;padding-bottom:8px;align-items:start}
+.kcol{background:var(--panel);border:1px solid var(--line);border-radius:14px;min-height:280px;display:grid;grid-template-rows:auto 1fr}
+.kcol.over{border-color:var(--accent);box-shadow:var(--shadow)}
+.khd{padding:10px 12px;font-weight:700;font-size:13.5px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line)}
+.khd small{font-weight:500;color:var(--muted);font-size:12px}
+.kcnt{font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.klist{padding:10px;display:grid;gap:10px;align-content:start}
+.stk{background:var(--raised);border:1px solid var(--line);border-top:5px solid var(--lc);border-radius:10px;padding:10px 12px;display:grid;gap:6px;cursor:grab}
+.stk:hover{border-color:var(--accent);border-top-color:var(--lc)} .stk:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stk.dragging{opacity:.4}
+.stk b{font-size:13.5px;line-height:1.3} .stk small{font-size:12px;color:var(--muted)}
+.stk .ok{color:var(--ok)} .stk .miss{color:var(--bad)}
+.stkft{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.stkmv{display:flex;gap:4px;flex:none}
+.stkmv button{all:unset;box-sizing:border-box;cursor:pointer;width:28px;height:28px;border:1px solid var(--line);border-radius:6px;text-align:center;line-height:26px;font-size:15px;background:var(--panel)}
+.stkmv button:hover{border-color:var(--accent)} .stkmv button:focus-visible{outline:2px solid var(--accent)} .stkmv button[disabled]{opacity:.3;cursor:not-allowed}
+.chklist{list-style:none;margin:0;padding:0;display:grid;gap:3px;font-size:13.5px}
+.chklist .y{color:var(--ok)} .chklist .n{color:var(--bad)}
+.stkpg{height:5px;border-radius:3px;background:var(--grid);position:relative;overflow:hidden}
+.stkpg i{position:absolute;left:0;top:0;bottom:0;background:var(--lc);width:var(--p)}
+details.card>summary{cursor:pointer;font-family:var(--f-display);font-size:16px;font-weight:500}
+.fx{border:1px dashed var(--line);border-radius:12px;padding:12px;display:grid;gap:10px;background:var(--bg)}
+.fxb{display:none;gap:10px}
+@media (max-width:1000px){
+  .formgrid{grid-template-columns:1fr}
+  .stages{grid-template-columns:1fr;gap:12px}
+  .stages::before{display:none}
+  .stg{flex-direction:row;align-items:center;gap:12px}
+  .stg .nb{flex:none}
+  .edrow,.stedrow{grid-template-columns:1fr 1fr}
+}
+@media (max-width:560px){
+  .row2,.row3{grid-template-columns:1fr}
+  .edrow,.stedrow{grid-template-columns:1fr}
+  .ginner{--LW:150px}.lanehd .lab b{font-size:11px}
+  .hr{font-size:18px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="brandmark"><img class="logo" id="logoImg" alt="DNS" src="data:image/png;base64,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"><span class="hr" id="brandHr">HR Ural</span></div>
+      <div>
+        <p class="eyebrow">DNS HR Ural · SimCenter · входная оценка «Космонавтики»</p>
+        <h1>Дорожная карта</h1>
+      </div>
+    </div>
+    <div class="actions">
+      <span class="pill save" id="saveState"><i class="dot"></i><span>Загрузка…</span></span>
+      <button class="btn sm" id="themeBtn" type="button">Тема</button>
+    </div>
+  </header>
+
+  <section aria-label="Этапы проекта">
+    <div class="stages" id="stages"></div>
+    <div class="stgbody" id="stgbody" style="margin-top:14px"></div>
+  </section>
+
+  <section class="kpis" id="kpis" aria-label="Показатели"></section>
+
+  <nav class="tabs" role="tablist" aria-label="Представления">
+    <button class="tab" role="tab" id="tab-gantt" data-v="gantt" aria-controls="v-gantt">Диаграмма Ганта</button>
+    <button class="tab" role="tab" id="tab-board" data-v="board" aria-controls="v-board">По исполнителям</button>
+    <button class="tab" role="tab" id="tab-kanban" data-v="kanban" aria-controls="v-kanban">Канбан-доска</button>
+    <button class="tab" role="tab" id="tab-hist" data-v="hist" aria-controls="v-hist">История и события</button>
+    <button class="tab" role="tab" id="tab-form" data-v="form" aria-controls="v-form">Форма заполнения</button>
+  </nav>
+
+  <section id="v-gantt" role="tabpanel" aria-labelledby="tab-gantt" style="display:grid;gap:12px">
+    <div class="toolbar">
+      <div class="legend">
+        <span class="lg"><i class="sw"></i>срок подтверждён</span>
+        <span class="lg"><i class="sw est"></i>срок предварительный</span>
+        <span class="lg"><i class="sw crit"></i>критический путь</span>
+        <span class="lg"><i class="sw bad"></i>конфликт сроков</span>
+      </div>
+      <div class="btns">
+        <select class="in" id="gFrom" aria-label="Начало диаграммы" style="width:auto;min-height:30px;padding:3px 8px;font-size:13px"><option value="near">С 19 октября</option><option value="all">С начала проекта</option></select>
+        <button class="btn sm" id="zOut" type="button" aria-label="Уменьшить масштаб">−</button>
+        <button class="btn sm" id="zIn" type="button" aria-label="Увеличить масштаб">+</button>
+        <button class="btn sm" id="autoBtn" type="button">Сдвинуть по зависимостям</button>
+      </div>
+    </div>
+    <p class="note" id="draftNote"></p>
+    <div class="gscroll" id="gscroll"><div class="ginner" id="ginner"></div></div>
+  </section>
+
+  <section id="v-board" role="tabpanel" aria-labelledby="tab-board" hidden style="display:grid;gap:12px">
+    <p class="note">По строкам люди, по столбцам направления. Клик по карточке открывает задачу в форме. Если задачу ведут двое, она стоит у обоих.</p>
+    <div class="bscroll"><div class="bgrid" id="bgrid"></div></div>
+  </section>
+
+  <section id="v-kanban" role="tabpanel" aria-labelledby="tab-kanban" hidden style="display:grid;gap:12px">
+    <p class="note">Каждый стикер — это задача. Что вы меняете здесь, сразу видно на диаграмме Ганта, доске по исполнителям и в форме, и наоборот. Пока у стикера заполнено не всё, он лежит в «Черновиках» и на диаграмму не попадает.</p>
+    <div class="toolbar">
+      <div class="btns"><button class="btn primary" id="kNew" type="button">Новый стикер</button><button class="btn" id="kImp" type="button">Вставить стикеры из Miro</button></div>
+      <select class="in" id="kLane" aria-label="Направление" style="width:auto"></select>
+    </div>
+    <div class="card" id="kimpbox" style="display:none">
+      <h2>Стикеры из Miro</h2>
+      <p class="muted" style="font-size:13.5px;margin:0">Скопируйте текст стикеров из Miro (каждый стикер с новой строки) или загрузите CSV. Можно писать: «Название | Кто | Начало | Конец». Дату без года считаю так: август–декабрь 2026, январь–июль 2027. Всё, что не заполнено, остаётся в черновиках, там же видно, чего не хватает.</p>
+      <textarea class="in" id="kimptext" style="min-height:120px" placeholder="Утвердить критерии допуска | Гарбузова | 15.11 | 28.11"></textarea>
+      <div class="row2"><div class="fld"><label for="kimplane">Направление для всех</label><select class="in" id="kimplane"></select></div>
+      <div class="fld"><label for="kimpfile">Или CSV и TXT файл</label><input class="in" type="file" id="kimpfile" accept=".csv,.txt,text/csv,text/plain"></div></div>
+      <div class="btns"><button class="btn primary" id="kimpgo" type="button">Создать стикеры</button><button class="btn" id="kimpcancel" type="button">Отмена</button></div>
+    </div>
+    <div class="kgrid" id="kgrid"></div>
+  </section>
+
+  <section id="v-hist" role="tabpanel" aria-labelledby="tab-hist" hidden style="display:grid;gap:22px">
+    <div class="formgrid">
+      <form class="card" id="evform" autocomplete="off">
+        <h2 id="evTitleH">Новое событие</h2>
+        <p class="muted" style="font-size:13.5px">Встреча, решение, смена срока, результат, риск. Запись попадёт в историю и на диаграмму. Если отметить «Изменить карту», сроки и задачи пересчитаются сразу.</p>
+        <div class="row2">
+          <div class="fld"><label for="e-date">Дата</label><input class="in" type="date" id="e-date"></div>
+          <div class="fld"><label for="e-type">Тип</label><select class="in" id="e-type"></select></div>
+        </div>
+        <div class="fld"><label for="e-title">Что произошло</label><input class="in" id="e-title" maxlength="160" placeholder="Например: заказчица утвердила критерии допуска"></div>
+        <div class="fld"><label for="e-text">Почему так решили (контекст, аргументы)</label><textarea class="in" id="e-text"></textarea></div>
+        <div class="fld"><span class="lbl">Каких задач касается</span><div class="depl" id="e-tasks"></div></div>
+        <div class="fld"><label for="e-links">Ссылки на источники (по одной в строке: название | адрес)</label><textarea class="in" id="e-links" placeholder="Рецензия 18.09 | obsidian://open?vault=Pedro78&file=..."></textarea><div class="chips" id="e-chips"></div></div>
+        <div class="fx">
+          <label class="chk" for="e-apply"><input type="checkbox" id="e-apply"> Изменить карту по этому событию</label>
+          <div class="fxb" id="e-fxbody">
+            <div class="fld"><label for="e-ftask">Какую задачу менять</label><select class="in" id="e-ftask"></select></div>
+            <div class="row3">
+              <div class="fld"><label for="e-fstart">Новое начало</label><input class="in" type="date" id="e-fstart"></div>
+              <div class="fld"><label for="e-fend">Новый конец</label><input class="in" type="date" id="e-fend"></div>
+              <div class="fld"><label for="e-fpct">Готово, %</label><input class="in" type="number" min="0" max="100" id="e-fpct"></div>
+            </div>
+            <div class="row2">
+              <div class="fld"><label for="e-fstatus">Статус</label><select class="in" id="e-fstatus"></select></div>
+              <label class="chk" for="e-fconf" style="align-self:end;min-height:38px"><input type="checkbox" id="e-fconf"> Срок теперь подтверждён</label>
+            </div>
+            <p class="muted" style="font-size:12.5px;margin:0">Пустые поля не меняются. Что изменилось, запишется в событие.</p>
+            <label class="chk" for="e-newtask"><input type="checkbox" id="e-newtask"> Добавить новую задачу</label>
+            <div class="fxb" id="e-newbody">
+              <div class="fld"><label for="e-ntitle">Название задачи</label><input class="in" id="e-ntitle" maxlength="160"></div>
+              <div class="row2">
+                <div class="fld"><label for="e-nlane">Направление</label><select class="in" id="e-nlane"></select></div>
+                <div class="fld"><label for="e-nowners">Кто отвечает</label><input class="in" id="e-nowners" list="ownerlist"></div>
+              </div>
+              <div class="row2">
+                <div class="fld"><label for="e-nstart">Начало</label><input class="in" type="date" id="e-nstart"></div>
+                <div class="fld"><label for="e-nend">Конец</label><input class="in" type="date" id="e-nend"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="info" id="evInfo">Укажите дату и название события.</div>
+        <div class="btns">
+          <button class="btn primary" type="submit" id="evSave">Сохранить событие</button>
+          <button class="btn" type="button" id="evNew">Новое событие</button>
+          <button class="btn warn" type="button" id="evDel">Удалить</button>
+        </div>
+      </form>
+      <div class="card">
+        <div class="toolbar"><h2>История</h2>
+          <div class="btns"><select class="in" id="h-type" aria-label="Тип события" style="width:auto"></select>
+          <input class="in" id="h-q" type="search" placeholder="Поиск" aria-label="Поиск по истории" style="width:180px"></div></div>
+        <div class="evlist" id="evlist"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="v-form" role="tabpanel" aria-labelledby="tab-form" hidden style="display:grid;gap:22px">
+    <div class="formgrid">
+      <form class="card" id="tform" autocomplete="off">
+        <h2 id="formTitle">Новая задача</h2>
+        <div class="fld"><label for="f-title">Что нужно сделать</label><input class="in" id="f-title" required maxlength="160" placeholder="Например: утвердить критерии красной зоны"></div>
+        <div class="row2">
+          <div class="fld"><label for="f-lane">Направление</label><select class="in" id="f-lane"></select></div>
+          <div class="fld"><label for="f-owners">Кто отвечает (через запятую)</label><input class="in" id="f-owners" list="ownerlist" placeholder="Гарбузова, Дубровина"><datalist id="ownerlist"></datalist></div>
+        </div>
+        <div class="row2">
+          <div class="fld"><label for="f-start">Начало</label><input class="in" type="date" id="f-start"></div>
+          <div class="fld"><label for="f-end">Конец</label><input class="in" type="date" id="f-end"></div>
+        </div>
+        <label class="chk" for="f-est"><input type="checkbox" id="f-est"> Срок предварительный (ещё не согласован)</label>
+        <div class="row2">
+          <div class="fld"><span class="lbl">Готово, %</span>
+            <div class="rng"><input type="range" id="f-pct" min="0" max="100" step="5" aria-label="Готово, процентов"><input class="in" type="number" id="f-pctn" min="0" max="100" aria-label="Процент числом"></div></div>
+          <div class="fld"><label for="f-status">Статус</label><select class="in" id="f-status"></select></div>
+        </div>
+        <div class="fld"><span class="lbl">Нельзя начать, пока не закончены</span><div class="depl" id="f-deps"></div></div>
+        <div class="fld"><label for="f-done">Что считается результатом</label><textarea class="in" id="f-done" placeholder="Например: решение записано в паспорте проекта"></textarea></div>
+        <div class="fld"><label for="f-links">Ссылки на историю и источники (название | адрес, по одной в строке)</label><textarea class="in" id="f-links"></textarea><div class="chips" id="f-chips"></div></div>
+        <div class="fld"><label for="f-reason">Почему меняете (попадёт в историю задачи)</label><input class="in" id="f-reason" maxlength="240" placeholder="Например: заказчица перенесла встречу на 20.11"></div>
+        <div class="row2">
+          <div class="fld"><label for="f-src">Основание</label><select class="in" id="f-src"></select></div>
+          <div class="fld"><label for="f-note">Комментарий</label><input class="in" id="f-note" maxlength="300"></div>
+        </div>
+        <div class="info" id="formInfo">Заполните название и сохраните.</div>
+        <div class="btns">
+          <button class="btn primary" type="submit" id="saveTask">Сохранить задачу</button>
+          <button class="btn" type="button" id="newTask">Новая задача</button>
+          <button class="btn warn" type="button" id="delTask">Удалить</button>
+        </div>
+      </form>
+
+      <div style="display:grid;gap:22px;min-width:0">
+        <div class="card">
+          <div class="toolbar"><h2>Все задачи</h2>
+            <input class="in" id="q" type="search" placeholder="Поиск по названию или человеку" style="max-width:280px" aria-label="Поиск"></div>
+          <div class="tscroll"><table id="ttable"></table></div>
+        </div>
+        <div class="card">
+          <h2>Вехи</h2>
+          <p class="muted" style="font-size:13.5px">Веха привязана к задаче: срок задачи сравнивается с датой вехи, отсюда «запас» и критическая цепочка.</p>
+          <div id="msed" style="display:grid;gap:10px"></div>
+          <div class="btns"><button class="btn sm" id="addMs" type="button">Добавить веху</button></div>
+        </div>
+      </div>
+    </div>
+
+    <details class="card">
+      <summary>Править пять этапов пути</summary>
+      <p class="muted" style="font-size:13.5px">Это пять карточек вверху страницы. Текст правится здесь.</p>
+      <div id="sted" style="display:grid;gap:10px"></div>
+    </details>
+
+    <details class="card">
+      <summary>Сохранение, копия и перенос данных</summary>
+      <p class="muted" style="font-size:13.5px" id="dataNote"></p>
+      <div class="btns">
+        <button class="btn" id="expCsv" type="button">Скачать таблицу (CSV)</button>
+        <button class="btn" id="expEv" type="button">Скачать историю (CSV)</button>
+        <button class="btn" id="expJson" type="button">Скачать копию (JSON)</button>
+        <label class="btn" for="impFile" style="display:inline-flex;align-items:center">Загрузить копию (JSON)</label>
+        <input type="file" id="impFile" accept=".json,application/json" hidden>
+        <button class="btn" id="resetBtn" type="button">Вернуть черновик</button>
+        <button class="btn warn" id="clearBtn" type="button">Очистить всё и начать с нуля</button>
+        <label class="btn" for="logoFile" style="display:inline-flex;align-items:center">Заменить логотип</label>
+        <input type="file" id="logoFile" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden>
+        <button class="btn" id="logoReset" type="button">Вернуть метку DNS</button>
+      </div>
+    </details>
+  </section>
+</div>
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden role="dialog" aria-modal="true" aria-label="Подробности"><div id="drawerBody"></div></aside>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+var DAY=864e5;
+var D=function(s){return s?Math.round(Date.parse(s+'T00:00:00Z')/DAY):null};
+var iso=function(n){return new Date(n*DAY).toISOString().slice(0,10)};
+var dm=function(s){return s?s.slice(8,10)+'.'+s.slice(5,7):''};
+var dmy=function(s){return s?dm(s)+'.'+s.slice(0,4):''};
+var todayN=function(){var d=new Date();return Math.round(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/DAY)};
+var monday=function(n){return n-((n+3)%7)};
+
+var LANES=[
+  {id:'dec',name:'Решения и согласования',c:'--l1'},
+  {id:'met',name:'Методология и проверка',c:'--l2'},
+  {id:'dev',name:'Разработка',c:'--l3'},
+  {id:'launch',name:'Запуск',c:'--l4'}
+];
+var STATUS={todo:'Не начато',doing:'В работе',done:'Готово',block:'Блокер'};
+var SRC=['паспорт','встречи','документы проекта','допущение','решение владельца'];
+var SRCMAP={'пересказ ИИ':'встречи','репозиторий':'документы проекта','мой вывод':'допущение','ваше решение':'решение владельца'};
+var LANEBY={};LANES.forEach(function(l){LANEBY[l.id]=l});
+var VIEWS=['gantt','board','kanban','hist','form'];
+var TYPES={meeting:['Встреча','--info'],decision:['Решение','--accent'],change:['Изменение','--gold'],done:['Результат','--ok'],risk:['Риск или блокер','--bad'],note:['Заметка','--muted']};
+var GH='https://github.com/maiklvas-bot/dns-sim-temp3/blob/main/';
+var OB=function(p){return 'obsidian://open?vault=Pedro78&file='+encodeURIComponent(p)};
+var L={
+  passport:{t:'Паспорт проекта (PDF)',u:'Simulacia Claude/Паспорт_проекта_23_10_полная_версия.pdf'},
+  rev0910:{t:'Рецензия на встречу 10.09',u:OB('01-projects/simcenter/reviews/2026-09-10-review')},
+  rev0918:{t:'Рецензия на встречу 18.09',u:OB('01-projects/simcenter/reviews/2026-09-18-review')},
+  rev1103:{t:'Рецензия на состояние 03.11',u:OB('01-projects/simcenter/reviews/2026-11-03-review')},
+  hist:{t:'Документ «Куда шли и куда пришли»',u:'https://claude.ai/artifact/4QkUutKYfJdSvGnd8YMTCt'},
+  meet:{t:'Дорожная карта по встречам',u:'https://claude.ai/artifact/RBhWkQyii5rrMrkVKxLSNE'}
+};
+var LIBK=Object.keys(L).map(function(k){return L[k]});
+
+function draft(){var X=draft0();attachDraft(X);return X}
+function draft0(){
+  return {v:2,
+  tasks:[
+   {id:'t1',lane:'dec',title:'Цель отбора и критерии допуска (красная и жёлтая зоны)',owners:'Федоткина, Дубровина',start:'2026-11-05',end:'2026-11-14',pct:0,status:'todo',deps:[],src:'паспорт',est:true,done:'Решение записано в паспорте, включая кто и по каким данным ставит красные флаги',note:'Заказчица Федоткина с инициативной группой; встречу организует Дубровина'},
+   {id:'t2',lane:'dec',title:'Ограниченный профиль компетенций и критичные критерии',owners:'Гарбузова, Дубровина',start:'2026-11-15',end:'2026-11-28',pct:0,status:'todo',deps:['t1'],src:'пересказ ИИ',est:true,done:'Утверждён список с поведенческими индикаторами; согласован с розницей',note:'Профиль по встрече 18.09 к 30.09 не был готов'},
+   {id:'t3',lane:'dec',title:'Решение по API: бюджет, провайдер, псевдонимизация',owners:'Гарбузова, Васильцов',start:'2026-11-05',end:'2026-11-18',pct:0,status:'todo',deps:[],src:'пересказ ИИ',est:true,done:'Письменные ответы финансов и ИБ или решение идти без API (ручной справочник ответов)',note:'Годовой лимит $15 тыс. по встрече 18.09; нужно согласование с финансами'},
+   {id:'t4',lane:'dec',title:'Правила апелляции и разбора, разделение ролей',owners:'Гарбузова',start:'2026-11-15',end:'2026-11-24',pct:0,status:'todo',deps:['t1'],src:'пересказ ИИ',est:true,done:'Правила и роли (методолог, технический администратор) внесены в паспорт',note:'Апелляция в 2–3 раунда'},
+   {id:'t5',lane:'met',title:'Протокол проверки на 12 людях',owners:'Васильцов, Дубровина',start:'2026-11-29',end:'2026-12-05',pct:0,status:'todo',deps:['t1','t2'],src:'мой вывод',est:true,done:'Участники, формат беседы, определение «совпадения» и метрики времени, форма опроса, действие при 8 из 12; согласовано с заказчицей',note:'8 из 12 = 67%: запуск по условию паспорта отменяется'},
+   {id:'t6',lane:'dev',title:'Требования для разработчика',owners:'Гарбузова, Любимов',start:'2026-12-06',end:'2026-12-12',pct:0,status:'todo',deps:['t1','t2','t3','t5'],src:'пересказ ИИ',est:true,done:'Описан состав продукта из раздела 3 паспорта',note:'Поручено Гарбузовой на встрече 18.09'},
+   {id:'t7',lane:'dev',title:'План работ в паспорте с датами',owners:'Васильцов',start:'2026-12-13',end:'2026-12-17',pct:0,status:'todo',deps:['t5','t6'],src:'мой вывод',est:true,done:'План привязан к 31.12.2026 и 01.02.2027',note:'Сейчас раздел плана в паспорте не заполнен'},
+   {id:'t8',lane:'dev',title:'Сборка MVP',owners:'Любимов',start:'2026-12-13',end:'2027-01-02',pct:0,status:'todo',deps:['t6'],src:'пересказ ИИ',est:true,done:'MVP по составу из паспорта: критерии отбора, форма обратной связи, цифровая платформа',note:'Любимов: 12–15 часов в неделю по встрече 02.09; по индексу проекта срок декабрь 2026'},
+   {id:'t9',lane:'met',title:'Проверка на 12 людях и замер трёх метрик',owners:'Экспертная группа, Васильцов',start:'2027-01-03',end:'2027-01-16',pct:0,status:'todo',deps:['t8'],src:'паспорт',est:true,done:'Совпадение с экспертами не ниже 75%, 15 минут экспертной группы на человека, опрос по 5-балльной шкале',note:'По паспорту проверка к 31.12.2026'},
+   {id:'t10',lane:'launch',title:'Запуск и масштабирование (февральский набор)',owners:'Отдел обучения, РРС',start:'2027-01-17',end:'2027-01-30',pct:0,status:'todo',deps:['t9'],src:'паспорт',est:true,done:'Запуск этапа 1; в «БС Паспорт» стоит «к марту 2027»; нужна одна дата',note:'Конец проекта 01.02.2027'},
+   {id:'p1',lane:'dec',title:'Паспорт проекта, редакция 6',owners:'Команда проекта',start:'2026-10-22',end:'2026-10-22',pct:100,status:'done',deps:[],src:'паспорт',est:false,done:'Цель, состав продукта, три метрики к 31.12',note:'Итог встреч с 13.08'},
+   {id:'p2',lane:'met',title:'Сверка паспорта с собранным продуктом',owners:'Claude',start:'2026-11-03',end:'2026-11-03',pct:100,status:'done',deps:['p1'],src:'документы проекта',est:false,done:'Рецензия «куда шли и куда пришли»: расхождения паспорта и продукта',note:'Сверка по документам и истории проекта, сам продукт не запускался'},
+   {id:'d1',lane:'dev',title:'Включить исправленные кейсы «Космонавта» и пометить прежние результаты',owners:'не назначен',start:'',end:'',pct:0,status:'todo',deps:[],src:'документы проекта',est:true,done:'17 исправленных кейсов включены; прежние результаты помечены как несопоставимые',note:'Срока в материалах нет, решение за владельцем'}
+  ],
+  milestones:[
+   {id:'m1',title:'Проверка трёх метрик',date:'2026-12-31',taskId:'t9',src:'паспорт'},
+   {id:'m2',title:'Конец проекта, февральский набор',date:'2027-02-01',taskId:'t10',src:'паспорт'},
+   {id:'m3',title:'«К марту 2027» в «БС Паспорт»',date:'2027-03-01',taskId:'',src:'пересказ ИИ'}
+  ],
+  stages:[
+   {title:'Где были',period:'июнь – 3.09',kind:'',src:'репозиторий',text:'Строили симуляцию «Космонавт»: 17 пар кейсов, кабинеты оценщика и администратора, ЗРД с многоместным столом. Цель из индекса проекта: вместо двух недель ручной оценки 3–5 дней.'},
+   {title:'Почему отошли',period:'с 4.09',kind:'',src:'пересказ ИИ',text:'Оценка и тренировка устроены по-разному. Живой оценщик спорит с целью «30 → 15 минут на человека». Поток в 150–250 кандидатов слишком велик для симуляции на каждого.'},
+   {title:'Как пришли',period:'2.09 – 22.10',kind:'',src:'паспорт',text:'Встречи с 13.08 по 16.10 сдвинули замысел от «симуляция вместо ручной оценки» к отбору с допуском, зонами и тремя метриками. Итогом стал паспорт проекта, редакция 6 (22.10).'},
+   {title:'Где сейчас',period:'5 ноября',kind:'now',src:'репозиторий',text:'Паспорт и собранный продукт расходятся. После 3 сентября продукт не менялся. Не оформлены три согласования: профиль компетенций, бюджет на API и позиция по информационной безопасности.'},
+   {title:'Куда идём',period:'до 1.02.2027',kind:'next',src:'паспорт',text:'Проверка на 12 людях к 31.12.2026, конец проекта 01.02.2027. Главный путь: цель отбора, профиль, протокол проверки, требования, сборка, проверка. Сроков у шагов в материалах нет, их задаёте вы.'}
+  ]};
+}
+
+var S=draft(), view='gantt', selId=null, dayW=8, stageSel=3, myRev=null, db=null, ref=null, saveT=null, mode='boot', gFrom='near', evSel=null, lastFocus=null, OFFLINE=!window.claude;
+
+/* ---------- хранение ---------- */
+function setSave(kind,text){var e=$('#saveState');e.className='pill save '+kind;e.lastChild.textContent=text}
+function normalize(){
+  if(!S||!Array.isArray(S.tasks)){S=draft()}
+  S.milestones=Array.isArray(S.milestones)?S.milestones:[];
+  S.stages=Array.isArray(S.stages)&&S.stages.length?S.stages:draft().stages;
+  S.tasks.forEach(function(t){t.deps=Array.isArray(t.deps)?t.deps:[];t.pct=Math.max(0,Math.min(100,+t.pct||0));t.owners=t.owners||'';t.lane=LANEBY[t.lane]?t.lane:'dec';t.status=STATUS[t.status]?t.status:'todo';t.start=t.start||'';t.end=t.end||'';t.links=Array.isArray(t.links)?t.links:[];t.src=SRCMAP[t.src]||t.src||''});
+  S.milestones.forEach(function(m){m.src=SRCMAP[m.src]||m.src||''});
+  (S.stages||[]).forEach(function(s){s.src=SRCMAP[s.src]||s.src||''});
+  if((S.v||1)<2){
+    var X=draft();S.events=X.events;S.tasks=S.tasks.filter(function(t){return ['p3','p4','p5','p6','p7','p8','d2','d3','d4'].indexOf(t.id)<0});S.tasks.forEach(function(t){if(t.lane==='proc'||t.lane==='debt'){t.lane=(t.id==='p2')?'met':(t.id==='d1'?'dev':'dec')}});
+    X.tasks.forEach(function(d){var o=S.tasks.filter(function(t){return t.id===d.id})[0];if(!o){if(/^q/.test(d.id))S.tasks.push(d)}else if(!o.links.length)o.links=d.links});
+    S.v=2;
+  }
+  S.events=Array.isArray(S.events)?S.events:[];
+  S.events.forEach(function(e){e.taskIds=Array.isArray(e.taskIds)?e.taskIds:[];e.links=Array.isArray(e.links)?e.links:[];e.type=TYPES[e.type]?e.type:'note';e.text=e.text||''});
+}
+function lsGet(){try{var s=localStorage.getItem('simcenter-roadmap-v1');return s?JSON.parse(s):null}catch(e){return null}}
+function lsSet(){try{localStorage.setItem('simcenter-roadmap-v1',JSON.stringify(S))}catch(e){}}
+function persist(){
+  setSave('wait','Сохраняется…');
+  clearTimeout(saveT);
+  saveT=setTimeout(function(){
+    lsSet();
+    if(db&&ref){
+      myRev=String(Date.now())+Math.random().toString(36).slice(2);
+      ref.set({json:JSON.stringify(S),rev:myRev,at:new Date().toISOString()}).then(function(){setSave('ok','Сохранено в общей базе')}).catch(function(){setSave('err','Не сохранилось в базу, копия осталась в браузере')});
+    }else{setSave('ok',OFFLINE?'Офлайн: хранится в этом браузере':'Хранится в этом браузере')}
+  },500);
+}
+function initStore(){
+  var l=lsGet(); if(l){S=l;normalize()} else normalize();
+  renderAll(); setSave('ok',OFFLINE?'Офлайн: хранится в этом браузере':'Хранится в этом браузере');
+  var c=window.claude;
+  if(!c||!c.use) return;
+  Promise.resolve(c.use('db')).then(function(d){
+    if(!d) return;
+    db=d; ref=db.doc('roadmap/main');
+    ref.onSnapshot(function(snap){
+      if(!snap.exists){setSave('ok','Общая база пуста: сохраните любое изменение');return}
+      var x=snap.data(); if(!x||!x.json) return;
+      if(x.rev&&x.rev===myRev){setSave('ok','Сохранено в общей базе');return}
+      try{S=JSON.parse(x.json);normalize();lsSet();renderAll();setSave('ok','Загружено из общей базы')}catch(e){}
+    },function(){setSave('err','База недоступна, работаем в браузере')});
+  }).catch(function(){});
+}
+
+/* ---------- расчёты ---------- */
+function byId(){var m={};S.tasks.forEach(function(t){m[t.id]=t});return m}
+function dur(t){return t.start&&t.end?D(t.end)-D(t.start)+1:null}
+function analyze(){
+  var m=byId(),res={};
+  S.tasks.forEach(function(t){res[t.id]={conf:[],slack:null,crit:false,late:false}});
+  S.tasks.forEach(function(t){(t.deps||[]).forEach(function(id){var d=m[id];if(d&&t.start&&d.end&&D(t.start)<=D(d.end))res[t.id].conf.push(d)})});
+  var LF={};
+  S.milestones.forEach(function(ms){if(ms.taskId&&ms.date&&m[ms.taskId]){var v=D(ms.date);LF[ms.taskId]=Math.min(LF[ms.taskId]==null?Infinity:LF[ms.taskId],v)}});
+  var ch=true,g=0;
+  while(ch&&g++<60){ch=false;
+    S.tasks.forEach(function(s){var lf=LF[s.id],du=dur(s);if(lf==null||du==null)return;var ls=lf-du+1;
+      (s.deps||[]).forEach(function(id){if(!m[id])return;var v=ls-1;if(v<(LF[id]==null?Infinity:LF[id])){LF[id]=v;ch=true}})})}
+  var min=Infinity;
+  S.tasks.forEach(function(t){if(LF[t.id]!=null&&t.end){var sl=LF[t.id]-D(t.end);res[t.id].slack=sl;if(t.pct<100)min=Math.min(min,sl)}});
+  S.tasks.forEach(function(t){var r=res[t.id];r.crit=(r.slack!=null&&t.pct<100&&r.slack===min&&min<=5);r.late=(r.slack!=null&&r.slack<0&&t.pct<100)});
+  return res;
+}
+function autoSchedule(){
+  var m=byId(),order=[],vis={};
+  function visit(t,st){if(vis[t.id]||st[t.id])return;st[t.id]=1;(t.deps||[]).forEach(function(i){if(m[i])visit(m[i],st)});delete st[t.id];vis[t.id]=1;order.push(t)}
+  S.tasks.forEach(function(t){visit(t,{})});
+  var moved=0;
+  order.forEach(function(t){
+    if(!t.start||!t.end||t.pct>=100)return;
+    var need=0;(t.deps||[]).forEach(function(i){var d=m[i];if(d&&d.end)need=Math.max(need,D(d.end)+1)});
+    var s=D(t.start);
+    if(need>s){var du=dur(t);t.start=iso(need);t.end=iso(need+du-1);moved++}
+  });
+  return moved;
+}
+
+/* ---------- этапы ---------- */
+function renderStages(){
+  $('#stages').innerHTML=S.stages.map(function(s,i){
+    return '<button type="button" class="stg '+(s.kind||'')+(i===stageSel?' sel':'')+'" data-i="'+i+'" aria-pressed="'+(i===stageSel)+'"><span class="nb">'+(i+1)+'</span><span><span class="tt">'+esc(s.title)+'</span><br><span class="pr">'+esc(s.period)+'</span></span></button>';
+  }).join('');
+  var s=S.stages[stageSel]||S.stages[0];
+  $('#stgbody').innerHTML='<h3>'+esc(s.title)+' · '+esc(s.period)+'</h3><p>'+esc(s.text)+'</p>';
+}
+
+/* ---------- показатели ---------- */
+function renderKPI(){
+  var A=analyze(),m=byId(),t=todayN();
+  var ms1=S.milestones.filter(function(x){return x.taskId&&m[x.taskId]&&x.date&&m[x.taskId].end})[0];
+  var k=[];
+  var first=S.milestones.filter(function(x){return x.date&&D(x.date)>=t}).sort(function(a,b){return D(a.date)-D(b.date)})[0];
+  k.push({cls:'hot',b:first?(D(first.date)-t)+' дн.':'—',s:first?'до вехи «'+esc(first.title)+'» ('+dmy(first.date)+')':'нет будущих вех'});
+  if(ms1){var tk=m[ms1.taskId],d=D(ms1.date)-D(tk.end);
+    k.push({cls:d<0?'bad':'good',b:(d>=0?'+':'−')+Math.abs(d)+' дн.',s:'запас до вехи «'+esc(ms1.title)+'»: «'+esc(tk.title.length>34?tk.title.slice(0,33)+'…':tk.title)+'» заканчивается '+dmy(tk.end)})}
+  else k.push({cls:'',b:'—',s:'привяжите веху к задаче, чтобы увидеть запас'});
+  var conf=0;S.tasks.forEach(function(x){if(A[x.id].conf.length)conf++});
+  k.push({cls:conf?'bad':'good',b:String(conf),s:conf?'задач начинаются раньше, чем закончатся предыдущие':'зависимости не нарушены'});
+  var done=S.tasks.filter(function(x){return x.pct>=100}).length,und=S.tasks.filter(function(x){return !x.start||!x.end}).length;
+  k.push({cls:'',b:done+' из '+S.tasks.length,s:'задач готово'+(und?', без срока: '+und:'')});
+  $('#kpis').innerHTML=k.map(function(x){return '<div class="kpi '+x.cls+'"><b>'+x.b+'</b><span>'+x.s+'</span></div>'}).join('');
+}
+
+/* ---------- Гант ---------- */
+function rowsOf(){
+  var rows=[];
+  LANES.forEach(function(l){
+    var ts=S.tasks.filter(function(t){return t.lane===l.id&&isComplete(t)}).sort(function(a,b){
+      var A=a.start?D(a.start):1e9,B=b.start?D(b.start):1e9;return A-B});
+    if(!ts.length)return;
+    rows.push({lane:l});ts.forEach(function(t){rows.push({task:t,lane:l})});
+  });
+  return rows;
+}
+function renderGantt(){
+  var A=analyze(),rows=rowsOf();
+  var ds=[];S.tasks.forEach(function(t){if(t.start)ds.push(D(t.start));if(t.end)ds.push(D(t.end))});
+  S.milestones.forEach(function(m){if(m.date)ds.push(D(m.date))});
+  var t0=todayN();
+  var evd=S.events.filter(function(e){return e.date}).map(function(e){return D(e.date)});
+  var base=(gFrom==='all')?ds.concat(evd,[t0]):ds.concat([D('2026-10-19'),t0]);
+  var min=monday(Math.min.apply(null,base)),max=Math.max.apply(null,ds.concat([D('2027-03-01')]))+14;
+  var W=(max-min+1)*dayW,X=function(n){return (n-min)*dayW};
+  var weekW=7*dayW,h='';
+  var mo='',wk='';
+  var cur=min;
+  while(cur<=max){var d=new Date(cur*DAY);var y=d.getUTCFullYear(),mth=d.getUTCMonth();var nxt=Math.round(Date.UTC(y,mth+1,1)/DAY);var end=Math.min(nxt,max+1);
+    mo+='<div class="mo" style="left:'+X(cur)+'px;width:'+((end-cur)*dayW)+'px">'+['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'][mth]+(mth===0||cur===min?' '+y:'')+'</div>';cur=end}
+  for(var w=min;w<=max;w+=7){wk+='<div class="wk" style="left:'+X(w)+'px;width:'+weekW+'px">'+(dayW>=6?dm(iso(w)):'')+'</div>'}
+  h+='<div class="ghead"><div class="grow"><div class="lab">Задача</div><div class="tl" style="width:'+W+'px">'+mo+'</div></div>';
+  h+='<div class="grow" style="height:24px"><div class="lab" style="font-size:11px"></div><div class="tl" style="width:'+W+'px">'+wk+'</div></div></div>';
+  /* вехи */
+  var ml='';
+  S.milestones.forEach(function(m){if(!m.date)return;var x=X(D(m.date));
+    ml+='<div class="msl" style="left:'+(x-7)+'px;color:var(--gold)"><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M7 0l2.1 4.6 5 .6-3.7 3.4 1 5L7 11.2 2.6 13.6l1-5L0 5.2l5-.6z" fill="currentColor"/></svg><span style="color:var(--fg)">'+dm(m.date)+' · '+esc(m.title)+'</span></div>'});
+  h+='<div class="grow mrow"><div class="lab" style="cursor:default"><span class="lt">Вехи</span></div><div class="tl" style="width:'+W+'px">'+ml+'</div></div>';
+  var evh='';
+  S.events.forEach(function(e){if(!e.date)return;var n=D(e.date);if(n<min||n>max)return;evh+='<button type="button" class="evdot" data-ev="'+esc(e.id)+'" style="left:'+(X(n)-8)+'px;--ec:'+evColor(e)+'" title="'+esc(dmy(e.date)+' · '+e.title)+'" aria-label="'+esc(e.title)+'"></button>'});
+  h+='<div class="grow evrow"><div class="lab" style="cursor:default"><span class="lt">События</span><span class="lo">нажмите на точку</span></div><div class="tl" style="width:'+W+'px">'+evh+'</div></div>';
+  rows.forEach(function(r){
+    if(!r.task){h+='<div class="grow lanehd" style="--lc:var('+r.lane.c+')"><div class="lab"><i></i><b>'+esc(r.lane.name)+'</b></div><div class="tl" style="width:'+W+'px"></div></div>';return}
+    var t=r.task,a=A[t.id],cell='';
+    if(t.start&&t.end){
+      var s=D(t.start),e=D(t.end),x=X(s),w=Math.max((e-s+1)*dayW,12);
+      var inside=w>=190;
+      var cls='bar'+(t.est?' est':'')+(t.pct>=100?' done':'')+(a.crit?' crit':'')+((a.conf.length||a.late)?' bad':'');
+      cell+='<button type="button" class="'+cls+'" data-id="'+esc(t.id)+'" style="left:'+x+'px;width:'+w+'px;--lc:var('+r.lane.c+')" title="'+esc(t.title)+' · '+dmy(t.start)+' – '+dmy(t.end)+' · '+t.pct+'%"><span class="bi">'+(inside?esc(t.title):'')+'</span><i class="pg" style="--p:'+t.pct+'%"></i></button>';
+      var lw=t.title.length*6.6+16,rx=x+w+8,sl='';
+      if(a.slack!=null&&t.pct<100){sl='<span class="slk '+(a.slack<0?'neg':'pos')+'" style="left:'+(inside?(x+w+6):(rx))+'px">'+(a.slack<0?'−':'+')+Math.abs(a.slack)+' дн.</span>'}
+      if(!inside){
+        if(rx+lw+(sl?70:0)<W) cell+='<span class="bo" style="left:'+(rx+(sl?64:0))+'px">'+esc(t.title)+'</span>';
+        else cell+='<span class="bo" style="right:'+(W-x+8)+'px">'+esc(t.title)+'</span>';
+        if(sl&&rx+lw+70>=W){sl=sl.replace('left:'+rx+'px','left:'+(x+w+6)+'px')}
+      }
+      cell+=sl;
+    }else cell+='<span class="nodate">срока нет, откройте задачу и поставьте даты</span>';
+    h+='<div class="grow" data-row="'+esc(t.id)+'"><div class="lab" data-open="'+esc(t.id)+'" title="'+esc(t.title)+'"><span class="lt">'+esc(t.title)+'</span><span class="lo">'+esc(t.owners||'не назначен')+'</span></div><div class="tl" style="width:'+W+'px;background-size:'+weekW+'px 100%;background-position:0 0">'+cell+'</div></div>';
+  });
+  h+='<div class="gover" id="gover" style="width:'+W+'px"><svg id="garr" width="'+W+'" height="10"></svg>';
+  var tx=X(t0);
+  if(t0>=min&&t0<=max)h+='<div class="today" style="left:'+tx+'px"><span>Сегодня '+dm(iso(t0))+'</span></div>';
+  S.milestones.forEach(function(m){if(m.date&&m.taskId)h+='<div class="mline" style="left:'+X(D(m.date))+'px"></div>'});
+  h+='</div>';
+  var gi=$('#ginner');gi.innerHTML=h;
+  gi.style.width='calc(var(--LW) + '+W+'px)';
+  /* стрелки зависимостей */
+  var over=$('#gover'),svg=$('#garr'),oh=gi.scrollHeight;over.style.height=oh+'px';svg.setAttribute('height',oh);
+  var ovr=over.getBoundingClientRect(),paths='';
+  S.tasks.forEach(function(t){(t.deps||[]).forEach(function(id){
+    var from=$('.bar[data-id="'+id+'"]',gi),to=$('.bar[data-id="'+t.id+'"]',gi);if(!from||!to)return;
+    var f=from.getBoundingClientRect(),g=to.getBoundingClientRect();
+    var x1=f.right-ovr.left,y1=f.top+f.height/2-ovr.top,x2=g.left-ovr.left,y2=g.top+g.height/2-ovr.top;
+    var bad=x2<=x1+2,crit=A[t.id].crit&&A[id]&&A[id].crit;
+    var xm=Math.min(x1+10,Math.max(x2-10,x1+4)); if(bad)xm=x1+10;
+    var col=bad?'var(--bad)':(crit?'var(--accent)':'var(--muted)');
+    paths+='<path d="M'+x1+' '+y1+' H'+xm+' V'+y2+' H'+x2+'" fill="none" style="stroke:'+col+'" stroke-width="'+(crit?2:1.3)+'" '+(bad?'stroke-dasharray="4 3"':'')+' opacity=".85"/><path d="M'+(x2-6)+' '+(y2-4)+' L'+x2+' '+y2+' L'+(x2-6)+' '+(y2+4)+'" fill="none" style="stroke:'+col+'" stroke-width="1.6"/>';
+  })});
+  svg.innerHTML=paths;
+  var est=S.tasks.filter(function(t){return t.est&&t.start}).length;
+  var drc=S.tasks.filter(function(x){return !isComplete(x)&&x.status!=='done'}).length;
+  $('#draftNote').innerHTML=(est?'Пунктиром показаны предварительные сроки: в материалах проекта их нет, подтверждены только 31.12.2026 и 01.02.2027. Замените их своими на стикере или в форме.':'Все сроки подтверждены.')+(drc?' Задач в черновиках, они не на диаграмме: '+drc+' (вкладка «Канбан-доска»).':'');
+}
+
+/* ---------- доска ---------- */
+function ownersOf(t){var o=String(t.owners||'').split(/[,;]+/).map(function(x){return x.trim()}).filter(Boolean);return o.length?o:['не назначен']}
+function renderBoard(){
+  var order=[],seen={};
+  S.tasks.forEach(function(t){if(!isComplete(t))return;ownersOf(t).forEach(function(o){if(!seen[o]){seen[o]=1;order.push(o)}})});
+  var h='<div class="bh" style="--lc:var(--panel);color:var(--fg2);background:var(--panel)">Кто</div>';
+  LANES.forEach(function(l){h+='<div class="bh" style="--lc:var('+l.c+')">'+esc(l.name)+'</div>'});
+  order.forEach(function(o){
+    h+='<div class="bo-lab">'+esc(o)+'</div>';
+    LANES.forEach(function(l){
+      var ts=S.tasks.filter(function(t){return t.lane===l.id&&isComplete(t)&&ownersOf(t).indexOf(o)>=0});
+      h+='<div class="bcell" style="--lc:var('+l.c+')">'+ts.map(function(t){
+        return '<button type="button" class="bcard'+(t.est?' est':'')+'" data-open="'+esc(t.id)+'"><b>'+esc(t.title)+'</b><small>'+(t.start&&t.end?dm(t.start)+' – '+dm(t.end)+(t.end.slice(0,4)!==t.start.slice(0,4)||t.end.slice(0,4)==='2027'?' '+t.end.slice(0,4):''):'срок не задан')+' · '+t.pct+'%</small><span class="bprog"><i style="--p:'+t.pct+'%"></i></span></button>'}).join('')+'</div>';
+    });
+  });
+  $('#bgrid').innerHTML=h;
+}
+
+/* ---------- форма ---------- */
+function fillSelects(){
+  $('#f-lane').innerHTML=LANES.map(function(l){return '<option value="'+l.id+'">'+esc(l.name)+'</option>'}).join('');
+  $('#f-status').innerHTML=Object.keys(STATUS).map(function(k){return '<option value="'+k+'">'+STATUS[k]+'</option>'}).join('');
+  $('#f-src').innerHTML='<option value="">не указано</option>'+SRC.map(function(s){return '<option>'+esc(s)+'</option>'}).join('');
+}
+function ownerList(){var o=[],s={};S.tasks.forEach(function(t){ownersOf(t).forEach(function(x){if(!s[x]){s[x]=1;o.push(x)}})});$('#ownerlist').innerHTML=o.map(function(x){return '<option value="'+esc(x)+'">'}).join('')}
+function loadForm(id){
+  selId=id;var t=id?byId()[id]:null;
+  $('#formTitle').textContent=t?'Править задачу':'Новая задача';
+  $('#f-title').value=t?t.title:'';$('#f-lane').value=t?t.lane:'dec';$('#f-owners').value=t?t.owners:'';
+  $('#f-start').value=t?t.start:'';$('#f-end').value=t?t.end:'';$('#f-est').checked=t?!!t.est:true;
+  $('#f-pct').value=t?t.pct:0;$('#f-pctn').value=t?t.pct:0;$('#f-status').value=t?t.status:'todo';
+  $('#f-done').value=t?t.done||'':'';$('#f-src').value=t?t.src:'';$('#f-note').value=t?t.note||'':'';$('#f-links').value=t?linksText(t.links):'';$('#f-reason').value='';chips('#f-chips','#f-links');
+  var deps=t?t.deps:[];
+  $('#f-deps').innerHTML=S.tasks.filter(function(x){return !t||x.id!==t.id}).map(function(x){
+    return '<label><input type="checkbox" value="'+esc(x.id)+'"'+(deps.indexOf(x.id)>=0?' checked':'')+'><span>'+esc(x.title)+'</span></label>'}).join('')||'<span class="muted">Других задач пока нет</span>';
+  $('#delTask').hidden=!t;$('#delTask').textContent='Удалить';$('#delTask').dataset.arm='';
+  showInfo(t);renderTable();
+}
+function showInfo(t){
+  var el=$('#formInfo');
+  if(!t){el.className='info';el.textContent='Заполните название и сохраните. Даты можно оставить пустыми: задача попадёт в «без срока».';return}
+  var a=analyze()[t.id],m=[];
+  if(a.conf.length)m.push('Начинается раньше, чем закончится: '+a.conf.map(function(x){return '«'+x.title+'»'}).join(', ')+'.');
+  if(a.slack!=null)m.push(a.slack<0?'До даты вехи не успеваем на '+(-a.slack)+' дн.':'Запас до даты вехи: '+a.slack+' дн.');
+  if(a.crit)m.push('Входит в критическую цепочку.');
+  if(!m.length)m.push('Конфликтов нет.');
+  el.className='info '+((a.conf.length||(a.slack!=null&&a.slack<0))?'bad':'good');el.textContent=m.join(' ');
+}
+function renderTable(){
+  var A=analyze(),q=($('#q').value||'').toLowerCase().trim();
+  var rows=S.tasks.filter(function(t){return !q||(t.title+' '+t.owners).toLowerCase().indexOf(q)>=0});
+  $('#ttable').innerHTML='<thead><tr><th>Задача</th><th>Кто</th><th>Срок</th><th>%</th><th>Статус</th><th>Запас</th></tr></thead><tbody>'+rows.map(function(t){
+    var a=A[t.id],l=LANEBY[t.lane];
+    return '<tr data-id="'+esc(t.id)+'" class="'+(t.id===selId?'sel':'')+'"><td><b>'+esc(t.title)+'</b><br><span class="muted" style="font-size:12.5px">'+esc(l.name)+'</span></td><td>'+esc(t.owners||'—')+'</td><td class="num">'+(t.start&&t.end?dm(t.start)+' – '+dmy(t.end):'—')+(t.est?' ~':'')+'</td><td class="num">'+t.pct+'</td><td class="st-'+t.status+'">'+STATUS[t.status]+'</td><td class="num '+(a.slack!=null&&a.slack<0?'st-block':'')+'">'+(a.slack==null?'—':(a.slack>0?'+':'')+a.slack)+'</td></tr>'}).join('')+'</tbody>';
+}
+function renderMs(){
+  $('#msed').innerHTML=S.milestones.map(function(m,i){
+    return '<div class="edrow"><div class="fld"><label>Название</label><input class="in" data-ms="'+i+'" data-k="title" value="'+esc(m.title)+'"></div>'+
+      '<div class="fld"><label>Дата</label><input class="in" type="date" data-ms="'+i+'" data-k="date" value="'+esc(m.date)+'"></div>'+
+      '<div class="fld"><label>Задача, которая должна успеть</label><select class="in" data-ms="'+i+'" data-k="taskId"><option value="">— без привязки —</option>'+S.tasks.map(function(t){return '<option value="'+esc(t.id)+'"'+(t.id===m.taskId?' selected':'')+'>'+esc(t.title.slice(0,48))+'</option>'}).join('')+'</select></div>'+
+      '<button class="btn sm warn" type="button" data-delms="'+i+'">Убрать</button></div>'}).join('')||'<p class="muted">Вех нет.</p>';
+}
+function renderStEd(){
+  $('#sted').innerHTML=S.stages.map(function(s,i){
+    return '<div class="stedrow"><div class="fld"><label>Название</label><input class="in" data-st="'+i+'" data-k="title" value="'+esc(s.title)+'"></div>'+
+      '<div class="fld"><label>Период</label><input class="in" data-st="'+i+'" data-k="period" value="'+esc(s.period)+'"></div>'+
+      '<div class="fld"><label>Что здесь</label><textarea class="in" data-st="'+i+'" data-k="text">'+esc(s.text)+'</textarea></div>'+'</div>'}).join('');
+}
+
+/* ---------- общее ---------- */
+function toast(t){var e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(function(){e.hidden=true},2600)}
+function renderAll(){renderStages();renderKPI();renderGantt();renderBoard();fillSelects();ownerList();loadForm(selId&&byId()[selId]?selId:null);renderMs();renderStEd();fillEvSelects();renderHist();renderKanban();loadEvForm(null);applyLogo();
+  $('#dataNote').textContent=OFFLINE?'Работает без интернета. Правки сохраняются в этом браузере. Раз в день-два скачивайте копию (JSON): так данные не потеряются, если очистить браузер, и их можно перенести на другой компьютер.':db?'Данные лежат в общей базе страницы: их видят все, кто открыл её, и может прочитать Claude. Копия на всякий случай есть и в браузере.':'Данные хранятся в этом браузере. Чтобы перенести их, скачайте копию (JSON) и загрузите на другом устройстве.'}
+function refresh(){renderStages();renderKPI();renderGantt();renderBoard();ownerList();renderTable();renderHist();renderKanban();showInfo(selId?byId()[selId]:null);persist()}
+function setView(v){
+  view=v;VIEWS.forEach(function(k){var s=$('#v-'+k);s.hidden=(k!==v);s.style.display=(k===v)?'grid':'none';$('#tab-'+k).setAttribute('aria-selected',String(k===v))});
+  if(v==='gantt')renderGantt();
+  if(v==='hist')renderHist();
+  if(v==='kanban')renderKanban();
+  try{if(location.hash!=='#'+v)history.replaceState(null,'','#'+v)}catch(e){}
+}
+function openTask(id){loadForm(id);setView('form');var f=$('#tform');if(f.scrollIntoView)f.scrollIntoView({block:'start',behavior:'smooth'})}
+
+/* ---------- канбан-доска со стикерами ---------- */
+var KCOLS=[['draft','Черновики','не хватает данных'],['todo','Не начато',''],['doing','В работе',''],['block','Блокер',''],['done','Готово','']];
+var KORD=['draft','todo','doing','block','done'];
+function checkTask(t){
+  var o=String(t.owners||'').trim();
+  return [
+    {k:'title',l:'Что сделать',ok:!!String(t.title||'').trim()},
+    {k:'lane',l:'Направление',ok:!!LANEBY[t.lane]},
+    {k:'owners',l:'Кто отвечает',ok:!!o&&o!=='не назначен'},
+    {k:'term',l:'Срок: начало и конец',ok:!!(t.start&&t.end)},
+    {k:'done',l:'Результат: как поймём, что готово',ok:!!String(t.done||'').trim()},
+    {k:'src',l:'Основание: откуда это взято',ok:!!String(t.src||'').trim()}
+  ];
+}
+function isComplete(t){return checkTask(t).every(function(c){return c.ok})}
+function kcol(t){if(t.status==='done')return 'done';if(!isComplete(t))return 'draft';return t.status}
+function renderKanban(){
+  var ln=$('#kLane').value;
+  var opt='<option value="">Все направления</option>'+LANES.map(function(l){return '<option value="'+l.id+'">'+esc(l.name)+'</option>'}).join('');
+  if($('#kLane').dataset.f!=='1'){$('#kLane').innerHTML=opt;$('#kLane').dataset.f='1';$('#kLane').value=ln;$('#kimplane').innerHTML=LANES.map(function(l){return '<option value="'+l.id+'">'+esc(l.name)+'</option>'}).join('')}
+  var h='';
+  KCOLS.forEach(function(c){
+    var ts=S.tasks.filter(function(t){return kcol(t)===c[0]&&(!ln||t.lane===ln)}).sort(function(a,b){var A=a.start?D(a.start):1e9,B=b.start?D(b.start):1e9;return A-B||(a.title<b.title?-1:1)});
+    h+='<div class="kcol" data-col="'+c[0]+'"><div class="khd"><span>'+c[1]+(c[2]?'<br><small>'+c[2]+'</small>':'')+'</span><span class="kcnt">'+ts.length+'</span></div><div class="klist">'+ts.map(function(t){
+      var chk=checkTask(t),miss=chk.filter(function(x){return !x.ok}),cur=c[0];
+      var ft=cur==='draft'?'<small class="miss">не хватает: '+miss.length+'</small><small>открыть</small>':'<small class="ok">полный</small><span class="stkmv"><button type="button" data-mv="-1" data-sid="'+esc(t.id)+'" aria-label="Перенести левее"'+(cur==='todo'?' disabled':'')+'>‹</button><button type="button" data-mv="1" data-sid="'+esc(t.id)+'" aria-label="Перенести правее"'+(cur==='done'?' disabled':'')+'>›</button></span>';
+      return '<div class="stk" draggable="true" tabindex="0" data-sid="'+esc(t.id)+'" style="--lc:var('+LANEBY[t.lane].c+')"><b>'+esc(t.title)+'</b><small>'+esc(t.owners||'не назначен')+' · '+(t.start&&t.end?dm(t.start)+' – '+dm(t.end):'срока нет')+'</small><span class="stkpg"><i style="--p:'+t.pct+'%"></i></span><div class="stkft">'+ft+'</div></div>';
+    }).join('')+'</div></div>';
+  });
+  $('#kgrid').innerHTML=h;
+}
+function stickMove(id,dir){
+  var t=byId()[id];if(!t)return;
+  var cur=kcol(t);if(cur==='draft'){stickerEditor(id,'Стикер не полный. Заполните недостающее, потом его можно переносить.');return}
+  var target=KORD[KORD.indexOf(cur)+dir];if(!target||target==='draft')return;
+  moveSticker(id,target);
+}
+function moveSticker(id,target){
+  var t=byId()[id];if(!t)return;
+  var cur=kcol(t);if(cur===target)return;
+  if(target==='draft'){toast('В черновики стикер попадает сам, когда не хватает данных');return}
+  if(!isComplete(t)&&target!=='done'){stickerEditor(id,'Стикер не полный. Заполните недостающее, потом его можно переносить.');return}
+  var old={start:t.start,end:t.end,pct:t.pct,status:t.status};
+  if(target==='done'){t.pct=100}
+  else if(t.pct>=100){t.pct=0;toast('Готовность сброшена до 0%, поправьте её на стикере')}
+  t.status=target;normStatus(t,target);
+  logTaskChange(t,old,'перенос на канбан-доске');
+  refresh();
+}
+function pad2(n){n=String(n);return n.length<2?'0'+n:n}
+function parseDateLoose(s){
+  s=String(s||'').trim();var m;
+  if(m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/))return s;
+  if(m=s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/)){var y=+m[3];if(y<100)y+=2000;return y+'-'+pad2(m[2])+'-'+pad2(m[1])}
+  if(m=s.match(/^(\d{1,2})\.(\d{1,2})$/)){var mo=+m[2];return (mo>=8?2026:2027)+'-'+pad2(mo)+'-'+pad2(m[1])}
+  return '';
+}
+function importStickers(text,lane){
+  var lines=String(text||'').split(/\r?\n/).map(function(s){return s.trim()}).filter(Boolean);
+  if(lines.length&&/^(название|title|что сделать|задача)\b/i.test(lines[0]))lines.shift();
+  var n=0;
+  lines.forEach(function(line){
+    var parts=line.split(/\t|;|\|/).map(function(s){return s.trim().replace(/^"|"$/g,'')});
+    if(!parts[0])return;
+    var s=parseDateLoose(parts[2]),e=parseDateLoose(parts[3]);
+    if(s&&!e)e=s;if(e&&!s)s=e;if(s&&e&&D(e)<D(s)){var x=s;s=e;e=x}
+    S.tasks.push({id:'t'+Date.now().toString(36)+n+Math.random().toString(36).slice(2,4),lane:lane,title:parts[0],owners:parts[1]||'',start:s,end:e,pct:0,status:'todo',deps:[],src:'',est:true,done:'',note:'Из Miro',links:[]});n++;
+  });
+  if(n)S.events.push({id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),date:today(),type:'note',title:'Из Miro добавлено стикеров: '+n,text:'Все лежат в черновиках, пока не заполнены исполнитель, срок, результат и основание.',taskIds:[],links:[],auto:true});
+  return n;
+}
+function deleteTask(id){
+  S.tasks=S.tasks.filter(function(t){return t.id!==id});
+  S.tasks.forEach(function(t){t.deps=t.deps.filter(function(d){return d!==id})});
+  S.milestones.forEach(function(m){if(m.taskId===id)m.taskId=''});
+  S.events.forEach(function(e){e.taskIds=(e.taskIds||[]).filter(function(x){return x!==id})});
+}
+function readSticker(){
+  return {title:$('#s-title').value.trim(),lane:$('#s-lane').value,owners:$('#s-owners').value.trim(),start:$('#s-start').value,end:$('#s-end').value,
+    done:$('#s-done').value.trim(),src:$('#s-src').value};
+}
+function updateStickerCheck(){
+  var d=readSticker();if(d.start&&!d.end)d.end=d.start;if(d.end&&!d.start)d.start=d.end;
+  var c=checkTask(d),ok=c.filter(function(x){return x.ok}).length,full=ok===c.length;
+  var el=$('#stkCheck');if(!el)return;
+  el.className='info '+(full?'good':'');
+  el.innerHTML='<b>Проверка: заполнено '+ok+' из '+c.length+'</b><ul class="chklist" style="margin-top:6px">'+c.map(function(x){return '<li class="'+(x.ok?'y':'n')+'">'+(x.ok?'✓ ':'✗ ')+esc(x.l)+'</li>'}).join('')+'</ul><div style="margin-top:6px">'+(full?'Стикер полный: после сохранения он появится на диаграмме Ганта и на доске по исполнителям.':'После сохранения стикер останется в «Черновиках», на диаграмму он не попадёт.')+'</div>';
+}
+function stickerEditor(id,msg){
+  var t=id?byId()[id]:null,ln=$('#kLane').value||'dec';
+  var d=t||{title:'',lane:ln,owners:'',start:'',end:'',pct:0,status:'todo',deps:[],src:'',done:'',links:[],note:''};
+  var dep=S.tasks.filter(function(x){return !t||x.id!==t.id}).map(function(x){return '<label><input type="checkbox" value="'+esc(x.id)+'"'+(d.deps.indexOf(x.id)>=0?' checked':'')+'><span>'+esc(x.title)+'</span></label>'}).join('');
+  var h='<div class="dhead"><div><span class="eyebrow">Стикер</span><h2 class="dtitle">'+esc(t?t.title:'Новый стикер')+'</h2></div><button class="btn sm" id="dclose" type="button">Закрыть</button></div>';
+  if(msg)h+='<div class="info bad">'+esc(msg)+'</div>';
+  h+='<div class="info" id="stkCheck"></div>';
+  h+='<form id="stkForm" autocomplete="off" style="display:grid;gap:12px" data-sticker="'+esc(id||'')+'">'
+   +'<div class="fld"><label for="s-title">Что сделать</label><input class="in" id="s-title" maxlength="160" value="'+esc(d.title)+'"></div>'
+   +'<div class="row2"><div class="fld"><label for="s-lane">Направление</label><select class="in" id="s-lane">'+LANES.map(function(l){return '<option value="'+l.id+'"'+(l.id===d.lane?' selected':'')+'>'+esc(l.name)+'</option>'}).join('')+'</select></div>'
+   +'<div class="fld"><label for="s-owners">Кто отвечает</label><input class="in" id="s-owners" list="ownerlist" value="'+esc(d.owners==='не назначен'?'':d.owners)+'" placeholder="Фамилия, можно несколько через запятую"></div></div>'
+   +'<div class="row2"><div class="fld"><label for="s-start">Начало</label><input class="in" type="date" id="s-start" value="'+esc(d.start)+'"></div><div class="fld"><label for="s-end">Конец</label><input class="in" type="date" id="s-end" value="'+esc(d.end)+'"></div></div>'
+   +'<div class="row2"><div class="fld"><label for="s-pct">Готово, %</label><input class="in" type="number" min="0" max="100" id="s-pct" value="'+d.pct+'"></div><div class="fld"><label for="s-status">Статус</label><select class="in" id="s-status">'+Object.keys(STATUS).map(function(k){return '<option value="'+k+'"'+(k===d.status?' selected':'')+'>'+STATUS[k]+'</option>'}).join('')+'</select></div></div>'
+   +'<div class="fld"><label for="s-done">Результат: как поймём, что готово</label><textarea class="in" id="s-done">'+esc(d.done||'')+'</textarea></div>'
+   +'<div class="fld"><label for="s-src">Основание: откуда это взято</label><select class="in" id="s-src"><option value="">не указано</option>'+SRC.map(function(s){return '<option'+(s===d.src?' selected':'')+'>'+esc(s)+'</option>'}).join('')+'</select></div>'
+   +'<div class="fld"><label for="s-links">Ссылки на историю (название | адрес, по одной в строке)</label><textarea class="in" id="s-links">'+esc(linksText(d.links))+'</textarea><div class="chips" id="s-chips"></div></div>'
+   +'<details><summary style="cursor:pointer;font-size:13.5px;color:var(--fg2)">Нельзя начать, пока не закончены</summary><div class="depl" id="s-deps" style="margin-top:8px">'+(dep||'<span class="muted">Других задач нет</span>')+'</div></details>'
+   +'<div class="fld"><label for="s-reason">Почему меняете (попадёт в историю)</label><input class="in" id="s-reason" maxlength="240"></div>'
+   +'<div class="btns"><button class="btn primary" type="submit">Сохранить стикер</button>'+(t?'<button class="btn" type="button" data-open="'+esc(id)+'">История и ссылки</button><button class="btn warn" type="button" id="s-del">Удалить</button>':'')+'</div></form>';
+  openDrawer(h);chips('#s-chips','#s-links');updateStickerCheck();
+  if(!t)$('#s-title').focus();
+}
+function saveSticker(ev){
+  ev.preventDefault();
+  var id=$('#stkForm').dataset.sticker,t=id?byId()[id]:null,isNew=!t;
+  var d=readSticker();if(!d.title){var el=$('#stkCheck');el.className='info bad';el.innerHTML='<b>Напишите хотя бы название стикера.</b>';return}
+  if(d.start&&!d.end)d.end=d.start;if(d.end&&!d.start)d.start=d.end;
+  if(d.start&&d.end&&D(d.end)<D(d.start)){var e2=$('#stkCheck');e2.className='info bad';e2.innerHTML='<b>Конец раньше начала.</b>';return}
+  var old=t?{start:t.start,end:t.end,pct:t.pct,status:t.status}:null;
+  if(isNew){t={id:'t'+Date.now().toString(36),est:true,note:''};S.tasks.push(t)}
+  t.title=d.title;t.lane=d.lane;t.owners=d.owners;t.start=d.start;t.end=d.end;t.done=d.done;t.src=d.src;
+  t.pct=Math.max(0,Math.min(100,parseInt($('#s-pct').value,10)||0));t.status=$('#s-status').value;normStatus(t,t.status);
+  t.deps=$$('#s-deps input:checked').map(function(i){return i.value});t.links=parseLinks($('#s-links').value);
+  logTaskChange(t,old,$('#s-reason').value.trim());
+  var full=isComplete(t);refresh();closeDrawer();
+  toast(full?'Стикер полный: он уже на диаграмме Ганта и на доске по исполнителям':'Стикер сохранён в черновиках: чего-то не хватает');
+}
+/* ---------- события, история, ссылки ---------- */
+function today(){return iso(todayN())}
+function rngTxt(s,e){return s&&e?dmy(s)+' – '+dmy(e):'без срока'}
+function evColor(e){return 'var('+(TYPES[e.type]||TYPES.note)[1]+')'}
+function parseLinks(text){
+  return String(text||'').split(/\r?\n/).map(function(s){return s.trim()}).filter(Boolean).map(function(s){
+    var i=s.indexOf('|');if(i>0)return {t:s.slice(0,i).trim(),u:s.slice(i+1).trim()};
+    return {t:s,u:s};
+  }).filter(function(l){return l.u});
+}
+function linksText(a){return (a||[]).map(function(l){return l.t+' | '+l.u}).join('\n')}
+function linkHtml(l){
+  var u=String(l.u||'').trim(),tt=l.t||u;
+  if(/^(https?:\/\/|obsidian:\/\/)/i.test(u))return '<a class="lnk" href="'+esc(u)+'" target="_blank" rel="noopener noreferrer"><span>'+esc(tt)+'</span></a>';
+  return '<button type="button" class="lnk" data-copy="'+esc(u)+'" title="Путь к файлу, нажмите, чтобы скопировать"><span>'+esc(tt)+'</span><small>копировать путь</small></button>';
+}
+function linkRow(a){return a&&a.length?'<div class="linkrow">'+a.map(linkHtml).join('')+'</div>':''}
+function copyText(s){
+  var ok=function(){toast('Скопировано: '+(s.length>60?s.slice(0,58)+'…':s))};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(s).then(ok,function(){fallbackCopy(s);ok()})}else{fallbackCopy(s);ok()}
+}
+function fallbackCopy(s){var a=document.createElement('textarea');a.value=s;a.style.position='fixed';a.style.opacity='0';document.body.appendChild(a);a.select();try{document.execCommand('copy')}catch(e){}a.remove()}
+function chips(boxSel,areaSel){
+  $(boxSel).innerHTML='<span class="muted" style="font-size:12.5px">Добавить из списка:</span>'+LIBK.map(function(l,i){return '<button type="button" class="chip" data-chip="'+i+'" data-area="'+areaSel+'">'+esc(l.t)+'</button>'}).join('');
+}
+function normStatus(t,wanted){
+  var st=wanted||t.status;
+  if(t.pct>=100)st='done';else if(st==='done')st=t.pct>0?'doing':'todo';else if(t.pct>0&&st==='todo')st='doing';
+  t.status=st;
+}
+function logTaskChange(t,old,reason){
+  var parts=[];
+  if(!old){parts.push('Задача добавлена')}
+  else{
+    if(old.start!==t.start||old.end!==t.end)parts.push('Срок: '+rngTxt(old.start,old.end)+' → '+rngTxt(t.start,t.end));
+    if(old.pct!==t.pct)parts.push('Готово: '+old.pct+'% → '+t.pct+'%');
+    if(old.status!==t.status)parts.push('Статус: '+STATUS[old.status]+' → '+STATUS[t.status]);
+  }
+  if(!parts.length&&!reason)return;
+  if(reason)parts.push('Причина: '+reason);
+  S.events.push({id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),date:today(),type:'change',title:(old?'Изменена задача':'Добавлена задача')+' «'+t.title+'»',text:parts.join('. ')+'.',taskIds:[t.id],links:[],auto:true});
+}
+function fillEvSelects(){
+  var ts=Object.keys(TYPES);
+  $('#e-type').innerHTML=ts.map(function(k){return '<option value="'+k+'">'+TYPES[k][0]+'</option>'}).join('');
+  var hv=$('#h-type').value;
+  $('#h-type').innerHTML='<option value="">Все типы</option>'+ts.map(function(k){return '<option value="'+k+'">'+TYPES[k][0]+'</option>'}).join('');$('#h-type').value=hv;
+  $('#e-nlane').innerHTML=LANES.map(function(l){return '<option value="'+l.id+'">'+esc(l.name)+'</option>'}).join('');
+  $('#e-fstatus').innerHTML='<option value="">не менять</option>'+Object.keys(STATUS).map(function(k){return '<option value="'+k+'">'+STATUS[k]+'</option>'}).join('');
+}
+function renderHist(){
+  var ty=$('#h-type').value,q=($('#h-q').value||'').toLowerCase().trim();
+  var ev=S.events.filter(function(e){return (!ty||e.type===ty)&&(!q||(e.title+' '+e.text).toLowerCase().indexOf(q)>=0)}).sort(function(a,b){return D(b.date)-D(a.date)||(a.id<b.id?1:-1)});
+  $('#evlist').innerHTML=ev.map(function(e){
+    return '<div class="evcard" role="button" tabindex="0" data-ev="'+esc(e.id)+'" style="--ec:'+evColor(e)+'"><span class="hd">'+dmy(e.date)+' · '+TYPES[e.type][0]+(e.auto?' · записано автоматически':'')+'</span><b>'+esc(e.title)+'</b>'+(e.text?'<p>'+esc(e.text)+'</p>':'')+(e.effect?'<p class="muted">Изменено на карте: '+esc(e.effect)+'</p>':'')+linkRow(e.links)+'</div>';
+  }).join('')||'<p class="muted">Событий нет. Запишите первое слева.</p>';
+}
+function toggleFx(){$('#e-fxbody').style.display=$('#e-apply').checked?'grid':'none';$('#e-newbody').style.display=($('#e-apply').checked&&$('#e-newtask').checked)?'grid':'none'}
+function evMsg(m,bad){var el=$('#evInfo');el.className='info'+(bad?' bad':'');el.textContent=m}
+function loadEvForm(id,preTask){
+  evSel=id||null;var e=id?S.events.filter(function(x){return x.id===id})[0]:null;
+  $('#evTitleH').textContent=e?'Событие от '+dmy(e.date):'Новое событие';
+  $('#e-date').value=e?e.date:today();$('#e-type').value=e?e.type:'meeting';$('#e-title').value=e?e.title:'';$('#e-text').value=e?e.text||'':'';
+  var sel=e?e.taskIds:(preTask?[preTask]:[]);
+  $('#e-tasks').innerHTML=S.tasks.map(function(x){return '<label><input type="checkbox" value="'+esc(x.id)+'"'+(sel.indexOf(x.id)>=0?' checked':'')+'><span>'+esc(x.title)+'</span></label>'}).join('')||'<span class="muted">Задач пока нет</span>';
+  $('#e-links').value=e?linksText(e.links):'';chips('#e-chips','#e-links');
+  $('#e-apply').checked=false;$('#e-newtask').checked=false;
+  $('#e-ftask').innerHTML='<option value="">выберите задачу</option>'+S.tasks.map(function(x){return '<option value="'+esc(x.id)+'">'+esc(x.title.slice(0,70))+'</option>'}).join('');
+  ['#e-fstart','#e-fend','#e-fpct','#e-fstatus','#e-ntitle','#e-nowners','#e-nstart','#e-nend'].forEach(function(s){$(s).value=''});$('#e-fconf').checked=false;
+  toggleFx();$('#evDel').hidden=!e;$('#evDel').dataset.arm='';$('#evDel').textContent='Удалить';
+  evMsg(e&&e.effect?'Это событие меняло карту: '+e.effect+' Повторно изменения не применяются, пока не отметите «Изменить карту».':'Укажите дату и название события.',false);
+}
+function applyEventEffects(taskIds){
+  var fx=[],tid=$('#e-ftask').value;
+  if(tid){
+    var t=byId()[tid];
+    var s=$('#e-fstart').value,en=$('#e-fend').value,p=$('#e-fpct').value,st=$('#e-fstatus').value;
+    var ns=s||t.start,ne=en||t.end;
+    if(ns&&ne&&D(ne)<D(ns))return {err:'Новый конец раньше начала.'};
+    var o={start:t.start,end:t.end,pct:t.pct,status:t.status};
+    if(s||en){t.start=ns||ne;t.end=ne||ns;fx.push('срок «'+t.title+'»: '+rngTxt(o.start,o.end)+' → '+rngTxt(t.start,t.end))}
+    if(p!==''){t.pct=Math.max(0,Math.min(100,parseInt(p,10)||0))}
+    normStatus(t,st||null);
+    if(t.pct!==o.pct)fx.push('готово по «'+t.title+'»: '+o.pct+'% → '+t.pct+'%');
+    if(t.status!==o.status)fx.push('статус «'+t.title+'»: '+STATUS[o.status]+' → '+STATUS[t.status]);
+    if($('#e-fconf').checked&&t.est){t.est=false;fx.push('срок «'+t.title+'» подтверждён')}
+    if(taskIds.indexOf(tid)<0)taskIds.push(tid);
+  }
+  if($('#e-newtask').checked){
+    var nt=$('#e-ntitle').value.trim();
+    if(!nt)return {err:'У новой задачи нет названия.'};
+    var s2=$('#e-nstart').value,e2=$('#e-nend').value;if(s2&&!e2)e2=s2;if(e2&&!s2)s2=e2;
+    if(s2&&e2&&D(e2)<D(s2))return {err:'У новой задачи конец раньше начала.'};
+    var nid='t'+Date.now().toString(36);
+    S.tasks.push({id:nid,lane:$('#e-nlane').value,title:nt,owners:$('#e-nowners').value.trim(),start:s2||'',end:e2||'',pct:0,status:'todo',deps:[],src:'',est:true,done:'',note:'',links:[]});
+    taskIds.push(nid);fx.push('добавлена задача «'+nt+'»');
+  }
+  return {fx:fx};
+}
+function evSubmit(ev){
+  ev.preventDefault();
+  var date=$('#e-date').value,title=$('#e-title').value.trim();
+  if(!date||!title){evMsg('Нужны дата и название события.',true);return}
+  var e=evSel?S.events.filter(function(x){return x.id===evSel})[0]:null,isNew=!e;
+  var taskIds=$$('#e-tasks input:checked').map(function(i){return i.value});
+  var fx=[];
+  if($('#e-apply').checked){
+    if(!$('#e-ftask').value&&!$('#e-newtask').checked){evMsg('Выберите задачу для изменения или отметьте добавление новой.',true);return}
+    var r=applyEventEffects(taskIds);if(r.err){evMsg(r.err,true);return}fx=r.fx;
+    if(!fx.length){evMsg('Вы отметили изменение карты, но ничего не заполнили.',true);return}
+  }
+  if(isNew){e={id:'e'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)};S.events.push(e)}
+  e.date=date;e.type=$('#e-type').value;e.title=title;e.text=$('#e-text').value.trim();e.taskIds=taskIds;e.links=parseLinks($('#e-links').value);delete e.auto;
+  if(fx.length)e.effect=(e.effect?e.effect+'. ':'')+fx.join('. ')+'.';
+  refresh();loadEvForm(null);toast(isNew?'Событие записано'+(fx.length?', карта пересчитана':''):'Событие сохранено');
+}
+/* карточка (drawer) */
+function openDrawer(html){
+  lastFocus=document.activeElement;$('#drawerBody').innerHTML=html;$('#drawer').hidden=false;$('#scrim').hidden=false;
+  var c=$('#dclose');if(c)c.focus();$('#drawer').scrollTop=0;
+}
+function closeDrawer(){
+  $('#drawer').hidden=true;$('#scrim').hidden=true;
+  if(lastFocus&&lastFocus.focus&&document.contains(lastFocus))lastFocus.focus();
+}
+function histItem(e){
+  return '<div class="hv" style="--ec:'+evColor(e)+'"><span class="hd">'+dmy(e.date)+' · '+TYPES[e.type][0]+(e.auto?' · авто':'')+'</span><b>'+esc(e.title)+'</b>'+(e.text?'<p>'+esc(e.text)+'</p>':'')+(e.effect?'<p class="muted">Изменено на карте: '+esc(e.effect)+'</p>':'')+linkRow(e.links)+'</div>';
+}
+function kv(k,v){return v?'<dt>'+k+'</dt><dd>'+v+'</dd>':''}
+function taskDrawer(id){
+  var m=byId(),t=m[id];if(!t)return;
+  var a=analyze()[id],ln=LANEBY[t.lane];
+  var prev=t.deps.map(function(d){return m[d]}).filter(Boolean),next=S.tasks.filter(function(x){return x.deps.indexOf(id)>=0});
+  var evs=S.events.filter(function(e){return e.taskIds.indexOf(id)>=0}).sort(function(x,y){return D(x.date)-D(y.date)});
+  var btn=function(x){return '<button type="button" class="lnk" data-open="'+esc(x.id)+'"><span>'+esc(x.title)+'</span></button>'};
+  var h='<div class="dhead"><div><span class="eyebrow">'+esc(ln.name)+'</span><h2 class="dtitle">'+esc(t.title)+'</h2></div><button class="btn sm" id="dclose" type="button">Закрыть</button></div>';
+  h+='<dl class="kv">'+kv('Кто',esc(t.owners||'не назначен'))+kv('Срок',t.start&&t.end?rngTxt(t.start,t.end)+(t.est?' (предварительный)':''):'не задан')+kv('Готово',t.pct+'%')+kv('Статус',STATUS[t.status])
+    +kv('Запас до вехи',a.slack==null?'':(a.slack<0?'не успеваем на '+(-a.slack)+' дн.':'+'+a.slack+' дн.'))+kv('Критический путь',a.crit?'да':'')+kv('Результат',esc(t.done))+kv('Основание',esc(t.src))+kv('Комментарий',esc(t.note))+'</dl>';
+  if(prev.length)h+='<div><h3>Нельзя начать, пока не закончены</h3><div class="linkrow" style="margin-top:6px">'+prev.map(btn).join('')+'</div></div>';
+  if(next.length)h+='<div><h3>От неё зависят</h3><div class="linkrow" style="margin-top:6px">'+next.map(btn).join('')+'</div></div>';
+  h+='<div><h3>Откуда это взято и почему</h3><div style="margin-top:6px">'+(t.links.length?linkRow(t.links):'<span class="muted">Ссылок нет. Добавьте в форме задачи.</span>')+'</div></div>';
+  h+='<div><h3>История задачи</h3><div class="hist" style="margin-top:10px">'+(evs.length?evs.map(histItem).join(''):'<span class="muted">Событий по задаче нет.</span>')+'</div></div>';
+  h+='<div class="btns"><button class="btn primary" type="button" data-edit="'+esc(id)+'">Править в форме</button><button class="btn" type="button" data-newev="'+esc(id)+'">Записать событие</button></div>';
+  openDrawer(h);
+}
+function eventDrawer(id){
+  var e=S.events.filter(function(x){return x.id===id})[0];if(!e)return;var m=byId();
+  var h='<div class="dhead"><div><span class="eyebrow">'+dmy(e.date)+' · '+TYPES[e.type][0]+'</span><h2 class="dtitle">'+esc(e.title)+'</h2></div><button class="btn sm" id="dclose" type="button">Закрыть</button></div>';
+  if(e.text)h+='<div><h3>Что и почему</h3><p style="margin-top:6px">'+esc(e.text)+'</p></div>';
+  if(e.effect)h+='<div><h3>Что изменилось на карте</h3><p style="margin-top:6px">'+esc(e.effect)+'</p></div>';
+  var ts=e.taskIds.map(function(i){return m[i]}).filter(Boolean);
+  if(ts.length)h+='<div><h3>Задачи</h3><div class="linkrow" style="margin-top:6px">'+ts.map(function(x){return '<button type="button" class="lnk" data-open="'+esc(x.id)+'"><span>'+esc(x.title)+'</span></button>'}).join('')+'</div></div>';
+  h+='<div><h3>Источники</h3><div style="margin-top:6px">'+(e.links.length?linkRow(e.links):'<span class="muted">Ссылок нет.</span>')+'</div></div>';
+  h+='<div class="btns"><button class="btn primary" type="button" data-evedit="'+esc(id)+'">Править</button></div>';
+  openDrawer(h);
+}
+/* логотип */
+function applyLogo(){
+  var img=$('#logoImg'),hr=$('#brandHr'),c=null;
+  if(!img.dataset.def)img.dataset.def=img.getAttribute('src');
+  try{c=localStorage.getItem('simcenter-logo')}catch(e){}
+  if(c){img.src=c;hr.hidden=true}else{img.src=img.dataset.def;hr.hidden=false}
+}
+/* стартовые данные: ссылки, задачи по ROADMAP.md, журнал событий */
+function attachDraft(X){
+  var LK={t1:['passport','rev1103','hist'],t2:['rev0918','passport'],t3:['rev0918'],t4:['rev0910','rev0918'],t5:['rev1103','passport'],t6:['passport'],t7:['passport'],t8:['passport'],t9:['passport','rev1103'],t10:['passport'],p1:['passport'],p2:['rev1103','hist']};
+  var cp=function(k){return {t:L[k].t,u:L[k].u}};
+  X.tasks.forEach(function(t){t.links=(LK[t.id]||[]).map(cp)});
+  var Q=[
+   {id:'q1',lane:'dev',title:'Довести разбор (debrief): рассуждение участника, план действий',done:'Разбор сохраняет выбранный вариант и рассуждение; критические компетенции согласованы с экраном результатов и PDF'},
+   {id:'q2',lane:'met',title:'Показать надёжность свидетельств по компетенциям',done:'Охват кейсами по каждой компетенции; слабые свидетельства помечены как повод для обсуждения'},
+   {id:'q3',lane:'met',title:'Живой пилот и калибровка (3–5 прохождений)',done:'Утверждён протокол пилота; дефекты и методические находки фиксируются отдельно'},
+   {id:'q4',lane:'dev',title:'Кабинет оценщика и экспертная проверка 12 компетенций (ЗРД)',done:'Закрыты пробелы мониторинга и результатов оценщика; экспертная проверка профиля'}
+  ];
+  Q.forEach(function(q){q.owners='не назначен';q.start='';q.end='';q.pct=0;q.status='todo';q.deps=[];q.src='репозиторий';q.est=true;q.note='Из плана развития продукта (на 21.09), срока в материалах нет';q.links=[]});
+  X.tasks=X.tasks.concat(Q);
+  var EV=[
+   ['2026-08-13','meeting','Начало серии встреч по проекту','Встречи с 13.08 по 16.10 сдвинули замысел от «симуляция вместо ручной оценки» к отбору с допуском, зонами и тремя метриками.',[],['rev1103','meet']],
+   ['2026-09-02','meeting','Встреча 02.09: время разработчика','Любимов выделяет 12–15 часов в неделю на разработку.',['t8'],['meet']],
+   ['2026-09-03','change','Последние изменения в продукте','Исправлены оценка компетенций и порядок выдачи. После 3 сентября продукт не менялся.',['t8'],[]],
+   ['2026-09-10','decision','Встреча 10.09: оценка и решение о допуске разделены','Результат оценки после процедуры не переписывается. Решение о допуске принимает человек, отклонение от рекомендации и его основание сохраняются.',['t1','t4'],['rev0910']],
+   ['2026-09-18','decision','Встреча 18.09: API как направление исследования','API не утверждён как закупка. Нужны бюджет (звучал лимит $15 тыс. в год), провайдер и согласование ИБ. Прямые идентификаторы сотрудников во внешний API не передаются, рабочая гипотеза: псевдонимный ID. Профиль компетенций к 30.09 не будет готов.',['t2','t3','t4'],['rev0918']],
+   ['2026-09-21','decision','Порядок работы: сначала согласования, потом разработка','Сначала закрыть бизнес-проектирование (паспорт, профиль компетенций, границы API), и только потом ставить задачи разработки.',['t1','t2','t3'],[]],
+   ['2026-10-16','meeting','Последняя встреча перед паспортом','Итог встречи с заказчицей после этой даты не подтверждён.',['t1'],['rev1103']],
+   ['2026-10-22','done','Паспорт проекта, редакция 6','Цель, состав продукта и три метрики к 31.12.2026: совпадение с экспертами не ниже 75%, 15 минут экспертной группы на человека, опрос по 5-балльной шкале.',['p1','t9'],['passport']],
+   ['2026-11-03','decision','Сверка паспорта с собранным продуктом','Паспорт и собранный продукт расходятся, три согласования не оформлены: профиль компетенций, бюджет API, позиция ИБ. Причина расхождения пока гипотеза.',['p2','t1','t2','t3'],['rev1103','hist']],
+   ['2026-11-05','note','Создана дорожная карта','Сроки задач 1–10 поставил Claude как допущение: в материалах проекта сроков нет. Подтверждены только 31.12.2026 и 01.02.2027.',['t1','t2','t3','t4','t5','t6','t7','t8','t9','t10'],['meet','hist']]
+  ];
+  X.events=EV.map(function(e,i){return {id:'h'+(i+1),date:e[0],type:e[1],title:e[2],text:e[3],taskIds:e[4],links:e[5].map(cp)}});
+}
+
+/* ---------- события ---------- */
+document.addEventListener('click',function(e){
+  var mv=e.target.closest('[data-mv]');
+  if(mv){stickMove(mv.dataset.sid,+mv.dataset.mv);return}
+  var sd=e.target.closest('.stk');
+  if(sd){stickerEditor(sd.dataset.sid);return}
+  var sdel=e.target.closest('#s-del');
+  if(sdel){if(sdel.dataset.arm!=='1'){sdel.dataset.arm='1';sdel.textContent='Точно удалить? Нажмите ещё раз';return}var sid=$('#stkForm').dataset.sticker;deleteTask(sid);closeDrawer();refresh();toast('Стикер удалён');return}
+  var cp=e.target.closest('[data-copy]');
+  if(cp){copyText(cp.dataset.copy);return}
+  var ch=e.target.closest('[data-chip]');
+  if(ch){var ta=$(ch.dataset.area),l=LIBK[+ch.dataset.chip];if(ta.value.indexOf(l.u)<0)ta.value=(ta.value.trim()?ta.value.trim()+'\n':'')+l.t+' | '+l.u;return}
+  if(e.target.closest('a'))return;
+  var el=e.target.closest('[data-id],[data-open],[data-delms],[data-ev],[data-edit],[data-newev],[data-evedit],#dclose,#scrim,.stg,.tab');if(!el)return;
+  if(el.id==='dclose'||el.id==='scrim'){closeDrawer();return}
+  if(el.classList.contains('tab')){setView(el.dataset.v);return}
+  if(el.classList.contains('stg')){stageSel=+el.dataset.i;renderStages();return}
+  if(el.dataset.delms!=null){S.milestones.splice(+el.dataset.delms,1);renderMs();refresh();return}
+  if(el.dataset.edit){closeDrawer();openTask(el.dataset.edit);return}
+  if(el.dataset.newev){closeDrawer();loadEvForm(null,el.dataset.newev);setView('hist');return}
+  if(el.dataset.evedit){closeDrawer();loadEvForm(el.dataset.evedit);setView('hist');return}
+  if(el.dataset.ev){eventDrawer(el.dataset.ev);return}
+  if(el.tagName==='TR'){loadForm(el.dataset.id);return}
+  var id=el.dataset.open||el.dataset.id;if(id)taskDrawer(id);
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&!$('#drawer').hidden){closeDrawer();return}
+  if((e.key==='Enter'||e.key===' ')&&e.target.classList&&e.target.classList.contains('evcard')){e.preventDefault();eventDrawer(e.target.dataset.ev)}
+  if(e.key==='Enter'&&e.target.classList&&e.target.classList.contains('stk')){e.preventDefault();stickerEditor(e.target.dataset.sid)}
+});
+$('#tform').addEventListener('submit',function(e){
+  e.preventDefault();
+  var title=$('#f-title').value.trim();if(!title){showInfoErr('Укажите, что нужно сделать.');return}
+  var s=$('#f-start').value,en=$('#f-end').value;
+  if(s&&!en)en=s;if(en&&!s)s=en;
+  if(s&&en&&D(en)<D(s)){showInfoErr('Конец раньше начала.');return}
+  var pct=Math.max(0,Math.min(100,parseInt($('#f-pctn').value,10)||0)),st=$('#f-status').value;
+  if(pct>=100)st='done';else if(st==='done')st=pct>0?'doing':'todo';else if(pct>0&&st==='todo')st='doing';
+  var deps=$$('#f-deps input:checked').map(function(i){return i.value});
+  var t=selId?byId()[selId]:null,isNew=!t;var old=t?{start:t.start,end:t.end,pct:t.pct,status:t.status}:null;
+  if(isNew){t={id:'t'+Date.now().toString(36)};S.tasks.push(t)}
+  t.title=title;t.lane=$('#f-lane').value;t.owners=$('#f-owners').value.trim();t.start=s;t.end=en;t.est=$('#f-est').checked;
+  t.pct=pct;t.status=st;t.deps=deps;t.done=$('#f-done').value.trim();t.src=$('#f-src').value;t.note=$('#f-note').value.trim();t.links=parseLinks($('#f-links').value);logTaskChange(t,old,$('#f-reason').value.trim());
+  selId=t.id;renderMs();refresh();loadForm(t.id);toast(isNew?'Задача добавлена':'Задача сохранена');
+});
+function showInfoErr(m){var el=$('#formInfo');el.className='info bad';el.textContent=m}
+$('#newTask').addEventListener('click',function(){loadForm(null);$('#f-title').focus()});
+$('#delTask').addEventListener('click',function(){
+  var b=$('#delTask');if(!selId)return;
+  if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='Точно удалить? Нажмите ещё раз';setTimeout(function(){b.dataset.arm='';b.textContent='Удалить'},4000);return}
+  var id=selId;S.tasks=S.tasks.filter(function(t){return t.id!==id});
+  S.tasks.forEach(function(t){t.deps=t.deps.filter(function(d){return d!==id})});
+  S.milestones.forEach(function(m){if(m.taskId===id)m.taskId=''});
+  S.events.forEach(function(e){e.taskIds=(e.taskIds||[]).filter(function(x){return x!==id})});
+  selId=null;loadForm(null);renderMs();refresh();toast('Задача удалена');
+});
+$('#f-pct').addEventListener('input',function(){$('#f-pctn').value=this.value});
+$('#f-pctn').addEventListener('input',function(){$('#f-pct').value=this.value});
+$('#q').addEventListener('input',renderTable);
+$('#addMs').addEventListener('click',function(){S.milestones.push({id:'m'+Date.now().toString(36),title:'Новая веха',date:'',taskId:'',src:'ваше решение'});renderMs();refresh()});
+$('#msed').addEventListener('change',function(e){var el=e.target;if(el.dataset.ms==null)return;S.milestones[+el.dataset.ms][el.dataset.k]=el.value;refresh()});
+$('#sted').addEventListener('change',function(e){var el=e.target;if(el.dataset.st==null)return;S.stages[+el.dataset.st][el.dataset.k]=el.value;renderStages();persist()});
+$('#zIn').addEventListener('click',function(){dayW=Math.min(18,dayW+2);renderGantt()});
+$('#zOut').addEventListener('click',function(){dayW=Math.max(3,dayW-2);renderGantt()});
+$('#autoBtn').addEventListener('click',function(){var n=autoSchedule();refresh();toast(n?'Сдвинуто задач: '+n:'Все задачи уже стоят после своих предшественников')});
+$('#themeBtn').addEventListener('click',function(){var r=document.documentElement,dark=getComputedStyle(r).colorScheme==='dark';r.setAttribute('data-theme',dark?'light':'dark');try{localStorage.setItem('simcenter-theme',dark?'light':'dark')}catch(e){}renderGantt()});
+function two(btn,label,fn){btn.addEventListener('click',function(){if(btn.dataset.arm!=='1'){btn.dataset.arm='1';btn.dataset.l=btn.textContent;btn.textContent='Точно? Нажмите ещё раз';setTimeout(function(){btn.dataset.arm='';btn.textContent=btn.dataset.l||label},4000);return}btn.dataset.arm='';btn.textContent=label;fn()})}
+two($('#resetBtn'),'Вернуть черновик',function(){S=draft();selId=null;renderAll();persist();toast('Черновик возвращён')});
+two($('#clearBtn'),'Очистить всё и начать с нуля',function(){S={v:1,tasks:[],milestones:[],stages:draft().stages.map(function(s){return {title:s.title,period:'',kind:s.kind,src:'ваше решение',text:''}})};selId=null;renderAll();persist();toast('Форма пуста: добавляйте задачи')});
+
+two($('#evDel'),'Удалить',function(){var id=evSel;if(!id)return;S.events=S.events.filter(function(e){return e.id!==id});refresh();loadEvForm(null);toast('Событие удалено')});
+function csv(){
+  var h=['ID','Направление','Название','Ответственные','Начало','Конец','Готово %','Статус','Зависит от','Источник','Срок оценочный','Результат','Комментарий','Ссылки'];
+  var q=function(v){v=String(v==null?'':v);return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  return '﻿'+[h.join(';')].concat(S.tasks.map(function(t){return [t.id,LANEBY[t.lane].name,t.title,t.owners,t.start,t.end,t.pct,STATUS[t.status],t.deps.join(','),t.src,t.est?'да':'нет',t.done,t.note,linksText(t.links).replace(/\n/g,' ; ')].map(q).join(';')})).join('\r\n');
+}
+function localSave(name,data){
+  var type=/\.csv$/.test(name)?'text/csv;charset=utf-8':'application/json';
+  var b=new Blob([data],{type:type}),a=document.createElement('a');
+  a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},600);toast('Файл сохранён в загрузки');
+}
+function offer(name,data){
+  if(OFFLINE){localSave(name,data);return}
+  var c=window.claude;if(!c||!c.use){toast('Скачивание здесь недоступно');return}
+  Promise.resolve(c.use('downloads')).then(function(d){
+    if(!d){toast('Скачивание здесь недоступно');return}
+    return d.save({filename:name,data:data}).then(function(){toast('Файл сохранён')}).catch(function(err){if(!err||err.code!=='declined')toast('Не удалось сохранить файл')});
+  }).catch(function(){toast('Скачивание здесь недоступно')});
+}
+$('#expCsv').addEventListener('click',function(){offer('dorozhnaya-karta-simcenter.csv',csv())});
+$('#expJson').addEventListener('click',function(){offer('dorozhnaya-karta-simcenter.json',JSON.stringify(S,null,2))});
+$('#impFile').addEventListener('change',function(){
+  var f=this.files&&this.files[0];if(!f)return;var r=new FileReader();
+  r.onload=function(){try{var x=JSON.parse(r.result);if(!x||!Array.isArray(x.tasks))throw 0;S=x;normalize();selId=null;renderAll();persist();toast('Копия загружена')}catch(e){toast('Файл не похож на копию карты')}};
+  r.readAsText(f);this.value='';
+});
+$('#evform').addEventListener('submit',evSubmit);
+$('#evNew').addEventListener('click',function(){loadEvForm(null);$('#e-title').focus()});
+$('#e-apply').addEventListener('change',toggleFx);
+$('#e-newtask').addEventListener('change',toggleFx);
+$('#h-type').addEventListener('change',renderHist);
+$('#h-q').addEventListener('input',renderHist);
+$('#gFrom').addEventListener('change',function(){gFrom=this.value;renderGantt()});
+$('#expEv').addEventListener('click',function(){
+  var q=function(v){v=String(v==null?'':v);return /[;"\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+  var rows=S.events.slice().sort(function(a,b){return D(a.date)-D(b.date)}).map(function(e){return [e.date,TYPES[e.type][0],e.title,e.text,e.taskIds.join(','),linksText(e.links).replace(/\n/g,' ; '),e.effect||''].map(q).join(';')});
+  offer('istoriya-sobytij-simcenter.csv','﻿'+['Дата;Тип;Что произошло;Почему;Задачи (ID);Ссылки;Изменено на карте'].concat(rows).join('\r\n'));
+});
+$('#logoFile').addEventListener('change',function(){
+  var f=this.files&&this.files[0];if(!f)return;
+  if(f.size>400*1024){toast('Логотип больше 400 КБ, уменьшите файл');this.value='';return}
+  var r=new FileReader();r.onload=function(){try{localStorage.setItem('simcenter-logo',r.result);applyLogo();toast('Логотип заменён (хранится в этом браузере)')}catch(e){toast('Не удалось сохранить логотип')}};
+  r.readAsDataURL(f);this.value='';
+});
+$('#logoReset').addEventListener('click',function(){try{localStorage.removeItem('simcenter-logo')}catch(e){}applyLogo();toast('Возвращена метка DNS')});
+$('#drawerBody').addEventListener('submit',function(e){if(e.target.id==='stkForm')saveSticker(e)});
+$('#drawerBody').addEventListener('input',function(e){if(e.target.closest('#stkForm'))updateStickerCheck()});
+$('#drawerBody').addEventListener('change',function(e){if(e.target.closest('#stkForm'))updateStickerCheck()});
+$('#kNew').addEventListener('click',function(){stickerEditor(null)});
+$('#kImp').addEventListener('click',function(){var b=$('#kimpbox');b.style.display=b.style.display==='none'?'grid':'none'});
+$('#kimpcancel').addEventListener('click',function(){$('#kimpbox').style.display='none'});
+$('#kLane').addEventListener('change',renderKanban);
+$('#kimpfile').addEventListener('change',function(){var f=this.files&&this.files[0];if(!f)return;var r=new FileReader();r.onload=function(){$('#kimptext').value=r.result};r.readAsText(f);this.value=''});
+$('#kimpgo').addEventListener('click',function(){var n=importStickers($('#kimptext').value,$('#kimplane').value);if(!n){toast('Не нашёл ни одного стикера в тексте');return}$('#kimptext').value='';$('#kimpbox').style.display='none';refresh();toast('Добавлено стикеров: '+n+'. Они в черновиках')});
+var kg=$('#kgrid'),dragId=null;
+kg.addEventListener('dragstart',function(e){var s=e.target.closest&&e.target.closest('.stk');if(!s)return;dragId=s.dataset.sid;s.classList.add('dragging');try{e.dataTransfer.setData('text/plain',dragId);e.dataTransfer.effectAllowed='move'}catch(x){}});
+kg.addEventListener('dragend',function(e){dragId=null;$$('.stk.dragging,.kcol.over',kg).forEach(function(n){n.classList.remove('dragging','over')})});
+kg.addEventListener('dragover',function(e){var c=e.target.closest('.kcol');if(!c||!dragId)return;e.preventDefault();$$('.kcol.over',kg).forEach(function(n){if(n!==c)n.classList.remove('over')});c.classList.add('over')});
+kg.addEventListener('drop',function(e){var c=e.target.closest('.kcol');if(!c||!dragId)return;e.preventDefault();var id=dragId;dragId=null;moveSticker(id,c.dataset.col)});
+window.addEventListener('hashchange',function(){var v=location.hash.replace('#','');if(VIEWS.indexOf(v)>=0&&v!==view)setView(v)});
+var rzT;window.addEventListener('resize',function(){clearTimeout(rzT);rzT=setTimeout(function(){if(view==='gantt')renderGantt()},200)});
+
+try{var th=localStorage.getItem('simcenter-theme');if(th)document.documentElement.setAttribute('data-theme',th)}catch(e){}
+initStore();
+var v0=location.hash.replace('#','');setView(VIEWS.indexOf(v0)>=0?v0:'gantt');
+})();
+</script>
+
+</body></html>
