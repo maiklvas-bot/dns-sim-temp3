@@ -285,6 +285,12 @@ export function auditRows(rows, registry) {
     const inside = fp && (!path.isAbsolute(fp) && !/^[A-Za-z]:[\\/]/.test(fp) || !cwd || fp.startsWith(cwd));
     if (inside && !EXEMPT.test(fp)) result.violations.push({ code: "orchestrator-wrote", msg: `Управляющий сам правит файл репозитория (${fp}); это работа builder.` });
   }
+  // запись в Obsidian: изменение без строки в WORKLOG не завершено (раздел 6 штабного документа)
+  const changed = (route && (route.steps.includes("builder") || result.route === "knowledge"))
+    || order.some((c) => c.role === "builder")
+    || mainTools.some((t) => ["Edit", "Write", "NotebookEdit"].includes(t.name) || t.name === "Bash" && bashWritesRepo(String(t.input.command || ""), cwdOf));
+  const wroteVault = mainTools.some((t) => /obsidian/i.test(t.name) || /WORKLOG/.test(JSON.stringify(t.input || {})));
+  if (changed && !wroteVault && !result.pending.length) result.warnings.push({ code: "no-worklog", msg: "Были изменения, а записи в Obsidian (01-projects/simcenter/WORKLOG.md) в основной сессии нет. Изменение без записи не считается завершённым; если запись невозможна, сказать об этом в итоге." });
   if (result.pending.length) {
     // роли ещё работают: ход не закончен, структурные замечания пока снимаются, безопасность остаётся
     const keep = new Set(["forbidden-push", "secret-read", "wrong-model", "foreign-agent", "unknown-route", "orchestrator-wrote"]);
