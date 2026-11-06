@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "edition": "2026-11-05",
+  "note": "Реестр маршрутов и ролей штаба Claude. Читают script/scheme-audit.mjs и script/check-scheme.mjs. Менять только по решению владельца; описание — docs/project/claude-headquarters.md.",
+  "routeLine": "^Маршрут:\\s*([a-z-]+)",
+  "verdictRoles": { "reviewer": "^Вердикт:\\s*(PASS|BLOCK)(?=\\s|$|[.,:;])", "arbiter": "^Решение:\\s*(ПРОДОЛЖИТЬ|ПЕРЕДЕЛАТЬ|ВЛАДЕЛЬЦУ)(?=\\s|$|[.,:;])", "auditor": "^Аудит:\\s*(OK|ЗАМЕЧАНИЯ)(?=\\s|$|[.,:;])" },
+  "roles": {
+    "scout":    { "model": "haiku",  "family": "haiku",  "tools": ["Read", "Grep", "Glob", "WebSearch", "WebFetch"], "skills": [] },
+    "analyst":  { "model": "sonnet", "family": "sonnet", "tools": ["Read", "Grep", "Glob"], "skills": [] },
+    "builder":  { "model": "sonnet", "family": "sonnet", "tools": ["Read", "Grep", "Glob", "Edit", "Write", "Bash"], "skills": ["ui-acceptance"] },
+    "editor":   { "model": "sonnet", "family": "sonnet", "tools": ["Read", "Grep", "Glob"], "skills": ["text-editor-ru"] },
+    "reviewer": { "model": "opus",   "family": "opus",   "tools": ["Read", "Grep", "Glob"], "skills": ["review-gate", "ui-acceptance"] },
+    "arbiter":  { "model": "opus",   "family": "opus",   "tools": ["Read", "Grep", "Glob"], "skills": ["review-gate"] },
+    "auditor":  { "model": "sonnet", "family": "sonnet", "tools": ["Read", "Grep", "Glob"], "skills": ["scheme-audit"] }
+  },
+  "writeTools": ["Edit", "Write", "Bash", "NotebookEdit"],
+  "webTools": ["WebSearch", "WebFetch"],
+  "writers": ["builder"],
+  "webRoles": ["scout"],
+  "routes": {
+    "question":    { "desc": "Короткий вопрос по проекту", "steps": [], "audit": false },
+    "lookup":      { "desc": "Найти факт в репозитории или в сети", "steps": ["scout"], "audit": false },
+    "analysis":    { "desc": "Разбор кода, данных, состояния, расхождений", "steps": ["analyst", "reviewer"], "audit": false },
+    "fix":         { "desc": "Правка в одном-двух файлах без изменения поведения, оценивания, данных и миграций", "steps": ["builder", "reviewer"], "audit": false },
+    "engineering": { "desc": "Изменение поведения продукта, исправление ошибки", "steps": ["analyst", "builder", "reviewer"], "audit": true },
+    "content":     { "desc": "Материал, который ложится в репозиторий: учебные тексты, кейсы, описания. Editor готовит текст, builder кладёт его коммитом, reviewer принимает по хешу", "steps": ["analyst", "editor", "builder", "reviewer"], "audit": true },
+    "methodology": { "desc": "Оценивание, компетенции, пороги, наборы кейсов; решение владельца до правки", "steps": ["analyst", "builder", "reviewer"], "audit": true },
+    "knowledge":   { "desc": "Сохранить принятые знания", "steps": [], "audit": false }
+  },
+  "escalation": { "arbiterAfterBlocks": 2 },
+  "ownerYes": ["PR", "merge", "выкладка", "force-push", "удаление веток, файлов и данных", "смена секретов", "активация набора кейсов", "миграции на рабочей базе", "изменение методики"]
+}
