@@ -77,7 +77,7 @@ for (const [file, text] of Object.entries(docs)) {
 const inOrder = (row, steps) => { let at = -1; for (const st of steps) { const i = row.indexOf(`\`${st}\``, at + 1); if (i < 0) return false; at = i; } return true; };
 check("порядок ролей в строке таблицы проверяется", inOrder("| `x` | `a` → `b` → `c` |", ["a", "b", "c"]) && !inOrder("| `x` | `b` → `a` → `c` |", ["a", "b", "c"]) && !inOrder("| `x` | `a` → `c` |", ["a", "b", "c"]));
 const modelWord = { haiku: "Haiku", sonnet: "Sonnet", opus: "Opus" };
-const allSkills = ["scheme-route", "scheme-audit", "review-gate", "ui-acceptance", "methodology-change", "text-editor-ru"];
+const allSkills = reg.coreSkills || [];
 for (const [name, role] of Object.entries(reg.roles)) {
   const row = docs["claude-headquarters.md"].split(/\r?\n/).find((l) => l.startsWith(`| \`${name}\` |`));
   check(`штабный документ: строка роли ${name} есть`, !!row);
@@ -95,6 +95,39 @@ check("CLAUDE.md ссылается на routes.json", docs["CLAUDE.md"].include
 check("CLAUDE.md не разрешает подмену ролей обычным агентом", !/могут не регистрироваться/.test(docs["CLAUDE.md"]) && /Подмену роли обычным агентом не использовать/.test(docs["CLAUDE.md"]));
 check("в документах нет внешних ИИ-исполнителей как рабочих ролей", !/\bCodex\b|ChatGPT/.test(docs["CLAUDE.md"] + docs["claude-headquarters.md"].replace(/Других ИИ[^.]*\./g, "")));
 check("RULE-PROPOSALS.md существует", fs.existsSync(rel("docs", "project", "RULE-PROPOSALS.md")));
+
+// ---------- 2б. Навыки по вызову и запись в Obsidian ----------
+const hq = docs["claude-headquarters.md"];
+const onDemand = reg.onDemandSkills?.skills || {};
+const demandNames = Object.keys(onDemand);
+const skillDirs = fs.readdirSync(rel(".claude", "skills"));
+const roleSkillSet = new Set(Object.values(reg.roles).flatMap((r) => r.skills));
+check("реестр: coreSkills заданы", Array.isArray(reg.coreSkills) && reg.coreSkills.length >= 6);
+check("реестр: навыки по вызову заданы (11)", demandNames.length === 11, `сейчас ${demandNames.length}`);
+for (const d of skillDirs) check(`навык ${d}: есть в coreSkills или в onDemandSkills`, reg.coreSkills.includes(d) || demandNames.includes(d));
+for (const d of reg.coreSkills) check(`coreSkills ${d}: каталог есть`, skillDirs.includes(d));
+for (const d of demandNames) {
+  const sk = onDemand[d];
+  check(`по вызову ${d}: каталог и SKILL.md на месте (навык не удалён)`, fs.existsSync(rel(".claude", "skills", d, "SKILL.md")));
+  check(`по вызову ${d}: не входит в профили ролей и coreSkills`, !roleSkillSet.has(d) && !reg.coreSkills.includes(d));
+  check(`по вызову ${d}: триггеры заданы`, Array.isArray(sk.triggers) && sk.triggers.length > 0 && sk.triggers.every((t) => typeof t === "string" && t.trim()));
+  check(`по вызову ${d}: маршрут есть в реестре`, !!reg.routes[sk.route], `маршрут «${sk.route}»`);
+  check(`по вызову ${d}: описан в штабном документе таблицей`, hq.split(/\r?\n/).some((l) => l.startsWith(`| \`${d}\` |`) && l.includes(`\`${sk.route}\``)));
+}
+check("по вызову: google-forms требует «да» владельца", onDemand["google-forms"]?.ownerYes === true);
+check("по вызову: caller — управляющий, не роль", reg.onDemandSkills?.caller === "orchestrator");
+const lock = fs.existsSync(rel("skills-lock.json")) ? read("skills-lock.json") : "";
+for (const d of demandNames) check(`skills-lock.json хранит ${d}`, lock.includes(`"${d}"`));
+check("штабный документ: раздел «Навыки по вызову» с правилами вызова", /### Навыки по вызову/.test(hq) && /Вызывает управляющий/.test(hq) && /Навык не заменяет маршрут/.test(hq));
+check("штабный документ: навыки не удаляются без «да»", /удалять их только по «да» владельца/.test(hq) && !/разрешил их удалить/.test(hq) && !/git rm -r/.test(hq));
+check("CLAUDE.md: навыки по вызову и запрет удалять", /remotion-\*/.test(docs["CLAUDE.md"]) && /не удаляются/.test(docs["CLAUDE.md"]) && /onDemandSkills/.test(docs["CLAUDE.md"]));
+const routeSkill = read(".claude", "skills", "scheme-route", "SKILL.md");
+check("scheme-route: правила навыков по вызову", /Навыки по вызову/.test(routeSkill) && /onDemandSkills/.test(routeSkill));
+check("штабный документ: правило записи в Obsidian обязательно", /Правило проекта: запись в Obsidian обязательна/.test(hq) && /01-projects\/simcenter\/WORKLOG\.md/.test(hq) && /не считается завершённым/.test(hq));
+check("CLAUDE.md: запись в Obsidian обязательна (WORKLOG)", /Запись в Obsidian обязательна/.test(docs["CLAUDE.md"]) && /WORKLOG\.md/.test(docs["CLAUDE.md"]));
+check("scheme-route: запись в WORKLOG перед итогом", /WORKLOG\.md/.test(routeSkill));
+check("scheme-audit: аудитор проверяет запись в Obsidian", /no-worklog/.test(read(".claude", "skills", "scheme-audit", "SKILL.md")));
+check("роли штаба в vault не пишут (написано в документе)", /Роли штаба[^.]*в vault не пишут/.test(hq));
 
 // ---------- 3. Настройки ----------
 const settings = JSON.parse(read(".claude", "settings.json"));
@@ -193,6 +226,12 @@ check("управляющий может дописать RULE-PROPOSALS.md", !c
 check("правка вне репозитория (cwd) не нарушение", !codes([{ ...user("x"), cwd: "/work/repo" }, say("Маршрут: question"), tool("Write", { file_path: "/vault/WORKLOG.md" })]).includes("orchestrator-wrote"));
 check("push: разрешён только в claude/*", ["git push origin claude/x", "git push -u origin claude/shema-20261105 2>/dev/null", "git push origin HEAD:refs/heads/claude/x", "git status && ls /dev/null"].every((c) => !pushForbidden(c)));
 check("push: force, +refspec, main/master/dev, удаление, --all запрещены", ["git push --force origin claude/x", "git push -f", "git push origin +claude/x", "git push origin HEAD:main", "git push origin dev", "git push origin :claude/x", "git push --delete origin claude/x", "git push --all", "git -C repo push origin master"].every(pushForbidden));
+// запись в Obsidian: предупреждение no-worklog
+const warns = (rows) => auditRows(rows, reg).warnings.map((w) => w.code);
+check("аудит: engineering без записи в Obsidian даёт no-worklog", warns(good()).includes("no-worklog"));
+check("аудит: запись через MCP obsidian снимает no-worklog", !warns([...good().slice(0, -1), tool("mcp__obsidian__append_content", { path: "01-projects/simcenter/WORKLOG.md", content: "x" }), say("Готово")]).includes("no-worklog"));
+check("аудит: вопрос без изменений не требует записи", !warns([user("привет"), say("Маршрут: question"), say("ответ")]).includes("no-worklog"));
+check("аудит: no-worklog не блокирует (это замечание, не нарушение)", codes(good()).length === 0);
 // мутации эталона: из каждой роли по очереди
 for (const [i, name] of [[2, "analyst"], [4, "builder"], [6, "reviewer"], [8, "auditor"]]) {
   const rows = without(good(), i);
