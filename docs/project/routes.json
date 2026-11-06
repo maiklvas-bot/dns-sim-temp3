@@ -28,5 +28,23 @@
     "knowledge":   { "desc": "Сохранить принятые знания", "steps": [], "audit": false }
   },
   "escalation": { "arbiterAfterBlocks": 2 },
+  "coreSkills": ["scheme-route", "scheme-audit", "review-gate", "ui-acceptance", "methodology-change", "text-editor-ru"],
+  "onDemandSkills": {
+    "policy": "Навыки по вызову: лежат в .claude/skills/, в профили ролей не входят, при обычных задачах SimCenter не читаются. Вызывает управляющий, когда запрос владельца или задача по смыслу совпадают с triggers, либо когда владелец назвал навык. Роль сама их не вызывает: управляющий кладёт нужные выдержки в поручение. Навык не заменяет маршрут: правка репозитория идёт по маршруту из поля route, с builder и reviewer. Удалять навыки только по «да» владельца.",
+    "caller": "orchestrator",
+    "skills": {
+      "remotion-create":        { "group": "remotion", "triggers": ["новый видеопроект", "создать видео на Remotion", "ролик на React"], "route": "engineering", "ownerYes": false },
+      "remotion-best-practices": { "group": "remotion", "triggers": ["Remotion", "композиция видео", "анимация в ролике"], "route": "engineering", "ownerYes": false },
+      "remotion-docs":          { "group": "remotion", "triggers": ["документация Remotion", "API Remotion", "как в Remotion"], "route": "lookup", "ownerYes": false },
+      "remotion-markup":        { "group": "remotion", "triggers": ["разметка Remotion", "React Markup"], "route": "engineering", "ownerYes": false },
+      "remotion-interactivity": { "group": "remotion", "triggers": ["Remotion Studio", "Visual Mode", "правка анимации в студии"], "route": "engineering", "ownerYes": false },
+      "remotion-captions":      { "group": "remotion", "triggers": ["субтитры", "титры в видео", "captions"], "route": "engineering", "ownerYes": false },
+      "remotion-render":        { "group": "remotion", "triggers": ["отрендерить видео", "экспорт видео", "рендер ролика"], "route": "engineering", "ownerYes": false },
+      "remotion-saas":          { "group": "remotion", "triggers": ["видеосервис", "Remotion Player", "рендер на сервере"], "route": "engineering", "ownerYes": false },
+      "remotion-upgrade":       { "group": "remotion", "triggers": ["обновить Remotion", "апгрейд Remotion"], "route": "engineering", "ownerYes": false },
+      "mediabunny":             { "group": "media", "triggers": ["Mediabunny", "аудио и видео в браузере", "конвертация медиафайла"], "route": "engineering", "ownerYes": false },
+      "google-forms":           { "group": "forms", "triggers": ["Google Forms", "Google-форма", "анкета-форма", "опрос в форме"], "route": "engineering", "ownerYes": true }
+    }
+  },
   "ownerYes": ["PR", "merge", "выкладка", "force-push", "удаление веток, файлов и данных", "смена секретов", "активация набора кейсов", "миграции на рабочей базе", "изменение методики"]
 }
