@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Verify agent scheme
+        run: npm run test:scheme
+
       - name: Lint
         run: npm run lint
 
