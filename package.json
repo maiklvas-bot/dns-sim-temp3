@@ -13,6 +13,7 @@
     "test:ops": "node script/check-ops-safety.mjs",
     "test:ui": "node script/check-ui-acceptance.mjs",
     "test:browser": "node script/browser-acceptance.mjs",
+    "test:scheme": "node script/check-scheme.mjs",
     "release:prune": "tsx script/prune-release.ts",
     "template:generate": "tsx script/generate-case-signal-template.ts",
     "db:push": "drizzle-kit push",

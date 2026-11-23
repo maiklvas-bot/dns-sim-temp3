@@ -68,3 +68,14 @@ live-sessions.json
 
 # Отладочные скриншоты UI в корне (Playwright/ручная проверка) — не версионируем
 /*.png
+
+# Отчёты аудита агентской схемы (локальные)
+/.claude/audit/
+
+# Материалы независимой проверки (локальные)
+/.review/
+
+# Секреты и локальные дубли в корне (гигиена папки — docs/project/repo-hygiene.md)
+.git-token-store
+/dorozhnaya-karta-offline.html
+/Дорожная карта*
