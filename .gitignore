@@ -74,3 +74,8 @@ live-sessions.json
 
 # Материалы независимой проверки (локальные)
 /.review/
+
+# Секреты и локальные дубли в корне (гигиена папки — docs/project/repo-hygiene.md)
+.git-token-store
+/dorozhnaya-karta-offline.html
+/Дорожная карта*
